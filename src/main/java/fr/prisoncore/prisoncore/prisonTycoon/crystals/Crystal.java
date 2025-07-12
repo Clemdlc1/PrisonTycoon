@@ -1,136 +1,103 @@
 package fr.prisoncore.prisoncore.prisonTycoon.crystals;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.NamespacedKey;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Représente un cristal avec son type et niveau
+ * Représente un cristal avec ses propriétés
  */
 public class Crystal {
-    private CrystalType type;
-    private final int level;
-    private boolean isRevealed;
 
-    // Clés pour les données persistantes
     public static NamespacedKey CRYSTAL_KEY;
     public static NamespacedKey CRYSTAL_TYPE_KEY;
     public static NamespacedKey CRYSTAL_LEVEL_KEY;
     public static NamespacedKey CRYSTAL_REVEALED_KEY;
 
-    public Crystal(CrystalType type, int level, boolean isRevealed) {
+    private CrystalType type;
+    private int level;
+    private boolean revealed;
+
+    /**
+     * Constructeur pour cristal vierge
+     */
+    public Crystal(int level) {
+        this.level = Math.max(1, Math.min(20, level));
+        this.revealed = false;
+        this.type = null;
+    }
+
+    /**
+     * Constructeur pour cristal spécifique
+     */
+    public Crystal(CrystalType type, int level, boolean revealed) {
         this.type = type;
         this.level = Math.max(1, Math.min(20, level));
-        this.isRevealed = isRevealed;
+        this.revealed = revealed;
     }
-
-    public Crystal(int level) {
-        this(null, level, false); // Cristal vierge
-    }
-
-    public CrystalType getType() { return type; }
-    public int getLevel() { return level; }
-    public boolean isRevealed() { return isRevealed; }
 
     /**
      * Révèle le cristal avec un type aléatoire
      */
     public void reveal() {
-        if (!isRevealed) {
+        if (!revealed) {
             this.type = CrystalType.getRandomType();
-            this.isRevealed = true;
+            this.revealed = true;
         }
     }
 
     /**
-     * Obtient le bonus de ce cristal
-     */
-    public double getBonus() {
-        return isRevealed && type != null ? type.calculateBonus(level) : 0.0;
-    }
-
-    /**
-     * Crée un ItemStack représentant ce cristal
+     * Crée l'ItemStack du cristal
      */
     public ItemStack createItemStack() {
-        ItemStack crystal = new ItemStack(Material.NETHER_STAR);
-        ItemMeta meta = crystal.getItemMeta();
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemMeta meta = item.getItemMeta();
+
+        // Nom
+        if (revealed) {
+            meta.setDisplayName("§5✨ " + type.getDisplayName() + " §7[Niveau " + level + "]");
+        } else {
+            meta.setDisplayName("§8✨ §lCristal Vierge §7[Niveau " + level + "]");
+        }
+
+        // Lore
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        if (revealed) {
+            lore.add("§7Type: " + type.getDisplayName());
+            lore.add("§7Niveau: §b" + level);
+            lore.add("§7Effet: " + type.getDetailedDescription(level));
+            lore.add("");
+            lore.add("§a✅ §lRÉVÉLÉ");
+            lore.add("§e💡 Clic-droit pour appliquer à votre pioche");
+        } else {
+            lore.add("§7Niveau: §b" + level);
+            lore.add("§7Type: §8Inconnu");
+            lore.add("");
+            lore.add("§c❌ §lNON RÉVÉLÉ");
+            lore.add("§e💡 Clic-droit pour révéler le type");
+        }
+
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        meta.setLore(lore);
 
         // Données persistantes
         meta.getPersistentDataContainer().set(CRYSTAL_KEY, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(CRYSTAL_LEVEL_KEY, PersistentDataType.INTEGER, level);
-        meta.getPersistentDataContainer().set(CRYSTAL_REVEALED_KEY, PersistentDataType.BOOLEAN, isRevealed);
+        meta.getPersistentDataContainer().set(CRYSTAL_REVEALED_KEY, PersistentDataType.BOOLEAN, revealed);
 
-        if (isRevealed && type != null) {
+        if (revealed && type != null) {
             meta.getPersistentDataContainer().set(CRYSTAL_TYPE_KEY, PersistentDataType.STRING, type.getInternalName());
         }
 
-        // Apparence
-        if (isRevealed && type != null) {
-            meta.setDisplayName("§5✦ " + type.getDisplayName() + " §5Niveau " + level + " ✦");
-        } else {
-            meta.setDisplayName("§8✦ §7Cristal Mystérieux §5Niveau " + level + " §8✦");
-        }
-
-        List<String> lore = new ArrayList<>();
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-        if (isRevealed && type != null) {
-            lore.add("§7" + type.getDescription());
-            lore.add("§7Effet: " + type.getDetailedDescription(level));
-            lore.add("§7Niveau: §5" + level + "§7/§520");
-            lore.add("");
-            lore.add("§e📋 §lAPPLICATION");
-            lore.add("§7▸ Coût d'application: §a" + getApplicationCost() + " XP");
-            lore.add("§7▸ Maximum 4 cristaux par pioche");
-            lore.add("§7▸ 1 seul cristal de ce type par pioche");
-            lore.add("");
-            lore.add("§c⚠️ §lRETRAIT");
-            lore.add("§7▸ §c50% chance de destruction");
-            lore.add("§7▸ Coût: §650 tokens");
-        } else {
-            lore.add("§7Type: §8???");
-            lore.add("§7Effet: §8Mystérieux");
-            lore.add("§7Niveau: §5" + level + "§7/§520");
-            lore.add("");
-            lore.add("§d🔮 §lRÉVÉLATION");
-            lore.add("§7▸ §eClic droit§7 pour révéler le type");
-            lore.add("§7▸ Le niveau reste identique");
-            lore.add("§7▸ Type déterminé aléatoirement");
-        }
-
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-        if (isRevealed && type != null) {
-            lore.add("§5✨ Cliquez sur votre pioche pour appliquer");
-        } else {
-            lore.add("§e✨ Clic droit pour révéler le mystère");
-        }
-
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-        meta.setLore(lore);
-        crystal.setItemMeta(meta);
-
-        return crystal;
-    }
-
-    /**
-     * Obtient le coût d'application du cristal
-     */
-    public int getApplicationCost() {
-        // Coûts : 1k, 2.5k, 5k, 10k XP selon la position
-        return switch (level <= 5 ? 1 : level <= 10 ? 2 : level <= 15 ? 3 : 4) {
-            case 1 -> 1000;
-            case 2 -> 2500;
-            case 3 -> 5000;
-            default -> 10000;
-        };
+        item.setItemMeta(meta);
+        return item;
     }
 
     /**
@@ -144,37 +111,54 @@ public class Crystal {
     }
 
     /**
-     * Crée un cristal depuis un ItemStack
+     * Crée un Crystal depuis un ItemStack
      */
     public static Crystal fromItemStack(ItemStack item) {
         if (!isCrystal(item)) return null;
 
         ItemMeta meta = item.getItemMeta();
-        int level = meta.getPersistentDataContainer().get(CRYSTAL_LEVEL_KEY, PersistentDataType.INTEGER);
-        boolean revealed = meta.getPersistentDataContainer().get(CRYSTAL_REVEALED_KEY, PersistentDataType.BOOLEAN);
 
-        CrystalType type = null;
+        int level = meta.getPersistentDataContainer()
+                .getOrDefault(CRYSTAL_LEVEL_KEY, PersistentDataType.INTEGER, 1);
+
+        boolean revealed = meta.getPersistentDataContainer()
+                .getOrDefault(CRYSTAL_REVEALED_KEY, PersistentDataType.BOOLEAN, false);
+
         if (revealed) {
-            String typeName = meta.getPersistentDataContainer().get(CRYSTAL_TYPE_KEY, PersistentDataType.STRING);
+            String typeName = meta.getPersistentDataContainer()
+                    .get(CRYSTAL_TYPE_KEY, PersistentDataType.STRING);
+
             if (typeName != null) {
-                for (CrystalType crystalType : CrystalType.values()) {
-                    if (crystalType.getInternalName().equals(typeName)) {
-                        type = crystalType;
-                        break;
+                for (CrystalType type : CrystalType.values()) {
+                    if (type.getInternalName().equals(typeName)) {
+                        return new Crystal(type, level, true);
                     }
                 }
             }
         }
 
-        return new Crystal(type, level, revealed);
+        return new Crystal(level);
+    }
+
+    // Getters
+    public CrystalType getType() { return type; }
+    public int getLevel() { return level; }
+    public boolean isRevealed() { return revealed; }
+
+    /**
+     * Obtient le bonus de ce cristal
+     */
+    public double getBonus() {
+        if (!revealed || type == null) return 0;
+        return type.calculateBonus(level);
     }
 
     @Override
     public String toString() {
-        if (isRevealed && type != null) {
-            return type.getDisplayName() + " Niveau " + level;
+        if (revealed) {
+            return type.getDisplayName() + " niveau " + level;
         } else {
-            return "Cristal Mystérieux Niveau " + level;
+            return "Cristal vierge niveau " + level;
         }
     }
 }

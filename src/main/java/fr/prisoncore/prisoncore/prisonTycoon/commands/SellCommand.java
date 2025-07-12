@@ -14,10 +14,13 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Commandes /sell all et /sell hand
+ * Commande de vente des items
  */
 public class SellCommand implements CommandExecutor, TabCompleter {
 
@@ -30,7 +33,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
+            sender.sendMessage("§cCette commande ne peut être utilisée que par un joueur!");
             return true;
         }
 
@@ -39,56 +42,39 @@ public class SellCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String subCommand = args[0].toLowerCase();
-
-        switch (subCommand) {
-            case "all" -> {
-                sellAllItems(player);
-                return true;
-            }
-            case "hand" -> {
-                sellHandItem(player);
-                return true;
-            }
-            default -> {
-                sendHelpMessage(player);
-                return true;
-            }
+        switch (args[0].toLowerCase()) {
+            case "all" -> sellAllInventory(player);
+            case "hand" -> sellHandItem(player);
+            default -> sendHelpMessage(player);
         }
+
+        return true;
     }
 
     /**
-     * Vend tous les items vendables de l'inventaire
+     * Vend tout l'inventaire (sauf items protégés)
      */
-    private void sellAllItems(Player player) {
-        Map<Material, Integer> itemsToSell = new HashMap<>();
+    private void sellAllInventory(Player player) {
+        Map<Material, Integer> itemCounts = new HashMap<>();
         long totalValue = 0;
         int totalItems = 0;
 
-        // Collecte tous les items vendables
-        for (int i = 0; i < player.getInventory().getSize(); i++) {
+        // Parcourt l'inventaire (slots 9-35 pour éviter la hotbar avec la pioche)
+        for (int i = 9; i < 36; i++) {
             ItemStack item = player.getInventory().getItem(i);
 
             if (item == null || item.getType() == Material.AIR) continue;
+            if (isProtectedItem(item)) continue;
 
-            // Ne vend pas la pioche légendaire
-            if (plugin.getPickaxeManager().isLegendaryPickaxe(item)) continue;
+            double sellPrice = getSellPrice(item.getType());
+            if (sellPrice <= 0) continue;
 
-            // Ne vend pas les cristaux
-            if (Crystal.isCrystal(item)) continue;
+            int amount = item.getAmount();
+            itemCounts.merge(item.getType(), amount, Integer::sum);
+            totalItems += amount;
 
-            double basePrice = getSellPrice(item.getType());
-            if (basePrice > 0) {
-                int amount = item.getAmount();
-                itemsToSell.merge(item.getType(), amount, Integer::sum);
-
-                // Applique le bonus SellBoost
-                double finalPrice = basePrice * getSellBoostMultiplier(player);
-                totalValue += (long) (finalPrice * amount);
-                totalItems += amount;
-
-                player.getInventory().setItem(i, null);
-            }
+            // Retire l'item de l'inventaire
+            player.getInventory().setItem(i, null);
         }
 
         if (totalItems == 0) {
@@ -96,23 +82,39 @@ public class SellCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Ajoute les coins
+        // Calcule la valeur totale avec bonus SellBoost
+        double sellBoostMultiplier = getSellBoostMultiplier(player);
+        for (Map.Entry<Material, Integer> entry : itemCounts.entrySet()) {
+            double baseValue = getSellPrice(entry.getKey()) * entry.getValue();
+            totalValue += Math.round(baseValue * sellBoostMultiplier);
+        }
+
+        // Donne les coins au joueur
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         playerData.addCoins(totalValue);
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        // Message détaillé
-        player.sendMessage("§a✅ §lVENTE RÉUSSIE!");
+        // Messages
+        player.sendMessage("§a✅ §lVENTE RÉUSSIE");
         player.sendMessage("§7Items vendus: §e" + NumberFormatter.format(totalItems));
-        player.sendMessage("§7Types différents: §e" + itemsToSell.size());
         player.sendMessage("§7Valeur totale: §6" + NumberFormatter.format(totalValue) + " coins");
 
-        double sellBoost = (getSellBoostMultiplier(player) - 1.0) * 100.0;
+        double sellBoost = (sellBoostMultiplier - 1.0) * 100.0;
         if (sellBoost > 0) {
             player.sendMessage("§7Bonus SellBoost: §a+" + String.format("%.1f%%", sellBoost));
         }
 
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+        // Détail des items vendus (top 5)
+        List<Map.Entry<Material, Integer>> sortedItems = new ArrayList<>(itemCounts.entrySet());
+        sortedItems.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+
+        player.sendMessage("§7Détail (top 5):");
+        for (int i = 0; i < Math.min(5, sortedItems.size()); i++) {
+            Map.Entry<Material, Integer> entry = sortedItems.get(i);
+            player.sendMessage("§7▸ " + getItemDisplayName(entry.getKey()) +
+                    ": §e" + NumberFormatter.format(entry.getValue()));
+        }
+
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
         plugin.getPluginLogger().info("Vente all pour " + player.getName() +
                 ": " + totalItems + " items, " + totalValue + " coins");
@@ -125,39 +127,35 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         ItemStack handItem = player.getInventory().getItemInMainHand();
 
         if (handItem == null || handItem.getType() == Material.AIR) {
-            player.sendMessage("§c❌ Vous n'avez rien en main!");
+            player.sendMessage("§c❌ Vous devez tenir un item en main!");
             return;
         }
 
-        // Vérifie les protections
-        if (plugin.getPickaxeManager().isLegendaryPickaxe(handItem)) {
-            player.sendMessage("§c❌ Vous ne pouvez pas vendre votre pioche légendaire!");
-            return;
-        }
-
-        if (Crystal.isCrystal(handItem)) {
-            player.sendMessage("§c❌ Vous ne pouvez pas vendre des cristaux!");
-            return;
-        }
-
-        double basePrice = getSellPrice(handItem.getType());
-        if (basePrice <= 0) {
+        if (isProtectedItem(handItem)) {
             player.sendMessage("§c❌ Cet item ne peut pas être vendu!");
             return;
         }
 
+        double sellPrice = getSellPrice(handItem.getType());
+        if (sellPrice <= 0) {
+            player.sendMessage("§c❌ Cet item n'a pas de valeur de vente!");
+            return;
+        }
+
         int amount = handItem.getAmount();
-        double finalPrice = basePrice * getSellBoostMultiplier(player);
-        long totalValue = (long) (finalPrice * amount);
+        double baseValue = sellPrice * amount;
+        long totalValue = Math.round(baseValue * getSellBoostMultiplier(player));
 
-        // Retire l'item et ajoute les coins
-        player.getInventory().setItemInMainHand(null);
-
+        // Donne les coins au joueur
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         playerData.addCoins(totalValue);
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        player.sendMessage("§a✅ §l" + amount + "x " + getItemDisplayName(handItem.getType()) + " §avendu!");
+        // Retire l'item de la main
+        player.getInventory().setItemInMainHand(null);
+
+        // Messages
+        player.sendMessage("§a✅ §lVENTE RÉUSSIE");
+        player.sendMessage("§7Item: §e" + getItemDisplayName(handItem.getType()) + " x" + amount);
         player.sendMessage("§7Valeur: §6" + NumberFormatter.format(totalValue) + " coins");
 
         double sellBoost = (getSellBoostMultiplier(player) - 1.0) * 100.0;
@@ -169,6 +167,31 @@ public class SellCommand implements CommandExecutor, TabCompleter {
 
         plugin.getPluginLogger().info("Vente hand pour " + player.getName() +
                 ": " + amount + "x " + handItem.getType() + ", " + totalValue + " coins");
+    }
+
+    /**
+     * Vérifie si un item est protégé de la vente
+     */
+    private boolean isProtectedItem(ItemStack item) {
+        // Pioche légendaire
+        if (plugin.getPickaxeManager().isLegendaryPickaxe(item)) {
+            return true;
+        }
+
+        // Cristaux
+        if (Crystal.isCrystal(item)) {
+            return true;
+        }
+
+        // Clés (si elles ont un tag spécial)
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            String displayName = item.getItemMeta().getDisplayName();
+            if (displayName.contains("Clé") || displayName.contains("Key")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -209,6 +232,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelpMessage(Player player) {
         player.sendMessage("§6💰 §lCommandes de Vente:");
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         player.sendMessage("§7/sell all §8- §7Vend tout l'inventaire");
         player.sendMessage("§7/sell hand §8- §7Vend l'item en main");
         player.sendMessage("");
@@ -216,6 +240,8 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7▸ Les cristaux §dSellBoost§7 augmentent les prix");
         player.sendMessage("§7▸ La pioche légendaire ne peut pas être vendue");
         player.sendMessage("§7▸ Les cristaux ne peuvent pas être vendus");
+        player.sendMessage("§7▸ Les clés ne peuvent pas être vendues");
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
     }
 
     @Override
