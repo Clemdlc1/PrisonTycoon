@@ -244,6 +244,7 @@ public class EnchantmentMenu {
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
     }
 
+
     /**
      * Crée la tête du joueur avec ses statistiques
      */
