@@ -8,7 +8,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Tâche de récapitulatif minute et mise à jour des scoreboards
- * CORRIGÉ : Plus d'action bar, focus sur le récapitulatif minute
+ * CORRIGÉ : Récapitulatif minute fonctionnel
  */
 public class ActionBarTask extends BukkitRunnable {
 
@@ -31,6 +31,9 @@ public class ActionBarTask extends BukkitRunnable {
 
             // CORRIGÉ: Récapitulatif minute toutes les 60 secondes (1200 ticks)
             if (tickCount % 1200 == 0) {
+                plugin.getPluginLogger().debug("Vérification récapitulatif minute pour " +
+                        plugin.getServer().getOnlinePlayers().size() + " joueurs");
+
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     sendMinuteSummaryIfActive(player);
                 }
@@ -48,10 +51,18 @@ public class ActionBarTask extends BukkitRunnable {
     private void sendMinuteSummaryIfActive(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Vérifie s'il y a eu de l'activité dans la dernière minute
+        plugin.getPluginLogger().debug("Vérification activité pour " + player.getName() +
+                ": blocks=" + playerData.getLastMinuteBlocksMined() +
+                ", coins=" + playerData.getLastMinuteCoins() +
+                ", tokens=" + playerData.getLastMinuteTokens());
+
+        // CORRIGÉ: Vérifie s'il y a eu de l'activité dans la dernière minute
         if (!hasActivityThisMinute(playerData)) {
+            plugin.getPluginLogger().debug("Aucune activité pour " + player.getName());
             return; // Aucune activité significative
         }
+
+        plugin.getPluginLogger().debug("Activité détectée pour " + player.getName() + ", génération du récapitulatif");
 
         // Génère et envoie le récapitulatif complet
         String summary = generateCompleteSummary(playerData);
@@ -66,20 +77,29 @@ public class ActionBarTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ: Vérifie si le joueur a eu une activité significative
+     * CORRIGÉ: Vérifie si le joueur a eu une activité significative (logique simplifiée)
      */
     private boolean hasActivityThisMinute(PlayerData playerData) {
-        return playerData.hasMinedThisMinute() ||
+        boolean hasActivity = playerData.hasMinedThisMinute() ||
                 playerData.getLastMinuteCoins() > 0 ||
                 playerData.getLastMinuteTokens() > 0 ||
                 playerData.getLastMinuteExperience() > 0 ||
                 playerData.getLastMinuteAutoUpgrades() > 0 ||
                 playerData.getLastMinuteGreedTriggers() > 0 ||
                 playerData.getLastMinuteKeysObtained() > 0;
+
+        plugin.getPluginLogger().debug("Activité check: mined=" + playerData.hasMinedThisMinute() +
+                ", coins=" + playerData.getLastMinuteCoins() +
+                ", tokens=" + playerData.getLastMinuteTokens() +
+                ", exp=" + playerData.getLastMinuteExperience() +
+                ", greeds=" + playerData.getLastMinuteGreedTriggers() +
+                " -> result=" + hasActivity);
+
+        return hasActivity;
     }
 
     /**
-     * GRANDEMENT AMÉLIORÉ: Génère un récapitulatif complet avec toutes les statistiques
+     * Génère un récapitulatif complet avec toutes les statistiques
      */
     private String generateCompleteSummary(PlayerData playerData) {
         StringBuilder summary = new StringBuilder();

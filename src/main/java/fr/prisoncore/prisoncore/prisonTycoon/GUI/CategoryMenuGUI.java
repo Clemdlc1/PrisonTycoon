@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Menu d'une catégorie d'enchantements
- * CORRIGÉ : Retrait ligne État et noms en gras
+ * CORRIGÉ : Taille réduite à 27 slots
  */
 public class CategoryMenuGUI {
 
@@ -34,9 +34,8 @@ public class CategoryMenuGUI {
      * Ouvre le menu d'une catégorie d'enchantements
      */
     public void openCategoryMenu(Player player, EnchantmentCategory category) {
-        // CORRECTION: Nom en gras
         String title = "§6✨ §l" + category.getDisplayName() + " §6✨";
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = Bukkit.createInventory(null, 27, title); // CORRIGÉ: 27 slots
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -45,11 +44,11 @@ public class CategoryMenuGUI {
         gui.setItem(4, createPlayerHead(player));
 
         // Bouton retour
-        gui.setItem(45, createBackButton());
+        gui.setItem(22, createBackButton()); // CORRIGÉ: Position 22
 
         // Enchantements de la catégorie
         var enchantments = plugin.getEnchantmentManager().getEnchantmentsByCategory(category);
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16}; // CORRIGÉ: Slots adaptés pour 27
 
         for (int i = 0; i < enchantments.size() && i < slots.length; i++) {
             CustomEnchantment enchantment = enchantments.get(i);
@@ -64,7 +63,7 @@ public class CategoryMenuGUI {
      * Gère les clics dans le menu de catégorie
      */
     public void handleCategoryMenuClick(Player player, int slot, ItemStack item, String title, ClickType clickType) {
-        if (slot == 45) { // Bouton retour
+        if (slot == 22) { // Bouton retour
             plugin.getMainMenuGUI().openEnchantmentMenu(player);
             return;
         }
@@ -86,12 +85,15 @@ public class CategoryMenuGUI {
                 PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
                 int currentLevel = playerData.getEnchantmentLevel(targetEnchantment.getName());
 
-                // NOUVEAU: Gestion du clic molette pour les enchantements mobilité
+                // CORRIGÉ: Gestion du clic molette pour les enchantements mobilité
                 if (clickType == ClickType.MIDDLE && targetEnchantment.getCategory() == EnchantmentCategory.MOBILITY) {
                     if (currentLevel > 0) { // Seulement si l'enchantement est acheté
                         toggleMobilityEnchantment(player, targetEnchantment.getName(), playerData);
                         // Rouvre le menu pour actualiser l'affichage
                         openCategoryMenu(player, targetEnchantment.getCategory());
+                        return;
+                    } else {
+                        player.sendMessage("§c❌ Vous devez d'abord acheter cet enchantement!");
                         return;
                     }
                 }
@@ -107,7 +109,7 @@ public class CategoryMenuGUI {
     }
 
     /**
-     * NOUVEAU: Active/Désactive un enchantement de mobilité
+     * Active/Désactive un enchantement de mobilité
      */
     private void toggleMobilityEnchantment(Player player, String enchantmentName, PlayerData playerData) {
         boolean currentlyEnabled = playerData.isMobilityEnchantmentEnabled(enchantmentName);
@@ -116,8 +118,12 @@ public class CategoryMenuGUI {
         playerData.setMobilityEnchantmentEnabled(enchantmentName, newState);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        // Met à jour les effets de mobilité
-        plugin.getPickaxeManager().updateMobilityEffects(player);
+        // Met à jour les effets de mobilité seulement si la pioche est en main
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (handItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(handItem) &&
+                plugin.getPickaxeManager().isOwner(handItem, player)) {
+            plugin.getPickaxeManager().updateMobilityEffects(player);
+        }
 
         CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
         String enchantDisplayName = enchantment != null ? enchantment.getDisplayName() : enchantmentName;
@@ -133,7 +139,6 @@ public class CategoryMenuGUI {
 
     /**
      * Crée un item d'enchantement avec les nouvelles informations
-     * CORRIGÉ : Retrait ligne État et ajout nom en gras
      */
     private ItemStack createEnchantmentItem(CustomEnchantment enchantment, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -167,7 +172,6 @@ public class CategoryMenuGUI {
                         "§a[Niveau " + NumberFormatter.format(currentLevel) + "]" :
                         "§a[Niveau " + currentLevel + "§7/§e" + enchantment.getMaxLevel() + "§a]");
 
-        // CORRECTION: Nom en gras et retrait du statut coloré
         meta.setDisplayName("§6✦ §l" + enchantment.getDisplayName() + " " + levelDisplay);
 
         List<String> lore = new ArrayList<>();
@@ -179,7 +183,6 @@ public class CategoryMenuGUI {
 
         // Statut standardisé
         lore.add("§6📊 §lSTATUT ACTUEL");
-        // CORRECTION: Retrait de la ligne État
         lore.add("§7▸ Niveau actuel: §e" + NumberFormatter.format(currentLevel));
         lore.add("§7▸ Niveau maximum: " + (enchantment.getMaxLevel() == Integer.MAX_VALUE ?
                 "§e∞" : "§e" + enchantment.getMaxLevel()));
@@ -215,7 +218,6 @@ public class CategoryMenuGUI {
                     lore.add("§7▸ +5 niveaux: §6" + NumberFormatter.format(cost5));
                 }
 
-                // CORRIGÉ: Après MAX niveau achetable (pas +1)
                 lore.add("§7▸ Nouveau niveau: §a" + (currentLevel + maxAffordable));
 
             } else {
@@ -232,7 +234,7 @@ public class CategoryMenuGUI {
             lore.add("");
         }
 
-        // NOUVEAU: État mobilité si applicable
+        // État mobilité si applicable
         if (enchantment.getCategory() == EnchantmentCategory.MOBILITY && currentLevel > 0) {
             boolean enabled = playerData.isMobilityEnchantmentEnabled(enchantment.getName());
             lore.add("§b🎮 §lÉTAT MOBILITÉ");
@@ -407,18 +409,10 @@ public class CategoryMenuGUI {
         meta.setDisplayName("§7");
         filler.setItemMeta(meta);
 
-        int size = gui.getSize();
-
-        for (int i = 0; i < 9; i++) {
-            gui.setItem(i, filler);
-            if (size > 9) {
-                gui.setItem(size - 9 + i, filler);
-            }
-        }
-
-        for (int i = 9; i < size - 9; i += 9) {
-            gui.setItem(i, filler);
-            gui.setItem(i + 8, filler);
+        // CORRIGÉ: Bordures pour 27 slots
+        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 23, 24, 25, 26};
+        for (int slot : borderSlots) {
+            gui.setItem(slot, filler);
         }
     }
 }

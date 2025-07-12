@@ -282,14 +282,23 @@ public class PickaxeManager {
      * NOUVEAU: Met à jour les effets de mobilité selon les enchantements activés/désactivés
      */
     public void updateMobilityEffects(Player player) {
-        if (!hasLegendaryPickaxe(player)) return;
+        // Vérifie d'abord si la pioche légendaire est en main
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        boolean hasPickaxeInHand = handItem != null && isLegendaryPickaxe(handItem) && isOwner(handItem, player);
+
+        // Si pas de pioche en main, retire tous les effets
+        if (!hasPickaxeInHand) {
+            removeMobilityEffects(player);
+            plugin.getPluginLogger().debug("Effets mobilité retirés pour " + player.getName() + " (pioche pas en main)");
+            return;
+        }
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         // Retire tous les effets d'abord
         removeMobilityEffects(player);
 
-        // Applique seulement les effets activés
+        // Applique seulement les effets activés ET si pioche en main
 
         // Vision nocturne
         if (playerData.getEnchantmentLevel("night_vision") > 0 &&
@@ -311,7 +320,7 @@ public class PickaxeManager {
         int hasteLevel = playerData.getEnchantmentLevel("haste");
         if (hasteLevel > 0 && playerData.isMobilityEnchantmentEnabled("haste")) {
             player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    PotionEffectType.HASTE,
+                    org.bukkit.potion.PotionEffectType.HASTE,
                     Integer.MAX_VALUE, hasteLevel - 1, true, false));
         }
 
@@ -319,11 +328,12 @@ public class PickaxeManager {
         int jumpLevel = playerData.getEnchantmentLevel("jump_boost");
         if (jumpLevel > 0 && playerData.isMobilityEnchantmentEnabled("jump_boost")) {
             player.addPotionEffect(new org.bukkit.potion.PotionEffect(
-                    PotionEffectType.JUMP_BOOST,
+                    org.bukkit.potion.PotionEffectType.JUMP_BOOST,
                     Integer.MAX_VALUE, jumpLevel - 1, true, false));
         }
 
-        plugin.getPluginLogger().debug("Effets mobilité mis à jour pour " + player.getName());
+        plugin.getPluginLogger().debug("Effets mobilité mis à jour pour " + player.getName() +
+                " (pioche en main: " + hasPickaxeInHand + ")");
     }
 
     /**
@@ -347,6 +357,13 @@ public class PickaxeManager {
      * CORRIGÉ: Gère la téléportation Escalateur (maintenant dans mobilité)
      */
     public void handleEscalator(Player player) {
+        // Vérifie que la pioche est en main
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (handItem == null || !isLegendaryPickaxe(handItem) || !isOwner(handItem, player)) {
+            player.sendMessage("§c❌ Vous devez avoir la pioche légendaire en main!");
+            return;
+        }
+
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (playerData.getEnchantmentLevel("escalator") > 0 &&
