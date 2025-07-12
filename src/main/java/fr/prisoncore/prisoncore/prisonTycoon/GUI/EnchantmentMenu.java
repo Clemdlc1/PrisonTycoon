@@ -83,7 +83,7 @@ public class EnchantmentMenu {
     public void handleEnchantmentMenuClick(Player player, int slot, ItemStack item) {
         switch (slot) {
             // Features futures
-            case CRYSTALS_SLOT -> plugin.getCrystalsMenuGUI().openCrystalsMenu(player);
+            case CRYSTALS_SLOT -> plugin.getCrystalsMenuGUI().(player);
             case UNIQUE_ENCHANTS_SLOT -> plugin.getUniqueEnchantsMenuGUI().openUniqueEnchantsMenu(player);
             case PETS_SLOT -> plugin.getPetsMenuGUI().openPetsMenu(player);
             case MAIN_MENU_SLOT -> plugin.getMainMenuGUI().openGeneralMainMenu(player);

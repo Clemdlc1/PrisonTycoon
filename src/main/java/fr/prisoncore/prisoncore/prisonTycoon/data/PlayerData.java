@@ -85,6 +85,7 @@ public class PlayerData {
         this.abundanceActive = false;
         this.abundanceEndTime = 0;
 
+
         this.totalBlocksMined = 0;
         this.totalBlocksDestroyed = 0;
         this.totalGreedTriggers = 0;
