@@ -21,7 +21,7 @@ import java.util.Set;
 
 /**
  * Menu d'amélioration d'un enchantement
- * CORRIGÉ : Taille réduite à 27, positions modifiées, tous les enchants dans addEffectComparison
+ * CORRIGÉ : Boutons d'amélioration FIXES (ne s'adaptent plus au max possible)
  */
 public class EnchantmentUpgradeGUI {
 
@@ -39,7 +39,7 @@ public class EnchantmentUpgradeGUI {
         if (enchantment == null) return;
 
         String title = "§6🔧 §l" + enchantment.getDisplayName() + " §6🔧";
-        Inventory gui = Bukkit.createInventory(null, 27, title); // CORRIGÉ: 27 slots
+        Inventory gui = Bukkit.createInventory(null, 27, title);
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -47,8 +47,8 @@ public class EnchantmentUpgradeGUI {
         // Tête du joueur
         gui.setItem(4, createPlayerHead(player));
 
-        // Boutons d'amélioration
-        createUpgradeButtons(gui, enchantment, player);
+        // Boutons d'amélioration FIXES
+        createFixedUpgradeButtons(gui, enchantment, player);
 
         gui.setItem(18, createBackButton());
 
@@ -66,8 +66,7 @@ public class EnchantmentUpgradeGUI {
      * Gère les clics dans le menu d'amélioration
      */
     public void handleUpgradeMenuClick(Player player, int slot, ItemStack item, ClickType clickType, String title) {
-        if (slot == 18) { // Bouton retour (CORRIGÉ: position inversée)
-            // Retourne au menu de catégorie approprié
+        if (slot == 18) { // Bouton retour
             String enchantmentName = extractEnchantmentNameFromTitle(title);
             CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
             if (enchantment != null) {
@@ -76,7 +75,7 @@ public class EnchantmentUpgradeGUI {
             return;
         }
 
-        if (slot == 26) { // Auto-upgrade (CORRIGÉ: position inversée)
+        if (slot == 26) { // Auto-upgrade
             if (plugin.getEnchantmentManager().canUseAutoUpgrade(player)) {
                 toggleAutoUpgrade(player, title);
             } else {
@@ -87,13 +86,13 @@ public class EnchantmentUpgradeGUI {
             return;
         }
 
-        if (slot == 23) { // MAX possible (CORRIGÉ: milieu dernière ligne)
+        if (slot == 23) { // MAX possible
             String enchantmentName = extractEnchantmentNameFromTitle(title);
             upgradeToMax(player, enchantmentName);
             return;
         }
 
-        // Boutons d'amélioration
+        // Boutons d'amélioration fixes
         if (item != null && item.hasItemMeta()) {
             String displayName = item.getItemMeta().getDisplayName();
             String enchantmentName = extractEnchantmentNameFromTitle(title);
@@ -109,20 +108,20 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * CORRIGÉ: Crée les boutons d'amélioration adaptés pour 27 slots
+     * CORRIGÉ : Crée les boutons d'amélioration FIXES (ne s'adaptent pas)
      */
-    private void createUpgradeButtons(Inventory gui, CustomEnchantment enchantment, Player player) {
+    private void createFixedUpgradeButtons(Inventory gui, CustomEnchantment enchantment, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int currentLevel = playerData.getEnchantmentLevel(enchantment.getName());
 
         int[] upgradeAmounts = {1, 5, 10, 25, 100, 250, 500};
-        int[] slots = {10, 11, 12, 13, 14, 15, 16}; // CORRIGÉ: Ligne milieu pour 27 slots
+        int[] slots = {10, 11, 12, 13, 14, 15, 16};
 
         for (int i = 0; i < upgradeAmounts.length; i++) {
             int amount = upgradeAmounts[i];
-            if (currentLevel + amount <= enchantment.getMaxLevel()) {
-                gui.setItem(slots[i], createUpgradeButton(enchantment, player, amount));
-            }
+
+            // CORRECTION : Toujours afficher le bouton, mais en rouge si impossible
+            gui.setItem(slots[i], createFixedUpgradeButton(enchantment, player, amount));
         }
 
         // MAX au milieu dernière ligne (slot 23)
@@ -132,48 +131,55 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * Crée un bouton d'amélioration avec effets avant/après
+     * NOUVEAU : Crée un bouton d'amélioration FIXE qui ne s'adapte jamais
      */
-    private ItemStack createUpgradeButton(CustomEnchantment enchantment, Player player, int requestedLevels) {
+    private ItemStack createFixedUpgradeButton(CustomEnchantment enchantment, Player player, int requestedLevels) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int currentLevel = playerData.getEnchantmentLevel(enchantment.getName());
         long availableTokens = playerData.getTokens();
 
-        // Calcule le nombre réel de niveaux possibles
-        int maxPossibleLevels = Math.min(requestedLevels, enchantment.getMaxLevel() - currentLevel);
-        int actualLevels = 0;
-        long totalCost = 0;
+        // Vérifie si on peut acheter exactement ce nombre de niveaux
+        boolean canAffordExact = canAffordExactLevels(enchantment, currentLevel, availableTokens, requestedLevels);
+        boolean levelMaxReached = currentLevel + requestedLevels > enchantment.getMaxLevel();
 
-        for (int i = 1; i <= maxPossibleLevels; i++) {
-            long cost = enchantment.getUpgradeCost(currentLevel + i);
-            if (totalCost + cost <= availableTokens) {
-                totalCost += cost;
-                actualLevels = i;
-            } else {
-                break;
-            }
+        Material material;
+        String color;
+
+        if (levelMaxReached) {
+            material = Material.BARRIER;
+            color = "§c";
+        } else if (canAffordExact) {
+            material = Material.GREEN_CONCRETE;
+            color = "§a";
+        } else {
+            material = Material.RED_CONCRETE;
+            color = "§c";
         }
-
-        boolean canAfford = actualLevels > 0;
-        Material material = canAfford ? Material.GREEN_CONCRETE : Material.RED_CONCRETE;
-        String color = canAfford ? "§a" : "§c";
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        if (canAfford) {
-            meta.setDisplayName(color + "+" + actualLevels + " Niveau" + (actualLevels > 1 ? "x" : ""));
-        } else {
-            meta.setDisplayName(color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : "") + " §c(Impossible)");
-        }
+        meta.setDisplayName(color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        if (canAfford) {
-            // Section amélioration
-            lore.add("§6💰 §lAMÉLIORATION");
-            lore.add("§7▸ Niveaux à acheter: §a+" + actualLevels);
+        if (levelMaxReached) {
+            // Dépasserait le niveau maximum
+            lore.add("§c❌ §lNIVEAU MAXIMUM DÉPASSÉ");
+            lore.add("§7▸ Niveaux demandés: §c+" + requestedLevels);
+            lore.add("§7▸ Niveau actuel: §e" + currentLevel);
+            lore.add("§7▸ Niveau maximum: §e" + enchantment.getMaxLevel());
+            lore.add("§7▸ Niveaux possibles: §e" + Math.max(0, enchantment.getMaxLevel() - currentLevel));
+            lore.add("");
+            lore.add("§7Réduisez le nombre de niveaux demandés!");
+
+        } else if (canAffordExact) {
+            // Peut se payer exactement
+            long totalCost = calculateExactCost(enchantment, currentLevel, requestedLevels);
+
+            lore.add("§a✅ §lAMÉLIORATION POSSIBLE");
+            lore.add("§7▸ Niveaux à acheter: §a+" + requestedLevels);
             lore.add("§7▸ Coût total: §6" + NumberFormatter.format(totalCost) + " tokens");
             lore.add("§7▸ Tokens disponibles: §a" + NumberFormatter.format(availableTokens));
             lore.add("§7▸ Tokens restants: §e" + NumberFormatter.format(availableTokens - totalCost));
@@ -182,44 +188,43 @@ public class EnchantmentUpgradeGUI {
             // Section progression
             lore.add("§e📈 §lPROGRESSION");
             lore.add("§7▸ Niveau avant: §e" + currentLevel);
-            lore.add("§7▸ Niveau après: §a" + (currentLevel + actualLevels));
+            lore.add("§7▸ Niveau après: §a" + (currentLevel + requestedLevels));
             lore.add("");
 
             // Effets avant/après
             lore.add("§b🔮 §lEFFETS AVANT → APRÈS");
-            addEffectComparison(lore, enchantment, currentLevel, currentLevel + actualLevels);
+            addEffectComparison(lore, enchantment, currentLevel, currentLevel + requestedLevels);
             lore.add("");
 
             lore.add("§a✨ Cliquez pour améliorer!");
 
         } else {
-            // Section insuffisant avec détails pour le niveau demandé
+            // Ne peut pas se payer
+            long totalCost = calculateExactCost(enchantment, currentLevel, requestedLevels);
+
             lore.add("§c❌ §lTOKENS INSUFFISANTS");
             lore.add("§7▸ Niveaux demandés: §c+" + requestedLevels);
+            lore.add("§7▸ Coût total: §6" + NumberFormatter.format(totalCost));
+            lore.add("§7▸ Tokens disponibles: §c" + NumberFormatter.format(availableTokens));
+            lore.add("§7▸ Tokens manquants: §c" + NumberFormatter.format(totalCost - availableTokens));
 
-            if (maxPossibleLevels > 0) {
-                // Calcule le coût pour les niveaux demandés
-                long costForRequested = 0;
-                for (int i = 1; i <= Math.min(requestedLevels, enchantment.getMaxLevel() - currentLevel); i++) {
-                    costForRequested += enchantment.getUpgradeCost(currentLevel + i);
-                }
-
-                lore.add("§7▸ Coût total demandé: §6" + NumberFormatter.format(costForRequested));
-                lore.add("§7▸ Tokens disponibles: §c" + NumberFormatter.format(availableTokens));
-                lore.add("§7▸ Tokens manquants: §c" + NumberFormatter.format(costForRequested - availableTokens));
-
-                // Progression vers cet objectif
-                double progressPercent = (double) availableTokens / costForRequested * 100;
-                lore.add("§7▸ Progression: §e" + String.format("%.1f%%", progressPercent));
-            } else {
-                lore.add("§7▸ §cNiveau maximum déjà proche");
-            }
+            // Progression vers cet objectif
+            double progressPercent = (double) availableTokens / totalCost * 100;
+            lore.add("§7▸ Progression: §e" + String.format("%.1f%%", progressPercent));
             lore.add("");
+
+            // Calcule combien on pourrait acheter avec les tokens actuels
+            int maxAffordable = calculateMaxAffordableUpgrades(enchantment, currentLevel, availableTokens);
+            if (maxAffordable > 0) {
+                lore.add("§e💡 §lALTERNATIVE POSSIBLE");
+                lore.add("§7▸ Niveaux abordables: §a+" + maxAffordable);
+                lore.add("§7▸ Utilisez un bouton plus petit ou MAX");
+                lore.add("");
+            }
 
             // Ajoute les effets même si on ne peut pas se payer l'amélioration
             lore.add("§b🔮 §lEFFETS SI ACHETÉ");
-            int targetLevel = Math.min(currentLevel + requestedLevels, enchantment.getMaxLevel());
-            addEffectComparison(lore, enchantment, currentLevel, targetLevel);
+            addEffectComparison(lore, enchantment, currentLevel, currentLevel + requestedLevels);
             lore.add("");
 
             lore.add("§7Continuez à miner pour obtenir plus de tokens!");
@@ -234,7 +239,30 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * CORRIGÉ: Ajoute une comparaison des effets avant/après POUR TOUS LES ENCHANTS
+     * NOUVEAU : Vérifie si on peut se payer exactement le nombre de niveaux demandés
+     */
+    private boolean canAffordExactLevels(CustomEnchantment enchantment, int currentLevel, long availableTokens, int requestedLevels) {
+        if (currentLevel + requestedLevels > enchantment.getMaxLevel()) {
+            return false;
+        }
+
+        long totalCost = calculateExactCost(enchantment, currentLevel, requestedLevels);
+        return availableTokens >= totalCost;
+    }
+
+    /**
+     * NOUVEAU : Calcule le coût exact pour un nombre de niveaux donné
+     */
+    private long calculateExactCost(CustomEnchantment enchantment, int currentLevel, int requestedLevels) {
+        long totalCost = 0;
+        for (int i = 1; i <= requestedLevels; i++) {
+            totalCost += enchantment.getUpgradeCost(currentLevel + i);
+        }
+        return totalCost;
+    }
+
+    /**
+     * Ajoute une comparaison des effets avant/après POUR TOUS LES ENCHANTS
      */
     private void addEffectComparison(List<String> lore, CustomEnchantment enchantment, int fromLevel, int toLevel) {
         switch (enchantment.getName()) {
@@ -350,17 +378,11 @@ public class EnchantmentUpgradeGUI {
         int currentLevel = playerData.getEnchantmentLevel(enchantment.getName());
         long availableTokens = playerData.getTokens();
 
-        int maxAffordableLevels = 0;
+        int maxAffordableLevels = calculateMaxAffordableUpgrades(enchantment, currentLevel, availableTokens);
         long totalCost = 0;
 
-        for (int i = 1; i <= (enchantment.getMaxLevel() - currentLevel); i++) {
-            long cost = enchantment.getUpgradeCost(currentLevel + i);
-            if (totalCost + cost <= availableTokens) {
-                totalCost += cost;
-                maxAffordableLevels = i;
-            } else {
-                break;
-            }
+        if (maxAffordableLevels > 0) {
+            totalCost = calculateExactCost(enchantment, currentLevel, maxAffordableLevels);
         }
 
         boolean canUpgrade = maxAffordableLevels > 0;
@@ -410,6 +432,30 @@ public class EnchantmentUpgradeGUI {
         item.setItemMeta(meta);
 
         return item;
+    }
+
+    /**
+     * Calcule le nombre maximum de niveaux abordables
+     */
+    private int calculateMaxAffordableUpgrades(CustomEnchantment enchantment, int currentLevel, long availableTokens) {
+        if (currentLevel >= enchantment.getMaxLevel()) {
+            return 0;
+        }
+
+        int maxLevels = 0;
+        long remainingTokens = availableTokens;
+
+        for (int level = currentLevel + 1; level <= enchantment.getMaxLevel() && remainingTokens > 0; level++) {
+            long cost = enchantment.getUpgradeCost(level);
+            if (remainingTokens >= cost) {
+                remainingTokens -= cost;
+                maxLevels++;
+            } else {
+                break;
+            }
+        }
+
+        return maxLevels;
     }
 
     /**
@@ -528,17 +574,7 @@ public class EnchantmentUpgradeGUI {
         int currentLevel = playerData.getEnchantmentLevel(enchantmentName);
 
         long availableTokens = playerData.getTokens();
-        int maxAffordableLevels = 0;
-
-        for (int i = 1; i <= (enchantment.getMaxLevel() - currentLevel); i++) {
-            long cost = enchantment.getUpgradeCost(currentLevel + i);
-            if (availableTokens >= cost) {
-                availableTokens -= cost;
-                maxAffordableLevels = i;
-            } else {
-                break;
-            }
-        }
+        int maxAffordableLevels = calculateMaxAffordableUpgrades(enchantment, currentLevel, availableTokens);
 
         if (maxAffordableLevels > 0) {
             upgradeEnchantment(player, enchantmentName, maxAffordableLevels);

@@ -8,7 +8,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Tâche de récapitulatif minute dans le chat
- * NOUVEAU : Envoie un récapitulatif toutes les minutes si le joueur a miné
+ * CORRIGÉ : Récapitulatif bien envoyé basé sur les blocs minés
  */
 public class ChatTask extends BukkitRunnable {
 
@@ -25,11 +25,11 @@ public class ChatTask extends BukkitRunnable {
         tickCount++;
 
         try {
-            // Envoie le récapitulatif toutes les 60 secondes (1200 ticks)
-            if (tickCount % 1200 == 0) {
-                sendMinuteSummaries();
-                summaryCycles++;
-            }
+            sendMinuteSummaries();
+            summaryCycles++;
+
+            // NOUVEAU : Reset des stats minute après envoi
+            resetAllMinuteStats();
 
         } catch (Exception e) {
             plugin.getPluginLogger().severe("Erreur dans ChatTask:");
@@ -38,7 +38,7 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * Envoie les récapitulatifs minute à tous les joueurs actifs
+     * CORRIGÉ : Envoie les récapitulatifs minute à tous les joueurs actifs
      */
     private void sendMinuteSummaries() {
         int summariesSent = 0;
@@ -60,33 +60,41 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ : Envoie le récapitulatif minute si le joueur a miné
+     * CORRIGÉ : Envoie le récapitulatif minute si le joueur a eu de l'activité
      */
     private boolean sendMinuteSummaryIfActive(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        plugin.getPluginLogger().debug("Vérification activité pour " + player.getName() +
-                ": blocks minés=" + playerData.getLastMinuteBlocksMined() +
-                ", coins=" + playerData.getLastMinuteCoins() +
-                ", tokens=" + playerData.getLastMinuteTokens());
+        // CORRIGÉ : Critères plus larges pour l'activité
+        boolean hasBlockActivity = playerData.getLastMinuteBlocksMined() > 0 ||
+                playerData.getLastMinuteBlocksDestroyed() > 0;
+        boolean hasEconomicActivity = playerData.getLastMinuteCoins() > 0 ||
+                playerData.getLastMinuteTokens() > 0 ||
+                playerData.getLastMinuteExperience() > 0;
+        boolean hasEnchantActivity = playerData.getLastMinuteGreedTriggers() > 0 ||
+                playerData.getLastMinuteAutoUpgrades() > 0 ||
+                playerData.getLastMinuteKeysObtained() > 0;
 
-        // CORRIGÉ : Vérifie SEULEMENT si le joueur a miné dans la dernière minute
-        boolean hasMinedThisMinute = playerData.getLastMinuteBlocksMined() > 0;
+        boolean hasActivity = hasBlockActivity || hasEconomicActivity || hasEnchantActivity;
 
-        if (!hasMinedThisMinute) {
-            plugin.getPluginLogger().debug("Aucun minage pour " + player.getName() + " cette minute");
+        plugin.getPluginLogger().debug("Activité pour " + player.getName() + ": " +
+                "blocs=" + hasBlockActivity + " (" + playerData.getLastMinuteBlocksMined() + " minés, " +
+                playerData.getLastMinuteBlocksDestroyed() + " détruits), " +
+                "économie=" + hasEconomicActivity + " (" + playerData.getLastMinuteCoins() + "c, " +
+                playerData.getLastMinuteTokens() + "t, " + playerData.getLastMinuteExperience() + "e), " +
+                "enchants=" + hasEnchantActivity + " (" + playerData.getLastMinuteGreedTriggers() + " greeds)");
+
+        if (!hasActivity) {
+            plugin.getPluginLogger().debug("Aucune activité pour " + player.getName() + " cette minute");
             return false;
         }
 
-        plugin.getPluginLogger().debug("Minage détecté pour " + player.getName() + ", génération du récapitulatif");
+        plugin.getPluginLogger().debug("Activité détectée pour " + player.getName() + ", génération du récapitulatif");
 
         // Génère et envoie le récapitulatif complet
         String summary = generateCompleteSummary(playerData);
         if (summary != null && !summary.isEmpty()) {
             player.sendMessage(summary);
-
-            // Reset les statistiques de la dernière minute
-            playerData.resetLastMinuteStats();
 
             plugin.getPluginLogger().debug("Récapitulatif minute envoyé à " + player.getName());
             return true;
@@ -96,7 +104,20 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * Génère un récapitulatif complet avec toutes les statistiques
+     * NOUVEAU : Reset les stats minute pour tous les joueurs après envoi
+     */
+    private void resetAllMinuteStats() {
+        int resetCount = 0;
+        for (PlayerData playerData : plugin.getPlayerDataManager().getAllCachedPlayers()) {
+            playerData.resetLastMinuteStats();
+            resetCount++;
+        }
+
+        plugin.getPluginLogger().debug("Stats minute reset pour " + resetCount + " joueurs");
+    }
+
+    /**
+     * CORRIGÉ : Génère un récapitulatif complet avec toutes les statistiques
      */
     private String generateCompleteSummary(PlayerData playerData) {
         StringBuilder summary = new StringBuilder();
@@ -117,7 +138,9 @@ public class ChatTask extends BukkitRunnable {
                 long specialDestroyed = blocksDestroyed - blocksMined;
                 summary.append("\n§7│ §dBlocs détruits (laser/explosion): §5+").append(NumberFormatter.format(specialDestroyed));
             }
-            summary.append("\n§7│ §9Total blocs traités: §1").append(NumberFormatter.format(blocksDestroyed));
+            if (blocksDestroyed > 0) {
+                summary.append("\n§7│ §9Total blocs traités: §1").append(NumberFormatter.format(blocksDestroyed));
+            }
         }
 
         // Section Gains économiques

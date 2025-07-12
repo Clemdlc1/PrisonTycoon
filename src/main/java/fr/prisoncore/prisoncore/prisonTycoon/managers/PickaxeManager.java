@@ -20,7 +20,7 @@ import java.util.*;
 
 /**
  * Gestionnaire de la pioche légendaire
- * CORRIGÉ : Pioche immobile dans le slot 0, distinction blocs minés/cassés
+ * CORRIGÉ : Durability bien implémentée et vérifiée
  */
 public class PickaxeManager {
 
@@ -183,6 +183,33 @@ public class PickaxeManager {
             }
         }
 
+        // NOUVEAU : État de durabilité
+        int durabilityLevel = playerData.getEnchantmentLevel("durability");
+        if (durabilityLevel > 0) {
+            double durabilityBonus = durabilityLevel * 10.0;
+            int maxDurability = (int) (Material.NETHERITE_PICKAXE.getMaxDurability() * (1.0 + durabilityBonus / 100.0));
+            ItemStack currentPickaxe = findPlayerPickaxe(player);
+
+            if (currentPickaxe != null) {
+                short currentDurability = currentPickaxe.getDurability();
+                double healthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+
+                lore.add("§e🔨 §lÉTAT DE LA PIOCHE");
+                lore.add("§7│ §eDurabilité: §a" + String.format("%.1f%%", healthPercent));
+                lore.add("§7│ §eDurabilité max: §6" + maxDurability + " §7(+" + String.format("%.0f%%", durabilityBonus) + ")");
+
+                if (healthPercent < 25) {
+                    lore.add("§7│ §c⚠️ Durabilité faible! Réparez bientôt.");
+                } else if (healthPercent < 50) {
+                    lore.add("§7│ §e⚠️ Durabilité moyenne.");
+                } else {
+                    lore.add("§7│ §a✓ Pioche en bon état.");
+                }
+                lore.add("§7└");
+                lore.add("");
+            }
+        }
+
         // Enchantements triés par catégorie
         lore.add("§d✨ §lENCHANTEMENTS ACTIFS");
         var enchantments = playerData.getEnchantmentLevels();
@@ -247,7 +274,7 @@ public class PickaxeManager {
         lore.add("§7│ §6Auto-mine: §7Dans les mines uniquement");
         lore.add("§7│ §cHors mine: §7Seuls efficacité/solidité/mobilité actifs");
         lore.add("§7│ §6Protection: §cDoit rester dans le slot 1");
-        lore.add("§7└ §6Indestructible: §7Ne se casse jamais");
+        lore.add("§7└ §6Indestructible: §7Ne se casse jamais complètement");
         lore.add("");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§6✨ §lPioche Légendaire PrisonTycoon §6✨");
@@ -321,7 +348,7 @@ public class PickaxeManager {
     }
 
     /**
-     * Gère la durabilité de la pioche (ne se casse jamais)
+     * CORRIGÉ : Gère la durabilité de la pioche (enchantement Solidité implémenté)
      */
     public void handleDurability(ItemStack pickaxe, Player player) {
         if (!isLegendaryPickaxe(pickaxe)) return;
@@ -329,14 +356,43 @@ public class PickaxeManager {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int durabilityLevel = playerData.getEnchantmentLevel("durability");
 
-        // Calcule la durabilité bonus
-        double durabilityMultiplier = 1.0 + (durabilityLevel * 0.1);
+        if (durabilityLevel <= 0) {
+            // Pas d'enchantement solidité, comportement normal
+            return;
+        }
+
+        // IMPLÉMENTATION : Calcule la durabilité bonus avec l'enchantement Solidité
+        double durabilityBonus = durabilityLevel * 10.0; // +10% par niveau
+        double durabilityMultiplier = 1.0 + (durabilityBonus / 100.0);
         int maxDurability = (int) (Material.NETHERITE_PICKAXE.getMaxDurability() * durabilityMultiplier);
 
-        // Si la pioche est "cassée"
-        if (pickaxe.getDurability() >= maxDurability) {
-            player.sendMessage("§c⚠️ Votre pioche est endommagée! Réparez-la pour réactiver tous les enchantements.");
+        // Chance de ne PAS perdre de durabilité basée sur le niveau
+        double preservationChance = Math.min(0.95, durabilityLevel * 0.05); // 5% par niveau, max 95%
+
+        if (Math.random() < preservationChance) {
+            // La pioche ne perd pas de durabilité cette fois
+            plugin.getPluginLogger().debug("Durabilité préservée pour " + player.getName() +
+                    " (chance: " + String.format("%.1f%%", preservationChance * 100) + ")");
+            return;
         }
+
+        // Applique la perte de durabilité normale
+        short currentDurability = pickaxe.getDurability();
+
+        // Vérifie si la pioche est "cassée" selon sa durabilité max améliorée
+        if (currentDurability >= maxDurability * 0.95) { // 95% de durabilité max
+            player.sendMessage("§c⚠️ Votre pioche est très endommagée! " +
+                    "Durabilité bonus: +" + String.format("%.0f%%", durabilityBonus) + " grâce à Solidité " + durabilityLevel);
+        }
+
+        // La pioche ne se casse jamais complètement grâce à Solidité
+        if (currentDurability >= maxDurability) {
+            player.sendMessage("§e⚠️ Votre pioche aurait dû se casser, mais Solidité " + durabilityLevel + " l'a protégée!");
+            pickaxe.setDurability((short) (maxDurability - 1)); // Reste à 1 point de durabilité
+        }
+
+        plugin.getPluginLogger().debug("Durabilité pour " + player.getName() + ": " +
+                currentDurability + "/" + maxDurability + " (bonus: +" + String.format("%.0f%%", durabilityBonus) + ")");
     }
 
     /**

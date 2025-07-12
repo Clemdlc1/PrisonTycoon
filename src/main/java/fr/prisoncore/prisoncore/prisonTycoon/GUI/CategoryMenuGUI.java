@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Menu d'une catégorie d'enchantements
- * CORRIGÉ : Taille réduite à 27 slots
+ * CORRIGÉ : Clic molette pour désactiver enchantements mobilité
  */
 public class CategoryMenuGUI {
 
@@ -35,7 +35,7 @@ public class CategoryMenuGUI {
      */
     public void openCategoryMenu(Player player, EnchantmentCategory category) {
         String title = "§6✨ §l" + category.getDisplayName() + " §6✨";
-        Inventory gui = Bukkit.createInventory(null, 27, title); // CORRIGÉ: 27 slots
+        Inventory gui = Bukkit.createInventory(null, 27, title);
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -44,11 +44,11 @@ public class CategoryMenuGUI {
         gui.setItem(4, createPlayerHead(player));
 
         // Bouton retour
-        gui.setItem(22, createBackButton()); // CORRIGÉ: Position 22
+        gui.setItem(22, createBackButton());
 
         // Enchantements de la catégorie
         var enchantments = plugin.getEnchantmentManager().getEnchantmentsByCategory(category);
-        int[] slots = {10, 11, 12, 13, 14, 15, 16}; // CORRIGÉ: Slots adaptés pour 27
+        int[] slots = {10, 11, 12, 13, 14, 15, 16};
 
         for (int i = 0; i < enchantments.size() && i < slots.length; i++) {
             CustomEnchantment enchantment = enchantments.get(i);
@@ -60,7 +60,7 @@ public class CategoryMenuGUI {
     }
 
     /**
-     * Gère les clics dans le menu de catégorie
+     * CORRIGÉ : Gère les clics dans le menu de catégorie avec clic molette pour mobilité
      */
     public void handleCategoryMenuClick(Player player, int slot, ItemStack item, String title, ClickType clickType) {
         if (slot == 22) { // Bouton retour
@@ -73,13 +73,7 @@ public class CategoryMenuGUI {
             String displayName = item.getItemMeta().getDisplayName();
 
             // Cherche l'enchantement par son nom d'affichage
-            CustomEnchantment targetEnchantment = null;
-            for (CustomEnchantment enchantment : plugin.getEnchantmentManager().getAllEnchantments()) {
-                if (displayName.contains(enchantment.getDisplayName())) {
-                    targetEnchantment = enchantment;
-                    break;
-                }
-            }
+            CustomEnchantment targetEnchantment = plugin.getEnchantmentManager().getAllEnchantments().stream().filter(enchantment -> displayName.contains(enchantment.getDisplayName())).findFirst().orElse(null);
 
             if (targetEnchantment != null) {
                 PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -90,12 +84,20 @@ public class CategoryMenuGUI {
                     if (currentLevel > 0) { // Seulement si l'enchantement est acheté
                         toggleMobilityEnchantment(player, targetEnchantment.getName(), playerData);
                         // Rouvre le menu pour actualiser l'affichage
-                        openCategoryMenu(player, targetEnchantment.getCategory());
+                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                            openCategoryMenu(player, targetEnchantment.getCategory());
+                        }, 1L);
                         return;
                     } else {
                         player.sendMessage("§c❌ Vous devez d'abord acheter cet enchantement!");
+                        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                         return;
                     }
+                }
+
+                // NOUVEAU : Gestion spéciale pour l'efficacité (debugging)
+                if (targetEnchantment.getName().equals("efficiency")) {
+                    plugin.getPluginLogger().debug("Clic sur Efficacité détecté - Slot: " + slot + ", ClickType: " + clickType);
                 }
 
                 if (currentLevel >= targetEnchantment.getMaxLevel()) {
@@ -109,7 +111,7 @@ public class CategoryMenuGUI {
     }
 
     /**
-     * Active/Désactive un enchantement de mobilité
+     * CORRIGÉ : Active/Désactive un enchantement de mobilité
      */
     private void toggleMobilityEnchantment(Player player, String enchantmentName, PlayerData playerData) {
         boolean currentlyEnabled = playerData.isMobilityEnchantmentEnabled(enchantmentName);
@@ -118,23 +120,22 @@ public class CategoryMenuGUI {
         playerData.setMobilityEnchantmentEnabled(enchantmentName, newState);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        // Met à jour les effets de mobilité seulement si la pioche est en main
-        ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (handItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(handItem) &&
-                plugin.getPickaxeManager().isOwner(handItem, player)) {
-            plugin.getPickaxeManager().updateMobilityEffects(player);
-        }
+        // CORRIGÉ : Met à jour les effets de mobilité immédiatement
+        plugin.getPickaxeManager().updateMobilityEffects(player);
 
         CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
         String enchantDisplayName = enchantment != null ? enchantment.getDisplayName() : enchantmentName;
 
         if (newState) {
             player.sendMessage("§a✅ " + enchantDisplayName + " §aactivé!");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
         } else {
             player.sendMessage("§c❌ " + enchantDisplayName + " §cdésactivé!");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
         }
 
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, newState ? 1.2f : 0.8f);
+        plugin.getPluginLogger().debug("Enchantement mobilité " + enchantmentName +
+                " " + (newState ? "activé" : "désactivé") + " pour " + player.getName());
     }
 
     /**
@@ -234,12 +235,18 @@ public class CategoryMenuGUI {
             lore.add("");
         }
 
-        // État mobilité si applicable
+        // CORRIGÉ : État mobilité si applicable avec indication plus claire
         if (enchantment.getCategory() == EnchantmentCategory.MOBILITY && currentLevel > 0) {
             boolean enabled = playerData.isMobilityEnchantmentEnabled(enchantment.getName());
             lore.add("§b🎮 §lÉTAT MOBILITÉ");
-            lore.add("§7▸ Enchantement: " + (enabled ? "§aActivé" : "§cDésactivé"));
-            lore.add("§7▸ §eClique molette pour " + (enabled ? "désactiver" : "activer"));
+            lore.add("§7▸ Enchantement: " + (enabled ? "§a✅ Activé" : "§c❌ Désactivé"));
+            lore.add("§7▸ §e🖱️ Clic molette pour " + (enabled ? "désactiver" : "activer"));
+
+            if (!enabled) {
+                lore.add("§7▸ §cEffets suspendus");
+            } else {
+                lore.add("§7▸ §aEffets appliqués");
+            }
             lore.add("");
         }
 
@@ -257,7 +264,7 @@ public class CategoryMenuGUI {
         lore.add("§e✨ Cliquez pour " + clickAction);
 
         if (enchantment.getCategory() == EnchantmentCategory.MOBILITY && currentLevel > 0) {
-            lore.add("§e🎮 Clic molette pour activer/désactiver");
+            lore.add("§e🖱️ Clic molette pour activer/désactiver");
         }
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -298,6 +305,15 @@ public class CategoryMenuGUI {
                 lore.add("§7▸ §ax" + String.format("%.1f", multiplier) + " multiplicateur de tous les gains");
                 lore.add("§7▸ §7Affecte coins, tokens ET expérience");
             }
+            case "efficiency" -> {
+                lore.add("§7▸ §bVitesse de minage améliorée");
+                lore.add("§7▸ §7Niveau " + level + "/50 (Fast Digging " + level + ")");
+            }
+            case "durability" -> {
+                double bonus = level * 10;
+                lore.add("§7▸ §e+" + String.format("%.0f%%", bonus) + " durabilité de la pioche");
+                lore.add("§7▸ §7Casse moins souvent, dure plus longtemps");
+            }
             case "combustion" -> {
                 int gainPerBlock = Math.max(1, level / 10);
                 lore.add("§7▸ §c+" + gainPerBlock + " combustion par bloc miné");
@@ -307,6 +323,26 @@ public class CategoryMenuGUI {
                 double chancePerBlock = level * 1.0;
                 lore.add("§7▸ §e" + String.format("%.1f%%", chancePerBlock) + " chance de clé par bloc");
                 lore.add("§7▸ §7Clés: Commune, Rare, Légendaire, Cristal");
+            }
+            case "night_vision" -> {
+                lore.add("§7▸ §eVision nocturne permanente");
+                lore.add("§7▸ §7Voir dans l'obscurité totale");
+            }
+            case "speed" -> {
+                lore.add("§7▸ §bVitesse de déplacement +" + level);
+                lore.add("§7▸ §7Mouvement plus rapide");
+            }
+            case "haste" -> {
+                lore.add("§7▸ §eRapidité +" + level);
+                lore.add("§7▸ §7Minage et attaque plus rapides");
+            }
+            case "jump_boost" -> {
+                lore.add("§7▸ §aSaut amélioré +" + level);
+                lore.add("§7▸ §7Sautez plus haut");
+            }
+            case "escalator" -> {
+                lore.add("§7▸ §dTéléportation vers la surface");
+                lore.add("§7▸ §7Shift + clic droit avec la pioche");
             }
             default -> {
                 lore.add("§7▸ §7Effet de niveau " + level + " actif");

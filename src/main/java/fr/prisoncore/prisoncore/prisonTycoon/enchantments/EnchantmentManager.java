@@ -6,6 +6,7 @@ import fr.prisoncore.prisoncore.prisonTycoon.data.BlockValueData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -15,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Gestionnaire des 18 enchantements custom
- * CORRIGÉ : Distinction blocs minés vs cassés, hors mine restrictions
+ * CORRIGÉ : Explosion/laser cassent visuellement, Fortune implémenté, Durability vérifié
  */
 public class EnchantmentManager {
 
@@ -48,7 +49,7 @@ public class EnchantmentManager {
         registerEnchantment(new FortuneEnchantment());
         registerEnchantment(new DurabilityEnchantment());
 
-        // CATÉGORIE MOBILITÉ (Escalator déplacé ici)
+        // CATÉGORIE MOBILITÉ
         registerEnchantment(new NightVisionEnchantment());
         registerEnchantment(new SpeedEnchantment());
         registerEnchantment(new HasteEnchantment());
@@ -101,6 +102,15 @@ public class EnchantmentManager {
         // Ajoute aux statistiques de minage (MINÉ)
         playerData.addMinedBlock(blockType);
 
+        // NOUVEAU : Applique Fortune sur les gains de base
+        BlockValueData baseValue = plugin.getConfigManager().getBlockValue(blockType);
+        BlockValueData fortuneValue = applyFortune(playerData, baseValue);
+
+        // Ajoute les gains de base avec Fortune
+        playerData.addCoinsViaPickaxe(fortuneValue.getCoins());
+        playerData.addTokensViaPickaxe(fortuneValue.getTokens());
+        playerData.addExperienceViaPickaxe(fortuneValue.getExperience());
+
         // Applique tous les enchantements actifs dans les mines
         processGreedEnchantments(player, playerData, blockType, blockLocation, true);
         processSpecialEnchantments(player, playerData, blockLocation, mineName);
@@ -108,6 +118,24 @@ public class EnchantmentManager {
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+    }
+
+    /**
+     * NOUVEAU : Applique l'enchantement Fortune
+     */
+    private BlockValueData applyFortune(PlayerData playerData, BlockValueData baseValue) {
+        int fortuneLevel = playerData.getEnchantmentLevel("fortune");
+        if (fortuneLevel <= 0) {
+            return baseValue;
+        }
+
+        double multiplier = 1.0 + (fortuneLevel * 0.2); // +20% par niveau
+
+        long fortuneCoins = Math.round(baseValue.getCoins() * multiplier);
+        long fortuneTokens = Math.round(baseValue.getTokens() * multiplier);
+        long fortuneExperience = Math.round(baseValue.getExperience() * multiplier);
+
+        return new BlockValueData(baseValue.getMaterial(), fortuneCoins, fortuneTokens, fortuneExperience);
     }
 
     /**
@@ -136,7 +164,7 @@ public class EnchantmentManager {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         // RESTRICTION : Seuls efficacité, solidité, mobilité actifs hors mine
-        // Donc PAS de Greeds, PAS d'effets spéciaux
+        // Donc PAS de Greeds, PAS d'effets spéciaux, PAS de Fortune
 
         // Ajoute quand même aux statistiques
         playerData.addMinedBlock(blockType);
@@ -157,7 +185,7 @@ public class EnchantmentManager {
         double combustionMultiplier = playerData.getCombustionMultiplier();
         double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
 
-        // Base des gains sur la valeur du bloc
+        // Base des gains sur la valeur du bloc (SANS Fortune pour les Greeds)
         BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
 
         // Token Greed - Toujours actif (blocs minés ET cassés)
@@ -331,7 +359,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ : Active l'effet laser - destruction en ligne droite (rayon 1 bloc)
+     * CORRIGÉ : Active l'effet laser - CASSE visuellement les blocs avec animation
      */
     private void activateLaser(Player player, Location start, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
@@ -359,15 +387,29 @@ public class EnchantmentManager {
                         // Vérifie si dans la mine
                         if (mineData.contains(target)) {
                             Material originalType = target.getBlock().getType();
-                            target.getBlock().setType(mineData.getRandomMaterial());
+
+                            // CORRECTION : CASSE visuellement (met en AIR)
+                            target.getBlock().setType(Material.AIR);
                             blocksDestroyed++;
+
+                            // Animation de particules
+                            target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
+                                    10, 0.3, 0.3, 0.3, 0.1, originalType.createBlockData());
 
                             // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
                             processBlockDestroyed(player, target, originalType, mineName);
+
                         }
                     }
                 }
             }
+        }
+
+        // Animation laser
+        for (int i = 0; i < maxDistance && i < 50; i++) {
+            Location particleLocation = start.clone().add(direction.clone().multiply(i));
+            particleLocation.getWorld().spawnParticle(Particle.SMOKE, particleLocation, 1,
+                    new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
         }
 
         player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne (rayon 1)!");
@@ -375,7 +417,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ : Active l'effet explosion - crée une explosion sphérique
+     * CORRIGÉ : Active l'effet explosion - CASSE visuellement les blocs avec animation
      */
     private void activateExplosion(Player player, Location center, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
@@ -386,6 +428,9 @@ public class EnchantmentManager {
         int maxRadius = plugin.getConfigManager().getEnchantmentSetting("special.explosion.max-radius", 3);
         int radius = ThreadLocalRandom.current().nextInt(minRadius, maxRadius + 1);
         int blocksDestroyed = 0;
+
+        // Animation d'explosion
+        center.getWorld().spawnParticle(Particle.EXPLOSION, center, 3, 0.5, 0.5, 0.5, 0.1);
 
         // Explosion sphérique centrée sur le bloc miné
         for (int x = -radius; x <= radius; x++) {
@@ -398,8 +443,14 @@ public class EnchantmentManager {
                         // Vérifie si dans la mine
                         if (mineData.contains(target)) {
                             Material originalType = target.getBlock().getType();
-                            target.getBlock().setType(mineData.getRandomMaterial());
+
+                            // CORRECTION : CASSE visuellement (met en AIR)
+                            target.getBlock().setType(Material.AIR);
                             blocksDestroyed++;
+
+                            // Animation de particules d'explosion
+                            target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
+                                    8, 0.4, 0.4, 0.4, 0.1, originalType.createBlockData());
 
                             // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
                             processBlockDestroyed(player, target, originalType, mineName);
@@ -607,7 +658,7 @@ class DurabilityEnchantment implements CustomEnchantment {
     public Material getDisplayMaterial() { return Material.DIAMOND; }
 }
 
-// Enchantements de mobilité (avec Escalator déplacé ici)
+// Enchantements de mobilité
 class NightVisionEnchantment implements CustomEnchantment {
     public String getName() { return "night_vision"; }
     public String getDisplayName() { return "Vision Nocturne"; }
@@ -652,7 +703,6 @@ class JumpBoostEnchantment implements CustomEnchantment {
     public Material getDisplayMaterial() { return Material.RABBIT_FOOT; }
 }
 
-// DÉPLACÉ : Escalator maintenant dans MOBILITY
 class EscalatorEnchantment implements CustomEnchantment {
     public String getName() { return "escalator"; }
     public String getDisplayName() { return "Escalateur"; }
@@ -663,7 +713,7 @@ class EscalatorEnchantment implements CustomEnchantment {
     public Material getDisplayMaterial() { return Material.ENDER_PEARL; }
 }
 
-// Enchantements spéciaux (Escalator retiré)
+// Enchantements spéciaux
 class LuckEnchantment implements CustomEnchantment {
     public String getName() { return "luck"; }
     public String getDisplayName() { return "Chance"; }
