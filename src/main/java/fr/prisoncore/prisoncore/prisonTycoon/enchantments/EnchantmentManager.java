@@ -94,7 +94,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * NOUVEAU : Traite un bloc MINÉ directement par le joueur (dans une mine)
+     * NOUVEAU : Traite un bloc MINÉ directement par le joueur (dans une mine) avec Fortune sur blocs
      */
     public void processBlockMined(Player player, Location blockLocation, Material blockType, String mineName) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -102,14 +102,17 @@ public class EnchantmentManager {
         // Ajoute aux statistiques de minage (MINÉ)
         playerData.addMinedBlock(blockType);
 
-        // NOUVEAU : Applique Fortune sur les gains de base
-        BlockValueData baseValue = plugin.getConfigManager().getBlockValue(blockType);
-        BlockValueData fortuneValue = applyFortune(playerData, baseValue);
+        // MODIFIÉ : Fortune affecte maintenant le NOMBRE DE BLOCS obtenus, pas les gains
+        int blocksToGive = calculateFortuneBlocks(playerData, blockType);
 
-        // Ajoute les gains de base avec Fortune
-        playerData.addCoinsViaPickaxe(fortuneValue.getCoins());
-        playerData.addTokensViaPickaxe(fortuneValue.getTokens());
-        playerData.addExperienceViaPickaxe(fortuneValue.getExperience());
+        // Ajoute les blocs à l'inventaire (quantité augmentée par Fortune)
+        addBlocksToInventory(player, blockType, blocksToGive);
+
+        // Gains économiques de BASE (sans Fortune)
+        BlockValueData baseValue = plugin.getConfigManager().getBlockValue(blockType);
+        playerData.addCoinsViaPickaxe(baseValue.getCoins());
+        playerData.addTokensViaPickaxe(baseValue.getTokens());
+        playerData.addExperienceViaPickaxe(baseValue.getExperience());
 
         // Applique tous les enchantements actifs dans les mines
         processGreedEnchantments(player, playerData, blockType, blockLocation, true);
@@ -121,25 +124,60 @@ public class EnchantmentManager {
     }
 
     /**
-     * NOUVEAU : Applique l'enchantement Fortune
+     * NOUVEAU & MODIFIÉ : Calcule le nombre de blocs à donner avec Fortune (formule rééquilibrée)
      */
-    private BlockValueData applyFortune(PlayerData playerData, BlockValueData baseValue) {
+    private int calculateFortuneBlocks(PlayerData playerData, Material blockType) {
         int fortuneLevel = playerData.getEnchantmentLevel("fortune");
-        if (fortuneLevel <= 0) {
-            return baseValue;
+
+        // Pour chaque 100 niveaux, on gagne 1 bloc bonus garanti.
+        int guaranteedBonus = fortuneLevel / 100;
+
+        // Le reste (ex: niveau 250 -> 50) devient une probabilité d'obtenir un bloc supplémentaire.
+        double chanceForExtra = (fortuneLevel % 100) / 100.0;
+
+        int extraBlocks = 0;
+        if (ThreadLocalRandom.current().nextDouble() < chanceForExtra) {
+            extraBlocks = 1;
         }
 
-        double multiplier = 1.0 + (fortuneLevel * 0.2); // +20% par niveau
+        int totalBlocks = guaranteedBonus + extraBlocks;
 
-        long fortuneCoins = Math.round(baseValue.getCoins() * multiplier);
-        long fortuneTokens = Math.round(baseValue.getTokens() * multiplier);
-        long fortuneExperience = Math.round(baseValue.getExperience() * multiplier);
+        plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
+                ": " + totalBlocks + " blocs (1 base + " + guaranteedBonus + " garanti + " + extraBlocks + " chance)");
 
-        return new BlockValueData(baseValue.getMaterial(), fortuneCoins, fortuneTokens, fortuneExperience);
+        return totalBlocks;
     }
 
     /**
-     * NOUVEAU : Traite un bloc CASSÉ par laser/explosion (pas de récursion enchants spéciaux)
+     * MODIFIÉ : Ajoute plusieurs blocs à l'inventaire avec tracking
+     */
+    private void addBlocksToInventory(Player player, Material material, int quantity) {
+        if (quantity <= 0) return;
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        ItemStack blockStack = new ItemStack(material, quantity);
+
+        // Essaie d'ajouter à l'inventaire
+        Map<Integer, ItemStack> leftover = player.getInventory().addItem(blockStack);
+
+        // Calcule combien de blocs ont réellement été ajoutés à l'inventaire
+        int actuallyAdded = quantity + 1;
+        if (!leftover.isEmpty()) {
+            for (ItemStack overflow : leftover.values()) {
+                actuallyAdded -= overflow.getAmount();
+            }
+            player.sendMessage("§c⚠️ Inventaire plein! " + leftover.values().iterator().next().getAmount() + " blocs supprimés au sol.");
+        }
+        // NOUVEAU : Track les blocs ajoutés à l'inventaire
+        if (actuallyAdded > 0) {
+            playerData.addBlocksToInventory(actuallyAdded);
+        }
+
+        plugin.getPluginLogger().debug("Blocs ajoutés à l'inventaire: " + actuallyAdded + "/" + quantity + "x " + material.name());
+    }
+
+    /**
+     * NOUVEAU & MODIFIÉ : Traite un bloc CASSÉ par laser/explosion et applique Fortune
      */
     public void processBlockDestroyed(Player player, Location blockLocation, Material blockType, String mineName) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -147,11 +185,12 @@ public class EnchantmentManager {
         // Ajoute aux statistiques de destruction (CASSÉ)
         playerData.addDestroyedBlocks(1);
 
-        // LIMITATION : Seuls Money/Token/Exp Greed et Fortune pour les blocs cassés
-        processGreedEnchantments(player, playerData, blockType, blockLocation, false);
+        // NOUVEAU: Applique Fortune sur les blocs cassés
+        int blocksToGive = calculateFortuneBlocks(playerData, blockType);
+        addBlocksToInventory(player, blockType, blocksToGive);
 
-        // PAS de combustion pour les blocs cassés
-        // PAS d'enchantements spéciaux pour éviter la récursion infinie
+        // LIMITATION : Seuls Money/Token/Exp Greed s'appliquent sur les gains de base
+        processGreedEnchantments(player, playerData, blockType, blockLocation, false);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());

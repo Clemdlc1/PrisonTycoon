@@ -117,116 +117,105 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ : Génère un récapitulatif complet avec toutes les statistiques
+     * OPTIMISÉ : Génère un récapitulatif compact en maximum 10 lignes
      */
     private String generateCompleteSummary(PlayerData playerData) {
         StringBuilder summary = new StringBuilder();
 
-        // En-tête stylé
-        summary.append("\n§7§m                    §r §e📊 RÉCAPITULATIF MINUTE §7§m                    ");
-
-        // Section Minage
+        // Vérifie s'il y a quelque chose à afficher
         long blocksMined = playerData.getLastMinuteBlocksMined();
         long blocksDestroyed = playerData.getLastMinuteBlocksDestroyed();
-
-        if (blocksMined > 0 || blocksDestroyed > 0) {
-            summary.append("\n§6⛏️ §lMINAGE");
-            if (blocksMined > 0) {
-                summary.append("\n§7│ §bBlocs minés: §3+").append(NumberFormatter.format(blocksMined));
-            }
-            if (blocksDestroyed > blocksMined) {
-                long specialDestroyed = blocksDestroyed - blocksMined;
-                summary.append("\n§7│ §dBlocs détruits (laser/explosion): §5+").append(NumberFormatter.format(specialDestroyed));
-            }
-            if (blocksDestroyed > 0) {
-                summary.append("\n§7│ §9Total blocs traités: §1").append(NumberFormatter.format(blocksDestroyed));
-            }
-        }
-
-        // Section Gains économiques
+        long blocksInventory = playerData.getLastMinuteBlocksAddedToInventory();
         long coinsGained = playerData.getLastMinuteCoins();
         long tokensGained = playerData.getLastMinuteTokens();
         long expGained = playerData.getLastMinuteExperience();
-
-        if (coinsGained > 0 || tokensGained > 0 || expGained > 0) {
-            summary.append("\n");
-            summary.append("\n§6💰 §lGAINS ÉCONOMIQUES");
-
-            if (coinsGained > 0) {
-                summary.append("\n§7│ §6Coins gagnés: §e+").append(NumberFormatter.format(coinsGained));
-            }
-            if (tokensGained > 0) {
-                summary.append("\n§7│ §eTokens gagnés: §6+").append(NumberFormatter.format(tokensGained));
-            }
-            if (expGained > 0) {
-                summary.append("\n§7│ §aExpérience gagnée: §2+").append(NumberFormatter.format(expGained));
-            }
-        }
-
-        // Section Enchantements
         long greedTriggers = playerData.getLastMinuteGreedTriggers();
         int autoUpgrades = playerData.getLastMinuteAutoUpgrades();
-
-        if (greedTriggers > 0 || autoUpgrades > 0) {
-            summary.append("\n");
-            summary.append("\n§d✨ §lENCHANTEMENTS");
-
-            if (greedTriggers > 0) {
-                summary.append("\n§7│ §5Déclenchements Greed: §d").append(NumberFormatter.format(greedTriggers));
-            }
-            if (autoUpgrades > 0) {
-                summary.append("\n§7│ §bAuto-améliorations: §3").append(autoUpgrades);
-            }
-        }
-
-        // Section Clés et bonus
         long keysObtained = playerData.getLastMinuteKeysObtained();
 
-        if (keysObtained > 0) {
-            summary.append("\n");
-            summary.append("\n§e🗝️ §lBONUS SPÉCIAUX");
-            summary.append("\n§7│ §eClés obtenues: §6").append(NumberFormatter.format(keysObtained));
+        // En-tête compact (ligne 1)
+        summary.append("§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+        // Titre compact (ligne 2)
+        summary.append("\n§e📊 §lRÉCAP MINUTE §8• §7").append(NumberFormatter.format(playerData.getCoins())).append("c §8• §e").append(NumberFormatter.format(playerData.getTokens())).append("t §8• §a").append(NumberFormatter.format(playerData.getExperience())).append("e");
+
+        // Ligne minage si applicable (ligne 3-4)
+        if (blocksMined > 0 || blocksDestroyed > 0 || blocksInventory > 0) {
+            summary.append("\n§b⛏️ §lMinage: §3").append(NumberFormatter.format(blocksMined)).append(" minés");
+
+            if (blocksDestroyed > blocksMined) {
+                summary.append(" §8+ §5").append(NumberFormatter.format(blocksDestroyed - blocksMined)).append(" détruits");
+            }
+
+            if (blocksInventory > 0) {
+                summary.append("\n§6📦 §lInventaire: §e+").append(NumberFormatter.format(blocksInventory)).append(" blocs récupérés");
+            }
         }
 
-        // États spéciaux actifs
+        // Ligne gains économiques (ligne 5)
+        if (coinsGained > 0 || tokensGained > 0 || expGained > 0) {
+            summary.append("\n§6💰 §lGains: ");
+            boolean first = true;
+
+            if (coinsGained > 0) {
+                summary.append("§6+").append(NumberFormatter.format(coinsGained)).append("c");
+                first = false;
+            }
+            if (tokensGained > 0) {
+                if (!first) summary.append(" §8• ");
+                summary.append("§e+").append(NumberFormatter.format(tokensGained)).append("t");
+                first = false;
+            }
+            if (expGained > 0) {
+                if (!first) summary.append(" §8• ");
+                summary.append("§a+").append(NumberFormatter.format(expGained)).append("e");
+            }
+        }
+
+        // Ligne enchantements si applicable (ligne 6)
+        if (greedTriggers > 0 || autoUpgrades > 0 || keysObtained > 0) {
+            summary.append("\n§d✨ §lEnchants: ");
+            boolean first = true;
+
+            if (greedTriggers > 0) {
+                summary.append("§d").append(NumberFormatter.format(greedTriggers)).append(" Greeds");
+                first = false;
+            }
+            if (autoUpgrades > 0) {
+                if (!first) summary.append(" §8• ");
+                summary.append("§b").append(autoUpgrades).append(" upgrades");
+                first = false;
+            }
+            if (keysObtained > 0) {
+                if (!first) summary.append(" §8• ");
+                summary.append("§e").append(NumberFormatter.format(keysObtained)).append(" clés");
+            }
+        }
+
+        // États spéciaux actifs si applicable (ligne 7)
         if (playerData.getCombustionLevel() > 0 || playerData.isAbundanceActive()) {
-            summary.append("\n");
-            summary.append("\n§c🔥 §lÉTATS ACTIFS");
+            summary.append("\n§c🔥 §lÉtats: ");
+            boolean first = true;
 
             if (playerData.getCombustionLevel() > 0) {
                 double multiplier = playerData.getCombustionMultiplier();
-                summary.append("\n§7│ §cCombustion: §6x").append(String.format("%.2f", multiplier))
-                        .append(" §7(").append(playerData.getCombustionLevel()).append("/1000)");
+                summary.append("§cCombustion x").append(String.format("%.2f", multiplier));
+                first = false;
             }
-
             if (playerData.isAbundanceActive()) {
-                summary.append("\n§7│ §6⭐ Abondance: §aACTIVE §7(x2 gains)");
+                if (!first) summary.append(" §8• ");
+                summary.append("§6⭐ Abondance");
             }
         }
 
-        // Séparateur entre activité et total
-        summary.append("\n");
-        summary.append("\n§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        // Séparateur (ligne 8)
+        summary.append("\n§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-        // Section Total actuel (toujours affichée)
-        summary.append("\n§6📊 §lTOTAL ACTUEL");
-        summary.append("\n§7│ §6Coins: §e").append(NumberFormatter.format(playerData.getCoins()));
-        summary.append("\n§7│ §eTokens: §6").append(NumberFormatter.format(playerData.getTokens()));
-        summary.append("\n§7│ §aExpérience: §2").append(NumberFormatter.format(playerData.getExperience()));
-        summary.append("\n§7│ §9Blocs minés: §1").append(NumberFormatter.format(playerData.getTotalBlocksMined()));
-        summary.append("\n§7│ §dEnchantements: §5").append(playerData.getEnchantmentLevels().size());
+        // Message motivation (ligne 9)
+        summary.append("\n§7Continuez votre progression! §e⛏️✨ §7Total blocs minés: §b").append(NumberFormatter.format(playerData.getTotalBlocksMined()));
 
-        // Statistiques lifetime intéressantes
-        if (playerData.getTotalGreedTriggers() > 0 || playerData.getTotalKeysObtained() > 0) {
-            summary.append("\n§7│ §dTotal Greeds: §5").append(NumberFormatter.format(playerData.getTotalGreedTriggers()));
-            if (playerData.getTotalKeysObtained() > 0) {
-                summary.append("\n§7│ §eTotal clés: §6").append(NumberFormatter.format(playerData.getTotalKeysObtained()));
-            }
-        }
-
-        // Pied de page
-        summary.append("\n§7└ §7Continuez votre progression! ⛏️✨");
-        summary.append("\n§7§m                                                  ");
+        // Pied de page (ligne 10)
+        summary.append("\n§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         return summary.toString();
     }

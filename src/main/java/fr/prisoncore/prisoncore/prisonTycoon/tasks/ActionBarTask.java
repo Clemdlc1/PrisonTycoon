@@ -1,12 +1,13 @@
 package fr.prisoncore.prisoncore.prisonTycoon.tasks;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
- * Tâche de gestion des notifications Action Bar (Greed)
- * NOUVEAU : Se concentre uniquement sur l'affichage des notifications Greed
+ * Tâche d'affichage de l'état des enchantements dans l'Action Bar
+ * MODIFIÉ : Affiche combustion et abondance au lieu des notifications Greed
  */
 public class ActionBarTask extends BukkitRunnable {
 
@@ -22,14 +23,9 @@ public class ActionBarTask extends BukkitRunnable {
         tickCount++;
 
         try {
-            // Traite les notifications Greed toutes les 10 ticks (0.5 seconde)
-            if (tickCount % 10 == 0) {
-                processGreedNotifications();
-            }
-
-            // Nettoie les accumulateurs expirés toutes les 60 secondes
-            if (tickCount % 1200 == 0) {
-                plugin.getNotificationManager().cleanupExpiredAccumulators();
+            // Met à jour l'action bar toutes les 20 ticks (1 seconde)
+            if (tickCount % 20 == 0) {
+                updateActionBarStatus();
             }
 
         } catch (Exception e) {
@@ -39,23 +35,85 @@ public class ActionBarTask extends BukkitRunnable {
     }
 
     /**
-     * Traite les notifications Greed pour tous les joueurs en ligne
+     * Met à jour l'action bar avec l'état des enchantements actifs
      */
-    private void processGreedNotifications() {
+    private void updateActionBarStatus() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            plugin.getNotificationManager().processNotifications(player);
+            String statusMessage = generateStatusMessage(player);
+            if (statusMessage != null && !statusMessage.isEmpty()) {
+                player.sendActionBar(statusMessage);
+            }
         }
+    }
+
+    /**
+     * Génère le message d'état pour un joueur
+     */
+    private String generateStatusMessage(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        StringBuilder status = new StringBuilder();
+
+        // Combustion (si débloqué)
+        int combustionLevel = playerData.getEnchantmentLevel("combustion");
+        if (combustionLevel > 0) {
+            long currentCombustion = playerData.getCombustionLevel();
+            double multiplier = playerData.getCombustionMultiplier();
+
+            // Couleur selon le niveau de combustion
+            String combustionColor = getCombustionColor(currentCombustion);
+
+            status.append("§c🔥 Combustion: ")
+                    .append(combustionColor)
+                    .append(currentCombustion)
+                    .append("§7/§e1000 ")
+                    .append("§6(x")
+                    .append(String.format("%.2f", multiplier))
+                    .append(")");
+        }
+
+        // Abondance (si débloqué et actif)
+        int abundanceLevel = playerData.getEnchantmentLevel("abundance");
+        if (abundanceLevel > 0 && playerData.isAbundanceActive()) {
+            if (status.length() > 0) {
+                status.append(" §8• ");
+            }
+
+            // Calcule le temps restant approximatif
+            String timeRemaining = "§a✨ ACTIVE";
+
+            status.append("§6⭐ Abondance: ")
+                    .append(timeRemaining)
+                    .append(" §7(x2 gains)");
+        }
+
+        // Si aucun état actif et au moins un enchantement débloqué, affiche un message minimal
+        if (status.length() == 0) {
+            if (combustionLevel > 0 || abundanceLevel > 0) {
+                status.append("§7⛏️ Continuez à miner pour activer vos enchantements");
+            }
+        }
+
+        return status.toString();
+    }
+
+    /**
+     * Retourne la couleur selon le niveau de combustion
+     */
+    private String getCombustionColor(long combustionLevel) {
+        if (combustionLevel >= 750) return "§c"; // Rouge vif - très haut
+        if (combustionLevel >= 500) return "§6"; // Orange - haut
+        if (combustionLevel >= 250) return "§e"; // Jaune - moyen
+        if (combustionLevel >= 100) return "§a"; // Vert - bas
+        return "§7"; // Gris - très bas
     }
 
     /**
      * Obtient les statistiques de la tâche
      */
     public ActionBarStats getStats() {
-        var notificationStats = plugin.getNotificationManager().getStats();
         return new ActionBarStats(
                 tickCount,
-                plugin.getServer().getOnlinePlayers().size(),
-                notificationStats
+                plugin.getServer().getOnlinePlayers().size()
         );
     }
 
@@ -65,22 +123,19 @@ public class ActionBarTask extends BukkitRunnable {
     public static class ActionBarStats {
         private final long totalTicks;
         private final int onlinePlayers;
-        private final Object notificationStats;
 
-        public ActionBarStats(long totalTicks, int onlinePlayers, Object notificationStats) {
+        public ActionBarStats(long totalTicks, int onlinePlayers) {
             this.totalTicks = totalTicks;
             this.onlinePlayers = onlinePlayers;
-            this.notificationStats = notificationStats;
         }
 
         public long getTotalTicks() { return totalTicks; }
         public int getOnlinePlayers() { return onlinePlayers; }
-        public Object getNotificationStats() { return notificationStats; }
 
         @Override
         public String toString() {
-            return String.format("ActionBarStats{ticks=%d, players=%d, notifications=%s}",
-                    totalTicks, onlinePlayers, notificationStats);
+            return String.format("ActionBarStats{ticks=%d, players=%d}",
+                    totalTicks, onlinePlayers);
         }
     }
 }

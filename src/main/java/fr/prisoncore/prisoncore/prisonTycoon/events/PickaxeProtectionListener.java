@@ -1,19 +1,18 @@
 package fr.prisoncore.prisoncore.prisonTycoon.events;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import io.papermc.paper.event.player.PlayerItemFrameChangeEvent;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -344,6 +343,82 @@ public class PickaxeProtectionListener implements Listener {
                     plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                         plugin.getPickaxeManager().enforcePickaxeSlot(player);
                     }, 5L);
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onItemFramePlace(PlayerItemFrameChangeEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = event.getItemStack();
+
+        if (item != null && plugin.getPickaxeManager().isLegendaryPickaxe(item)) {
+            event.setCancelled(true);
+            player.sendMessage("§c❌ Vous ne pouvez pas placer la pioche légendaire dans un cadre!");
+            plugin.getPluginLogger().debug("Tentative de placement pioche dans item frame bloquée: " + player.getName());
+        }
+    }
+
+    /**
+     * NOUVEAU : Protège contre placement sur armor stand
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
+        Player player = event.getPlayer();
+        ItemStack playerItem = event.getPlayerItem();
+
+        if (playerItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(playerItem)) {
+            event.setCancelled(true);
+            player.sendMessage("§c❌ Vous ne pouvez pas équiper la pioche légendaire sur un armor stand!");
+            plugin.getPluginLogger().debug("Tentative d'équipement pioche sur armor stand bloquée: " + player.getName());
+        }
+    }
+
+    /**
+     * NOUVEAU : Protège contre placement dans des structures suspendues
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onHangingPlace(HangingPlaceEvent event) {
+        if (event.getEntity() instanceof ItemFrame) {
+            // Vérifie si le joueur a une pioche légendaire en main
+            if (event.getPlayer() != null) {
+                Player player = event.getPlayer();
+                ItemStack handItem = player.getInventory().getItemInMainHand();
+
+                if (plugin.getPickaxeManager().isLegendaryPickaxe(handItem)) {
+                    event.setCancelled(true);
+                    player.sendMessage("§c❌ Vous ne pouvez pas placer d'item frame avec la pioche légendaire en main!");
+                }
+            }
+        }
+    }
+
+    /**
+     * NOUVEAU : Protège contre placement via shift+clic dans des conteneurs spéciaux
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryClickExtended(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        var currentItem = event.getCurrentItem();
+        var cursor = event.getCursor();
+
+        // Vérifie placement dans des inventaires d'entités
+        if (event.getClickedInventory() != null) {
+            String inventoryTitle = event.getView().getTitle().toLowerCase();
+
+            // Bloque placement dans des inventaires spéciaux
+            if (inventoryTitle.contains("armor stand") ||
+                    inventoryTitle.contains("item frame") ||
+                    inventoryTitle.contains("display")) {
+
+                if ((currentItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(currentItem)) ||
+                        (cursor != null && plugin.getPickaxeManager().isLegendaryPickaxe(cursor))) {
+
+                    event.setCancelled(true);
+                    player.sendMessage("§c❌ Vous ne pouvez pas placer la pioche légendaire ici!");
+                    plugin.getPluginLogger().debug("Tentative de placement pioche dans inventaire spécial bloquée: " + player.getName());
                 }
             }
         }

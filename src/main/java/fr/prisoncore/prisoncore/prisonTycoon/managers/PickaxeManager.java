@@ -138,10 +138,14 @@ public class PickaxeManager {
     }
 
     /**
-     * CORRIGÉ : Met à jour le lore avec distinction blocs minés/cassés
+     * CORRIGÉ : Met à jour le lore ET les enchantements vanilla de la pioche
      */
     public void updatePickaxeLore(ItemMeta meta, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // NOUVEAU : Applique les enchantements vanilla selon les enchantements custom
+        applyVanillaEnchantments(meta, playerData);
+
         List<String> lore = new ArrayList<>();
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -274,7 +278,7 @@ public class PickaxeManager {
         lore.add("§7│ §6Auto-mine: §7Dans les mines uniquement");
         lore.add("§7│ §cHors mine: §7Seuls efficacité/solidité/mobilité actifs");
         lore.add("§7│ §6Protection: §cDoit rester dans le slot 1");
-        lore.add("§7└ §6Indestructible: §7Ne se casse jamais complètement");
+        lore.add("§7│ §6Indestructible: §7Ne se casse jamais complètement");
         lore.add("");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§6✨ §lPioche Légendaire PrisonTycoon §6✨");
@@ -283,8 +287,28 @@ public class PickaxeManager {
         meta.setLore(lore);
     }
 
-    // Méthodes de vérification (inchangées)
+    /**
+     * NOUVEAU : Applique les enchantements vanilla selon les enchantements custom
+     */
+    private void applyVanillaEnchantments(ItemMeta meta, PlayerData playerData) {
+        // Retire tous les enchantements vanilla existants d'abord
+        for (Enchantment ench : meta.getEnchants().keySet()) {
+            if (ench != Enchantment.UNBREAKING) { // Garde Unbreaking pour l'effet glowing
+                meta.removeEnchant(ench);
+            }
+        }
 
+        // Applique Efficacité selon le niveau custom
+        int efficiencyLevel = playerData.getEnchantmentLevel("efficiency");
+        if (efficiencyLevel > 0) {
+            // Limite à Efficiency V (5) pour la compatibilité vanilla
+            int vanillaEfficiencyLevel = Math.min(efficiencyLevel, 5);
+            meta.addEnchant(Enchantment.EFFICIENCY, vanillaEfficiencyLevel, true);
+
+            plugin.getPluginLogger().debug("Efficacité appliquée niveau " + vanillaEfficiencyLevel +
+                    " (custom: " + efficiencyLevel + ") pour " + playerData.getPlayerName());
+        }
+    }
     /**
      * Vérifie si un item est une pioche légendaire
      */

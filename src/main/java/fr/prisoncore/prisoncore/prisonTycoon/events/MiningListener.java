@@ -151,17 +151,6 @@ public class MiningListener implements Listener {
         // Essaie d'ajouter à l'inventaire
         Map<Integer, ItemStack> leftover = player.getInventory().addItem(blockItem);
 
-        // Si l'inventaire est plein, drop au sol avec message
-        if (!leftover.isEmpty()) {
-            for (ItemStack overflow : leftover.values()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), overflow);
-            }
-
-            // NOUVEAU : Notification d'inventaire plein
-            plugin.getNotificationManager().queueSpecialStateNotification(player,
-                    "Inventaire plein!", "§7Blocs droppés au sol");
-        }
-
         plugin.getPluginLogger().debug("Bloc ajouté à l'inventaire: " + material);
     }
 

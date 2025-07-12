@@ -56,6 +56,8 @@ public class PlayerData {
     private long lastMinuteBlocksDestroyed;
     private long lastMinuteGreedTriggers;
     private long lastMinuteKeysObtained;
+    private long lastMinuteBlocksAddedToInventory;
+
 
     // Données thread-safe
     private final Object dataLock = new Object();
@@ -355,6 +357,7 @@ public class PlayerData {
             lastMinuteBlocksDestroyed = 0;
             lastMinuteGreedTriggers = 0;
             lastMinuteKeysObtained = 0;
+            lastMinuteBlocksAddedToInventory = 0;
         }
     }
 
@@ -476,6 +479,19 @@ public class PlayerData {
             return totalKeysObtained;
         }
     }
+
+    public void addBlocksToInventory(int count) {
+        synchronized (dataLock) {
+            this.lastMinuteBlocksAddedToInventory += count;
+        }
+    }
+
+    public long getLastMinuteBlocksAddedToInventory() {
+        synchronized (dataLock) {
+            return lastMinuteBlocksAddedToInventory;
+        }
+    }
+
 
     // Autres getters
     public UUID getPlayerId() { return playerId; }
