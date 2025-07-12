@@ -289,7 +289,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * Active l'effet laser et traite chaque bloc détruit
+     * CORRIGÉ: Active l'effet laser - mine en ligne droite jusqu'au bout de la mine
      */
     private void activateLaser(Player player, Location start, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
@@ -298,50 +298,61 @@ public class EnchantmentManager {
         var direction = player.getLocation().getDirection();
         int blocksDestroyed = 0;
 
-        for (int i = 1; i <= 10; i++) {
-            Location target = start.clone().add(direction.clone().multiply(i));
+        // CORRIGÉ: Mine jusqu'au bout de la mine (pas de limite arbitraire)
+        for (int distance = 1; distance <= 500; distance++) { // Limite de sécurité de 500 blocs
+            Location target = start.clone().add(direction.clone().multiply(distance));
 
-            if (!mineData.contains(target)) break;
+            // Arrête si on sort de la mine
+            if (!mineData.contains(target)) {
+                break;
+            }
 
+            // Mine le bloc
             Material originalType = target.getBlock().getType();
             target.getBlock().setType(mineData.getRandomMaterial());
             blocksDestroyed++;
 
-            // Traite chaque bloc détruit par le laser
+            // CORRIGÉ: Chaque bloc détruit par laser compte comme un bloc miné normal
+            // Donc chaque bloc a une chance de déclencher des Greeds
             processBlockDestroyed(player, target, originalType, mineName);
         }
 
         if (blocksDestroyed > 0) {
             PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            playerData.addDestroyedBlocks(blocksDestroyed);
+            // Pas besoin d'addDestroyedBlocks car processBlockDestroyed le fait déjà
         }
 
-        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits!");
+        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne!");
         player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
     }
 
     /**
-     * Active l'effet explosion et traite chaque bloc détruit
+     * CORRIGÉ: Active l'effet explosion - crée une explosion à l'endroit du minage
      */
     private void activateExplosion(Player player, Location center, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) return;
 
+        // CORRIGÉ: Rayon selon le niveau (1 à 3)
         int radius = ThreadLocalRandom.current().nextInt(1, 4);
         int blocksDestroyed = 0;
 
+        // CORRIGÉ: Explosion centrée sur le bloc miné
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
+                    // Vérifie si le bloc est dans le rayon sphérique
                     if (x*x + y*y + z*z <= radius*radius) {
                         Location target = center.clone().add(x, y, z);
 
+                        // Vérifie si dans la mine
                         if (mineData.contains(target)) {
                             Material originalType = target.getBlock().getType();
                             target.getBlock().setType(mineData.getRandomMaterial());
                             blocksDestroyed++;
 
-                            // Traite chaque bloc détruit par l'explosion
+                            // CORRIGÉ: Chaque bloc détruit par explosion compte comme un bloc miné normal
+                            // Donc chaque bloc a une chance de déclencher des Greeds
                             processBlockDestroyed(player, target, originalType, mineName);
                         }
                     }
@@ -351,10 +362,10 @@ public class EnchantmentManager {
 
         if (blocksDestroyed > 0) {
             PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            playerData.addDestroyedBlocks(blocksDestroyed);
+            // Pas besoin d'addDestroyedBlocks car processBlockDestroyed le fait déjà
         }
 
-        player.sendMessage("§4💥 Explosion! §e" + blocksDestroyed + " blocs détruits!");
+        player.sendMessage("§4💥 Explosion rayon " + radius + "! §e" + blocksDestroyed + " blocs détruits!");
         player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
     }
 

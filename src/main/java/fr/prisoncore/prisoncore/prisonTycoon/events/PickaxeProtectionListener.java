@@ -13,11 +13,12 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 
 /**
  * Listener pour la protection de la pioche légendaire
- * CORRIGÉ : Protection complète contre toutes les formes de perte
+ * CORRIGÉ : Protection complète + surveillance pioche en main
  */
 public class PickaxeProtectionListener implements Listener {
 
@@ -27,9 +28,38 @@ public class PickaxeProtectionListener implements Listener {
         this.plugin = plugin;
     }
 
+    // NOUVEAU: Surveille quand le joueur change d'item en main pour gérer les effets mobilité
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerItemHeld(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+
+        // Délai pour que l'item soit changé
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
+
+            if (newItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(newItem) &&
+                    plugin.getPickaxeManager().isOwner(newItem, player)) {
+                // Pioche en main - applique les effets
+                plugin.getPickaxeManager().updateMobilityEffects(player);
+            } else {
+                // Pioche pas en main - retire les effets
+                plugin.getPickaxeManager().removeMobilityEffects(player);
+            }
+        }, 1L);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        // NOUVEAU: Ne pas bloquer les clics molette dans les GUIs du plugin pour les enchants mobilité
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.MIDDLE) {
+            String title = event.getView().getTitle();
+            if (title.contains("Mobilité")) {
+                // Laisse passer le clic molette pour les enchants mobilité
+                return;
+            }
+        }
 
         var currentItem = event.getCurrentItem();
         var cursor = event.getCursor();

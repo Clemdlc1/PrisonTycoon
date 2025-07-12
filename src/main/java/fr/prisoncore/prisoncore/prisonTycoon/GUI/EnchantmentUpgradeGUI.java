@@ -21,7 +21,7 @@ import java.util.Set;
 
 /**
  * Menu d'amélioration d'un enchantement
- * CORRIGÉ : Effets avant/après pour tous les cas et auto-upgrade fonctionnel + noms en gras
+ * CORRIGÉ : Taille réduite à 27, positions modifiées, tous les enchants dans addEffectComparison
  */
 public class EnchantmentUpgradeGUI {
 
@@ -38,9 +38,8 @@ public class EnchantmentUpgradeGUI {
         CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
         if (enchantment == null) return;
 
-        // CORRECTION: Nom en gras
         String title = "§6🔧 §l" + enchantment.getDisplayName() + " §6🔧";
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = Bukkit.createInventory(null, 27, title); // CORRIGÉ: 27 slots
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -48,21 +47,16 @@ public class EnchantmentUpgradeGUI {
         // Tête du joueur
         gui.setItem(4, createPlayerHead(player));
 
-        // Enchantement central
-        gui.setItem(22, createDetailedEnchantmentItem(enchantment, player));
-
         // Boutons d'amélioration
         createUpgradeButtons(gui, enchantment, player);
 
-        // Bouton auto-upgrade (si permission)
-        if (plugin.getEnchantmentManager().canUseAutoUpgrade(player)) {
-            gui.setItem(45, createAutoUpgradeButton(enchantment, player));
-        } else {
-            gui.setItem(45, createNoPermissionAutoUpgradeItem());
-        }
+        gui.setItem(18, createBackButton());
 
-        // Bouton retour
-        gui.setItem(53, createBackButton());
+        if (plugin.getEnchantmentManager().canUseAutoUpgrade(player)) {
+            gui.setItem(26, createAutoUpgradeButton(enchantment, player));
+        } else {
+            gui.setItem(26, createNoPermissionAutoUpgradeItem());
+        }
 
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.4f);
@@ -72,7 +66,7 @@ public class EnchantmentUpgradeGUI {
      * Gère les clics dans le menu d'amélioration
      */
     public void handleUpgradeMenuClick(Player player, int slot, ItemStack item, ClickType clickType, String title) {
-        if (slot == 53) { // Bouton retour
+        if (slot == 18) { // Bouton retour (CORRIGÉ: position inversée)
             // Retourne au menu de catégorie approprié
             String enchantmentName = extractEnchantmentNameFromTitle(title);
             CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
@@ -82,7 +76,7 @@ public class EnchantmentUpgradeGUI {
             return;
         }
 
-        if (slot == 45) { // Auto-upgrade
+        if (slot == 26) { // Auto-upgrade (CORRIGÉ: position inversée)
             if (plugin.getEnchantmentManager().canUseAutoUpgrade(player)) {
                 toggleAutoUpgrade(player, title);
             } else {
@@ -90,6 +84,12 @@ public class EnchantmentUpgradeGUI {
                 player.sendMessage("§7Permissions requises: §especialmine.vip §7ou §especialmine.admin");
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             }
+            return;
+        }
+
+        if (slot == 23) { // MAX possible (CORRIGÉ: milieu dernière ligne)
+            String enchantmentName = extractEnchantmentNameFromTitle(title);
+            upgradeToMax(player, enchantmentName);
             return;
         }
 
@@ -105,19 +105,18 @@ public class EnchantmentUpgradeGUI {
             else if (displayName.contains("+100")) upgradeEnchantment(player, enchantmentName, 100);
             else if (displayName.contains("+250")) upgradeEnchantment(player, enchantmentName, 250);
             else if (displayName.contains("+500")) upgradeEnchantment(player, enchantmentName, 500);
-            else if (displayName.contains("MAX")) upgradeToMax(player, enchantmentName);
         }
     }
 
     /**
-     * CORRIGÉ: Crée les boutons d'amélioration avec lores détaillés
+     * CORRIGÉ: Crée les boutons d'amélioration adaptés pour 27 slots
      */
     private void createUpgradeButtons(Inventory gui, CustomEnchantment enchantment, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int currentLevel = playerData.getEnchantmentLevel(enchantment.getName());
 
         int[] upgradeAmounts = {1, 5, 10, 25, 100, 250, 500};
-        int[] slots = {28, 29, 30, 31, 32, 33, 34};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16}; // CORRIGÉ: Ligne milieu pour 27 slots
 
         for (int i = 0; i < upgradeAmounts.length; i++) {
             int amount = upgradeAmounts[i];
@@ -126,13 +125,14 @@ public class EnchantmentUpgradeGUI {
             }
         }
 
+        // MAX au milieu dernière ligne (slot 23)
         if (currentLevel < enchantment.getMaxLevel()) {
-            gui.setItem(37, createMaxUpgradeButton(enchantment, player));
+            gui.setItem(23, createMaxUpgradeButton(enchantment, player));
         }
     }
 
     /**
-     * CORRIGÉ : Crée un bouton d'amélioration avec effets avant/après TOUJOURS présents
+     * Crée un bouton d'amélioration avec effets avant/après
      */
     private ItemStack createUpgradeButton(CustomEnchantment enchantment, Player player, int requestedLevels) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -185,7 +185,7 @@ public class EnchantmentUpgradeGUI {
             lore.add("§7▸ Niveau après: §a" + (currentLevel + actualLevels));
             lore.add("");
 
-            // NOUVEAU: Effets avant/après
+            // Effets avant/après
             lore.add("§b🔮 §lEFFETS AVANT → APRÈS");
             addEffectComparison(lore, enchantment, currentLevel, currentLevel + actualLevels);
             lore.add("");
@@ -216,7 +216,7 @@ public class EnchantmentUpgradeGUI {
             }
             lore.add("");
 
-            // CORRECTION: Ajoute les effets même si on ne peut pas se payer l'amélioration
+            // Ajoute les effets même si on ne peut pas se payer l'amélioration
             lore.add("§b🔮 §lEFFETS SI ACHETÉ");
             int targetLevel = Math.min(currentLevel + requestedLevels, enchantment.getMaxLevel());
             addEffectComparison(lore, enchantment, currentLevel, targetLevel);
@@ -234,7 +234,7 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * NOUVEAU: Ajoute une comparaison des effets avant/après
+     * CORRIGÉ: Ajoute une comparaison des effets avant/après POUR TOUS LES ENCHANTS
      */
     private void addEffectComparison(List<String> lore, CustomEnchantment enchantment, int fromLevel, int toLevel) {
         switch (enchantment.getName()) {
@@ -256,11 +256,31 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Coins/Greed: §e" + NumberFormatter.format(fromCoins) +
                         " §7→ §a" + NumberFormatter.format(toCoins));
             }
-            case "luck" -> {
-                double fromBonus = fromLevel * 0.2;
-                double toBonus = toLevel * 0.2;
-                lore.add("§7▸ Bonus chance: §e+" + String.format("%.1f%%", fromBonus) +
-                        " §7→ §a+" + String.format("%.1f%%", toBonus));
+            case "key_greed" -> {
+                double fromChance = fromLevel * 1.0;
+                double toChance = toLevel * 1.0;
+                lore.add("§7▸ Chance clé: §e" + String.format("%.1f%%", fromChance) +
+                        " §7→ §a" + String.format("%.1f%%", toChance));
+            }
+            case "abundance" -> {
+                double fromChance = fromLevel * 0.0001;
+                double toChance = toLevel * 0.0001;
+                lore.add("§7▸ Chance activation: §e" + String.format("%.4f%%", fromChance) +
+                        " §7→ §a" + String.format("%.4f%%", toChance));
+            }
+            case "combustion" -> {
+                int fromGain = Math.max(1, fromLevel / 10);
+                int toGain = Math.max(1, toLevel / 10);
+                lore.add("§7▸ Gain/bloc: §e+" + fromGain + " §7→ §a+" + toGain + " combustion");
+            }
+            case "pet_xp" -> {
+                long fromBonus = fromLevel * 10;
+                long toBonus = toLevel * 10;
+                lore.add("§7▸ Bonus Pet XP: §e+" + NumberFormatter.format(fromBonus) +
+                        " §7→ §a+" + NumberFormatter.format(toBonus));
+            }
+            case "efficiency" -> {
+                lore.add("§7▸ Vitesse minage: §eFast+" + fromLevel + " §7→ §aFast+" + toLevel);
             }
             case "fortune" -> {
                 double fromMult = 1.0 + (fromLevel * 0.2);
@@ -268,16 +288,52 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Multiplicateur: §ex" + String.format("%.1f", fromMult) +
                         " §7→ §ax" + String.format("%.1f", toMult));
             }
-            case "combustion" -> {
-                int fromGain = Math.max(1, fromLevel / 10);
-                int toGain = Math.max(1, toLevel / 10);
-                lore.add("§7▸ Gain/bloc: §e+" + fromGain + " §7→ §a+" + toGain + " combustion");
+            case "durability" -> {
+                double fromBonus = fromLevel * 10;
+                double toBonus = toLevel * 10;
+                lore.add("§7▸ Durabilité: §e+" + String.format("%.0f%%", fromBonus) +
+                        " §7→ §a+" + String.format("%.0f%%", toBonus));
             }
-            case "key_greed" -> {
-                double fromChance = fromLevel * 1.0;
-                double toChance = toLevel * 1.0;
-                lore.add("§7▸ Chance clé: §e" + String.format("%.1f%%", fromChance) +
-                        " §7→ §a" + String.format("%.1f%%", toChance));
+            case "night_vision" -> {
+                if (fromLevel == 0 && toLevel == 1) {
+                    lore.add("§7▸ Vision nocturne: §cInactive §7→ §aActive");
+                } else {
+                    lore.add("§7▸ Vision nocturne: §aActive");
+                }
+            }
+            case "speed" -> {
+                lore.add("§7▸ Vitesse: §eSpeed " + fromLevel + " §7→ §aSpeed " + toLevel);
+            }
+            case "haste" -> {
+                lore.add("§7▸ Rapidité: §eHaste " + fromLevel + " §7→ §aHaste " + toLevel);
+            }
+            case "jump_boost" -> {
+                lore.add("§7▸ Saut: §eJump " + fromLevel + " §7→ §aJump " + toLevel);
+            }
+            case "escalator" -> {
+                if (fromLevel == 0 && toLevel == 1) {
+                    lore.add("§7▸ Téléportation: §cInactive §7→ §aActive");
+                } else {
+                    lore.add("§7▸ Téléportation: §aActive");
+                }
+            }
+            case "luck" -> {
+                double fromBonus = fromLevel * 0.2;
+                double toBonus = toLevel * 0.2;
+                lore.add("§7▸ Bonus chance: §e+" + String.format("%.1f%%", fromBonus) +
+                        " §7→ §a+" + String.format("%.1f%%", toBonus));
+            }
+            case "laser" -> {
+                double fromChance = fromLevel * 0.002;
+                double toChance = toLevel * 0.002;
+                lore.add("§7▸ Chance laser: §e" + String.format("%.3f%%", fromChance) +
+                        " §7→ §a" + String.format("%.3f%%", toChance));
+            }
+            case "explosion" -> {
+                double fromChance = fromLevel * 0.05;
+                double toChance = toLevel * 0.05;
+                lore.add("§7▸ Chance explosion: §e" + String.format("%.2f%%", fromChance) +
+                        " §7→ §a" + String.format("%.2f%%", toChance));
             }
             default -> {
                 lore.add("§7▸ Amélioration de §2+" + (toLevel - fromLevel) + " niveau" +
@@ -287,7 +343,7 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * CORRIGÉ: Crée le bouton MAX avec la même logique améliorée
+     * Crée le bouton MAX avec la même logique améliorée
      */
     private ItemStack createMaxUpgradeButton(CustomEnchantment enchantment, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -342,7 +398,7 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Tokens manquants: §c" + NumberFormatter.format(nextCost - availableTokens));
                 lore.add("");
 
-                // CORRECTION: Ajoute les effets même si impossible
+                // Ajoute les effets même si impossible
                 lore.add("§b🔮 §lEFFETS SI ACHETÉ");
                 addEffectComparison(lore, enchantment, currentLevel, currentLevel + 1);
             }
@@ -357,7 +413,7 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * CORRIGÉ: Crée le bouton auto-upgrade avec gestion des permissions
+     * Crée le bouton auto-upgrade avec gestion des permissions
      */
     private ItemStack createAutoUpgradeButton(CustomEnchantment enchantment, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -411,7 +467,7 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * NOUVEAU: Item pour les joueurs sans permission auto-upgrade
+     * Item pour les joueurs sans permission auto-upgrade
      */
     private ItemStack createNoPermissionAutoUpgradeItem() {
         ItemStack item = new ItemStack(Material.GRAY_DYE);
@@ -493,7 +549,7 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * CORRIGÉ: Toggle auto-upgrade avec mise à jour GUI fonctionnelle pour tous les enchantements
+     * Toggle auto-upgrade avec mise à jour GUI fonctionnelle
      */
     private void toggleAutoUpgrade(Player player, String title) {
         String enchantmentName = extractEnchantmentNameFromTitle(title);
@@ -526,33 +582,15 @@ public class EnchantmentUpgradeGUI {
             player.sendMessage("§c❌ Auto-amélioration désactivée pour " + displayName);
         }
 
-        // CORRECTION: Force la mise à jour pour tous les enchantements
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        // CORRECTION: Rouvre le menu immédiatement pour voir les changements
+        // Rouvre le menu immédiatement
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             openEnchantmentUpgradeMenu(player, enchantmentName);
         }, 1L);
     }
 
     // Utilitaires...
-
-    private ItemStack createDetailedEnchantmentItem(CustomEnchantment enchantment, Player player) {
-        ItemStack item = new ItemStack(enchantment.getDisplayMaterial());
-        ItemMeta meta = item.getItemMeta();
-
-        meta.setDisplayName("§6✨ §l" + enchantment.getDisplayName() + " §6✨");
-
-        List<String> lore = new ArrayList<>();
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§7" + enchantment.getDescription());
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-        meta.setLore(lore);
-        item.setItemMeta(meta);
-
-        return item;
-    }
 
     private ItemStack createPlayerHead(Player player) {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
@@ -588,7 +626,7 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * CORRIGÉ: Extraction du nom d'enchantement plus robuste
+     * Extraction du nom d'enchantement plus robuste
      */
     private String extractEnchantmentNameFromTitle(String title) {
         // Retire les codes couleur et les caractères spéciaux pour extraire le nom
@@ -624,18 +662,10 @@ public class EnchantmentUpgradeGUI {
         meta.setDisplayName("§7");
         filler.setItemMeta(meta);
 
-        int size = gui.getSize();
-
-        for (int i = 0; i < 9; i++) {
-            gui.setItem(i, filler);
-            if (size > 9) {
-                gui.setItem(size - 9 + i, filler);
-            }
-        }
-
-        for (int i = 9; i < size - 9; i += 9) {
-            gui.setItem(i, filler);
-            gui.setItem(i + 8, filler);
+        // CORRIGÉ: Bordures pour 27 slots
+        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 19, 20, 21, 22, 24, 25, 26};
+        for (int slot : borderSlots) {
+            gui.setItem(slot, filler);
         }
     }
 }

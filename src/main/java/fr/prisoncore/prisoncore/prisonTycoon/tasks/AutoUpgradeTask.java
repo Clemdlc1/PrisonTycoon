@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tâche d'auto-amélioration des enchantements
- * ENTIÈREMENT RECODÉE : Permissions, meilleure gestion, corrections bugs
+ * CORRIGÉ : Auto-upgrade au maximum possible (pas seulement +1 niveau)
  */
 public class AutoUpgradeTask extends BukkitRunnable {
 
@@ -26,7 +26,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
     // Configuration
     private static final long PERMISSION_CACHE_DURATION = 60000; // 1 minute
     private static final long MIN_UPGRADE_INTERVAL = 10000; // 10 secondes entre upgrades d'un même joueur
-    private static final int MAX_UPGRADES_PER_CYCLE = 3;
 
     public AutoUpgradeTask(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -93,7 +92,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU: Vérifie les permissions avec cache
+     * Vérifie les permissions avec cache
      */
     private boolean hasAutoUpgradePermission(UUID playerId) {
         long now = System.currentTimeMillis();
@@ -120,7 +119,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU: Désactive tous les auto-upgrades d'un joueur
+     * Désactive tous les auto-upgrades d'un joueur
      */
     private void disableAllAutoUpgrades(PlayerData playerData) {
         Set<String> currentAutoUpgrades = new HashSet<>(playerData.getAutoUpgradeEnabled());
@@ -136,10 +135,10 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ: Traite les auto-améliorations d'un joueur avec meilleure gestion
+     * CORRIGÉ: Traite les auto-améliorations d'un joueur avec amélioration AU MAXIMUM POSSIBLE
      */
     private int processPlayerAutoUpgrades(PlayerData playerData) {
-        int upgradesPerformed = 0;
+        int totalUpgradesPerformed = 0;
 
         // Récupère les enchantements avec auto-amélioration activée
         Set<String> autoUpgradeEnabled = new HashSet<>(playerData.getAutoUpgradeEnabled());
@@ -153,12 +152,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
 
         // Traite chaque enchantement
         for (String enchantmentName : autoUpgradeEnabled) {
-            if (upgradesPerformed >= MAX_UPGRADES_PER_CYCLE) {
-                plugin.getPluginLogger().debug("Limite d'améliorations atteinte (" + MAX_UPGRADES_PER_CYCLE +
-                        ") pour " + playerData.getPlayerName());
-                break;
-            }
-
             CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
             if (enchantment == null) {
                 plugin.getPluginLogger().warning("§cEnchantement invalide dans auto-upgrade: '" +
@@ -193,47 +186,65 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 continue;
             }
 
-            // Calcule le coût de l'amélioration suivante
-            long upgradeCost = enchantment.getUpgradeCost(currentLevel + 1);
+            // CORRIGÉ: Calcule le MAXIMUM de niveaux possibles avec les tokens disponibles
             long availableTokens = playerData.getTokens();
+            int maxAffordableLevels = 0;
+            long totalCost = 0;
+
+            // Calcule combien de niveaux on peut s'offrir
+            for (int i = 1; i <= (enchantment.getMaxLevel() - currentLevel); i++) {
+                long levelCost = enchantment.getUpgradeCost(currentLevel + i);
+                if (totalCost + levelCost <= availableTokens) {
+                    totalCost += levelCost;
+                    maxAffordableLevels = i;
+                } else {
+                    break; // Plus assez de tokens
+                }
+            }
 
             plugin.getPluginLogger().debug("Auto-upgrade cost check: " + enchantmentName +
-                    " coût=" + upgradeCost + ", tokens=" + availableTokens +
-                    " pour " + playerData.getPlayerName());
+                    " max affordable levels=" + maxAffordableLevels + ", total cost=" + totalCost +
+                    ", available tokens=" + availableTokens + " pour " + playerData.getPlayerName());
 
-            // Vérifie si le joueur a assez de tokens
-            if (availableTokens >= upgradeCost) {
-                // CORRIGÉ: Effectue l'amélioration directement sur les données
-                if (playerData.removeTokens(upgradeCost)) {
-                    playerData.setEnchantmentLevel(enchantmentName, currentLevel + 1);
-                    upgradesPerformed++;
+            // CORRIGÉ: Améliore au MAXIMUM possible si on peut s'offrir au moins 1 niveau
+            if (maxAffordableLevels > 0) {
+                // Effectue l'amélioration directement sur les données
+                if (playerData.removeTokens(totalCost)) {
+                    playerData.setEnchantmentLevel(enchantmentName, currentLevel + maxAffordableLevels);
+                    totalUpgradesPerformed += maxAffordableLevels;
 
                     // Notifie le joueur si en ligne
                     Player player = plugin.getServer().getPlayer(playerData.getPlayerId());
                     if (player != null && player.isOnline()) {
-                        player.sendMessage("§a⚡ Auto-amélioration: " + enchantment.getDisplayName() +
-                                " §aniveau " + (currentLevel + 1) + " §7(-" +
-                                fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter.format(upgradeCost) + " tokens)");
+                        if (maxAffordableLevels == 1) {
+                            player.sendMessage("§a⚡ Auto-amélioration: " + enchantment.getDisplayName() +
+                                    " §aniveau " + (currentLevel + maxAffordableLevels) + " §7(-" +
+                                    fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter.format(totalCost) + " tokens)");
+                        } else {
+                            player.sendMessage("§a⚡ Auto-amélioration: " + enchantment.getDisplayName() +
+                                    " §a+" + maxAffordableLevels + " niveaux §7(niveau " + (currentLevel + maxAffordableLevels) +
+                                    ") §7(-" + fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter.format(totalCost) + " tokens)");
+                        }
                     }
 
                     plugin.getPluginLogger().info("Auto-amélioration réussie: " + playerData.getPlayerName() +
-                            " - " + enchantmentName + " niveau " + (currentLevel + 1) +
-                            " (coût: " + upgradeCost + " tokens)");
+                            " - " + enchantmentName + " +" + maxAffordableLevels + " niveaux (niveau " +
+                            (currentLevel + maxAffordableLevels) + ") (coût: " + totalCost + " tokens)");
                 } else {
                     plugin.getPluginLogger().warning("Échec retrait tokens pour auto-upgrade: " +
                             enchantmentName + " pour " + playerData.getPlayerName());
                 }
             } else {
                 plugin.getPluginLogger().debug("Auto-upgrade bloqué pour " + playerData.getPlayerName() +
-                        " - " + enchantmentName + ": " + availableTokens + "/" + upgradeCost + " tokens");
+                        " - " + enchantmentName + ": pas assez de tokens pour le prochain niveau");
             }
         }
 
-        return upgradesPerformed;
+        return totalUpgradesPerformed;
     }
 
     /**
-     * NOUVEAU: Nettoie le cache de permissions
+     * Nettoie le cache de permissions
      */
     private void cleanupPermissionCache() {
         long now = System.currentTimeMillis();
@@ -257,7 +268,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU: Force la vérification des permissions pour un joueur
+     * Force la vérification des permissions pour un joueur
      */
     public void refreshPlayerPermissions(UUID playerId) {
         lastPermissionCheck.remove(playerId);
@@ -288,7 +299,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * Statistiques de l'auto-amélioration (améliorées)
+     * Statistiques de l'auto-amélioration
      */
     public static class AutoUpgradeStats {
         private final int enabledPlayers;

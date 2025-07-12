@@ -28,10 +28,10 @@ public class EnchantmentMenu {
     // Slots du menu principal
     private static final int PLAYER_HEAD_SLOT = 4;
 
-    private static final int CRYSTALS_SLOT = 31;
-    private static final int UNIQUE_ENCHANTS_SLOT = 32;
-    private static final int PETS_SLOT = 33;
-    private static final int MAIN_MENU_SLOT = 28;
+    private static final int CRYSTALS_SLOT = 30;
+    private static final int UNIQUE_ENCHANTS_SLOT = 31;
+    private static final int PETS_SLOT = 32;
+    private static final int MAIN_MENU_SLOT = 27;
 
     private static final int ECONOMIC_SLOT = 10;
     private static final int EFFICIENCY_SLOT = 12;
@@ -46,7 +46,7 @@ public class EnchantmentMenu {
      * Ouvre le menu principal
      */
     public void openEnchantmentMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 36, "§6✨ §lPrisonTycoon - Menu Principal §6✨");
+        Inventory gui = Bukkit.createInventory(null, 36, "§6✨ §lMenu Enchantement §6✨");
 
         // Remplissage décoratif
         fillEmptySlots(gui);
