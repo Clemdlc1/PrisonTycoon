@@ -240,12 +240,12 @@ enchantments:
     laser:
       max-level: 2000
       base-chance: 0.00002      # 0.002% par niveau
-      max-distance: 100         # Distance maximum du laser
+      max-distance: 1000         # Distance maximum du laser
       radius: 1                 # Rayon du laser (1 bloc)
 
     explosion:
       max-level: 100
-      base-chance: 0.0005       # 0.05% par niveau
+      base-chance: 0.0002       # 0.02% par niveau
       min-radius: 1             # Rayon minimum
       max-radius: 3             # Rayon maximum
 

@@ -5,7 +5,7 @@ package fr.prisoncore.prisoncore.prisonTycoon.enchantments;
  */
 public enum EnchantmentCategory {
     ECONOMIC("§6Économiques", "💰"),
-    EFFICIENCY("§aEfficacité", "⚡"),
+    UTILITY("§aUtilités", "⚡"),
     MOBILITY("§bMobilité", "💨"),
     SPECIAL("§dSpéciaux", "✨");
 

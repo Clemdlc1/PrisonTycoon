@@ -34,7 +34,7 @@ public class EnchantmentMenu {
     private static final int MAIN_MENU_SLOT = 27;
 
     private static final int ECONOMIC_SLOT = 10;
-    private static final int EFFICIENCY_SLOT = 12;
+    private static final int UTILITY_SLOT = 12;
     private static final int MOBILITY_SLOT = 14;
     private static final int SPECIAL_SLOT = 16;
 
@@ -69,7 +69,7 @@ public class EnchantmentMenu {
 
         // CORRECTION: Catégories d'enchantements (ligne du bas)
         gui.setItem(ECONOMIC_SLOT, createCategoryItem(EnchantmentCategory.ECONOMIC, player));
-        gui.setItem(EFFICIENCY_SLOT, createCategoryItem(EnchantmentCategory.EFFICIENCY, player));
+        gui.setItem(UTILITY_SLOT, createCategoryItem(EnchantmentCategory.UTILITY, player));
         gui.setItem(MOBILITY_SLOT, createCategoryItem(EnchantmentCategory.MOBILITY, player));
         gui.setItem(SPECIAL_SLOT, createCategoryItem(EnchantmentCategory.SPECIAL, player));
 
@@ -90,8 +90,8 @@ public class EnchantmentMenu {
 
             // Catégories d'enchantements
             case ECONOMIC_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.ECONOMIC);
-            case EFFICIENCY_SLOT ->
-                    plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.EFFICIENCY);
+            case UTILITY_SLOT ->
+                    plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.UTILITY);
             case MOBILITY_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.MOBILITY);
             case SPECIAL_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.SPECIAL);
         }
@@ -103,7 +103,7 @@ public class EnchantmentMenu {
     private ItemStack createCategoryItem(EnchantmentCategory category, Player player) {
         Material material = switch (category) {
             case ECONOMIC -> Material.EMERALD;
-            case EFFICIENCY -> Material.DIAMOND;
+            case UTILITY -> Material.DIAMOND;
             case MOBILITY -> Material.FEATHER;
             case SPECIAL -> Material.NETHER_STAR;
         };
@@ -129,8 +129,8 @@ public class EnchantmentMenu {
                 lore.add("§7▸ §6Multiplicateurs temporaires (Combustion)");
                 lore.add("§7▸ §6Effets d'abondance (x2 gains temporaire)");
             }
-            case EFFICIENCY -> {
-                lore.add("§7Enchantements qui améliorent l'efficacité");
+            case UTILITY -> {
+                lore.add("§7Enchantements qui améliorent l'utilité");
                 lore.add("§7de votre pioche et multiplient vos gains.");
                 lore.add("§7");
                 lore.add("§e⚡ §lEffets principaux:");

@@ -70,7 +70,7 @@ public class GUIListener implements Listener {
         if (title.contains("Menu Principal") || title.contains("Menu Enchantement")) {
             plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
         }
-        else if (title.contains("Économiques") || title.contains("Efficacité") ||
+        else if (title.contains("Économiques") || title.contains("Utilités") ||
                 title.contains("Mobilité") || title.contains("Spéciaux")) {
             plugin.getCategoryMenuGUI().handleCategoryMenuClick(player, slot, item, title, clickType);
         }
@@ -102,8 +102,6 @@ public class GUIListener implements Listener {
             // Met à jour la pioche quand on ferme le menu
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 plugin.getPickaxeManager().updatePlayerPickaxe(player);
-                // Met à jour le scoreboard aussi
-                plugin.getScoreboardManager().updateScoreboard(player);
             }, 1L);
         }
     }
@@ -127,7 +125,7 @@ public class GUIListener implements Listener {
                 title.contains("Menu Enchantement") ||
                 title.contains("Enchantements") ||
                 title.contains("Économiques") ||
-                title.contains("Efficacité") ||
+                title.contains("Utilités") ||
                 title.contains("Mobilité") ||
                 title.contains("Spéciaux") ||
                 title.contains("Cristaux") ||

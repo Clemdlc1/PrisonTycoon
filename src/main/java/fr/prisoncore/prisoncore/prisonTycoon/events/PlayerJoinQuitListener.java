@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * Listener pour les événements de connexion/déconnexion
- * CORRIGÉ: Initialise scoreboard + expérience vanilla
+ * CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager
  */
 public class PlayerJoinQuitListener implements Listener {
 
@@ -29,8 +29,10 @@ public class PlayerJoinQuitListener implements Listener {
 
         // Initialisation avec délai pour assurer que tout est chargé
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            // NOUVEAU: Crée et affiche le scoreboard
-            plugin.getScoreboardManager().createScoreboard(player);
+            // CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager
+            if (plugin.getScoreboardTask() != null) {
+                plugin.getScoreboardTask().createScoreboard(player);
+            }
 
             // Initialise l'expérience vanilla basée sur l'expérience custom
             plugin.getEconomyManager().initializeVanillaExp(player);
@@ -39,7 +41,9 @@ public class PlayerJoinQuitListener implements Listener {
             plugin.getPickaxeManager().updateMobilityEffects(player);
 
             // Force refresh des permissions auto-upgrade si le joueur en avait
-            plugin.getAutoUpgradeTask().refreshPlayerPermissions(player.getUniqueId());
+            if (plugin.getAutoUpgradeTask() != null) {
+                plugin.getAutoUpgradeTask().refreshPlayerPermissions(player.getUniqueId());
+            }
 
             plugin.getPluginLogger().debug("Initialisation complète pour " + player.getName());
         }, 20L); // 1 seconde de délai
@@ -54,8 +58,13 @@ public class PlayerJoinQuitListener implements Listener {
         // Retire les effets de mobilité
         plugin.getPickaxeManager().removeMobilityEffects(player);
 
-        // NOUVEAU: Retire le scoreboard
-        plugin.getScoreboardManager().removeScoreboard(player);
+        // CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager
+        if (plugin.getScoreboardTask() != null) {
+            plugin.getScoreboardTask().removeScoreboard(player);
+        }
+
+        // NOUVEAU : Nettoie les notifications en attente
+        plugin.getNotificationManager().clearPlayerNotifications(player.getUniqueId());
 
         // Décharge les données du joueur (avec sauvegarde)
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());

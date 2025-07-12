@@ -3,7 +3,6 @@ package fr.prisoncore.prisoncore.prisonTycoon.events;
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.BlockValueData;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
-import fr.prisoncore.prisoncore.prisonTycoon.utils.ItemUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -15,12 +14,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Listener pour les événements de minage
- * CORRIGÉ : Distinction mine/hors mine, blocs minés directement par le joueur
+ * CORRIGÉ : Intégration avec le nouveau système de notifications
  */
 public class MiningListener implements Listener {
 
@@ -53,9 +51,9 @@ public class MiningListener implements Listener {
                 return;
             }
 
-            // CORRECTION : Empêche TOUS les drops (items ET exp)
+            // Empêche TOUS les drops (items ET exp)
             event.setDropItems(false);
-            event.setExpToDrop(0); // Plus d'exp des blocs minés
+            event.setExpToDrop(0);
 
             // NOUVEAU : Traite le bloc MINÉ directement par le joueur dans une mine
             processMiningInMine(player, location, material, mineName);
@@ -72,7 +70,7 @@ public class MiningListener implements Listener {
         } else {
             plugin.getPluginLogger().debug("Bloc miné hors mine - minage normal avec restrictions");
 
-            // NOUVEAU : Hors mine, vérification de la pioche légendaire
+            // Hors mine, vérification de la pioche légendaire
             var handItem = player.getInventory().getItemInMainHand();
             if (handItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(handItem) &&
                     plugin.getPickaxeManager().isOwner(handItem, player)) {
@@ -91,7 +89,7 @@ public class MiningListener implements Listener {
     }
 
     /**
-     * NOUVEAU : Traite le minage dans une mine (bloc MINÉ directement)
+     * CORRIGÉ : Traite le minage dans une mine avec nouveau système de notifications
      */
     private void processMiningInMine(Player player, Location location, Material material, String mineName) {
         plugin.getPluginLogger().debug("Traitement minage dans mine: " + mineName);
@@ -101,7 +99,16 @@ public class MiningListener implements Listener {
         // Ajoute le bloc directement à l'inventaire du joueur
         addBlockToInventory(player, material);
 
-        // NOUVEAU : Traite ce bloc MINÉ directement par le joueur
+        // NOUVEAU : Récupère les gains de base (Fortune sera appliquée dans EnchantmentManager)
+        BlockValueData baseValue = plugin.getConfigManager().getBlockValue(material);
+
+        // NOUVEAU : Notifie les gains de base via le nouveau système
+        if (baseValue.getCoins() > 0 || baseValue.getTokens() > 0 || baseValue.getExperience() > 0) {
+            plugin.getNotificationManager().queueRegularGains(player,
+                    baseValue.getCoins(), baseValue.getTokens(), baseValue.getExperience());
+        }
+
+        // Traite ce bloc MINÉ directement par le joueur (avec Greeds, enchants spéciaux, etc.)
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
 
         // Marque les données comme modifiées
@@ -111,7 +118,7 @@ public class MiningListener implements Listener {
     }
 
     /**
-     * NOUVEAU : Traite le minage hors mine (restrictions enchantements)
+     * Traite le minage hors mine (restrictions enchantements)
      */
     private void processMiningOutsideMine(Player player, Location location, Material material) {
         plugin.getPluginLogger().debug("Traitement minage hors mine avec pioche légendaire");
@@ -121,6 +128,12 @@ public class MiningListener implements Listener {
 
         // Applique uniquement les enchantements autorisés hors mine
         plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
+
+        // NOUVEAU : Notifie les restrictions
+        if (Math.random() < 0.1) { // 10% chance de rappeler les restrictions
+            plugin.getNotificationManager().queueSpecialStateNotification(player,
+                    "Hors Mine", "§7Greeds et effets spéciaux inactifs");
+        }
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -143,7 +156,10 @@ public class MiningListener implements Listener {
             for (ItemStack overflow : leftover.values()) {
                 player.getWorld().dropItemNaturally(player.getLocation(), overflow);
             }
-            player.sendMessage("§c⚠️ Inventaire plein! Blocs droppés au sol.");
+
+            // NOUVEAU : Notification d'inventaire plein
+            plugin.getNotificationManager().queueSpecialStateNotification(player,
+                    "Inventaire plein!", "§7Blocs droppés au sol");
         }
 
         plugin.getPluginLogger().debug("Bloc ajouté à l'inventaire: " + material);

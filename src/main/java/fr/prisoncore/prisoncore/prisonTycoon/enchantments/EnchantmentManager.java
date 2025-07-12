@@ -44,7 +44,7 @@ public class EnchantmentManager {
         registerEnchantment(new CombustionEnchantment());
         registerEnchantment(new PetXpEnchantment());
 
-        // CATÉGORIE EFFICACITÉ
+        // CATÉGORIE UTILITÉS
         registerEnchantment(new EfficiencyEnchantment());
         registerEnchantment(new FortuneEnchantment());
         registerEnchantment(new DurabilityEnchantment());
@@ -367,52 +367,43 @@ public class EnchantmentManager {
 
         var direction = player.getLocation().getDirection().normalize();
         int blocksDestroyed = 0;
-        int maxDistance = plugin.getConfigManager().getEnchantmentSetting("special.laser.max-distance", 100);
+        int maxDistance = plugin.getConfigManager().getEnchantmentSetting("special.laser.max-distance", 1000);
 
-        // Mine en ligne droite avec rayon de 1 bloc
+        // Mine en ligne droite 1x1
         for (int distance = 1; distance <= maxDistance; distance++) {
-            Location centerTarget = start.clone().add(direction.clone().multiply(distance));
+            Location target = start.clone().add(direction.clone().multiply(distance));
 
             // Arrête si on sort de la mine
-            if (!mineData.contains(centerTarget)) {
+            if (!mineData.contains(target)) {
                 break;
             }
 
-            // Rayon de 1 bloc autour du centre
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        Location target = centerTarget.clone().add(dx, dy, dz);
+            Material originalType = target.getBlock().getType();
 
-                        // Vérifie si dans la mine
-                        if (mineData.contains(target)) {
-                            Material originalType = target.getBlock().getType();
+            // Ne casse que les blocs qui ne sont pas de l'air
+            if (originalType != Material.AIR) {
+                // CORRECTION : CASSE visuellement (met en AIR)
+                target.getBlock().setType(Material.AIR);
+                blocksDestroyed++;
 
-                            // CORRECTION : CASSE visuellement (met en AIR)
-                            target.getBlock().setType(Material.AIR);
-                            blocksDestroyed++;
+                // Animation de particules
+                target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
+                        10, 0.3, 0.3, 0.3, 0.1, originalType.createBlockData());
 
-                            // Animation de particules
-                            target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
-                                    10, 0.3, 0.3, 0.3, 0.1, originalType.createBlockData());
-
-                            // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
-                            processBlockDestroyed(player, target, originalType, mineName);
-
-                        }
-                    }
-                }
+                // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
+                processBlockDestroyed(player, target, originalType, mineName);
             }
         }
 
-        // Animation laser
+        // Animation du rayon laser
         for (int i = 0; i < maxDistance && i < 50; i++) {
             Location particleLocation = start.clone().add(direction.clone().multiply(i));
-            particleLocation.getWorld().spawnParticle(Particle.SMOKE, particleLocation, 1,
-                    new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
+
+            particleLocation.getWorld().spawnParticle(Particle.DUST, particleLocation, 1,
+                    0.1, 0.1, 0.1, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
         }
 
-        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne (rayon 1)!");
+        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne !");
         player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
     }
 
@@ -627,7 +618,7 @@ class PetXpEnchantment implements CustomEnchantment {
 class EfficiencyEnchantment implements CustomEnchantment {
     public String getName() { return "efficiency"; }
     public String getDisplayName() { return "Efficacité"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.EFFICIENCY; }
+    public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
     public String getDescription() { return "Réduit le temps de minage"; }
     public int getMaxLevel() { return 50; }
     public long getUpgradeCost(int level) { return 10000L * level * level; }
@@ -637,7 +628,7 @@ class EfficiencyEnchantment implements CustomEnchantment {
 class FortuneEnchantment implements CustomEnchantment {
     public String getName() { return "fortune"; }
     public String getDisplayName() { return "Fortune"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.EFFICIENCY; }
+    public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
     public String getDescription() { return "Multiplie tous les drops"; }
     public int getMaxLevel() { return Integer.MAX_VALUE; }
     public long getUpgradeCost(int level) {
@@ -649,7 +640,7 @@ class FortuneEnchantment implements CustomEnchantment {
 class DurabilityEnchantment implements CustomEnchantment {
     public String getName() { return "durability"; }
     public String getDisplayName() { return "Solidité"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.EFFICIENCY; }
+    public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
     public String getDescription() { return "Augmente la durabilité"; }
     public int getMaxLevel() { return 20; }
     public long getUpgradeCost(int level) {

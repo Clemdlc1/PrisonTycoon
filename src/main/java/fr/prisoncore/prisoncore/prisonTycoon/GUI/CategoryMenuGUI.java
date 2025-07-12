@@ -95,11 +95,6 @@ public class CategoryMenuGUI {
                     }
                 }
 
-                // NOUVEAU : Gestion spéciale pour l'efficacité (debugging)
-                if (targetEnchantment.getName().equals("efficiency")) {
-                    plugin.getPluginLogger().debug("Clic sur Efficacité détecté - Slot: " + slot + ", ClickType: " + clickType);
-                }
-
                 if (currentLevel >= targetEnchantment.getMaxLevel()) {
                     // Animation pour niveau max
                     animateMaxLevelItem(player, slot);

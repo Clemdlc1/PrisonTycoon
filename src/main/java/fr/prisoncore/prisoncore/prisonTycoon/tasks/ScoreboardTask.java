@@ -12,12 +12,14 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Tâche de mise à jour des scoreboards
- * NOUVEAU : Avec gestion scoreboard intégrée (ancien ScoreboardManager supprimé)
+ * Tâche de mise à jour des scoreboards - Gestion complète intégrée
+ * NOUVEAU : Remplace complètement ScoreboardManager + optimisations
  */
 public class ScoreboardTask extends BukkitRunnable {
 
@@ -25,12 +27,18 @@ public class ScoreboardTask extends BukkitRunnable {
     private long tickCount = 0;
     private int updateCycles = 0;
 
-    // NOUVEAU : Gestion des scoreboards intégrée
+    // Gestion complète des scoreboards intégrée
     private final Map<Player, Scoreboard> playerScoreboards;
+    private final Map<Player, Long> lastScoreboardUpdate;
+
+    // Optimisations
+    private static final long INDIVIDUAL_UPDATE_INTERVAL = 5000; // 5 secondes entre mises à jour individuelles
+    private static final int BATCH_SIZE = 10; // Nombre de scoreboards mis à jour par cycle
 
     public ScoreboardTask(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.playerScoreboards = new ConcurrentHashMap<>();
+        this.lastScoreboardUpdate = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -38,10 +46,15 @@ public class ScoreboardTask extends BukkitRunnable {
         tickCount++;
 
         try {
-            // Met à jour tous les scoreboards toutes les 20 secondes (400 ticks)
-            if (tickCount % 400 == 0) {
-                updateAllScoreboards();
+            // OPTIMISÉ : Met à jour les scoreboards par batch
+            if (tickCount % 100 == 0) { // Toutes les 20 secondes
+                updateScoreboardsBatch();
                 updateCycles++;
+            }
+
+            // Nettoyage périodique
+            if (tickCount % 5000 == 0) {
+                cleanupDisconnectedPlayers();
             }
 
         } catch (Exception e) {
@@ -51,9 +64,49 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU : Crée et affiche le scoreboard pour un joueur
+     * OPTIMISÉ : Met à jour les scoreboards par batch pour éviter le lag
+     */
+    private void updateScoreboardsBatch() {
+        long now = System.currentTimeMillis();
+        int updated = 0;
+        int skipped = 0;
+
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (updated >= BATCH_SIZE) {
+                break; // Limite le nombre de mises à jour par cycle
+            }
+
+            try {
+                // Optimisation : évite les mises à jour trop fréquentes
+                Long lastUpdate = lastScoreboardUpdate.get(player);
+                if (lastUpdate != null && (now - lastUpdate) < INDIVIDUAL_UPDATE_INTERVAL) {
+                    skipped++;
+                    continue;
+                }
+
+                updateScoreboard(player);
+                lastScoreboardUpdate.put(player, now);
+                updated++;
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur mise à jour scoreboard pour " +
+                        player.getName() + ": " + e.getMessage());
+            }
+        }
+
+        plugin.getPluginLogger().debug("Scoreboards mis à jour: " + updated + " joueurs (ignorés: " +
+                skipped + ") (cycle #" + updateCycles + ")");
+    }
+
+    /**
+     * Crée et affiche le scoreboard pour un joueur
      */
     public void createScoreboard(Player player) {
+        if (playerScoreboards.containsKey(player)) {
+            plugin.getPluginLogger().debug("Scoreboard déjà existant pour " + player.getName());
+            return;
+        }
+
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 
         // Objective principal
@@ -70,12 +123,13 @@ public class ScoreboardTask extends BukkitRunnable {
         // Assigne le scoreboard au joueur
         player.setScoreboard(scoreboard);
         playerScoreboards.put(player, scoreboard);
+        lastScoreboardUpdate.put(player, System.currentTimeMillis());
 
         plugin.getPluginLogger().debug("Scoreboard créé pour " + player.getName());
     }
 
     /**
-     * NOUVEAU : Configure les équipes pour les lignes du scoreboard
+     * Configure les équipes pour les lignes du scoreboard
      */
     private void setupScoreboardTeams(Scoreboard scoreboard) {
         String[] teamNames = {
@@ -86,12 +140,13 @@ public class ScoreboardTask extends BukkitRunnable {
 
         for (String teamName : teamNames) {
             Team team = scoreboard.registerNewTeam(teamName);
-            team.addEntry(ChatColor.values()[teamNames.length - 1 - java.util.Arrays.asList(teamNames).indexOf(teamName)] + "");
+            team.addEntry(ChatColor.values()[teamNames.length - 1 -
+                    java.util.Arrays.asList(teamNames).indexOf(teamName)] + "");
         }
     }
 
     /**
-     * NOUVEAU : Met à jour le scoreboard d'un joueur
+     * Met à jour le scoreboard d'un joueur
      */
     public void updateScoreboard(Player player) {
         Scoreboard scoreboard = playerScoreboards.get(player);
@@ -104,7 +159,7 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU : Met à jour le contenu du scoreboard
+     * OPTIMISÉ : Met à jour le contenu du scoreboard avec cache des données
      */
     private void updateScoreboard(Player player, Scoreboard scoreboard) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -112,8 +167,22 @@ public class ScoreboardTask extends BukkitRunnable {
 
         if (objective == null) return;
 
-        // Efface les anciens scores
-        scoreboard.getEntries().forEach(entry -> scoreboard.resetScores(entry));
+        // OPTIMISATION : Cache des valeurs pour éviter les calculs répétés
+        long coins = playerData.getCoins();
+        long tokens = playerData.getTokens();
+        long experience = playerData.getExperience();
+        long blocksMined = playerData.getTotalBlocksMined();
+        long blocksDestroyed = playerData.getTotalBlocksDestroyed();
+        int enchantmentCount = playerData.getEnchantmentLevels().size();
+
+        // OPTIMISATION : Cache des états spéciaux
+        long combustionLevel = playerData.getCombustionLevel();
+        boolean abundanceActive = playerData.isAbundanceActive();
+        boolean pickaxeInCorrectSlot = plugin.getPickaxeManager().isPickaxeInCorrectSlot(player);
+        boolean hasLegendaryPickaxe = plugin.getPickaxeManager().hasLegendaryPickaxe(player);
+
+        // Efface les anciens scores de manière optimisée
+        clearScoreboardEntries(scoreboard);
 
         int line = 15;
 
@@ -122,49 +191,55 @@ public class ScoreboardTask extends BukkitRunnable {
 
         // Section économie
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GOLD + "💰 " + ChatColor.BOLD + "ÉCONOMIE");
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Coins: " + ChatColor.WHITE + NumberFormatter.formatWithColor(playerData.getCoins()));
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Tokens: " + ChatColor.WHITE + NumberFormatter.formatWithColor(playerData.getTokens()));
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Expérience: " + ChatColor.WHITE + NumberFormatter.formatWithColor(playerData.getExperience()));
+        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Coins: " +
+                ChatColor.WHITE + NumberFormatter.formatWithColor(coins));
+        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Tokens: " +
+                ChatColor.WHITE + NumberFormatter.formatWithColor(tokens));
+        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Expérience: " +
+                ChatColor.WHITE + NumberFormatter.formatWithColor(experience));
 
         // Ligne vide
         setScoreboardLine(scoreboard, objective, line--, "  ");
 
         // Section statistiques avec distinction blocs minés/cassés
         setScoreboardLine(scoreboard, objective, line--, ChatColor.AQUA + "📊 " + ChatColor.BOLD + "STATISTIQUES");
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs minés: " + ChatColor.BLUE + NumberFormatter.format(playerData.getTotalBlocksMined()));
+        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs minés: " +
+                ChatColor.BLUE + NumberFormatter.format(blocksMined));
 
         // Affiche les blocs cassés seulement si différent des blocs minés
-        long blocksDestroyed = playerData.getTotalBlocksDestroyed();
-        long blocksMinedOnly = playerData.getTotalBlocksMined();
-        if (blocksDestroyed > blocksMinedOnly) {
-            long specialDestroyed = blocksDestroyed - blocksMinedOnly;
-            setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " + ChatColor.LIGHT_PURPLE + NumberFormatter.format(specialDestroyed));
+        if (blocksDestroyed > blocksMined) {
+            long specialDestroyed = blocksDestroyed - blocksMined;
+            setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " +
+                    ChatColor.LIGHT_PURPLE + NumberFormatter.format(specialDestroyed));
         }
 
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Enchantements: " + ChatColor.LIGHT_PURPLE + playerData.getEnchantmentLevels().size());
+        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Enchantements: " +
+                ChatColor.LIGHT_PURPLE + enchantmentCount);
 
         // États spéciaux actifs
-        if (playerData.getCombustionLevel() > 0 || playerData.isAbundanceActive()) {
+        if (combustionLevel > 0 || abundanceActive) {
             setScoreboardLine(scoreboard, objective, line--, "   ");
             setScoreboardLine(scoreboard, objective, line--, ChatColor.RED + "🔥 " + ChatColor.BOLD + "ÉTATS ACTIFS");
 
-            if (playerData.getCombustionLevel() > 0) {
+            if (combustionLevel > 0) {
                 double multiplier = playerData.getCombustionMultiplier();
-                setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Combustion: " + ChatColor.GOLD +
-                        String.format("x%.2f", multiplier) + ChatColor.GRAY + " (" + playerData.getCombustionLevel() + "/1000)");
+                setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Combustion: " +
+                        ChatColor.GOLD + String.format("x%.2f", multiplier) + ChatColor.GRAY +
+                        " (" + combustionLevel + "/1000)");
             }
 
-            if (playerData.isAbundanceActive()) {
-                setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Abondance: " + ChatColor.GREEN + "ACTIVE");
+            if (abundanceActive) {
+                setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Abondance: " +
+                        ChatColor.GREEN + "ACTIVE");
             }
         }
 
         // Position pioche
-        boolean pickaxeInCorrectSlot = plugin.getPickaxeManager().isPickaxeInCorrectSlot(player);
-        if (plugin.getPickaxeManager().hasLegendaryPickaxe(player)) {
+        if (hasLegendaryPickaxe) {
             setScoreboardLine(scoreboard, objective, line--, "    ");
             setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "⛏️ " + ChatColor.BOLD + "PIOCHE");
-            String slotStatus = pickaxeInCorrectSlot ? ChatColor.GREEN + "Slot 1 ✓" : ChatColor.RED + "Mauvaise position!";
+            String slotStatus = pickaxeInCorrectSlot ?
+                    ChatColor.GREEN + "Slot 1 ✓" : ChatColor.RED + "Mauvaise position!";
             setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Position: " + slotStatus);
         }
 
@@ -176,7 +251,17 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU : Définit une ligne du scoreboard
+     * OPTIMISÉ : Efface les entrées du scoreboard de manière efficace
+     */
+    private void clearScoreboardEntries(Scoreboard scoreboard) {
+        // Plus efficace que resetScores() pour chaque entrée
+        for (String entry : new HashSet<>(scoreboard.getEntries())) {
+            scoreboard.resetScores(entry);
+        }
+    }
+
+    /**
+     * Définit une ligne du scoreboard avec optimisations
      */
     private void setScoreboardLine(Scoreboard scoreboard, Objective objective, int score, String text) {
         // Limite la longueur pour éviter les problèmes d'affichage
@@ -189,7 +274,11 @@ public class ScoreboardTask extends BukkitRunnable {
         Team team = scoreboard.getTeam("line" + score);
 
         if (team != null) {
-            team.setPrefix(text);
+            // OPTIMISATION : Met à jour seulement si le texte a changé
+            if (!text.equals(team.getPrefix())) {
+                team.setPrefix(text);
+            }
+
             if (!team.hasEntry(entry)) {
                 team.addEntry(entry);
             }
@@ -199,46 +288,60 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU : Retire le scoreboard d'un joueur
+     * Retire le scoreboard d'un joueur
      */
     public void removeScoreboard(Player player) {
-        playerScoreboards.remove(player);
+        Scoreboard removed = playerScoreboards.remove(player);
+        lastScoreboardUpdate.remove(player);
 
-        // Remet le scoreboard par défaut
-        player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-    }
-
-    /**
-     * Met à jour tous les scoreboards
-     */
-    private void updateAllScoreboards() {
-        int updatedCount = 0;
-
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            try {
-                updateScoreboard(player);
-                updatedCount++;
-            } catch (Exception e) {
-                plugin.getPluginLogger().warning("Erreur mise à jour scoreboard pour " + player.getName() + ": " + e.getMessage());
-            }
+        if (removed != null) {
+            // Remet le scoreboard par défaut
+            player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+            plugin.getPluginLogger().debug("Scoreboard retiré pour " + player.getName());
         }
-
-        plugin.getPluginLogger().debug("Scoreboards mis à jour: " + updatedCount + " joueurs (cycle #" + updateCycles + ")");
     }
 
     /**
      * Force une mise à jour immédiate de tous les scoreboards
      */
-    public void forceUpdate() {
-        updateAllScoreboards();
-        plugin.getPluginLogger().debug("Mise à jour forcée des scoreboards");
+    public void forceUpdateAll() {
+        lastScoreboardUpdate.clear(); // Force la mise à jour de tous
+        updateScoreboardsBatch();
+        plugin.getPluginLogger().debug("Mise à jour forcée de tous les scoreboards");
     }
 
     /**
-     * NOUVEAU : Statistiques du gestionnaire
+     * NOUVEAU : Force une mise à jour immédiate pour un joueur spécifique
      */
-    public int getActiveScoreboards() {
-        return playerScoreboards.size();
+    public void forceUpdatePlayer(Player player) {
+        lastScoreboardUpdate.remove(player); // Force la mise à jour
+        updateScoreboard(player);
+        lastScoreboardUpdate.put(player, System.currentTimeMillis());
+    }
+
+    /**
+     * Nettoie les joueurs déconnectés
+     */
+    private void cleanupDisconnectedPlayers() {
+        int cleanedCount = 0;
+
+        // Utilise un iterator pour éviter ConcurrentModificationException
+        var iterator = playerScoreboards.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            Player player = entry.getKey();
+
+            if (!player.isOnline()) {
+                iterator.remove();
+                lastScoreboardUpdate.remove(player);
+                cleanedCount++;
+            }
+        }
+
+        if (cleanedCount > 0) {
+            plugin.getPluginLogger().debug("Nettoyage scoreboards: " + cleanedCount +
+                    " joueurs déconnectés supprimés");
+        }
     }
 
     /**
@@ -249,8 +352,22 @@ public class ScoreboardTask extends BukkitRunnable {
                 tickCount,
                 updateCycles,
                 plugin.getServer().getOnlinePlayers().size(),
-                getActiveScoreboards()
+                playerScoreboards.size()
         );
+    }
+
+    /**
+     * NOUVEAU : Obtient les statistiques détaillées
+     */
+    public Map<String, Object> getDetailedStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total-ticks", tickCount);
+        stats.put("update-cycles", updateCycles);
+        stats.put("online-players", plugin.getServer().getOnlinePlayers().size());
+        stats.put("active-scoreboards", playerScoreboards.size());
+        stats.put("cached-updates", lastScoreboardUpdate.size());
+        stats.put("updates-per-minute", updateCycles > 0 ? (double) updateCycles / (tickCount / 1200.0) : 0.0);
+        return stats;
     }
 
     /**

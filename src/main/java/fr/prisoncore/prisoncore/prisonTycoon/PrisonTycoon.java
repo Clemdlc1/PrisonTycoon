@@ -14,7 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Plugin principal PrisonTycoon
- * CORRIGÉ : Avec 3 tâches séparées et NotificationManager
+ * CORRIGÉ : Suppression de ScoreboardManager, utilisation du nouveau système
  */
 public final class PrisonTycoon extends JavaPlugin {
 
@@ -28,11 +28,12 @@ public final class PrisonTycoon extends JavaPlugin {
     private EnchantmentManager enchantmentManager;
     private PickaxeManager pickaxeManager;
     private EconomyManager economyManager;
-    private ScoreboardManager scoreboardManager;
     private NotificationManager notificationManager;
     private Logger logger;
 
-    // NOUVEAU : GUIs séparés
+    // SUPPRIMÉ : ScoreboardManager (maintenant intégré dans ScoreboardTask)
+
+    // GUIs séparés
     private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
@@ -40,7 +41,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private UniqueEnchantsMenuGUI uniqueEnchantsMenuGUI;
     private PetsMenuGUI petsMenuGUI;
 
-    // NOUVEAU : 3 tâches séparées
+    // 3 tâches séparées
     private ActionBarTask actionBarTask;
     private ScoreboardTask scoreboardTask;
     private ChatTask chatTask;
@@ -66,7 +67,7 @@ public final class PrisonTycoon extends JavaPlugin {
             // Initialisation des managers
             initializeManagers();
 
-            // NOUVEAU : Initialisation des GUIs
+            // Initialisation des GUIs
             initializeGUIs();
 
             // Enregistrement des événements
@@ -88,8 +89,8 @@ public final class PrisonTycoon extends JavaPlugin {
             logger.info("§7- Économie triple (coins/tokens/xp)");
             logger.info("§7- Interface graphique avancée");
             logger.info("§7- Auto-amélioration des enchantements");
-            logger.info("§7- Système de notifications intelligent");
-            logger.info("§7- 3 tâches séparées (ActionBar/Scoreboard/Chat)");
+            logger.info("§7- Système de notifications intelligent multi-types");
+            logger.info("§7- ScoreboardTask intégré (sans ScoreboardManager)");
 
         } catch (Exception e) {
             logger.severe("§cErreur lors de l'activation du plugin:");
@@ -137,7 +138,7 @@ public final class PrisonTycoon extends JavaPlugin {
     }
 
     /**
-     * Initialise tous les managers du plugin
+     * CORRIGÉ : Initialise tous les managers du plugin sans ScoreboardManager
      */
     private void initializeManagers() {
         logger.info("§7Initialisation des managers...");
@@ -148,14 +149,15 @@ public final class PrisonTycoon extends JavaPlugin {
         enchantmentManager = new EnchantmentManager(this);
         pickaxeManager = new PickaxeManager(this);
         mineManager = new MineManager(this);
-        scoreboardManager = new ScoreboardManager(this);
-        notificationManager = new NotificationManager(this);
+        notificationManager = new NotificationManager(this); // NOUVEAU : Système amélioré
 
-        logger.info("§aTous les managers initialisés.");
+        // SUPPRIMÉ : scoreboardManager (maintenant dans ScoreboardTask)
+
+        logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
 
     /**
-     * NOUVEAU : Initialise tous les GUIs
+     * Initialise tous les GUIs
      */
     private void initializeGUIs() {
         logger.info("§7Initialisation des interfaces graphiques...");
@@ -205,7 +207,7 @@ public final class PrisonTycoon extends JavaPlugin {
     }
 
     /**
-     * NOUVEAU : Démarre toutes les tâches avec les 3 tâches séparées
+     * CORRIGÉ : Démarre toutes les tâches avec le nouveau système
      */
     private void startTasks() {
         logger.info("§7Démarrage des tâches asynchrones...");
@@ -218,17 +220,17 @@ public final class PrisonTycoon extends JavaPlugin {
         int combustionInterval = getConfig().getInt("performance.task-intervals.combustion-ticks", 20);
         int autoUpgradeInterval = getConfig().getInt("performance.task-intervals.auto-upgrade-ticks", 200);
 
-        // NOUVEAU : 3 tâches séparées
+        // 3 tâches séparées avec nouveau système de notifications
         if (getConfig().getBoolean("notifications.action-bar.enabled", true)) {
             actionBarTask = new ActionBarTask(this);
             actionBarTask.runTaskTimerAsynchronously(this, 0L, actionBarInterval);
-            logger.info("§7- ActionBarTask démarrée (notifications Greed toutes les " + actionBarInterval + " ticks)");
+            logger.info("§7- ActionBarTask démarrée (nouveau système multi-notifications toutes les " + actionBarInterval + " ticks)");
         }
 
         if (getConfig().getBoolean("notifications.scoreboard.enabled", true)) {
             scoreboardTask = new ScoreboardTask(this);
             scoreboardTask.runTaskTimer(this, 0L, scoreboardInterval);
-            logger.info("§7- ScoreboardTask démarrée (mise à jour toutes les " + scoreboardInterval + " ticks)");
+            logger.info("§7- ScoreboardTask démarrée (gestion intégrée toutes les " + scoreboardInterval + " ticks)");
         }
 
         if (getConfig().getBoolean("notifications.chat.enabled", true)) {
@@ -250,11 +252,11 @@ public final class PrisonTycoon extends JavaPlugin {
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
         logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
 
-        logger.info("§aTâches asynchrones démarrées avec succès.");
+        logger.info("§aTâches asynchrones démarrées avec succès (nouveau système).");
     }
 
     /**
-     * NOUVEAU : Arrête toutes les tâches
+     * Arrête toutes les tâches
      */
     private void stopTasks() {
         if (actionBarTask != null) {
@@ -321,10 +323,6 @@ public final class PrisonTycoon extends JavaPlugin {
         return economyManager;
     }
 
-    public ScoreboardManager getScoreboardManager() {
-        return scoreboardManager;
-    }
-
     public NotificationManager getNotificationManager() {
         return notificationManager;
     }
@@ -337,7 +335,9 @@ public final class PrisonTycoon extends JavaPlugin {
         return autoUpgradeTask;
     }
 
-    // NOUVEAU : Getters pour les tâches séparées
+    // SUPPRIMÉ : getScoreboardManager() - remplacé par getScoreboardTask()
+
+    // Getters pour les tâches séparées
 
     public ActionBarTask getActionBarTask() {
         return actionBarTask;
@@ -351,7 +351,7 @@ public final class PrisonTycoon extends JavaPlugin {
         return chatTask;
     }
 
-    // NOUVEAU : Getters pour les GUIs
+    // Getters pour les GUIs
 
     public EnchantmentMenu getMainMenuGUI() {
         return mainMenuGUI;
