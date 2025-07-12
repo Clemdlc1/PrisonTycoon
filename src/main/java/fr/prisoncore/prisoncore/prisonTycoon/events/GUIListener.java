@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Listener pour les interfaces graphiques
- * CORRIGÉ : Gestion de tous les nouveaux menus séparés
+ * CORRIGÉ : Protection complète contre déplacement d'items dans tous les menus
  */
 public class GUIListener implements Listener {
 
@@ -22,7 +22,7 @@ public class GUIListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
@@ -32,7 +32,21 @@ public class GUIListener implements Listener {
             return; // Pas une GUI du plugin
         }
 
-        // CORRECTION: Annule TOUS les clics dans les GUIs du plugin
+        plugin.getPluginLogger().debug("Clic dans GUI: " + title + ", slot: " + event.getSlot() +
+                ", clickType: " + event.getClick());
+
+        // CORRIGÉ : Annule TOUS les clics dans les GUIs du plugin SAUF le clic molette pour mobilité
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.MIDDLE && title.contains("Mobilité")) {
+            // Laisse passer le clic molette pour les enchants mobilité
+            var clickedItem = event.getCurrentItem();
+            if (clickedItem != null && clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()) {
+                // Délègue à la bonne GUI pour traitement du clic molette
+                handleGUIClick(player, title, event.getSlot(), clickedItem, event.getClick());
+            }
+            return; // Ne pas annuler le clic molette dans le menu mobilité
+        }
+
+        // ANNULE TOUS LES AUTRES CLICS dans les GUIs du plugin
         event.setCancelled(true);
 
         var clickedItem = event.getCurrentItem();
@@ -45,18 +59,15 @@ public class GUIListener implements Listener {
             return;
         }
 
-        plugin.getPluginLogger().debug("Clic dans GUI: " + title + ", slot: " + event.getSlot() +
-                ", item: " + clickedItem.getItemMeta().getDisplayName() + ", clickType: " + event.getClick());
-
-        // NOUVEAU: Délègue à la bonne GUI selon le titre
+        // Délègue à la bonne GUI selon le titre
         handleGUIClick(player, title, event.getSlot(), clickedItem, event.getClick());
     }
 
     /**
-     * NOUVEAU: Délègue les clics vers les bonnes GUIs
+     * Délègue les clics vers les bonnes GUIs
      */
     private void handleGUIClick(Player player, String title, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
-        if (title.contains("Menu Principal")) {
+        if (title.contains("Menu Principal") || title.contains("Menu Enchantement")) {
             plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
         }
         else if (title.contains("Économiques") || title.contains("Efficacité") ||
@@ -97,20 +108,23 @@ public class GUIListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
         String title = event.getView().getTitle();
         if (isPluginGUI(title)) {
-            event.setCancelled(true); // Empêche le drag dans les GUIs
+            // CORRIGÉ : Empêche TOUT drag dans les GUIs du plugin
+            event.setCancelled(true);
+            plugin.getPluginLogger().debug("Drag bloqué dans GUI: " + title);
         }
     }
 
     /**
-     * CORRIGÉ: Vérifie si le titre correspond à une GUI du plugin (toutes les nouvelles)
+     * CORRIGÉ : Vérifie si le titre correspond à une GUI du plugin (toutes les nouvelles)
      */
     private boolean isPluginGUI(String title) {
         return title.contains("PrisonTycoon") ||
                 title.contains("Menu Principal") ||
+                title.contains("Menu Enchantement") ||
                 title.contains("Enchantements") ||
                 title.contains("Économiques") ||
                 title.contains("Efficacité") ||

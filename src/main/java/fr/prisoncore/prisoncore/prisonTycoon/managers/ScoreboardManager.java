@@ -15,18 +15,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Gestionnaire du scoreboard et des notifications hotbar
+ * Gestionnaire du scoreboard
  */
 public class ScoreboardManager {
 
     private final PrisonTycoon plugin;
     private final Map<Player, Scoreboard> playerScoreboards;
-    private final Map<Player, Long> lastHotbarMessage;
 
     public ScoreboardManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.playerScoreboards = new ConcurrentHashMap<>();
-        this.lastHotbarMessage = new ConcurrentHashMap<>();
 
         plugin.getPluginLogger().info("§aScoreboardManager initialisé.");
     }
@@ -110,12 +108,21 @@ public class ScoreboardManager {
         // Ligne vide
         setScoreboardLine(scoreboard, objective, line--, "  ");
 
-        // Section statistiques
+        // Section statistiques avec distinction blocs minés/cassés
         setScoreboardLine(scoreboard, objective, line--, ChatColor.AQUA + "📊 " + ChatColor.BOLD + "STATISTIQUES");
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs minés: " + ChatColor.BLUE + NumberFormatter.format(playerData.getTotalBlocksMined()));
+
+        // Affiche les blocs cassés seulement si différent des blocs minés
+        long blocksDestroyed = playerData.getTotalBlocksDestroyed();
+        long blocksMinedOnly = playerData.getTotalBlocksMined();
+        if (blocksDestroyed > blocksMinedOnly) {
+            long specialDestroyed = blocksDestroyed - blocksMinedOnly;
+            setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " + ChatColor.LIGHT_PURPLE + NumberFormatter.format(specialDestroyed));
+        }
+
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Enchantements: " + ChatColor.LIGHT_PURPLE + playerData.getEnchantmentLevels().size());
 
-        // États spéciaux
+        // États spéciaux actifs
         if (playerData.getCombustionLevel() > 0 || playerData.isAbundanceActive()) {
             setScoreboardLine(scoreboard, objective, line--, "   ");
             setScoreboardLine(scoreboard, objective, line--, ChatColor.RED + "🔥 " + ChatColor.BOLD + "ÉTATS ACTIFS");
@@ -131,8 +138,17 @@ public class ScoreboardManager {
             }
         }
 
+        // Position pioche (nouvelle information)
+        boolean pickaxeInCorrectSlot = plugin.getPickaxeManager().isPickaxeInCorrectSlot(player);
+        if (plugin.getPickaxeManager().hasLegendaryPickaxe(player)) {
+            setScoreboardLine(scoreboard, objective, line--, "    ");
+            setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "⛏️ " + ChatColor.BOLD + "PIOCHE");
+            String slotStatus = pickaxeInCorrectSlot ? ChatColor.GREEN + "Slot 1 ✓" : ChatColor.RED + "Mauvaise position!";
+            setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Position: " + slotStatus);
+        }
+
         // Ligne vide finale
-        setScoreboardLine(scoreboard, objective, line--, "    ");
+        setScoreboardLine(scoreboard, objective, line--, "     ");
 
         // Footer
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "play.prisoncore.fr");
@@ -162,38 +178,10 @@ public class ScoreboardManager {
     }
 
     /**
-     * NOUVEAU: Envoie une notification Greed dans la hotbar
-     */
-    public void sendHotbarGreedNotification(Player player, String greedType, long amount, String currency) {
-        long now = System.currentTimeMillis();
-
-        // Évite le spam (max 1 notification par seconde)
-        Long lastMessage = lastHotbarMessage.get(player);
-        if (lastMessage != null && now - lastMessage < 1000) {
-            return;
-        }
-
-        String colorCode = switch (currency) {
-            case "tokens" -> "§e";
-            case "coins" -> "§6";
-            case "XP" -> "§a";
-            default -> "§f";
-        };
-
-        String message = "§l" + greedType + "! " + colorCode + "+" + NumberFormatter.format(amount) + " " + currency;
-
-        player.sendActionBar(message);
-        lastHotbarMessage.put(player, now);
-
-        plugin.getPluginLogger().debug("Hotbar Greed notification envoyée: " + player.getName() + " - " + message);
-    }
-
-    /**
      * Retire le scoreboard d'un joueur
      */
     public void removeScoreboard(Player player) {
         playerScoreboards.remove(player);
-        lastHotbarMessage.remove(player);
 
         // Remet le scoreboard par défaut
         player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
@@ -203,10 +191,16 @@ public class ScoreboardManager {
      * Met à jour tous les scoreboards
      */
     public void updateAllScoreboards() {
+        int updated = 0;
         for (Player player : playerScoreboards.keySet()) {
             if (player.isOnline()) {
                 updateScoreboard(player);
+                updated++;
             }
+        }
+
+        if (updated > 0) {
+            plugin.getPluginLogger().debug("Scoreboards mis à jour: " + updated + " joueurs");
         }
     }
 
@@ -216,4 +210,9 @@ public class ScoreboardManager {
     public int getActiveScoreboards() {
         return playerScoreboards.size();
     }
+
+    /**
+     * SUPPRIMÉ : sendHotbarGreedNotification
+     * Maintenant géré par NotificationManager
+     */
 }

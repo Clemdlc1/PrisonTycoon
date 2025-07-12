@@ -3,20 +3,18 @@ package fr.prisoncore.prisoncore.prisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.commands.GiveTokensCommand;
 import fr.prisoncore.prisoncore.prisonTycoon.commands.MineCommand;
 import fr.prisoncore.prisoncore.prisonTycoon.commands.PickaxeCommand;
+import fr.prisoncore.prisoncore.prisonTycoon.commands.PrisonTycoonCommand;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentManager;
 import fr.prisoncore.prisoncore.prisonTycoon.events.*;
 import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
 import fr.prisoncore.prisoncore.prisonTycoon.managers.*;
-import fr.prisoncore.prisoncore.prisonTycoon.tasks.ActionBarTask;
-import fr.prisoncore.prisoncore.prisonTycoon.tasks.AutoSaveTask;
-import fr.prisoncore.prisoncore.prisonTycoon.tasks.AutoUpgradeTask;
-import fr.prisoncore.prisoncore.prisonTycoon.tasks.CombustionDecayTask;
+import fr.prisoncore.prisoncore.prisonTycoon.tasks.*;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.Logger;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Plugin principal PrisonTycoon
- * CORRIGÉ : Avec ScoreboardManager et nouveaux GUIs séparés
+ * CORRIGÉ : Avec 3 tâches séparées et NotificationManager
  */
 public final class PrisonTycoon extends JavaPlugin {
 
@@ -31,9 +29,10 @@ public final class PrisonTycoon extends JavaPlugin {
     private PickaxeManager pickaxeManager;
     private EconomyManager economyManager;
     private ScoreboardManager scoreboardManager;
+    private NotificationManager notificationManager;
     private Logger logger;
 
-    // NOUVEAU: GUIs séparés
+    // NOUVEAU : GUIs séparés
     private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
@@ -41,8 +40,12 @@ public final class PrisonTycoon extends JavaPlugin {
     private UniqueEnchantsMenuGUI uniqueEnchantsMenuGUI;
     private PetsMenuGUI petsMenuGUI;
 
-    // Tasks asynchrones
+    // NOUVEAU : 3 tâches séparées
     private ActionBarTask actionBarTask;
+    private ScoreboardTask scoreboardTask;
+    private ChatTask chatTask;
+
+    // Autres tâches
     private AutoSaveTask autoSaveTask;
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
@@ -63,7 +66,7 @@ public final class PrisonTycoon extends JavaPlugin {
             // Initialisation des managers
             initializeManagers();
 
-            // NOUVEAU: Initialisation des GUIs
+            // NOUVEAU : Initialisation des GUIs
             initializeGUIs();
 
             // Enregistrement des événements
@@ -78,13 +81,15 @@ public final class PrisonTycoon extends JavaPlugin {
             logger.info("§aPlugin PrisonTycoon activé avec succès!");
             logger.info("§7Fonctionnalités chargées:");
             logger.info("§7- Système de mines protégées");
-            logger.info("§7- Pioche légendaire unique");
+            logger.info("§7- Pioche légendaire immobile (slot 1)");
             logger.info("§7- 18 enchantements custom");
+            logger.info("§7- Distinction blocs minés/cassés");
+            logger.info("§7- Restrictions hors mine");
             logger.info("§7- Économie triple (coins/tokens/xp)");
             logger.info("§7- Interface graphique avancée");
             logger.info("§7- Auto-amélioration des enchantements");
-            logger.info("§7- Scoreboard en temps réel");
-            logger.info("§7- Notifications Greed hotbar");
+            logger.info("§7- Système de notifications intelligent");
+            logger.info("§7- 3 tâches séparées (ActionBar/Scoreboard/Chat)");
 
         } catch (Exception e) {
             logger.severe("§cErreur lors de l'activation du plugin:");
@@ -144,12 +149,13 @@ public final class PrisonTycoon extends JavaPlugin {
         pickaxeManager = new PickaxeManager(this);
         mineManager = new MineManager(this);
         scoreboardManager = new ScoreboardManager(this);
+        notificationManager = new NotificationManager(this);
 
         logger.info("§aTous les managers initialisés.");
     }
 
     /**
-     * NOUVEAU: Initialise tous les GUIs
+     * NOUVEAU : Initialise tous les GUIs
      */
     private void initializeGUIs() {
         logger.info("§7Initialisation des interfaces graphiques...");
@@ -193,43 +199,88 @@ public final class PrisonTycoon extends JavaPlugin {
 
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
+        getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
 
         logger.info("§aCommandes enregistrées.");
     }
 
     /**
-     * Démarre toutes les tâches asynchrones
+     * NOUVEAU : Démarre toutes les tâches avec les 3 tâches séparées
      */
     private void startTasks() {
         logger.info("§7Démarrage des tâches asynchrones...");
 
-        // Action bar et récapitulatif minute
-        actionBarTask = new ActionBarTask(this);
-        actionBarTask.runTaskTimerAsynchronously(this, 0L, 20L);
+        // Récupère les intervalles depuis la config
+        int actionBarInterval = getConfig().getInt("performance.task-intervals.action-bar-ticks", 10);
+        int scoreboardInterval = getConfig().getInt("performance.task-intervals.scoreboard-ticks", 400);
+        int chatInterval = getConfig().getInt("performance.task-intervals.chat-ticks", 1200);
+        int autoSaveInterval = getConfig().getInt("performance.task-intervals.auto-save-ticks", 6000);
+        int combustionInterval = getConfig().getInt("performance.task-intervals.combustion-ticks", 20);
+        int autoUpgradeInterval = getConfig().getInt("performance.task-intervals.auto-upgrade-ticks", 200);
 
-        // Sauvegarde automatique toutes les 5 minutes
+        // NOUVEAU : 3 tâches séparées
+        if (getConfig().getBoolean("notifications.action-bar.enabled", true)) {
+            actionBarTask = new ActionBarTask(this);
+            actionBarTask.runTaskTimerAsynchronously(this, 0L, actionBarInterval);
+            logger.info("§7- ActionBarTask démarrée (notifications Greed toutes les " + actionBarInterval + " ticks)");
+        }
+
+        if (getConfig().getBoolean("notifications.scoreboard.enabled", true)) {
+            scoreboardTask = new ScoreboardTask(this);
+            scoreboardTask.runTaskTimer(this, 0L, scoreboardInterval);
+            logger.info("§7- ScoreboardTask démarrée (mise à jour toutes les " + scoreboardInterval + " ticks)");
+        }
+
+        if (getConfig().getBoolean("notifications.chat.enabled", true)) {
+            chatTask = new ChatTask(this);
+            chatTask.runTaskTimerAsynchronously(this, chatInterval, chatInterval);
+            logger.info("§7- ChatTask démarrée (récapitulatif toutes les " + chatInterval + " ticks)");
+        }
+
+        // Autres tâches existantes
         autoSaveTask = new AutoSaveTask(this);
-        autoSaveTask.runTaskTimerAsynchronously(this, 6000L, 6000L);
+        autoSaveTask.runTaskTimerAsynchronously(this, autoSaveInterval, autoSaveInterval);
+        logger.info("§7- AutoSaveTask démarrée (sauvegarde toutes les " + autoSaveInterval + " ticks)");
 
-        // Décroissance combustion toutes les secondes
         combustionDecayTask = new CombustionDecayTask(this);
-        combustionDecayTask.runTaskTimer(this, 0L, 20L);
+        combustionDecayTask.runTaskTimer(this, 0L, combustionInterval);
+        logger.info("§7- CombustionDecayTask démarrée (toutes les " + combustionInterval + " ticks)");
 
-        // Auto-amélioration toutes les 10 secondes
         autoUpgradeTask = new AutoUpgradeTask(this);
-        autoUpgradeTask.runTaskTimerAsynchronously(this, 200L, 200L);
+        autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
+        logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
 
-        logger.info("§aTâches asynchrones démarrées (ActionBar, AutoSave, Combustion, AutoUpgrade).");
+        logger.info("§aTâches asynchrones démarrées avec succès.");
     }
 
     /**
-     * Arrête toutes les tâches
+     * NOUVEAU : Arrête toutes les tâches
      */
     private void stopTasks() {
-        if (actionBarTask != null) actionBarTask.cancel();
-        if (autoSaveTask != null) autoSaveTask.cancel();
-        if (combustionDecayTask != null) combustionDecayTask.cancel();
-        if (autoUpgradeTask != null) autoUpgradeTask.cancel();
+        if (actionBarTask != null) {
+            actionBarTask.cancel();
+            logger.debug("ActionBarTask arrêtée");
+        }
+        if (scoreboardTask != null) {
+            scoreboardTask.cancel();
+            logger.debug("ScoreboardTask arrêtée");
+        }
+        if (chatTask != null) {
+            chatTask.cancel();
+            logger.debug("ChatTask arrêtée");
+        }
+        if (autoSaveTask != null) {
+            autoSaveTask.cancel();
+            logger.debug("AutoSaveTask arrêtée");
+        }
+        if (combustionDecayTask != null) {
+            combustionDecayTask.cancel();
+            logger.debug("CombustionDecayTask arrêtée");
+        }
+        if (autoUpgradeTask != null) {
+            autoUpgradeTask.cancel();
+            logger.debug("AutoUpgradeTask arrêtée");
+        }
     }
 
     /**
@@ -274,6 +325,10 @@ public final class PrisonTycoon extends JavaPlugin {
         return scoreboardManager;
     }
 
+    public NotificationManager getNotificationManager() {
+        return notificationManager;
+    }
+
     public Logger getPluginLogger() {
         return logger;
     }
@@ -282,7 +337,21 @@ public final class PrisonTycoon extends JavaPlugin {
         return autoUpgradeTask;
     }
 
-    // NOUVEAU: Getters pour les GUIs
+    // NOUVEAU : Getters pour les tâches séparées
+
+    public ActionBarTask getActionBarTask() {
+        return actionBarTask;
+    }
+
+    public ScoreboardTask getScoreboardTask() {
+        return scoreboardTask;
+    }
+
+    public ChatTask getChatTask() {
+        return chatTask;
+    }
+
+    // NOUVEAU : Getters pour les GUIs
 
     public EnchantmentMenu getMainMenuGUI() {
         return mainMenuGUI;
@@ -307,6 +376,4 @@ public final class PrisonTycoon extends JavaPlugin {
     public PetsMenuGUI getPetsMenuGUI() {
         return petsMenuGUI;
     }
-
-    // SUPPRIMÉ: getEnchantmentGUI() - remplacé par les GUIs séparés
 }

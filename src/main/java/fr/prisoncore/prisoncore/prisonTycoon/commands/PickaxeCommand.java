@@ -45,8 +45,7 @@ public class PickaxeCommand implements CommandExecutor, TabCompleter {
         }
 
         // Crée et donne la pioche
-        var pickaxe = plugin.getPickaxeManager().createLegendaryPickaxe(player);
-        player.getInventory().addItem(pickaxe);
+        plugin.getPickaxeManager().createLegendaryPickaxe(player);
 
         player.sendMessage("§a✅ Pioche légendaire obtenue!");
         player.sendMessage("§7Utilisez §eclic droit §7pour ouvrir le menu d'enchantements.");

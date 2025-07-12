@@ -15,8 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Gestionnaire des 18 enchantements custom
- * CORRIGÉ : Greeds avec chance, gains uniquement via Greeds, Escalator en mobilité
- * CORRECTION : Calcul coûts identique entre GUI et chat
+ * CORRIGÉ : Distinction blocs minés vs cassés, hors mine restrictions
  */
 public class EnchantmentManager {
 
@@ -94,24 +93,17 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ: Traite un bloc détruit - Gains UNIQUEMENT via Greeds
+     * NOUVEAU : Traite un bloc MINÉ directement par le joueur (dans une mine)
      */
-    public void processBlockDestroyed(Player player, Location blockLocation, Material blockType, String mineName) {
+    public void processBlockMined(Player player, Location blockLocation, Material blockType, String mineName) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Ajoute aux statistiques de minage
+        // Ajoute aux statistiques de minage (MINÉ)
         playerData.addMinedBlock(blockType);
 
-        // SUPPRIMÉ: Plus de gains directs via Fortune - uniquement via Greeds
-        // applyFortuneGains(player, playerData, blockValue);
-
-        // Teste chaque Greed sur ce bloc détruit avec chance
-        processGreedEnchantments(player, playerData, blockType, blockLocation);
-
-        // Teste les enchantements spéciaux
+        // Applique tous les enchantements actifs dans les mines
+        processGreedEnchantments(player, playerData, blockType, blockLocation, true);
         processSpecialEnchantments(player, playerData, blockLocation, mineName);
-
-        // Met à jour la combustion
         updateCombustion(playerData);
 
         // Marque les données comme modifiées
@@ -119,9 +111,48 @@ public class EnchantmentManager {
     }
 
     /**
-     * NOUVEAU: Traite les enchantements Greed avec CHANCE et gains uniquement via Greeds
+     * NOUVEAU : Traite un bloc CASSÉ par laser/explosion (pas de récursion enchants spéciaux)
      */
-    private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType, Location blockLocation) {
+    public void processBlockDestroyed(Player player, Location blockLocation, Material blockType, String mineName) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Ajoute aux statistiques de destruction (CASSÉ)
+        playerData.addDestroyedBlocks(1);
+
+        // LIMITATION : Seuls Money/Token/Exp Greed et Fortune pour les blocs cassés
+        processGreedEnchantments(player, playerData, blockType, blockLocation, false);
+
+        // PAS de combustion pour les blocs cassés
+        // PAS d'enchantements spéciaux pour éviter la récursion infinie
+
+        // Marque les données comme modifiées
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+    }
+
+    /**
+     * NOUVEAU : Traite un bloc miné HORS mine (restrictions)
+     */
+    public void processBlockMinedOutsideMine(Player player, Material blockType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // RESTRICTION : Seuls efficacité, solidité, mobilité actifs hors mine
+        // Donc PAS de Greeds, PAS d'effets spéciaux
+
+        // Ajoute quand même aux statistiques
+        playerData.addMinedBlock(blockType);
+
+        plugin.getPluginLogger().debug("Bloc miné hors mine: " + blockType + " par " + player.getName() +
+                " (seuls efficacité/solidité/mobilité actifs)");
+
+        // Marque les données comme modifiées
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+    }
+
+    /**
+     * MODIFIÉ : Traite les enchantements Greed avec distinction minés/cassés
+     */
+    private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType,
+                                          Location blockLocation, boolean isMinedBlock) {
         int luckLevel = playerData.getEnchantmentLevel("luck");
         double combustionMultiplier = playerData.getCombustionMultiplier();
         double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
@@ -129,36 +160,35 @@ public class EnchantmentManager {
         // Base des gains sur la valeur du bloc
         BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
 
-        // Token Greed - CHANCE de se déclencher
+        // Token Greed - Toujours actif (blocs minés ET cassés)
         int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
         if (tokenGreedLevel > 0) {
-            double baseChance = 0.05; // 5% de base
-            double luckBonus = luckLevel * 0.002; // +0.2% par niveau de Luck
+            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
             double totalChance = baseChance + luckBonus;
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                // Gains basés sur la valeur du bloc ET le niveau de l'enchantement
                 long blockTokens = blockValue.getTokens();
-                long bonusTokens = Math.round((tokenGreedLevel * 5 + blockTokens * 2) * combustionMultiplier * abundanceMultiplier);
+                long bonusTokens = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens * 2) * combustionMultiplier * abundanceMultiplier);
 
                 playerData.addTokensViaPickaxe(bonusTokens);
                 playerData.addGreedTrigger();
 
-                // Envoie notification hotbar
-                plugin.getScoreboardManager().sendHotbarGreedNotification(player, "Token Greed", bonusTokens, "tokens");
+                // Notification via nouveau système
+                plugin.getNotificationManager().queueGreedNotification(player, "Token Greed", bonusTokens, "tokens");
             }
         }
 
-        // Exp Greed - CHANCE de se déclencher
+        // Exp Greed - Toujours actif (blocs minés ET cassés)
         int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
         if (expGreedLevel > 0) {
-            double baseChance = 0.05;
-            double luckBonus = luckLevel * 0.002;
+            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
             double totalChance = baseChance + luckBonus;
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
                 long blockExp = blockValue.getExperience();
-                long bonusExp = Math.round((expGreedLevel * 50 + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
+                long bonusExp = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
 
                 playerData.addExperienceViaPickaxe(bonusExp);
                 playerData.addGreedTrigger();
@@ -166,54 +196,58 @@ public class EnchantmentManager {
                 // Met à jour l'expérience vanilla
                 plugin.getEconomyManager().initializeVanillaExp(player);
 
-                // Envoie notification hotbar
-                plugin.getScoreboardManager().sendHotbarGreedNotification(player, "Exp Greed", bonusExp, "XP");
+                // Notification via nouveau système
+                plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", bonusExp, "XP");
             }
         }
 
-        // Money Greed - CHANCE de se déclencher
+        // Money Greed - Toujours actif (blocs minés ET cassés)
         int moneyGreedLevel = playerData.getEnchantmentLevel("money_greed");
         if (moneyGreedLevel > 0) {
-            double baseChance = 0.05;
-            double luckBonus = luckLevel * 0.002;
+            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
             double totalChance = baseChance + luckBonus;
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
                 long blockCoins = blockValue.getCoins();
-                long bonusCoins = Math.round((moneyGreedLevel * 10 + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
+                long bonusCoins = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
 
                 playerData.addCoinsViaPickaxe(bonusCoins);
                 playerData.addGreedTrigger();
 
-                // Envoie notification hotbar
-                plugin.getScoreboardManager().sendHotbarGreedNotification(player, "Money Greed", bonusCoins, "coins");
+                // Notification via nouveau système
+                plugin.getNotificationManager().queueGreedNotification(player, "Money Greed", bonusCoins, "coins");
             }
         }
 
-        // Key Greed - chance fixe (pas affectée par Luck selon demande)
-        int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
-        if (keyGreedLevel > 0) {
-            double chance = 0.01 * keyGreedLevel; // 1% par niveau
-            if (ThreadLocalRandom.current().nextDouble() < chance) {
-                giveRandomKey(player);
-                playerData.addKeyObtained();
+        // Key Greed et Abundance SEULEMENT pour les blocs MINÉS (pas cassés)
+        if (isMinedBlock) {
+            // Key Greed - chance fixe (pas affectée par Luck selon demande)
+            int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
+            if (keyGreedLevel > 0) {
+                double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.01) * keyGreedLevel;
+                if (ThreadLocalRandom.current().nextDouble() < chance) {
+                    giveRandomKey(player);
+                    playerData.addKeyObtained();
+                }
             }
-        }
 
-        // Abundance (chance d'activation)
-        int abundanceLevel = playerData.getEnchantmentLevel("abundance");
-        if (abundanceLevel > 0 && !playerData.isAbundanceActive()) {
-            double chance = 0.000001 * abundanceLevel;
-            if (ThreadLocalRandom.current().nextDouble() < chance) {
-                playerData.activateAbundance(60000);
-                player.sendMessage("§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant 60 secondes!");
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
+            // Abundance (chance d'activation)
+            int abundanceLevel = playerData.getEnchantmentLevel("abundance");
+            if (abundanceLevel > 0 && !playerData.isAbundanceActive()) {
+                double chance = plugin.getConfigManager().getEnchantmentSetting("abundance.base-chance", 0.000001) * abundanceLevel;
+                if (ThreadLocalRandom.current().nextDouble() < chance) {
+                    int duration = plugin.getConfigManager().getEnchantmentSetting("abundance.duration-seconds", 60);
+                    playerData.activateAbundance(duration * 1000L);
+                    player.sendMessage("§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant " + duration + " secondes!");
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
+                }
             }
         }
     }
 
     /**
-     * Applique les enchantements spéciaux (laser, explosion)
+     * MODIFIÉ : Applique les enchantements spéciaux SEULEMENT sur les blocs MINÉS
      */
     private void processSpecialEnchantments(Player player, PlayerData playerData,
                                             Location blockLocation, String mineName) {
@@ -223,7 +257,7 @@ public class EnchantmentManager {
 
         // Laser
         if (laserLevel > 0) {
-            double chance = 0.00002 * laserLevel;
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.00002) * laserLevel;
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateLaser(player, blockLocation, mineName);
             }
@@ -231,7 +265,7 @@ public class EnchantmentManager {
 
         // Explosion
         if (explosionLevel > 0) {
-            double chance = 0.0005 * explosionLevel;
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.explosion.base-chance", 0.0005) * explosionLevel;
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateExplosion(player, blockLocation, mineName);
             }
@@ -239,7 +273,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * Met à jour la combustion
+     * Met à jour la combustion SEULEMENT pour les blocs MINÉS
      */
     private void updateCombustion(PlayerData playerData) {
         int combustionLevel = playerData.getEnchantmentLevel("combustion");
@@ -257,16 +291,24 @@ public class EnchantmentManager {
         String keyType;
         String keyColor;
 
-        if (rand < 0.00005) {
+        Map<String, Double> keyProbabilities = plugin.getConfigManager().getEnchantmentSetting("keys.probabilities", Map.of(
+                "cristal", 0.00005,
+                "legendaire", 0.00995,
+                "rare", 0.09,
+                "peu-commune", 0.20,
+                "commune", 0.70
+        ));
+
+        if (rand < keyProbabilities.get("cristal")) {
             keyType = "Cristal";
             keyColor = "§d";
-        } else if (rand < 0.00995) {
+        } else if (rand < keyProbabilities.get("legendaire")) {
             keyType = "Légendaire";
             keyColor = "§6";
-        } else if (rand < 0.09) {
+        } else if (rand < keyProbabilities.get("rare")) {
             keyType = "Rare";
             keyColor = "§5";
-        } else if (rand < 0.20) {
+        } else if (rand < keyProbabilities.get("peu-commune")) {
             keyType = "Peu Commune";
             keyColor = "§9";
         } else {
@@ -285,59 +327,67 @@ public class EnchantmentManager {
         key.setItemMeta(meta);
 
         player.getInventory().addItem(key);
-        plugin.getScoreboardManager().sendHotbarGreedNotification(player, "Key Greed", 1, "clé " + keyColor + keyType);
+        plugin.getNotificationManager().queueGreedNotification(player, "Key Greed", 1, "clé " + keyColor + keyType);
     }
 
     /**
-     * CORRIGÉ: Active l'effet laser - mine en ligne droite jusqu'au bout de la mine
+     * CORRIGÉ : Active l'effet laser - destruction en ligne droite (rayon 1 bloc)
      */
     private void activateLaser(Player player, Location start, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) return;
 
-        var direction = player.getLocation().getDirection();
+        var direction = player.getLocation().getDirection().normalize();
         int blocksDestroyed = 0;
+        int maxDistance = plugin.getConfigManager().getEnchantmentSetting("special.laser.max-distance", 100);
 
-        // CORRIGÉ: Mine jusqu'au bout de la mine (pas de limite arbitraire)
-        for (int distance = 1; distance <= 500; distance++) { // Limite de sécurité de 500 blocs
-            Location target = start.clone().add(direction.clone().multiply(distance));
+        // Mine en ligne droite avec rayon de 1 bloc
+        for (int distance = 1; distance <= maxDistance; distance++) {
+            Location centerTarget = start.clone().add(direction.clone().multiply(distance));
 
             // Arrête si on sort de la mine
-            if (!mineData.contains(target)) {
+            if (!mineData.contains(centerTarget)) {
                 break;
             }
 
-            // Mine le bloc
-            Material originalType = target.getBlock().getType();
-            target.getBlock().setType(mineData.getRandomMaterial());
-            blocksDestroyed++;
+            // Rayon de 1 bloc autour du centre
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        Location target = centerTarget.clone().add(dx, dy, dz);
 
-            // CORRIGÉ: Chaque bloc détruit par laser compte comme un bloc miné normal
-            // Donc chaque bloc a une chance de déclencher des Greeds
-            processBlockDestroyed(player, target, originalType, mineName);
+                        // Vérifie si dans la mine
+                        if (mineData.contains(target)) {
+                            Material originalType = target.getBlock().getType();
+                            target.getBlock().setType(mineData.getRandomMaterial());
+                            blocksDestroyed++;
+
+                            // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
+                            processBlockDestroyed(player, target, originalType, mineName);
+                        }
+                    }
+                }
+            }
         }
 
-        if (blocksDestroyed > 0) {
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            // Pas besoin d'addDestroyedBlocks car processBlockDestroyed le fait déjà
-        }
-
-        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne!");
+        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne (rayon 1)!");
         player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
     }
 
     /**
-     * CORRIGÉ: Active l'effet explosion - crée une explosion à l'endroit du minage
+     * CORRIGÉ : Active l'effet explosion - crée une explosion sphérique
      */
     private void activateExplosion(Player player, Location center, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) return;
 
-        // CORRIGÉ: Rayon selon le niveau (1 à 3)
-        int radius = ThreadLocalRandom.current().nextInt(1, 4);
+        // Rayon aléatoire selon config
+        int minRadius = plugin.getConfigManager().getEnchantmentSetting("special.explosion.min-radius", 1);
+        int maxRadius = plugin.getConfigManager().getEnchantmentSetting("special.explosion.max-radius", 3);
+        int radius = ThreadLocalRandom.current().nextInt(minRadius, maxRadius + 1);
         int blocksDestroyed = 0;
 
-        // CORRIGÉ: Explosion centrée sur le bloc miné
+        // Explosion sphérique centrée sur le bloc miné
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
@@ -351,18 +401,12 @@ public class EnchantmentManager {
                             target.getBlock().setType(mineData.getRandomMaterial());
                             blocksDestroyed++;
 
-                            // CORRIGÉ: Chaque bloc détruit par explosion compte comme un bloc miné normal
-                            // Donc chaque bloc a une chance de déclencher des Greeds
+                            // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
                             processBlockDestroyed(player, target, originalType, mineName);
                         }
                     }
                 }
             }
-        }
-
-        if (blocksDestroyed > 0) {
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            // Pas besoin d'addDestroyedBlocks car processBlockDestroyed le fait déjà
         }
 
         player.sendMessage("§4💥 Explosion rayon " + radius + "! §e" + blocksDestroyed + " blocs détruits!");
@@ -380,7 +424,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ: Améliore un enchantement avec calcul de coûts identique au GUI
+     * CORRIGÉ : Améliore un enchantement avec calcul de coûts identique au GUI
      */
     public boolean upgradeEnchantment(Player player, String enchantmentName, int requestedLevels) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -401,7 +445,7 @@ public class EnchantmentManager {
 
         long availableTokens = playerData.getTokens();
 
-        // CORRECTION: Utilise la même logique que le GUI pour calculer les niveaux réellement achetables
+        // CORRECTION : Utilise la même logique que le GUI pour calculer les niveaux réellement achetables
         int actualLevels = 0;
         long totalCost = 0;
 
@@ -436,21 +480,23 @@ public class EnchantmentManager {
     }
 
     /**
-     * NOUVEAU: Vérifie si un joueur peut utiliser l'auto-upgrade
+     * NOUVEAU : Vérifie si un joueur peut utiliser l'auto-upgrade
      */
     public boolean canUseAutoUpgrade(Player player) {
         return player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
     }
 }
 
-// Implémentations des enchantements avec Escalator déplacé
+// Implémentations des enchantements avec coûts depuis config
 class TokenGreedEnchantment implements CustomEnchantment {
     public String getName() { return "token_greed"; }
     public String getDisplayName() { return "Token Greed"; }
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Chance d'obtenir des tokens bonus"; }
     public int getMaxLevel() { return Integer.MAX_VALUE; }
-    public long getUpgradeCost(int level) { return Math.round(5000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(5000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.GOLD_NUGGET; }
 }
 
@@ -460,7 +506,9 @@ class ExpGreedEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Chance d'obtenir de l'expérience bonus"; }
     public int getMaxLevel() { return Integer.MAX_VALUE; }
-    public long getUpgradeCost(int level) { return Math.round(3000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(3000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.EXPERIENCE_BOTTLE; }
 }
 
@@ -470,7 +518,9 @@ class MoneyGreedEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Chance d'obtenir des coins bonus"; }
     public int getMaxLevel() { return Integer.MAX_VALUE; }
-    public long getUpgradeCost(int level) { return Math.round(4000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(4000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.GOLD_INGOT; }
 }
 
@@ -480,7 +530,9 @@ class KeyGreedEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Chance d'obtenir des clés de coffres"; }
     public int getMaxLevel() { return 10; }
-    public long getUpgradeCost(int level) { return Math.round(500000 * Math.pow(level, 1.8)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(500000 * Math.pow(level, 1.8));
+    }
     public Material getDisplayMaterial() { return Material.TRIPWIRE_HOOK; }
 }
 
@@ -490,7 +542,9 @@ class AbondanceEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Chance de doubler tous les gains"; }
     public int getMaxLevel() { return 100000; }
-    public long getUpgradeCost(int level) { return Math.round(3000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(3000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.NETHER_STAR; }
 }
 
@@ -500,7 +554,9 @@ class CombustionEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Plus tu mines, plus tes gains augmentent"; }
     public int getMaxLevel() { return 1000; }
-    public long getUpgradeCost(int level) { return Math.round(5000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(5000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.FIRE_CHARGE; }
 }
 
@@ -510,7 +566,9 @@ class PetXpEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
     public String getDescription() { return "Augmente l'expérience des pets"; }
     public int getMaxLevel() { return Integer.MAX_VALUE; }
-    public long getUpgradeCost(int level) { return Math.round(2000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(2000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.BONE; }
 }
 
@@ -531,7 +589,9 @@ class FortuneEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.EFFICIENCY; }
     public String getDescription() { return "Multiplie tous les drops"; }
     public int getMaxLevel() { return Integer.MAX_VALUE; }
-    public long getUpgradeCost(int level) { return Math.round(2000 * Math.pow(level, 1.6)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(2000 * Math.pow(level, 1.6));
+    }
     public Material getDisplayMaterial() { return Material.EMERALD; }
 }
 
@@ -541,7 +601,9 @@ class DurabilityEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.EFFICIENCY; }
     public String getDescription() { return "Augmente la durabilité"; }
     public int getMaxLevel() { return 20; }
-    public long getUpgradeCost(int level) { return Math.round(10000 * Math.pow(level, 5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(10000 * Math.pow(level, 5));
+    }
     public Material getDisplayMaterial() { return Material.DIAMOND; }
 }
 
@@ -572,7 +634,9 @@ class HasteEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
     public String getDescription() { return "Effet Haste permanent"; }
     public int getMaxLevel() { return 2; }
-    public long getUpgradeCost(int level) { return Math.round(500000 * Math.pow(level, 3)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(500000 * Math.pow(level, 3));
+    }
     public Material getDisplayMaterial() { return Material.BEACON; }
 }
 
@@ -582,11 +646,13 @@ class JumpBoostEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
     public String getDescription() { return "Augmente la hauteur de saut"; }
     public int getMaxLevel() { return 5; }
-    public long getUpgradeCost(int level) { return Math.round(75000 * Math.pow(level, 3)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(75000 * Math.pow(level, 3));
+    }
     public Material getDisplayMaterial() { return Material.RABBIT_FOOT; }
 }
 
-// DÉPLACÉ: Escalator maintenant dans MOBILITY
+// DÉPLACÉ : Escalator maintenant dans MOBILITY
 class EscalatorEnchantment implements CustomEnchantment {
     public String getName() { return "escalator"; }
     public String getDisplayName() { return "Escalateur"; }
@@ -604,7 +670,9 @@ class LuckEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
     public String getDescription() { return "Augmente les chances des Greeds"; }
     public int getMaxLevel() { return 500; }
-    public long getUpgradeCost(int level) { return Math.round(3000 * Math.pow(level, 1.5)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(3000 * Math.pow(level, 1.5));
+    }
     public Material getDisplayMaterial() { return Material.RABBIT_FOOT; }
 }
 
@@ -624,6 +692,8 @@ class ExplosionEnchantment implements CustomEnchantment {
     public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
     public String getDescription() { return "Chance de créer une explosion"; }
     public int getMaxLevel() { return 100; }
-    public long getUpgradeCost(int level) { return Math.round(25000 * Math.pow(level, 1.05)); }
+    public long getUpgradeCost(int level) {
+        return Math.round(25000 * Math.pow(level, 1.05));
+    }
     public Material getDisplayMaterial() { return Material.TNT; }
 }

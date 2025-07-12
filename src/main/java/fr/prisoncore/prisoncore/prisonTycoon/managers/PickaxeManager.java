@@ -20,13 +20,16 @@ import java.util.*;
 
 /**
  * Gestionnaire de la pioche légendaire
- * CORRIGÉ : Gestion des enchantements mobilité activables/désactivables + lore pioche uniquement
+ * CORRIGÉ : Pioche immobile dans le slot 0, distinction blocs minés/cassés
  */
 public class PickaxeManager {
 
     private final PrisonTycoon plugin;
     private final NamespacedKey legendaryPickaxeKey;
     private final NamespacedKey pickaxeOwnerKey;
+
+    // NOUVEAU : Slot fixe pour la pioche
+    private static final int PICKAXE_SLOT = 0;
 
     public PickaxeManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -37,7 +40,7 @@ public class PickaxeManager {
     }
 
     /**
-     * Crée une nouvelle pioche légendaire avec enchantements par défaut
+     * CORRIGÉ : Crée une nouvelle pioche légendaire et la place dans le slot 0
      */
     public ItemStack createLegendaryPickaxe(Player player) {
         ItemStack pickaxe = new ItemStack(Material.NETHERITE_PICKAXE);
@@ -67,13 +70,75 @@ public class PickaxeManager {
         updatePickaxeLore(meta, player);
         pickaxe.setItemMeta(meta);
 
+        // NOUVEAU : Place la pioche OBLIGATOIREMENT dans le slot 0
+        placePickaxeInSlot0(player, pickaxe);
+
         plugin.getPluginLogger().info("§7Pioche légendaire créée pour: " + player.getName() +
-                " avec enchantements par défaut");
+                " avec enchantements par défaut (placée slot 0)");
         return pickaxe;
     }
 
     /**
-     * CORRIGÉ: Met à jour le lore de la pioche avec SEULEMENT les gains via pioche
+     * NOUVEAU : Place la pioche dans le slot 0 et vide le slot si nécessaire
+     */
+    private void placePickaxeInSlot0(Player player, ItemStack pickaxe) {
+        // Sauvegarde l'item qui était dans le slot 0
+        ItemStack existingItem = player.getInventory().getItem(PICKAXE_SLOT);
+
+        // Place la pioche dans le slot 0
+        player.getInventory().setItem(PICKAXE_SLOT, pickaxe);
+
+        // Si il y avait un item, essaie de le placer ailleurs
+        if (existingItem != null && existingItem.getType() != Material.AIR) {
+            var leftover = player.getInventory().addItem(existingItem);
+            if (!leftover.isEmpty()) {
+                // Drop au sol si pas de place
+                for (ItemStack overflow : leftover.values()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), overflow);
+                }
+                player.sendMessage("§e⚠️ Item du slot 1 déplacé au sol (pioche légendaire prioritaire)");
+            }
+        }
+
+        plugin.getPluginLogger().debug("Pioche placée dans le slot 0 pour " + player.getName());
+    }
+
+    /**
+     * NOUVEAU : Vérifie si la pioche est dans le bon slot
+     */
+    public boolean isPickaxeInCorrectSlot(Player player) {
+        ItemStack slotItem = player.getInventory().getItem(PICKAXE_SLOT);
+        return slotItem != null && isLegendaryPickaxe(slotItem) && isOwner(slotItem, player);
+    }
+
+    /**
+     * NOUVEAU : Force le retour de la pioche au slot 0
+     */
+    public void enforcePickaxeSlot(Player player) {
+        if (isPickaxeInCorrectSlot(player)) {
+            return; // Déjà au bon endroit
+        }
+
+        // Cherche la pioche dans l'inventaire
+        ItemStack foundPickaxe = findPlayerPickaxe(player);
+        if (foundPickaxe != null) {
+            // Retire la pioche de son emplacement actuel
+            for (int i = 0; i < player.getInventory().getSize(); i++) {
+                ItemStack item = player.getInventory().getItem(i);
+                if (item != null && item.equals(foundPickaxe)) {
+                    player.getInventory().setItem(i, null);
+                    break;
+                }
+            }
+
+            // La replace au slot 0
+            placePickaxeInSlot0(player, foundPickaxe);
+            player.sendMessage("§e⚠️ Pioche légendaire replacée dans le slot 1 (position obligatoire)");
+        }
+    }
+
+    /**
+     * CORRIGÉ : Met à jour le lore avec distinction blocs minés/cassés
      */
     public void updatePickaxeLore(ItemMeta meta, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -82,16 +147,17 @@ public class PickaxeManager {
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§7Pioche légendaire unique et indestructible");
         lore.add("§7Propriétaire: §e" + player.getName());
+        lore.add("§c⚠️ §lDOIT RESTER DANS LE SLOT 1");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("");
 
-        // CORRIGÉ: Statistiques UNIQUEMENT via pioche
+        // CORRIGÉ : Statistiques UNIQUEMENT via pioche avec distinction minés/cassés
         lore.add("§6⛏️ §lSTATISTIQUES PIOCHE");
         lore.add("§7│ §6Coins via pioche: §e" + NumberFormatter.formatWithColor(playerData.getCoinsViaPickaxe()));
         lore.add("§7│ §eTokens via pioche: §6" + NumberFormatter.formatWithColor(playerData.getTokensViaPickaxe()));
         lore.add("§7│ §aExpérience via pioche: §2" + NumberFormatter.formatWithColor(playerData.getExperienceViaPickaxe()));
         lore.add("§7│ §bBlocs minés: §3" + NumberFormatter.formatWithColor(playerData.getTotalBlocksMined()));
-        lore.add("§7└ §dBlocs détruits: §5" + NumberFormatter.formatWithColor(playerData.getTotalBlocksDestroyed()));
+        lore.add("§7└ §dBlocs détruits (laser/explosion): §5" + NumberFormatter.formatWithColor(playerData.getTotalBlocksDestroyed() - playerData.getTotalBlocksMined()));
         lore.add("");
 
         // États spéciaux actifs
@@ -137,7 +203,7 @@ public class PickaxeManager {
                     String levelStr = entry.getValue() == Integer.MAX_VALUE ? "∞" :
                             NumberFormatter.format(entry.getValue());
 
-                    // NOUVEAU: Indication si enchantement mobilité désactivé
+                    // NOUVEAU : Indication si enchantement mobilité désactivé
                     String statusIndicator = "";
                     if (category == EnchantmentCategory.MOBILITY) {
                         boolean enabled = playerData.isMobilityEnchantmentEnabled(entry.getKey());
@@ -178,8 +244,9 @@ public class PickaxeManager {
         lore.add("§7│ §6Clic droit: §eMenu enchantements");
         lore.add("§7│ §6Shift+Clic droit: §eÉscalateur §7(si débloqué)");
         lore.add("§7│ §6Clic molette: §7Activer/désactiver mobilité");
-        lore.add("§7│ §6Auto-mine: §7Uniquement dans les mines");
-        lore.add("§7│ §6Protection: §cImpossible à perdre/jeter");
+        lore.add("§7│ §6Auto-mine: §7Dans les mines uniquement");
+        lore.add("§7│ §cHors mine: §7Seuls efficacité/solidité/mobilité actifs");
+        lore.add("§7│ §6Protection: §cDoit rester dans le slot 1");
         lore.add("§7└ §6Indestructible: §7Ne se casse jamais");
         lore.add("");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -248,6 +315,9 @@ public class PickaxeManager {
 
         updatePickaxeLore(meta, player);
         pickaxe.setItemMeta(meta);
+
+        // Vérifie que la pioche est toujours au bon endroit
+        enforcePickaxeSlot(player);
     }
 
     /**
@@ -279,17 +349,16 @@ public class PickaxeManager {
     }
 
     /**
-     * NOUVEAU: Met à jour les effets de mobilité selon les enchantements activés/désactivés
+     * NOUVEAU : Met à jour les effets de mobilité selon les enchantements activés/désactivés
      */
     public void updateMobilityEffects(Player player) {
-        // Vérifie d'abord si la pioche légendaire est en main
-        ItemStack handItem = player.getInventory().getItemInMainHand();
-        boolean hasPickaxeInHand = handItem != null && isLegendaryPickaxe(handItem) && isOwner(handItem, player);
+        // Vérifie d'abord si la pioche légendaire est dans le slot 0
+        boolean hasPickaxeInSlot0 = isPickaxeInCorrectSlot(player);
 
-        // Si pas de pioche en main, retire tous les effets
-        if (!hasPickaxeInHand) {
+        // Si pas de pioche au slot 0, retire tous les effets
+        if (!hasPickaxeInSlot0) {
             removeMobilityEffects(player);
-            plugin.getPluginLogger().debug("Effets mobilité retirés pour " + player.getName() + " (pioche pas en main)");
+            plugin.getPluginLogger().debug("Effets mobilité retirés pour " + player.getName() + " (pioche pas au slot 0)");
             return;
         }
 
@@ -298,7 +367,7 @@ public class PickaxeManager {
         // Retire tous les effets d'abord
         removeMobilityEffects(player);
 
-        // Applique seulement les effets activés ET si pioche en main
+        // Applique seulement les effets activés ET si pioche au slot 0
 
         // Vision nocturne
         if (playerData.getEnchantmentLevel("night_vision") > 0 &&
@@ -333,11 +402,11 @@ public class PickaxeManager {
         }
 
         plugin.getPluginLogger().debug("Effets mobilité mis à jour pour " + player.getName() +
-                " (pioche en main: " + hasPickaxeInHand + ")");
+                " (pioche au slot 0: " + hasPickaxeInSlot0 + ")");
     }
 
     /**
-     * RENOMMÉ: Applique les effets de mobilité (utilise updateMobilityEffects)
+     * RENOMMÉ : Applique les effets de mobilité (utilise updateMobilityEffects)
      */
     public void applyMobilityEffects(Player player) {
         updateMobilityEffects(player);
@@ -354,13 +423,12 @@ public class PickaxeManager {
     }
 
     /**
-     * CORRIGÉ: Gère la téléportation Escalateur (maintenant dans mobilité)
+     * CORRIGÉ : Gère la téléportation Escalateur (maintenant dans mobilité)
      */
     public void handleEscalator(Player player) {
-        // Vérifie que la pioche est en main
-        ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (handItem == null || !isLegendaryPickaxe(handItem) || !isOwner(handItem, player)) {
-            player.sendMessage("§c❌ Vous devez avoir la pioche légendaire en main!");
+        // Vérifie que la pioche est au slot 0
+        if (!isPickaxeInCorrectSlot(player)) {
+            player.sendMessage("§c❌ Vous devez avoir la pioche légendaire dans le slot 1!");
             return;
         }
 
@@ -390,5 +458,12 @@ public class PickaxeManager {
         } else {
             player.sendMessage("§c❌ Escalateur non débloqué!");
         }
+    }
+
+    /**
+     * NOUVEAU : Getter pour le slot obligatoire de la pioche
+     */
+    public static int getPickaxeSlot() {
+        return PICKAXE_SLOT;
     }
 }

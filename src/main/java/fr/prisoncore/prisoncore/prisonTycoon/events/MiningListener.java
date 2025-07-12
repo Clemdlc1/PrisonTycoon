@@ -20,7 +20,7 @@ import java.util.Map;
 
 /**
  * Listener pour les événements de minage
- * CORRIGÉ : Plus d'XP des blocs, seulement via Exp Greed
+ * CORRIGÉ : Distinction mine/hors mine, blocs minés directement par le joueur
  */
 public class MiningListener implements Listener {
 
@@ -44,7 +44,7 @@ public class MiningListener implements Listener {
         String mineName = plugin.getConfigManager().getPlayerMine(location);
 
         if (mineName != null) {
-            plugin.getPluginLogger().debug("Bloc cassé dans la mine: " + mineName);
+            plugin.getPluginLogger().debug("Bloc miné dans la mine: " + mineName);
 
             // Vérifie si le bloc peut être miné (protection)
             if (!plugin.getMineManager().canMineBlock(location, player)) {
@@ -53,11 +53,11 @@ public class MiningListener implements Listener {
                 return;
             }
 
-            // CORRECTION: Empêche TOUS les drops (items ET exp)
+            // CORRECTION : Empêche TOUS les drops (items ET exp)
             event.setDropItems(false);
             event.setExpToDrop(0); // Plus d'exp des blocs minés
 
-            // Traite les gains et enchantements pour ce bloc détruit
+            // NOUVEAU : Traite le bloc MINÉ directement par le joueur dans une mine
             processMiningInMine(player, location, material, mineName);
 
             // Met à jour la pioche
@@ -70,13 +70,28 @@ public class MiningListener implements Listener {
             }
 
         } else {
-            plugin.getPluginLogger().debug("Bloc cassé hors mine - minage normal");
-            // Hors mine: comportement normal de Minecraft
+            plugin.getPluginLogger().debug("Bloc miné hors mine - minage normal avec restrictions");
+
+            // NOUVEAU : Hors mine, vérification de la pioche légendaire
+            var handItem = player.getInventory().getItemInMainHand();
+            if (handItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(handItem) &&
+                    plugin.getPickaxeManager().isOwner(handItem, player)) {
+
+                // Hors mine avec pioche légendaire : seuls efficacité, solidité, mobilité actifs
+                processMiningOutsideMine(player, location, material);
+
+                // Met à jour la pioche
+                plugin.getPickaxeManager().updatePlayerPickaxe(player);
+
+                // Gère la durabilité
+                plugin.getPickaxeManager().handleDurability(handItem, player);
+            }
+            // Sinon : comportement normal de Minecraft (pas de restrictions)
         }
     }
 
     /**
-     * Traite le minage dans une mine avec la nouvelle approche par bloc détruit
+     * NOUVEAU : Traite le minage dans une mine (bloc MINÉ directement)
      */
     private void processMiningInMine(Player player, Location location, Material material, String mineName) {
         plugin.getPluginLogger().debug("Traitement minage dans mine: " + mineName);
@@ -86,16 +101,32 @@ public class MiningListener implements Listener {
         // Ajoute le bloc directement à l'inventaire du joueur
         addBlockToInventory(player, material);
 
-        // NOUVEAU: Traite ce bloc détruit avec la nouvelle méthode
-        plugin.getEnchantmentManager().processBlockDestroyed(player, location, material, mineName);
-
-        // Ajoute aux statistiques (déjà fait dans processBlockDestroyed via addMinedBlock)
-        // playerData.addMinedBlock(material); - supprimé pour éviter double comptage
+        // NOUVEAU : Traite ce bloc MINÉ directement par le joueur
+        plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        plugin.getPluginLogger().debug("Bloc traité: " + material + " par " + player.getName());
+        plugin.getPluginLogger().debug("Bloc miné traité: " + material + " par " + player.getName());
+    }
+
+    /**
+     * NOUVEAU : Traite le minage hors mine (restrictions enchantements)
+     */
+    private void processMiningOutsideMine(Player player, Location location, Material material) {
+        plugin.getPluginLogger().debug("Traitement minage hors mine avec pioche légendaire");
+
+        // RESTRICTION : Seuls efficacité, solidité, mobilité actifs hors mine
+        // Donc PAS de gains économiques, PAS de Greeds, PAS d'effets spéciaux
+
+        // Applique uniquement les enchantements autorisés hors mine
+        plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
+
+        // Marque les données comme modifiées
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+        plugin.getPluginLogger().debug("Bloc miné hors mine traité: " + material + " par " + player.getName() +
+                " (restrictions appliquées)");
     }
 
     /**

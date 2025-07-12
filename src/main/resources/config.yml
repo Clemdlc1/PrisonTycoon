@@ -5,7 +5,10 @@
 # Auteur: PrisonCore
 # Version: 1.0.0
 
-# Options générales
+# ========================================
+#           OPTIONS GÉNÉRALES
+# ========================================
+
 debug: false
 auto-save-interval: 300 # secondes (5 minutes)
 cache-cleanup-interval: 3000 # secondes (50 minutes)
@@ -157,9 +160,9 @@ block-values:
 # Paramètres des enchantements custom
 
 enchantments:
-  # Enchantements économiques
+  # Enchantements économiques - Paramètres Greed
   greed:
-    base-chance: 0.05           # 5% de chance de base
+    base-chance: 0.05           # 5% de chance de base pour tous les Greeds
     luck-bonus-per-level: 0.002 # +0.2% par niveau de Luck
     token-multiplier: 5         # Tokens par niveau de Token Greed
     exp-multiplier: 50          # XP par niveau d'Exp Greed
@@ -182,11 +185,11 @@ enchantments:
   keys:
     base-chance: 0.01           # 1% par niveau
     probabilities:
-      commune: 0.70             # 70% des drops
-      peu-commune: 0.20         # 20% des drops
-      rare: 0.09                # 9% des drops
-      legendaire: 0.00995       # 0.995% des drops
       cristal: 0.00005          # 0.005% des drops
+      legendaire: 0.00995       # 0.995% des drops
+      rare: 0.09                # 9% des drops
+      peu-commune: 0.20         # 20% des drops
+      commune: 0.70             # 70% des drops
 
   # Fortune
   fortune:
@@ -195,6 +198,7 @@ enchantments:
   # Efficacité
   efficiency:
     max-level: 50               # Niveau maximum
+    speed-bonus-per-level: 0.1  # Bonus de vitesse par niveau
 
   # Solidité
   durability:
@@ -222,6 +226,11 @@ enchantments:
       base-cost: 75000
       cost-multiplier: 3
 
+    escalator:
+      max-level: 1
+      cost: 200000
+      min-air-blocks: 2         # Blocs d'air requis à la surface
+
   # Enchantements spéciaux
   special:
     luck:
@@ -230,19 +239,15 @@ enchantments:
 
     laser:
       max-level: 2000
-      base-chance: 0.000002     # 0.0002% par niveau
-      max-distance: 10          # Distance maximum du laser
+      base-chance: 0.00002      # 0.002% par niveau
+      max-distance: 100         # Distance maximum du laser
+      radius: 1                 # Rayon du laser (1 bloc)
 
     explosion:
       max-level: 100
       base-chance: 0.0005       # 0.05% par niveau
-      min-radius: 1
-      max-radius: 3
-
-    escalator:
-      max-level: 1
-      cost: 200000
-      min-air-blocks: 2         # Blocs d'air requis à la surface
+      min-radius: 1             # Rayon minimum
+      max-radius: 3             # Rayon maximum
 
 # ========================================
 #        COÛTS DES ENCHANTEMENTS
@@ -309,6 +314,10 @@ costs:
     base: 75000
     exponent: 3.0
 
+  escalator:
+    base: 200000
+    exponent: 1.0               # Coût fixe
+
   # Enchantements spéciaux
   luck:
     base: 3000
@@ -322,9 +331,58 @@ costs:
     base: 25000
     exponent: 1.05              # Croissance lente
 
-  escalator:
-    base: 200000
-    exponent: 1.0               # Coût fixe
+# ========================================
+#            PIOCHE LÉGENDAIRE
+# ========================================
+
+pickaxe:
+  # Position obligatoire
+  required-slot: 0              # Slot 0 (premier slot de l'inventaire)
+
+  # Enchantements par défaut
+  default-enchantments:
+    token_greed: 5
+    efficiency: 3
+    durability: 1
+
+  # Protection
+  protect-from-drop: true       # Empêche de jeter la pioche
+  protect-from-move: true       # Empêche de déplacer la pioche
+  protect-from-commands: true   # Bloque les commandes dangereuses
+  auto-return-slot: true        # Remet automatiquement au bon slot
+
+  # Fonctionnement hors mine
+  outside-mine:
+    allow-efficiency: true      # Efficacité fonctionne hors mine
+    allow-durability: true      # Solidité fonctionne hors mine
+    allow-mobility: true        # Mobilité fonctionne hors mine
+    allow-greed: false          # Greeds NE fonctionnent PAS hors mine
+    allow-special: false        # Effets spéciaux NE fonctionnent PAS hors mine
+
+# ========================================
+#         SYSTÈME DE NOTIFICATIONS
+# ========================================
+
+notifications:
+  # Action Bar (Greed notifications)
+  action-bar:
+    enabled: true
+    cooldown-ms: 1000           # 1 seconde entre notifications
+    accumulation-window-ms: 3000 # 3 secondes pour cumuler même type
+    max-queue-size: 10          # Maximum 10 notifications en attente
+
+  # Scoreboard
+  scoreboard:
+    enabled: true
+    update-interval-seconds: 20 # Mise à jour toutes les 20 secondes
+    auto-create: true           # Crée automatiquement à la connexion
+
+  # Chat (récapitulatif minute)
+  chat:
+    enabled: true
+    summary-interval-seconds: 60 # Récapitulatif toutes les minutes
+    require-mining-activity: true # Seulement si le joueur a miné
+    include-totals: true        # Inclut les totaux actuels
 
 # ========================================
 #          INTERFACE UTILISATEUR
@@ -363,9 +421,11 @@ messages:
     inventory-full: "§cVotre inventaire est plein!"
     given: "§a✅ Pioche légendaire obtenue!"
     cannot-drop: "§c❌ Vous ne pouvez pas jeter la pioche légendaire!"
-    cannot-move: "§c❌ Vous ne pouvez pas sortir la pioche légendaire de votre inventaire!"
+    cannot-move: "§c❌ La pioche légendaire doit rester dans le slot 1!"
+    wrong-slot: "§c❌ La pioche légendaire doit être dans le slot 1 pour fonctionner!"
     action-blocked: "§c❌ Action interdite avec la pioche légendaire!"
     durability-broken: "§c⚠️ Votre pioche est endommagée! Réparez-la pour réactiver tous les enchantements."
+    returned-to-slot: "§e⚠️ Pioche légendaire replacée dans le slot 1 (position obligatoire)"
 
   # Messages des mines
   mine:
@@ -384,13 +444,13 @@ messages:
 
   # Messages des enchantements
   enchantments:
-    greed-trigger: "§6✨ %type% Greed! §e+%amount%!"
-    abundance-activated: "§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant 60 secondes!"
+    abundance-activated: "§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant %duration% secondes!"
     key-obtained: "§e🗝️ Clé %type% obtenue!"
-    laser-activated: "§c⚡ Laser activé! §e%blocks% blocs détruits!"
-    explosion-activated: "§4💥 Explosion! §e%blocks% blocs détruits!"
+    laser-activated: "§c⚡ Laser activé! §e%blocks% blocs détruits en ligne (rayon %radius%)!"
+    explosion-activated: "§4💥 Explosion rayon %radius%! §e%blocks% blocs détruits!"
     escalator-used: "§a✨ Escalateur activé! Téléportation vers la surface."
     escalator-blocked: "§cImpossible de se téléporter: surface obstruée!"
+    outside-mine-restriction: "§c⚠️ Hors mine: seuls efficacité, solidité et mobilité actifs!"
 
 # ========================================
 #         OPTIMISATIONS
@@ -408,8 +468,14 @@ performance:
   mine-generation-batch: 1000 # Blocs traités par batch
   mine-generation-delay: 1    # Délai entre les batches (ms)
 
-  # Action bar
-  actionbar-update-interval: 20 # Ticks (1 seconde)
+  # Tâches
+  task-intervals:
+    action-bar-ticks: 10      # ActionBar toutes les 10 ticks (0.5s)
+    scoreboard-ticks: 400     # Scoreboard toutes les 400 ticks (20s)
+    chat-ticks: 1200          # Chat toutes les 1200 ticks (60s)
+    auto-save-ticks: 6000     # Sauvegarde toutes les 6000 ticks (5min)
+    combustion-ticks: 20      # Combustion toutes les 20 ticks (1s)
+    auto-upgrade-ticks: 200   # Auto-upgrade toutes les 200 ticks (10s)
 
   # Tâches asynchrones
   async-save: true            # Sauvegarde asynchrone
@@ -431,6 +497,7 @@ security:
   # Validation
   validate-coordinates: true    # Valide les coordonnées des mines
   validate-probabilities: true # Valide que les probabilités totalisent 1.0
+  validate-enchantment-costs: true # Valide les coûts d'enchantements
 
 # ========================================
 #           BASE DE DONNÉES
@@ -471,11 +538,14 @@ advanced:
     enabled: true
     check-interval: 200       # Ticks (10 secondes)
     max-per-check: 5          # Améliorations max par vérification
+    required-permission: "specialmine.vip" # Permission requise
 
   # Statistiques
   statistics:
     enabled: true
     track-detailed: true      # Statistiques détaillées
+    track-blocks-mined: true  # Distinction blocs minés/cassés
+    track-greed-triggers: true # Comptage des déclenchements Greed
 
   # Événements custom
   custom-events:
@@ -486,5 +556,24 @@ advanced:
     enabled: true
     bstats: true              # Envoie des statistiques anonymes
 
+# ========================================
+#            DEBUG ET LOGS
+# ========================================
+
+logging:
+  # Niveaux de log
+  log-level: "INFO"           # DEBUG, INFO, WARNING, ERROR
+  log-enchantment-triggers: false # Log chaque déclenchement d'enchantement
+  log-block-mining: false    # Log chaque bloc miné
+  log-greed-notifications: false # Log notifications Greed
+  log-performance: true      # Log performances des tâches
+
+  # Fichiers de log séparés
+  separate-files:
+    enabled: false
+    enchantments-file: "enchantments.log"
+    mining-file: "mining.log"
+    economy-file: "economy.log"
+
 # Version du fichier de configuration (ne pas modifier)
-config-version: 1
+config-version: 2

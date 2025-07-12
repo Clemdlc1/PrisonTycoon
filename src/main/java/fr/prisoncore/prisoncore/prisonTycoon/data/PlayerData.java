@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Données d'un joueur
- * CORRIGÉ : Distinction gains pioche vs autres moyens
+ * CORRIGÉ : Distinction correcte gains pioche vs autres moyens, blocs minés vs cassés
  */
 public class PlayerData {
     private final UUID playerId;
@@ -38,9 +38,9 @@ public class PlayerData {
     // Enchantements mobilité désactivés
     private final Set<String> mobilityEnchantmentsDisabled;
 
-    // Statistiques de minage
-    private long totalBlocksMined;
-    private long totalBlocksDestroyed;
+    // CORRIGÉ : Statistiques de minage avec distinction minés/cassés
+    private long totalBlocksMined;     // Blocs minés DIRECTEMENT par le joueur
+    private long totalBlocksDestroyed; // Blocs minés + cassés (laser/explosion)
     private final Map<Material, Long> blocksMinedByType;
 
     // Statistiques spécialisées
@@ -316,11 +316,15 @@ public class PlayerData {
         }
     }
 
-    // Statistiques avec tracking des blocs
+    // CORRIGÉ : Statistiques avec distinction blocs minés vs cassés
+
+    /**
+     * NOUVEAU : Ajoute un bloc MINÉ directement par le joueur
+     */
     public void addMinedBlock(Material material) {
         synchronized (dataLock) {
             totalBlocksMined++;
-            totalBlocksDestroyed++;
+            totalBlocksDestroyed++; // Un bloc miné compte aussi comme détruit
             lastMinuteBlocksMined++;
             lastMinuteBlocksDestroyed++;
 
@@ -330,10 +334,14 @@ public class PlayerData {
         }
     }
 
+    /**
+     * NOUVEAU : Ajoute des blocs CASSÉS (laser/explosion)
+     */
     public void addDestroyedBlocks(int count) {
         synchronized (dataLock) {
             totalBlocksDestroyed += count;
             lastMinuteBlocksDestroyed += count;
+            // NE PAS ajouter à totalBlocksMined car ce ne sont pas des blocs minés directement
         }
     }
 
@@ -485,11 +493,11 @@ public class PlayerData {
     }
 
     /**
-     * Vérifie si le joueur a été actif cette minute
+     * CORRIGÉ : Vérifie si le joueur a miné cette minute (pas seulement cassé)
      */
     public boolean hasMinedThisMinute() {
         synchronized (dataLock) {
-            return lastMinuteBlocksMined > 0 || lastMinuteBlocksDestroyed > 0;
+            return lastMinuteBlocksMined > 0; // Seulement les blocs MINÉS comptent pour le récapitulatif
         }
     }
 }
