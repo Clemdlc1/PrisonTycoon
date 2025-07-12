@@ -1,0 +1,490 @@
+# ========================================
+#         Configuration PrisonTycoon
+# ========================================
+# Plugin de minage avec pioche légendaire
+# Auteur: PrisonCore
+# Version: 1.0.0
+
+# Options générales
+debug: false
+auto-save-interval: 300 # secondes (5 minutes)
+cache-cleanup-interval: 3000 # secondes (50 minutes)
+
+# ========================================
+#              MINES
+# ========================================
+# Configuration des mines protégées
+# Format: nom_mine -> coordonnées + composition
+
+mines:
+  # Mine A - Mine de débutant
+  mine-a:
+    world: world  # Nom du monde (optionnel, utilise le monde principal par défaut)
+    coordinates:
+      min-x: 100
+      min-y: 10
+      min-z: 100
+      max-x: 150
+      max-y: 60
+      max-z: 150
+    blocks:
+      stone: 0.5      # 50% de pierre
+      cobblestone: 0.3 # 30% de cobblestone
+      coal_ore: 0.15   # 15% de minerai de charbon
+      iron_ore: 0.05   # 5% de minerai de fer
+
+  # Mine B - Mine intermédiaire
+  mine-b:
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: 100
+      max-x: -100
+      max-y: 60
+      max-z: 150
+    blocks:
+      stone: 0.4
+      cobblestone: 0.25
+      coal_ore: 0.15
+      iron_ore: 0.1
+      gold_ore: 0.05
+      redstone_ore: 0.04
+      diamond_ore: 0.01
+
+  # Mine C - Mine avancée
+  mine-c:
+    coordinates:
+      min-x: 100
+      min-y: 10
+      min-z: -150
+      max-x: 150
+      max-y: 60
+      max-z: -100
+    blocks:
+      stone: 0.3
+      coal_ore: 0.2
+      iron_ore: 0.15
+      gold_ore: 0.1
+      redstone_ore: 0.1
+      lapis_ore: 0.05
+      diamond_ore: 0.05
+      emerald_ore: 0.03
+      ancient_debris: 0.02
+
+  # Mine D - Mine légendaire
+  mine-d:
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: -150
+      max-x: -100
+      max-y: 60
+      max-z: -100
+    blocks:
+      coal_ore: 0.25
+      iron_ore: 0.2
+      gold_ore: 0.15
+      redstone_ore: 0.1
+      lapis_ore: 0.1
+      diamond_ore: 0.1
+      emerald_ore: 0.05
+      ancient_debris: 0.05
+
+# ========================================
+#          VALEURS DES BLOCS
+# ========================================
+# Gains économiques par type de bloc miné
+
+block-values:
+  # Blocs de base
+  stone:
+    coins: 5
+    tokens: 2
+    experience: 10
+
+  cobblestone:
+    coins: 3
+    tokens: 1
+    experience: 8
+
+  # Minerais communs
+  coal_ore:
+    coins: 15
+    tokens: 5
+    experience: 25
+
+  iron_ore:
+    coins: 30
+    tokens: 10
+    experience: 50
+
+  # Minerais rares
+  gold_ore:
+    coins: 75
+    tokens: 25
+    experience: 100
+
+  redstone_ore:
+    coins: 50
+    tokens: 20
+    experience: 80
+
+  lapis_ore:
+    coins: 60
+    tokens: 25
+    experience: 90
+
+  # Minerais précieux
+  diamond_ore:
+    coins: 200
+    tokens: 75
+    experience: 300
+
+  emerald_ore:
+    coins: 300
+    tokens: 100
+    experience: 400
+
+  # Minerais légendaires
+  ancient_debris:
+    coins: 1000
+    tokens: 500
+    experience: 1500
+
+# ========================================
+#          ENCHANTEMENTS
+# ========================================
+# Paramètres des enchantements custom
+
+enchantments:
+  # Enchantements économiques
+  greed:
+    base-chance: 0.05           # 5% de chance de base
+    luck-bonus-per-level: 0.002 # +0.2% par niveau de Luck
+    token-multiplier: 5         # Tokens par niveau de Token Greed
+    exp-multiplier: 50          # XP par niveau d'Exp Greed
+    money-multiplier: 10        # Coins par niveau de Money Greed
+
+  # Combustion
+  combustion:
+    max-gauge: 1000             # Jauge maximum
+    decay-per-second: 1         # Décroissance par seconde
+    min-gain-per-block: 1       # Gain minimum par bloc
+    max-gain-ratio: 0.1         # Gain max = niveau / 10
+
+  # Abondance
+  abundance:
+    duration-seconds: 60        # Durée de l'effet en secondes
+    multiplier: 2.0             # Multiplicateur des gains
+    base-chance: 0.000001       # 0.0001% par niveau
+
+  # Clés
+  keys:
+    base-chance: 0.01           # 1% par niveau
+    probabilities:
+      commune: 0.70             # 70% des drops
+      peu-commune: 0.20         # 20% des drops
+      rare: 0.09                # 9% des drops
+      legendaire: 0.00995       # 0.995% des drops
+      cristal: 0.00005          # 0.005% des drops
+
+  # Fortune
+  fortune:
+    multiplier-per-level: 0.2   # +20% par niveau
+
+  # Efficacité
+  efficiency:
+    max-level: 50               # Niveau maximum
+
+  # Solidité
+  durability:
+    bonus-per-level: 0.1        # +10% de durabilité par niveau
+    max-level: 20
+
+  # Enchantements de mobilité
+  mobility:
+    night-vision:
+      max-level: 1
+      cost: 150000
+
+    speed:
+      max-level: 3
+      base-cost: 100000
+      cost-multiplier: 2        # Coût = base * niveau²
+
+    haste:
+      max-level: 2
+      base-cost: 500000
+      cost-multiplier: 3        # Coût = base * niveau³
+
+    jump-boost:
+      max-level: 5
+      base-cost: 75000
+      cost-multiplier: 3
+
+  # Enchantements spéciaux
+  special:
+    luck:
+      max-level: 500
+      bonus-per-level: 0.002    # +0.2% par niveau
+
+    laser:
+      max-level: 2000
+      base-chance: 0.000002     # 0.0002% par niveau
+      max-distance: 10          # Distance maximum du laser
+
+    explosion:
+      max-level: 100
+      base-chance: 0.0005       # 0.05% par niveau
+      min-radius: 1
+      max-radius: 3
+
+    escalator:
+      max-level: 1
+      cost: 200000
+      min-air-blocks: 2         # Blocs d'air requis à la surface
+
+# ========================================
+#        COÛTS DES ENCHANTEMENTS
+# ========================================
+# Formules de coût pour chaque enchantement
+
+costs:
+  # Enchantements économiques
+  token_greed:
+    base: 5000
+    exponent: 1.5               # Coût = base * niveau^exponent
+
+  exp_greed:
+    base: 3000
+    exponent: 1.5
+
+  money_greed:
+    base: 4000
+    exponent: 1.5
+
+  key_greed:
+    base: 500000
+    exponent: 1.8
+
+  abundance:
+    base: 3000
+    exponent: 1.5
+
+  combustion:
+    base: 5000
+    exponent: 1.5
+
+  pet_xp:
+    base: 2000
+    exponent: 1.5
+
+  # Enchantements d'efficacité
+  efficiency:
+    base: 10000
+    exponent: 2.0               # Plus cher exponentiellement
+
+  fortune:
+    base: 2000
+    exponent: 1.6
+
+  durability:
+    base: 10000
+    exponent: 5.0               # Très cher
+
+  # Enchantements de mobilité (coûts fixes ou simples)
+  night_vision:
+    base: 150000
+    exponent: 1.0               # Coût fixe
+
+  speed:
+    base: 100000
+    exponent: 2.0
+
+  haste:
+    base: 500000
+    exponent: 3.0
+
+  jump_boost:
+    base: 75000
+    exponent: 3.0
+
+  # Enchantements spéciaux
+  luck:
+    base: 3000
+    exponent: 1.5
+
+  laser:
+    base: 20000
+    exponent: 2.0
+
+  explosion:
+    base: 25000
+    exponent: 1.05              # Croissance lente
+
+  escalator:
+    base: 200000
+    exponent: 1.0               # Coût fixe
+
+# ========================================
+#          INTERFACE UTILISATEUR
+# ========================================
+
+gui:
+  # Couleurs des statuts d'enchantements
+  colors:
+    upgradeable: "§a"          # Vert - Améliorable
+    insufficient: "§c"         # Rouge - Tokens insuffisants
+    new: "§e"                   # Jaune - Nouveau
+    maxed: "§2"                 # Vert foncé - Niveau max
+
+  # Messages de l'interface
+  messages:
+    max-level: "§c❌ Niveau maximum atteint"
+    insufficient-tokens: "§cTokens insuffisants!"
+    upgrade-success: "§a✅ Enchantement amélioré!"
+    auto-enabled: "§a✅ Auto-amélioration activée"
+    auto-disabled: "§c❌ Auto-amélioration désactivée"
+
+# ========================================
+#           MESSAGES
+# ========================================
+
+messages:
+  # Messages généraux
+  prefix: "§6[PrisonTycoon]§r "
+  no-permission: "§cVous n'avez pas la permission!"
+  player-only: "§cCette commande ne peut être exécutée que par un joueur!"
+  invalid-player: "§cJoueur introuvable ou hors ligne!"
+
+  # Messages de la pioche
+  pickaxe:
+    already-have: "§cVous avez déjà une pioche légendaire!"
+    inventory-full: "§cVotre inventaire est plein!"
+    given: "§a✅ Pioche légendaire obtenue!"
+    cannot-drop: "§c❌ Vous ne pouvez pas jeter la pioche légendaire!"
+    cannot-move: "§c❌ Vous ne pouvez pas sortir la pioche légendaire de votre inventaire!"
+    action-blocked: "§c❌ Action interdite avec la pioche légendaire!"
+    durability-broken: "§c⚠️ Votre pioche est endommagée! Réparez-la pour réactiver tous les enchantements."
+
+  # Messages des mines
+  mine:
+    only-legendary: "§c❌ Seule la pioche légendaire peut miner dans cette zone!"
+    cannot-place: "§c❌ Impossible de placer des blocs dans une mine!"
+    not-found: "§cMine introuvable dans la configuration!"
+    regenerating: "§cLa mine est déjà en cours de régénération!"
+    generated: "§aMine générée avec succès!"
+    generation-started: "§7Génération de la mine en cours..."
+
+  # Messages économiques
+  economy:
+    limit-reached: "§cLimite atteinte!"
+    tokens-given: "§a✅ Tokens donnés avec succès!"
+    tokens-received: "§a📥 Vous avez reçu des tokens!"
+
+  # Messages des enchantements
+  enchantments:
+    greed-trigger: "§6✨ %type% Greed! §e+%amount%!"
+    abundance-activated: "§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant 60 secondes!"
+    key-obtained: "§e🗝️ Clé %type% obtenue!"
+    laser-activated: "§c⚡ Laser activé! §e%blocks% blocs détruits!"
+    explosion-activated: "§4💥 Explosion! §e%blocks% blocs détruits!"
+    escalator-used: "§a✨ Escalateur activé! Téléportation vers la surface."
+    escalator-blocked: "§cImpossible de se téléporter: surface obstruée!"
+
+# ========================================
+#         OPTIMISATIONS
+# ========================================
+
+performance:
+  # Limite de sauvegarde
+  max-save-batch-size: 50     # Nombre maximum de joueurs sauvegardés en une fois
+
+  # Cache
+  cache-max-size: 1000        # Nombre maximum de joueurs en cache
+  cache-expire-minutes: 30    # Expiration du cache en minutes
+
+  # Génération de mines
+  mine-generation-batch: 1000 # Blocs traités par batch
+  mine-generation-delay: 1    # Délai entre les batches (ms)
+
+  # Action bar
+  actionbar-update-interval: 20 # Ticks (1 seconde)
+
+  # Tâches asynchrones
+  async-save: true            # Sauvegarde asynchrone
+  async-mine-generation: true # Génération de mine asynchrone
+
+# ========================================
+#           SÉCURITÉ
+# ========================================
+
+security:
+  # Limites de valeurs
+  max-currency-value: 9223372036854775807  # Long.MAX_VALUE / 2
+  max-enchantment-level: 2147483647        # Integer.MAX_VALUE
+
+  # Protection contre les abus
+  max-upgrade-per-click: 1000   # Amélioration maximum en un clic
+  cooldown-commands: 1000       # Cooldown entre commandes (ms)
+
+  # Validation
+  validate-coordinates: true    # Valide les coordonnées des mines
+  validate-probabilities: true # Valide que les probabilités totalisent 1.0
+
+# ========================================
+#           BASE DE DONNÉES
+# ========================================
+
+database:
+  # Type: YAML (fichiers), MySQL, SQLite (futures versions)
+  type: "YAML"
+
+  # Options pour YAML
+  yaml:
+    pretty-print: true        # Formatage lisible
+    auto-backup: true         # Sauvegarde automatique
+    backup-interval: 3600     # Intervalle de sauvegarde (secondes)
+    max-backups: 5            # Nombre maximum de sauvegardes
+
+# ========================================
+#           HOOKS ET API
+# ========================================
+
+hooks:
+  # PlaceholderAPI (futur)
+  placeholderapi: false
+
+  # Vault (futur)
+  vault: false
+
+  # WorldGuard (futur)
+  worldguard: false
+
+# ========================================
+#        FONCTIONNALITÉS AVANCÉES
+# ========================================
+
+advanced:
+  # Auto-amélioration
+  auto-upgrade:
+    enabled: true
+    check-interval: 200       # Ticks (10 secondes)
+    max-per-check: 5          # Améliorations max par vérification
+
+  # Statistiques
+  statistics:
+    enabled: true
+    track-detailed: true      # Statistiques détaillées
+
+  # Événements custom
+  custom-events:
+    enabled: true
+
+  # Métriques
+  metrics:
+    enabled: true
+    bstats: true              # Envoie des statistiques anonymes
+
+# Version du fichier de configuration (ne pas modifier)
+config-version: 1
