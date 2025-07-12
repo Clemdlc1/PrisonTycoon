@@ -60,7 +60,7 @@ public class CategoryMenuGUI {
     }
 
     /**
-     * CORRIGÉ : Gère les clics dans le menu de catégorie avec clic molette pour mobilité
+     * CORRIGÉ : Gère les clics dans le menu de catégorie avec SHIFT-CLIC pour mobilité
      */
     public void handleCategoryMenuClick(Player player, int slot, ItemStack item, String title, ClickType clickType) {
         if (slot == 22) { // Bouton retour
@@ -79,8 +79,9 @@ public class CategoryMenuGUI {
                 PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
                 int currentLevel = playerData.getEnchantmentLevel(targetEnchantment.getName());
 
-                // CORRIGÉ: Gestion du clic molette pour les enchantements mobilité
-                if (clickType == ClickType.MIDDLE && targetEnchantment.getCategory() == EnchantmentCategory.MOBILITY) {
+                // --- MODIFIÉ ICI ---
+                // On vérifie maintenant si le clic est un Shift-Clic (gauche ou droit)
+                if (clickType.isShiftClick() && targetEnchantment.getCategory() == EnchantmentCategory.MOBILITY) {
                     if (currentLevel > 0) { // Seulement si l'enchantement est acheté
                         toggleMobilityEnchantment(player, targetEnchantment.getName(), playerData);
                         // Rouvre le menu pour actualiser l'affichage
@@ -235,7 +236,7 @@ public class CategoryMenuGUI {
             boolean enabled = playerData.isMobilityEnchantmentEnabled(enchantment.getName());
             lore.add("§b🎮 §lÉTAT MOBILITÉ");
             lore.add("§7▸ Enchantement: " + (enabled ? "§a✅ Activé" : "§c❌ Désactivé"));
-            lore.add("§7▸ §e🖱️ Clic molette pour " + (enabled ? "désactiver" : "activer"));
+            lore.add("§7▸ §e🖱️ SHIFT + Clic pour " + (enabled ? "désactiver" : "activer"));
 
             if (!enabled) {
                 lore.add("§7▸ §cEffets suspendus");

@@ -57,18 +57,21 @@ public class ActionBarTask extends BukkitRunnable {
         int combustionLevel = playerData.getEnchantmentLevel("combustion");
         if (combustionLevel > 0) {
             long currentCombustion = playerData.getCombustionLevel();
-            double multiplier = playerData.getCombustionMultiplier();
 
-            // Couleur selon le niveau de combustion
-            String combustionColor = getCombustionColor(currentCombustion);
+            if (currentCombustion > 0) {
+                double multiplier = playerData.getCombustionMultiplier();
 
-            status.append("§c🔥 Combustion: ")
-                    .append(combustionColor)
-                    .append(currentCombustion)
-                    .append("§7/§e1000 ")
-                    .append("§6(x")
-                    .append(String.format("%.2f", multiplier))
-                    .append(")");
+                // Couleur selon le niveau de combustion
+                String combustionColor = getCombustionColor(currentCombustion);
+
+                status.append("§c🔥 Combustion: ")
+                        .append(combustionColor)
+                        .append(currentCombustion)
+                        .append("§7/§e1000 ")
+                        .append("§6(x")
+                        .append(String.format("%.2f", multiplier))
+                        .append(")");
+            }
         }
 
         // Abondance (si débloqué et actif)
