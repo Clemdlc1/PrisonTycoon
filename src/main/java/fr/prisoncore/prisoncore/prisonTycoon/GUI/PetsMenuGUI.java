@@ -9,8 +9,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.List; /**
+import java.util.List;
+
+/**
  * Menu des Pets (Feature future)
+ * CORRIGÉ : Noms en gras et gestion des clics
  */
 public class PetsMenuGUI {
 
@@ -21,7 +24,8 @@ public class PetsMenuGUI {
     }
 
     public void openPetsMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§6✨ Compagnons de Minage ✨");
+        // CORRECTION: Nom en gras
+        Inventory gui = Bukkit.createInventory(null, 27, "§6✨ §lCompagnons de Minage §6✨");
 
         // Remplissage décoratif
         fillWithFutureItems(gui);
@@ -29,11 +33,11 @@ public class PetsMenuGUI {
         // Item central d'information
         ItemStack info = new ItemStack(Material.WOLF_SPAWN_EGG);
         ItemMeta meta = info.getItemMeta();
-        meta.setDisplayName("§6🐕 Système de Pets");
+        meta.setDisplayName("§6🐕 §lSystème de Pets");
         meta.setLore(List.of(
                 "§7Fonctionnalité à venir dans une future mise à jour!",
                 "",
-                "§6✨ Aperçu des fonctionnalités:",
+                "§6✨ §lAperçu des fonctionnalités:",
                 "§7▸ Compagnons de minage intelligents",
                 "§7▸ Bonus d'expérience et de gains",
                 "§7▸ Évolution et amélioration des pets",
@@ -53,16 +57,21 @@ public class PetsMenuGUI {
         player.sendMessage("§6🐕 Aperçu du système de Pets - Fonctionnalité à venir!");
     }
 
+    /**
+     * CORRECTION: Gère les clics dans le menu pets
+     */
     public void handlePetsMenuClick(Player player, int slot, ItemStack item) {
         if (slot == 22) { // Retour
-            plugin.getMainMenuGUI().openMainMenu(player);
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
         }
+        // Tous les autres clics ne font rien (feature future)
     }
 
     private ItemStack createBackButton() {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
-        meta.setDisplayName("§7← Retour");
+        meta.setDisplayName("§7← §lRetour");
         meta.setLore(List.of("§7Retourner au menu principal"));
         arrow.setItemMeta(meta);
         return arrow;

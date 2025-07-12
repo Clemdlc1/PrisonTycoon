@@ -200,7 +200,7 @@ public class PickaxeProtectionListener implements Listener {
                 }
 
                 event.setCancelled(true);
-                plugin.getMainMenuGUI().openMainMenu(player);
+                plugin.getMainMenuGUI().openEnchantmentMenu(player);
             }
 
             // Shift + clic droit pour l'escalateur

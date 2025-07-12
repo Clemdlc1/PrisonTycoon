@@ -13,6 +13,7 @@ import java.util.List;
 
 /**
  * Menu des Enchantements Uniques (Feature future)
+ * CORRIGÉ : Noms en gras et gestion des clics
  */
 public class UniqueEnchantsMenuGUI {
 
@@ -23,7 +24,8 @@ public class UniqueEnchantsMenuGUI {
     }
 
     public void openUniqueEnchantsMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§d✨ Enchantements Uniques ✨");
+        // CORRECTION: Nom en gras
+        Inventory gui = Bukkit.createInventory(null, 27, "§d✨ §lEnchantements Uniques §d✨");
 
         // Remplissage décoratif
         fillWithFutureItems(gui);
@@ -31,11 +33,11 @@ public class UniqueEnchantsMenuGUI {
         // Item central d'information
         ItemStack info = new ItemStack(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE);
         ItemMeta meta = info.getItemMeta();
-        meta.setDisplayName("§d⚡ Enchantements Légendaires");
+        meta.setDisplayName("§d⚡ §lEnchantements Légendaires");
         meta.setLore(List.of(
                 "§7Fonctionnalité à venir dans une future mise à jour!",
                 "",
-                "§d✨ Aperçu des fonctionnalités:",
+                "§d✨ §lAperçu des fonctionnalités:",
                 "§7▸ Enchantements ultra-rares",
                 "§7▸ Effets visuels spectaculaires",
                 "§7▸ Pouvoirs uniques et exclusifs",
@@ -55,16 +57,21 @@ public class UniqueEnchantsMenuGUI {
         player.sendMessage("§d⚡ Aperçu des Enchantements Uniques - Fonctionnalité à venir!");
     }
 
+    /**
+     * CORRECTION: Gère les clics dans le menu enchantements uniques
+     */
     public void handleUniqueEnchantsMenuClick(Player player, int slot, ItemStack item) {
         if (slot == 22) { // Retour
-            plugin.getMainMenuGUI().openMainMenu(player);
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
         }
+        // Tous les autres clics ne font rien (feature future)
     }
 
     private ItemStack createBackButton() {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
-        meta.setDisplayName("§7← Retour");
+        meta.setDisplayName("§7← §lRetour");
         meta.setLore(List.of("§7Retourner au menu principal"));
         arrow.setItemMeta(meta);
         return arrow;
@@ -83,4 +90,3 @@ public class UniqueEnchantsMenuGUI {
         }
     }
 }
-

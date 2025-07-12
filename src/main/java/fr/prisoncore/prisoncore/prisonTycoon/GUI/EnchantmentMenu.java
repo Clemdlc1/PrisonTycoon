@@ -19,47 +19,42 @@ import java.util.Set;
 
 /**
  * Menu principal du système d'enchantements et features
+ * CORRIGÉ : Réorganisation des lignes et noms en gras
  */
-public class MainMenuGUI {
+public class EnchantmentMenu {
 
     private final PrisonTycoon plugin;
 
     // Slots du menu principal
     private static final int PLAYER_HEAD_SLOT = 4;
+
+    private static final int CRYSTALS_SLOT = 31;
+    private static final int UNIQUE_ENCHANTS_SLOT = 32;
+    private static final int PETS_SLOT = 33;
+    private static final int MAIN_MENU_SLOT = 28;
+
     private static final int ECONOMIC_SLOT = 10;
     private static final int EFFICIENCY_SLOT = 12;
     private static final int MOBILITY_SLOT = 14;
     private static final int SPECIAL_SLOT = 16;
 
-    // Nouveaux slots pour features futures (ligne du bas)
-    private static final int CRYSTALS_SLOT = 19;
-    private static final int UNIQUE_ENCHANTS_SLOT = 21;
-    private static final int PETS_SLOT = 23;
-    private static final int MAIN_MENU_SLOT = 25;
-
-    public MainMenuGUI(PrisonTycoon plugin) {
+    public EnchantmentMenu(PrisonTycoon plugin) {
         this.plugin = plugin;
     }
 
     /**
      * Ouvre le menu principal
      */
-    public void openMainMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 36, "§6✨ PrisonTycoon - Menu Principal ✨");
+    public void openEnchantmentMenu(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 36, "§6✨ §lPrisonTycoon - Menu Principal §6✨");
 
         // Remplissage décoratif
-        fillBorders(gui);
+        fillEmptySlots(gui);
 
         // Tête du joueur avec informations économiques
         gui.setItem(PLAYER_HEAD_SLOT, createPlayerHead(player));
 
-        // Catégories d'enchantements (ligne du milieu)
-        gui.setItem(ECONOMIC_SLOT, createCategoryItem(EnchantmentCategory.ECONOMIC, player));
-        gui.setItem(EFFICIENCY_SLOT, createCategoryItem(EnchantmentCategory.EFFICIENCY, player));
-        gui.setItem(MOBILITY_SLOT, createCategoryItem(EnchantmentCategory.MOBILITY, player));
-        gui.setItem(SPECIAL_SLOT, createCategoryItem(EnchantmentCategory.SPECIAL, player));
-
-        // NOUVEAU: Features futures (ligne du bas)
+        // NOUVEAU: Features futures (ligne du milieu)
         gui.setItem(CRYSTALS_SLOT, createFutureFeatureItem("Cristaux", Material.AMETHYST_SHARD,
                 "§5Système de cristaux magiques", "§7Implémentation future"));
 
@@ -72,6 +67,12 @@ public class MainMenuGUI {
         gui.setItem(MAIN_MENU_SLOT, createFutureFeatureItem("Menu Principal", Material.COMPASS,
                 "§eNavigation générale", "§7Implémentation future"));
 
+        // CORRECTION: Catégories d'enchantements (ligne du bas)
+        gui.setItem(ECONOMIC_SLOT, createCategoryItem(EnchantmentCategory.ECONOMIC, player));
+        gui.setItem(EFFICIENCY_SLOT, createCategoryItem(EnchantmentCategory.EFFICIENCY, player));
+        gui.setItem(MOBILITY_SLOT, createCategoryItem(EnchantmentCategory.MOBILITY, player));
+        gui.setItem(SPECIAL_SLOT, createCategoryItem(EnchantmentCategory.SPECIAL, player));
+
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
     }
@@ -79,18 +80,20 @@ public class MainMenuGUI {
     /**
      * Gère les clics dans le menu principal
      */
-    public void handleMainMenuClick(Player player, int slot, ItemStack item) {
+    public void handleEnchantmentMenuClick(Player player, int slot, ItemStack item) {
         switch (slot) {
-            case ECONOMIC_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.ECONOMIC);
-            case EFFICIENCY_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.EFFICIENCY);
-            case MOBILITY_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.MOBILITY);
-            case SPECIAL_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.SPECIAL);
-
             // Features futures
             case CRYSTALS_SLOT -> plugin.getCrystalsMenuGUI().openCrystalsMenu(player);
             case UNIQUE_ENCHANTS_SLOT -> plugin.getUniqueEnchantsMenuGUI().openUniqueEnchantsMenu(player);
             case PETS_SLOT -> plugin.getPetsMenuGUI().openPetsMenu(player);
             case MAIN_MENU_SLOT -> plugin.getMainMenuGUI().openGeneralMainMenu(player);
+
+            // Catégories d'enchantements
+            case ECONOMIC_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.ECONOMIC);
+            case EFFICIENCY_SLOT ->
+                    plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.EFFICIENCY);
+            case MOBILITY_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.MOBILITY);
+            case SPECIAL_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.SPECIAL);
         }
     }
 
@@ -108,6 +111,7 @@ public class MainMenuGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
+        // CORRECTION: Nom en gras
         meta.setDisplayName(category.getIcon() + " §l" + category.getDisplayName().toUpperCase());
 
         List<String> lore = new ArrayList<>();
@@ -211,7 +215,8 @@ public class MainMenuGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§e🔮 " + name);
+        // CORRECTION: Nom en gras
+        meta.setDisplayName("§e🔮 §l" + name);
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -247,7 +252,7 @@ public class MainMenuGUI {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        meta.setDisplayName("§6📊 " + player.getName());
+        meta.setDisplayName("§6📊 §l" + player.getName());
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -268,24 +273,19 @@ public class MainMenuGUI {
     /**
      * Remplit les bordures avec des items décoratifs
      */
-    private void fillBorders(Inventory gui) {
+    private void fillEmptySlots(Inventory gui) {
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = filler.getItemMeta();
-        meta.setDisplayName("§7");
-        filler.setItemMeta(meta);
 
-        int size = gui.getSize();
-
-        // Bordures haut et bas
-        for (int i = 0; i < 9; i++) {
-            gui.setItem(i, filler);
-            gui.setItem(size - 9 + i, filler);
+        if (meta != null) {
+            meta.setDisplayName("§7");
+            filler.setItemMeta(meta);
         }
 
-        // Bordures côtés
-        for (int i = 9; i < size - 9; i += 9) {
-            gui.setItem(i, filler);
-            gui.setItem(i + 8, filler);
+        for (int i = 0; i < gui.getSize(); i++) {
+            if (gui.getItem(i) == null) {
+                gui.setItem(i, filler);
+            }
         }
     }
 }

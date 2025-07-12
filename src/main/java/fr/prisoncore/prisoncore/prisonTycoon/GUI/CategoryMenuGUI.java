@@ -20,6 +20,7 @@ import java.util.List;
 
 /**
  * Menu d'une catégorie d'enchantements
+ * CORRIGÉ : Retrait ligne État et noms en gras
  */
 public class CategoryMenuGUI {
 
@@ -33,7 +34,8 @@ public class CategoryMenuGUI {
      * Ouvre le menu d'une catégorie d'enchantements
      */
     public void openCategoryMenu(Player player, EnchantmentCategory category) {
-        String title = "§6✨ " + category.getDisplayName() + " ✨";
+        // CORRECTION: Nom en gras
+        String title = "§6✨ §l" + category.getDisplayName() + " §6✨";
         Inventory gui = Bukkit.createInventory(null, 54, title);
 
         // Remplissage décoratif
@@ -63,7 +65,7 @@ public class CategoryMenuGUI {
      */
     public void handleCategoryMenuClick(Player player, int slot, ItemStack item, String title, ClickType clickType) {
         if (slot == 45) { // Bouton retour
-            plugin.getMainMenuGUI().openMainMenu(player);
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
             return;
         }
 
@@ -131,6 +133,7 @@ public class CategoryMenuGUI {
 
     /**
      * Crée un item d'enchantement avec les nouvelles informations
+     * CORRIGÉ : Retrait ligne État et ajout nom en gras
      */
     private ItemStack createEnchantmentItem(CustomEnchantment enchantment, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -164,7 +167,8 @@ public class CategoryMenuGUI {
                         "§a[Niveau " + NumberFormatter.format(currentLevel) + "]" :
                         "§a[Niveau " + currentLevel + "§7/§e" + enchantment.getMaxLevel() + "§a]");
 
-        meta.setDisplayName(statusColor + "✦ " + enchantment.getDisplayName() + " " + levelDisplay);
+        // CORRECTION: Nom en gras et retrait du statut coloré
+        meta.setDisplayName("§6✦ §l" + enchantment.getDisplayName() + " " + levelDisplay);
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -175,7 +179,7 @@ public class CategoryMenuGUI {
 
         // Statut standardisé
         lore.add("§6📊 §lSTATUT ACTUEL");
-        lore.add("§7▸ État: " + statusColor + statusText);
+        // CORRECTION: Retrait de la ligne État
         lore.add("§7▸ Niveau actuel: §e" + NumberFormatter.format(currentLevel));
         lore.add("§7▸ Niveau maximum: " + (enchantment.getMaxLevel() == Integer.MAX_VALUE ?
                 "§e∞" : "§e" + enchantment.getMaxLevel()));
@@ -340,7 +344,7 @@ public class CategoryMenuGUI {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        meta.setDisplayName("§6📊 " + player.getName());
+        meta.setDisplayName("§6📊 §l" + player.getName());
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -365,7 +369,7 @@ public class CategoryMenuGUI {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
 
-        meta.setDisplayName("§7← Retour");
+        meta.setDisplayName("§7← §lRetour");
         meta.setLore(List.of("§7Retourner au menu principal"));
 
         arrow.setItemMeta(meta);

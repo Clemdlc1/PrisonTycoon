@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Gestionnaire des 18 enchantements custom
  * CORRIGÉ : Greeds avec chance, gains uniquement via Greeds, Escalator en mobilité
+ * CORRECTION : Calcul coûts identique entre GUI et chat
  */
 public class EnchantmentManager {
 
@@ -368,9 +369,9 @@ public class EnchantmentManager {
     }
 
     /**
-     * Améliore un enchantement si possible
+     * CORRIGÉ: Améliore un enchantement avec calcul de coûts identique au GUI
      */
-    public boolean upgradeEnchantment(Player player, String enchantmentName, int levels) {
+    public boolean upgradeEnchantment(Player player, String enchantmentName, int requestedLevels) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         CustomEnchantment enchantment = getEnchantment(enchantmentName);
 
@@ -381,23 +382,29 @@ public class EnchantmentManager {
 
         int currentLevel = playerData.getEnchantmentLevel(enchantmentName);
         int maxPossibleLevels = enchantment.getMaxLevel() - currentLevel;
-        int actualLevels = Math.min(levels, maxPossibleLevels);
 
-        if (actualLevels <= 0) {
+        if (maxPossibleLevels <= 0) {
             player.sendMessage("§cNiveau maximum déjà atteint!");
             return false;
         }
 
-        // Calcule le coût total
+        long availableTokens = playerData.getTokens();
+
+        // CORRECTION: Utilise la même logique que le GUI pour calculer les niveaux réellement achetables
+        int actualLevels = 0;
         long totalCost = 0;
-        for (int i = 0; i < actualLevels; i++) {
-            totalCost += enchantment.getUpgradeCost(currentLevel + i + 1);
+
+        for (int i = 1; i <= Math.min(requestedLevels, maxPossibleLevels); i++) {
+            long cost = enchantment.getUpgradeCost(currentLevel + i);
+            if (totalCost + cost <= availableTokens) {
+                totalCost += cost;
+                actualLevels = i;
+            } else {
+                break;
+            }
         }
 
-        // Vérifie si le joueur a assez de tokens
-        if (playerData.getTokens() < totalCost) {
-            player.sendMessage("§cTokens insuffisants! Requis: " + NumberFormatter.format(totalCost) +
-                    ", Disponibles: " + NumberFormatter.format(playerData.getTokens()));
+        if (actualLevels <= 0) {
             return false;
         }
 
@@ -406,7 +413,8 @@ public class EnchantmentManager {
             playerData.setEnchantmentLevel(enchantmentName, currentLevel + actualLevels);
 
             player.sendMessage("§a✅ " + enchantment.getDisplayName() + " amélioré de " + actualLevels +
-                    " niveau" + (actualLevels > 1 ? "x" : "") + " au niveau " + (currentLevel + actualLevels) + "!");
+                    " niveau" + (actualLevels > 1 ? "x" : "") + " au niveau " + (currentLevel + actualLevels) +
+                    " §7(-" + NumberFormatter.format(totalCost) + " tokens)");
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());

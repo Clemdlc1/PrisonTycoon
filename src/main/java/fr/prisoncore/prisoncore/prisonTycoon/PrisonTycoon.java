@@ -34,7 +34,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private Logger logger;
 
     // NOUVEAU: GUIs séparés
-    private MainMenuGUI mainMenuGUI;
+    private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
     private CrystalsMenuGUI crystalsMenuGUI;
@@ -154,7 +154,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private void initializeGUIs() {
         logger.info("§7Initialisation des interfaces graphiques...");
 
-        mainMenuGUI = new MainMenuGUI(this);
+        mainMenuGUI = new EnchantmentMenu(this);
         categoryMenuGUI = new CategoryMenuGUI(this);
         enchantmentUpgradeGUI = new EnchantmentUpgradeGUI(this);
         crystalsMenuGUI = new CrystalsMenuGUI(this);
@@ -284,7 +284,7 @@ public final class PrisonTycoon extends JavaPlugin {
 
     // NOUVEAU: Getters pour les GUIs
 
-    public MainMenuGUI getMainMenuGUI() {
+    public EnchantmentMenu getMainMenuGUI() {
         return mainMenuGUI;
     }
 

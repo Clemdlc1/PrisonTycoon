@@ -57,7 +57,7 @@ public class GUIListener implements Listener {
      */
     private void handleGUIClick(Player player, String title, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
         if (title.contains("Menu Principal")) {
-            plugin.getMainMenuGUI().handleMainMenuClick(player, slot, item);
+            plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
         }
         else if (title.contains("Économiques") || title.contains("Efficacité") ||
                 title.contains("Mobilité") || title.contains("Spéciaux")) {
@@ -78,7 +78,7 @@ public class GUIListener implements Listener {
         // LEGACY: Support pour l'ancien menu unifié (si jamais utilisé)
         else if (title.contains("Enchantements PrisonTycoon")) {
             // Redirige vers le nouveau menu principal
-            plugin.getMainMenuGUI().openMainMenu(player);
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
         }
     }
 

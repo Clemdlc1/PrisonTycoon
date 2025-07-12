@@ -9,8 +9,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.List; /**
+import java.util.List;
+
+/**
  * Menu des Cristaux (Feature future)
+ * CORRIGÉ : Noms en gras et gestion des clics
  */
 public class CrystalsMenuGUI {
 
@@ -21,7 +24,8 @@ public class CrystalsMenuGUI {
     }
 
     public void openCrystalsMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§5✨ Cristaux Magiques ✨");
+        // CORRECTION: Nom en gras
+        Inventory gui = Bukkit.createInventory(null, 27, "§5✨ §lCristaux Magiques §5✨");
 
         // Remplissage décoratif
         fillWithFutureItems(gui);
@@ -29,11 +33,11 @@ public class CrystalsMenuGUI {
         // Item central d'information
         ItemStack info = new ItemStack(Material.AMETHYST_SHARD);
         ItemMeta meta = info.getItemMeta();
-        meta.setDisplayName("§d🔮 Système de Cristaux");
+        meta.setDisplayName("§d🔮 §lSystème de Cristaux");
         meta.setLore(List.of(
                 "§7Fonctionnalité à venir dans une future mise à jour!",
                 "",
-                "§5✨ Aperçu des fonctionnalités:",
+                "§5✨ §lAperçu des fonctionnalités:",
                 "§7▸ Cristaux de puissance spéciaux",
                 "§7▸ Enchantements temporaires",
                 "§7▸ Bonus de minage uniques",
@@ -53,16 +57,21 @@ public class CrystalsMenuGUI {
         player.sendMessage("§d🔮 Aperçu du système de Cristaux - Fonctionnalité à venir!");
     }
 
+    /**
+     * CORRECTION: Gère les clics dans le menu cristaux
+     */
     public void handleCrystalsMenuClick(Player player, int slot, ItemStack item) {
         if (slot == 22) { // Retour
-            plugin.getMainMenuGUI().openMainMenu(player);
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
         }
+        // Tous les autres clics ne font rien (feature future)
     }
 
     private ItemStack createBackButton() {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
-        meta.setDisplayName("§7← Retour");
+        meta.setDisplayName("§7← §lRetour");
         meta.setLore(List.of("§7Retourner au menu principal"));
         arrow.setItemMeta(meta);
         return arrow;
