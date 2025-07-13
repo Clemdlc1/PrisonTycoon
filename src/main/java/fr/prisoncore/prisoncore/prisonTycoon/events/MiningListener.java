@@ -97,8 +97,6 @@ public class MiningListener implements Listener {
     private void postProcessLegendaryPickaxe(Player player, ItemStack pickaxe) {
         plugin.getPluginLogger().debug("Post-traitement pioche légendaire pour " + player.getName());
 
-        // 1. Gère la durabilité (TOUJOURS - mine et hors mine)
-        plugin.getPickaxeManager().handleDurability(pickaxe, player);
 
         // 2. Met à jour la pioche avec ses enchantements
         plugin.getPickaxeManager().updatePlayerPickaxe(player);

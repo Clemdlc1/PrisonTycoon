@@ -371,60 +371,17 @@ public class PickaxeManager {
     }
 
     /**
-     * CORRIGÉ : Gère la durabilité - la pioche légendaire ne se casse JAMAIS
+     * NOUVEAU : Vérifie si la pioche d'un joueur est en mode "cassée"
      */
-    public void handleDurability(ItemStack pickaxe, Player player) {
-        if (!isLegendaryPickaxe(pickaxe)) return;
+    public boolean isPickaxeBroken(Player player) {
+        return fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.isPlayerPickaxeBroken(player);
+    }
 
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int durabilityLevel = playerData.getEnchantmentLevel("durability");
-
-        // CORRIGÉ : La pioche légendaire ne se casse JAMAIS, même sans enchantement solidité
-        short currentDurability = pickaxe.getDurability();
-        short maxDurability = pickaxe.getType().getMaxDurability();
-
-        // Si la pioche est "cassée" (durabilité max atteinte), la remet à 1 point
-        if (currentDurability >= maxDurability) {
-            pickaxe.setDurability((short) (maxDurability - 1));
-        }
-
-        // Si l'enchantement solidité est présent, applique ses effets
-        if (durabilityLevel > 0) {
-            // Calcule la durabilité bonus avec l'enchantement Solidité
-            double durabilityBonus = durabilityLevel * 10.0; // +10% par niveau
-            double durabilityMultiplier = 1.0 + (durabilityBonus / 100.0);
-            int maxDurabilityWithBonus = (int) (maxDurability * durabilityMultiplier);
-
-            // Chance de ne PAS perdre de durabilité basée sur le niveau
-            double preservationChance = Math.min(0.95, durabilityLevel * 0.05); // 5% par niveau, max 95%
-
-            if (Math.random() < preservationChance) {
-                // La pioche ne perd pas de durabilité cette fois
-                plugin.getPluginLogger().debug("Durabilité préservée pour " + player.getName() +
-                        " (chance: " + String.format("%.1f%%", preservationChance * 100) + ")");
-                return;
-            }
-
-            // Vérifie si la pioche est très endommagée selon sa durabilité max améliorée
-            if (currentDurability >= maxDurabilityWithBonus * 0.95) { // 95% de durabilité max bonus
-                player.sendMessage("§c⚠️ Votre pioche est très endommagée! " +
-                        "Durabilité bonus: +" + String.format("%.0f%%", durabilityBonus) + " grâce à Solidité " + durabilityLevel);
-            }
-
-            // CORRIGÉ : Même avec solidité, la pioche ne se casse jamais complètement
-            if (currentDurability >= maxDurabilityWithBonus) {
-                player.sendMessage("§e⚡ Solidité " + durabilityLevel + " a protégé votre pioche légendaire!");
-                pickaxe.setDurability((short) (maxDurabilityWithBonus - 1)); // Reste à 1 point de durabilité bonus
-            }
-
-            plugin.getPluginLogger().debug("Durabilité avec solidité pour " + player.getName() + ": " +
-                    currentDurability + "/" + maxDurabilityWithBonus + " (bonus: +" + String.format("%.0f%%", durabilityBonus) + ")");
-        } else {
-            // CORRIGÉ : Même sans solidité, avertit quand la pioche est très endommagée
-            if (currentDurability >= maxDurability * 0.90) { // 90% de durabilité normale
-                player.sendMessage("§c⚠️ Votre pioche légendaire est très endommagée! Améliorez Solidité pour une meilleure protection.");
-            }
-        }
+    /**
+     * NOUVEAU : Obtient le multiplicateur de malus pour la pioche
+     */
+    public double getPickaxePenaltyMultiplier(Player player) {
+        return fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.getPickaxePenaltyMultiplier(player);
     }
 
     /**
@@ -444,7 +401,7 @@ public class PickaxeManager {
         boolean hasPickaxeInSlot0 = isPickaxeInCorrectSlot(player);
 
         // Si pas de pioche au slot 0, retire tous les effets
-        if (!hasPickaxeInSlot0) {
+        if (!hasPickaxeInSlot0 || isPickaxeBroken(player)) {
             removeMobilityEffects(player);
             plugin.getPluginLogger().debug("Effets mobilité retirés pour " + player.getName() + " (pioche pas au slot 0)");
             return;
@@ -517,6 +474,11 @@ public class PickaxeManager {
         // Vérifie que la pioche est au slot 0
         if (!isPickaxeInCorrectSlot(player)) {
             player.sendMessage("§c❌ Vous devez avoir la pioche légendaire dans le slot 1!");
+            return;
+        }
+        // NOUVEAU : Vérifie que la pioche n'est pas cassée
+        if (isPickaxeBroken(player)) {
+            player.sendMessage("§c❌ Votre pioche est trop endommagée pour utiliser Escalateur! Réparez-la d'abord.");
             return;
         }
 

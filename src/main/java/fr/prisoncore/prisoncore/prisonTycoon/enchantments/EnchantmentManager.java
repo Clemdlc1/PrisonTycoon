@@ -213,7 +213,16 @@ public class EnchantmentManager {
      */
     private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType,
                                           Location blockLocation, boolean isMinedBlock) {
+        boolean pickaxeBroken = fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.isPlayerPickaxeBroken(player);
+        double penaltyMultiplier = fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.getPickaxePenaltyMultiplier(player);
         int luckLevel = playerData.getEnchantmentLevel("luck");
+
+        if (pickaxeBroken) {
+            // SEUL Token Greed fonctionne avec 90% de malus
+            processTokenGreedWithPenalty(player, blockType, playerData, luckLevel, penaltyMultiplier);
+            return; // Arrête ici, aucun autre enchantement ne fonctionne
+        }
+
         double combustionMultiplier = playerData.getCombustionMultiplier();
         double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
 
@@ -314,6 +323,10 @@ public class EnchantmentManager {
      */
     private void processSpecialEnchantments(Player player, PlayerData playerData,
                                             Location blockLocation, String mineName) {
+        boolean pickaxeBroken = fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.isPlayerPickaxeBroken(player);
+        if (pickaxeBroken) {
+            return; // Arrête ici, aucun autre enchantement ne fonctionne
+        }
 
         int laserLevel = playerData.getEnchantmentLevel("laser");
         int explosionLevel = playerData.getEnchantmentLevel("explosion");
@@ -332,6 +345,36 @@ public class EnchantmentManager {
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateExplosion(player, blockLocation, mineName);
             }
+        }
+    }
+    /**
+     * NOUVEAU : Traite Token Greed avec malus de 90% quand la pioche est cassée
+     */
+    private void processTokenGreedWithPenalty(Player player, Material blockType, PlayerData playerData, int luckLevel, double penaltyMultiplier) {
+        int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
+        if (tokenGreedLevel <= 0) return;
+
+        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+        double totalChance = baseChance + luckBonus;
+
+        if (ThreadLocalRandom.current().nextDouble() < totalChance) {
+            BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
+            long blockTokens = blockValue.getTokens();
+
+            // Calcule les tokens normaux PUIS applique le malus
+            long normalTokens = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens * 2));
+            long penalizedTokens = Math.round(normalTokens * penaltyMultiplier);
+
+            playerData.addTokensViaPickaxe(penalizedTokens);
+            playerData.addGreedTrigger();
+
+            // Notification spéciale pour indiquer le malus
+            plugin.getNotificationManager().queueGreedNotification(player, "Token Greed §c(Malus)", penalizedTokens, "tokens");
+
+            plugin.getPluginLogger().debug("Token Greed avec malus pour " + player.getName() +
+                    ": " + normalTokens + " → " + penalizedTokens + " tokens (" +
+                    String.format("%.1f%%", (1-penaltyMultiplier)*100) + " malus)");
         }
     }
 
