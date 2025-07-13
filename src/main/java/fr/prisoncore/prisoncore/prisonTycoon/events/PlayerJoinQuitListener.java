@@ -27,9 +27,9 @@ public class PlayerJoinQuitListener implements Listener {
         // Charge les données du joueur
         plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Initialisation avec délai pour assurer que tout est chargé
+        // CORRIGÉ : Initialisation avec délai plus long pour assurer stabilité
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            // CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager
+            // Crée le scoreboard
             if (plugin.getScoreboardTask() != null) {
                 plugin.getScoreboardTask().createScoreboard(player);
             }
@@ -45,8 +45,15 @@ public class PlayerJoinQuitListener implements Listener {
                 plugin.getAutoUpgradeTask().refreshPlayerPermissions(player.getUniqueId());
             }
 
+            // NOUVEAU : Force une mise à jour immédiate du scoreboard après tout
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (plugin.getScoreboardTask() != null) {
+                    plugin.getScoreboardTask().forceUpdatePlayer(player);
+                }
+            }, 20L); // 1 seconde après l'initialisation
+
             plugin.getPluginLogger().debug("Initialisation complète pour " + player.getName());
-        }, 20L); // 1 seconde de délai
+        }, 40L);
 
         plugin.getPluginLogger().info("§7Joueur connecté: " + player.getName());
     }

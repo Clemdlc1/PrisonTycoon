@@ -64,12 +64,14 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * OPTIMISÉ : Met à jour les scoreboards par batch pour éviter le lag
+     * CORRIGÉ : Met à jour les scoreboards de manière plus fréquente et fiable
      */
     private void updateScoreboardsBatch() {
         long now = System.currentTimeMillis();
         int updated = 0;
         int skipped = 0;
+
+        final long INTERVAL = 2000; // 2 secondes au lieu de 5
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (updated >= BATCH_SIZE) {
@@ -77,9 +79,9 @@ public class ScoreboardTask extends BukkitRunnable {
             }
 
             try {
-                // Optimisation : évite les mises à jour trop fréquentes
+                // CORRIGÉ : Intervalle réduit pour des mises à jour plus réactives
                 Long lastUpdate = lastScoreboardUpdate.get(player);
-                if (lastUpdate != null && (now - lastUpdate) < INDIVIDUAL_UPDATE_INTERVAL) {
+                if (lastUpdate != null && (now - lastUpdate) < INTERVAL) {
                     skipped++;
                     continue;
                 }
@@ -99,33 +101,40 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * Crée et affiche le scoreboard pour un joueur
+     * CORRIGÉ : Création de scoreboard plus robuste
      */
     public void createScoreboard(Player player) {
         if (playerScoreboards.containsKey(player)) {
-            plugin.getPluginLogger().debug("Scoreboard déjà existant pour " + player.getName());
-            return;
+            plugin.getPluginLogger().debug("Scoreboard déjà existant pour " + player.getName() + ", recréation...");
+            // Retire l'ancien avant de créer le nouveau
+            removeScoreboard(player);
         }
 
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        try {
+            Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 
-        // Objective principal
-        Objective objective = scoreboard.registerNewObjective("prison_stats", "dummy",
-                ChatColor.GOLD + "✨ " + ChatColor.BOLD + "PRISON TYCOON" + ChatColor.GOLD + " ✨");
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+            // Objective principal
+            Objective objective = scoreboard.registerNewObjective("prison_stats", "dummy",
+                    ChatColor.GOLD + "✨ " + ChatColor.BOLD + "PRISON TYCOON" + ChatColor.GOLD + " ✨");
+            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Teams pour les lignes colorées
-        setupScoreboardTeams(scoreboard);
+            // Teams pour les lignes colorées
+            setupScoreboardTeams(scoreboard);
 
-        // Met à jour le scoreboard
-        updateScoreboard(player, scoreboard);
+            // Met à jour le scoreboard
+            updateScoreboard(player, scoreboard);
 
-        // Assigne le scoreboard au joueur
-        player.setScoreboard(scoreboard);
-        playerScoreboards.put(player, scoreboard);
-        lastScoreboardUpdate.put(player, System.currentTimeMillis());
+            // Assigne le scoreboard au joueur
+            player.setScoreboard(scoreboard);
+            playerScoreboards.put(player, scoreboard);
+            lastScoreboardUpdate.put(player, System.currentTimeMillis());
 
-        plugin.getPluginLogger().debug("Scoreboard créé pour " + player.getName());
+            plugin.getPluginLogger().debug("Scoreboard créé et assigné à " + player.getName());
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("Erreur création scoreboard pour " + player.getName() + ":");
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -146,16 +155,28 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * Met à jour le scoreboard d'un joueur
+     * CORRIGÉ : Mise à jour plus robuste avec gestion d'erreur
      */
     public void updateScoreboard(Player player) {
         Scoreboard scoreboard = playerScoreboards.get(player);
         if (scoreboard == null) {
+            plugin.getPluginLogger().debug("Scoreboard manquant pour " + player.getName() + ", création...");
             createScoreboard(player);
             return;
         }
 
-        updateScoreboard(player, scoreboard);
+        try {
+            updateScoreboard(player, scoreboard);
+            plugin.getPluginLogger().debug("Scoreboard mis à jour pour " + player.getName());
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Erreur mise à jour scoreboard pour " + player.getName() +
+                    ", recréation...");
+            e.printStackTrace();
+
+            // En cas d'erreur, recrée le scoreboard
+            removeScoreboard(player);
+            createScoreboard(player);
+        }
     }
 
     /**
@@ -302,13 +323,24 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * Force une mise à jour immédiate de tous les scoreboards
+     * NOUVEAU : Force une mise à jour immédiate pour tous les joueurs en ligne
      */
-    public void forceUpdateAll() {
+    public void forceUpdateAllOnline() {
         lastScoreboardUpdate.clear(); // Force la mise à jour de tous
-        updateScoreboardsBatch();
-        plugin.getPluginLogger().debug("Mise à jour forcée de tous les scoreboards");
+
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            try {
+                updateScoreboard(player);
+                lastScoreboardUpdate.put(player, System.currentTimeMillis());
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur force update scoreboard pour " +
+                        player.getName() + ": " + e.getMessage());
+            }
+        }
+
+        plugin.getPluginLogger().debug("Mise à jour forcée de tous les scoreboards en ligne");
     }
+
 
     /**
      * NOUVEAU : Force une mise à jour immédiate pour un joueur spécifique

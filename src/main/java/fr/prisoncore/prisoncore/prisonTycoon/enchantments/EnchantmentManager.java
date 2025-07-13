@@ -299,15 +299,18 @@ public class EnchantmentManager {
                 }
             }
 
-            // Abundance (chance d'activation)
+            // CORRIGÉ : Abundance avec vérification du cooldown
             int abundanceLevel = playerData.getEnchantmentLevel("abundance");
-            if (abundanceLevel > 0 && !playerData.isAbundanceActive()) {
+            if (abundanceLevel > 0 && !playerData.isAbundanceActive() && !playerData.isAbundanceOnCooldown()) {
                 double chance = plugin.getConfigManager().getEnchantmentSetting("abundance.base-chance", 0.000001) * abundanceLevel;
                 if (ThreadLocalRandom.current().nextDouble() < chance) {
                     int duration = plugin.getConfigManager().getEnchantmentSetting("abundance.duration-seconds", 60);
                     playerData.activateAbundance(duration * 1000L);
                     player.sendMessage("§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant " + duration + " secondes!");
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
+
+                    plugin.getPluginLogger().info("Abondance activée pour " + player.getName() +
+                            " (niveau " + abundanceLevel + ", durée " + duration + "s)");
                 }
             }
         }
