@@ -356,6 +356,19 @@ public class PlayerData {
     }
 
     /**
+     * NOUVEAU : Désactive de force l'abondance (pour pioche cassée)
+     */
+    public void deactivateAbundance() {
+        synchronized (dataLock) {
+            if (abundanceActive) {
+                abundanceActive = false;
+                abundanceEndTime = 0;
+                // Note: On ne touche pas au cooldown pour pas perturber le système normal
+            }
+        }
+    }
+
+    /**
      * CORRIGÉ : Ajoute un bloc MINÉ directement par le joueur avec la pioche
      * Les blocs minés comptent aussi comme détruits dans le total général
      */

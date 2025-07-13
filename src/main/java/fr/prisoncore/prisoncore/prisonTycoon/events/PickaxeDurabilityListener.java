@@ -131,6 +131,8 @@ public class PickaxeDurabilityListener implements Listener {
         // Retire tous les effets de mobilité
         plugin.getPickaxeManager().removeMobilityEffects(player);
 
+        plugin.getEnchantmentManager().forceDisableAbundanceAndResetCombustion(player);
+
         // CORRIGÉ : Message dans l'action bar au lieu du chat
         player.sendActionBar("§c💀 PIOCHE CASSÉE! Réparez-la pour retrouver ses capacités!");
 

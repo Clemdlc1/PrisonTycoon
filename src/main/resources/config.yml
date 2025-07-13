@@ -183,13 +183,13 @@ enchantments:
 
   # Clés
   keys:
-    base-chance: 0.01           # 1% par niveau
+    base-chance: 0.0001
     probabilities:
-      cristal: 0.00005          # 0.005% des drops
-      legendaire: 0.00995       # 0.995% des drops
-      rare: 0.09                # 9% des drops
-      peu-commune: 0.20         # 20% des drops
-      commune: 0.70             # 70% des drops
+      cristal: 0.00005
+      legendaire: 0.00995
+      rare: 0.09
+      peu-commune: 0.20
+      commune: 0.70
 
   # Fortune
   fortune:

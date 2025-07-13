@@ -110,7 +110,7 @@ public class EnchantmentManager {
         // Applique tous les enchantements actifs dans les mines
         processGreedEnchantments(player, playerData, blockType, blockLocation, true);
         processSpecialEnchantments(player, playerData, blockLocation, mineName);
-        updateCombustion(playerData);
+        updateCombustion(player, playerData); // MODIFIÉ : Passe le joueur en paramètre
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -289,12 +289,11 @@ public class EnchantmentManager {
             }
         }
 
-        // Key Greed et Abundance SEULEMENT pour les blocs MINÉS (pas cassés)
         if (isMinedBlock) {
             // Key Greed - chance fixe (pas affectée par Luck selon demande)
             int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
             if (keyGreedLevel > 0) {
-                double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.01) * keyGreedLevel;
+                double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.0001) * keyGreedLevel;
                 if (ThreadLocalRandom.current().nextDouble() < chance) {
                     giveRandomKey(player);
                     playerData.addKeyObtained();
@@ -379,9 +378,13 @@ public class EnchantmentManager {
     }
 
     /**
-     * Met à jour la combustion SEULEMENT pour les blocs MINÉS
+     * MODIFIÉ : Met à jour la combustion SEULEMENT si la pioche n'est pas cassée
      */
-    private void updateCombustion(PlayerData playerData) {
+    private void updateCombustion(Player player, PlayerData playerData) {
+        if (isPlayerPickaxeBroken(player)) {
+            return;
+        }
+
         int combustionLevel = playerData.getEnchantmentLevel("combustion");
         if (combustionLevel > 0) {
             int gainPerBlock = Math.max(1, combustionLevel / 10);
@@ -390,20 +393,20 @@ public class EnchantmentManager {
     }
 
     /**
-     * Donne une clé aléatoire au joueur
+     * CORRIGÉ : Donne une clé aléatoire au joueur - Fix ClassCastException
      */
     private void giveRandomKey(Player player) {
         double rand = ThreadLocalRandom.current().nextDouble();
         String keyType;
         String keyColor;
 
-        Map<String, Double> keyProbabilities = plugin.getConfigManager().getEnchantmentSetting("keys.probabilities", Map.of(
-                "cristal", 0.00005,
-                "legendaire", 0.00995,
-                "rare", 0.09,
-                "peu-commune", 0.20,
-                "commune", 0.70
-        ));
+        // CORRIGÉ : Création manuelle du Map au lieu d'utiliser getEnchantmentSetting avec Map
+        Map<String, Double> keyProbabilities = new HashMap<>();
+        keyProbabilities.put("cristal", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.cristal", 0.00005));
+        keyProbabilities.put("legendaire", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.legendaire", 0.00995));
+        keyProbabilities.put("rare", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.rare", 0.09));
+        keyProbabilities.put("peu-commune", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.peu-commune", 0.20));
+        keyProbabilities.put("commune", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.commune", 0.70));
 
         if (rand < keyProbabilities.get("cristal")) {
             keyType = "Cristal";
@@ -427,13 +430,58 @@ public class EnchantmentManager {
         meta.setDisplayName(keyColor + "Clé " + keyType);
         meta.setLore(Arrays.asList(
                 "§7Clé de coffre " + keyColor + keyType,
-                "§7Utilise cette clé pour ouvrir des coffres!",
-                "§8Obtenue via Key Greed"
+                "§7Utilise cette clé pour ouvrir des coffres!"
         ));
         key.setItemMeta(meta);
 
-        player.getInventory().addItem(key);
-        plugin.getNotificationManager().queueGreedNotification(player, "Key Greed", 1, "clé " + keyColor + keyType);
+        // Donne la clé au joueur
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(key);
+            player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §eobtenue!");
+            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.5f);
+        } else {
+            player.getWorld().dropItemNaturally(player.getLocation(), key);
+            player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §edroppée au sol (inventaire plein)!");
+        }
+    }
+
+    /**
+     * NOUVEAU : Désactive de force l'abondance et reset la combustion quand la pioche est cassée
+     */
+    public void forceDisableAbundanceAndResetCombustion(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        boolean changed = false;
+
+        // Désactive l'abondance si elle est active
+        if (playerData.isAbundanceActive()) {
+            playerData.deactivateAbundance(); // Suppose que cette méthode existe dans PlayerData
+            player.sendActionBar("§c⭐ Abondance désactivée (pioche cassée)");
+            changed = true;
+
+            plugin.getPluginLogger().info("Abondance forcément désactivée pour " + player.getName() + " (pioche cassée)");
+        }
+
+        // Reset la combustion si elle est active
+        if (playerData.getCombustionLevel() > 0) {
+            playerData.setCombustionLevel(0);
+            player.sendActionBar("§c🔥 Combustion remise à zéro (pioche cassée)");
+            changed = true;
+
+            plugin.getPluginLogger().info("Combustion remise à zéro pour " + player.getName() + " (pioche cassée)");
+        }
+
+        // Marque les données comme modifiées si des changements ont été effectués
+        if (changed) {
+            plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        }
+    }
+
+    /**
+     * NOUVEAU : Vérifie si la pioche du joueur est cassée (méthode helper)
+     */
+    public boolean isPlayerPickaxeBroken(Player player) {
+        return player.hasMetadata("pickaxe_broken");
     }
 
     /**

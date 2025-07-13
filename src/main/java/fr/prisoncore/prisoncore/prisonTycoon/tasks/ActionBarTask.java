@@ -49,6 +49,7 @@ public class ActionBarTask extends BukkitRunnable {
     /**
      * CORRIGÉ : Génère le message d'état pour abondance sans conflit cooldown
      */
+
     private String generateStatusMessage(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         StringBuilder status = new StringBuilder();
@@ -56,7 +57,15 @@ public class ActionBarTask extends BukkitRunnable {
         // Vérifie si le joueur mine actuellement
         boolean currentlyMining = playerData.isCurrentlyMining();
 
-        // Combustion (si débloqué ET le joueur mine actuellement)
+        // NOUVEAU : Vérifie si la pioche est cassée
+        boolean isPickaxeBroken = plugin.getEnchantmentManager().isPlayerPickaxeBroken(player);
+
+        // Si la pioche est cassée, affiche seulement un message d'avertissement
+        if (isPickaxeBroken) {
+            return "§c💀 PIOCHE CASSÉE! §7Réparez-la pour réactiver les enchantements";
+        }
+
+        // Combustion (si débloqué ET le joueur mine actuellement ET pioche pas cassée)
         int combustionLevel = playerData.getEnchantmentLevel("combustion");
         if (combustionLevel > 0 && currentlyMining) {
             long currentCombustion = playerData.getCombustionLevel();
@@ -75,6 +84,7 @@ public class ActionBarTask extends BukkitRunnable {
             }
         }
 
+        // Abondance (si débloqué ET le joueur mine actuellement ET pioche pas cassée)
         int abundanceLevel = playerData.getEnchantmentLevel("abundance");
         if (abundanceLevel > 0 && currentlyMining) {
             if (playerData.isAbundanceActive()) {
