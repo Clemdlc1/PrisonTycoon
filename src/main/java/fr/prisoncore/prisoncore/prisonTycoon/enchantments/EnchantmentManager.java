@@ -102,17 +102,10 @@ public class EnchantmentManager {
         // Ajoute aux statistiques de minage (MINÉ)
         playerData.addMinedBlock(blockType);
 
-        // MODIFIÉ : Fortune affecte maintenant le NOMBRE DE BLOCS obtenus, pas les gains
         int blocksToGive = calculateFortuneBlocks(playerData, blockType);
 
         // Ajoute les blocs à l'inventaire (quantité augmentée par Fortune)
         addBlocksToInventory(player, blockType, blocksToGive);
-
-        // Gains économiques de BASE (sans Fortune)
-        BlockValueData baseValue = plugin.getConfigManager().getBlockValue(blockType);
-        playerData.addCoinsViaPickaxe(baseValue.getCoins());
-        playerData.addTokensViaPickaxe(baseValue.getTokens());
-        playerData.addExperienceViaPickaxe(baseValue.getExperience());
 
         // Applique tous les enchantements actifs dans les mines
         processGreedEnchantments(player, playerData, blockType, blockLocation, true);

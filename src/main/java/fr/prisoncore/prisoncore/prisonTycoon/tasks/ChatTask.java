@@ -129,7 +129,6 @@ public class ChatTask extends BukkitRunnable {
         long coinsGained = playerData.getLastMinuteCoins();
         long tokensGained = playerData.getLastMinuteTokens();
         long expGained = playerData.getLastMinuteExperience();
-        long greedTriggers = playerData.getLastMinuteGreedTriggers();
         int autoUpgrades = playerData.getLastMinuteAutoUpgrades();
         long keysObtained = playerData.getLastMinuteKeysObtained();
 
@@ -137,7 +136,7 @@ public class ChatTask extends BukkitRunnable {
         summary.append("§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         // Titre compact (ligne 2)
-        summary.append("\n§e📊 §lRÉCAP MINUTE §8• §7").append(NumberFormatter.format(playerData.getCoins())).append(" coins §8• §e").append(NumberFormatter.format(playerData.getTokens())).append(" tokens §8• §a").append(NumberFormatter.format(playerData.getExperience())).append(" exp");
+        summary.append("\n§e📊 §lRÉCAP MINUTE §8• §7");
 
         // Ligne minage si applicable (ligne 3-4)
         if (blocksMined > 0 || blocksDestroyed > 0 || blocksInventory > 0) {
@@ -173,7 +172,7 @@ public class ChatTask extends BukkitRunnable {
         }
 
         // Ligne enchantements si applicable (ligne 6)
-        if (greedTriggers > 0 || autoUpgrades > 0 || keysObtained > 0) {
+        if (autoUpgrades > 0 || keysObtained > 0) {
             summary.append("\n§d✨ §lEnchants: ");
             boolean first = true;
 
