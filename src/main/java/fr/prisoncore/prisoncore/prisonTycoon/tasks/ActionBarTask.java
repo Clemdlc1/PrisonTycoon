@@ -20,19 +20,8 @@ public class ActionBarTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        tickCount++;
-
-        try {
-            // Met à jour l'action bar toutes les 20 ticks (1 seconde)
-            if (tickCount % 20 == 0) {
                 updateActionBarStatus();
-            }
-
-        } catch (Exception e) {
-            plugin.getPluginLogger().severe("Erreur dans ActionBarTask:");
-            e.printStackTrace();
-        }
-    }
+                    }
 
     /**
      * Met à jour l'action bar avec l'état des enchantements actifs
@@ -49,7 +38,6 @@ public class ActionBarTask extends BukkitRunnable {
     /**
      * CORRIGÉ : Génère le message d'état pour abondance sans conflit cooldown
      */
-
     private String generateStatusMessage(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         StringBuilder status = new StringBuilder();
@@ -60,56 +48,49 @@ public class ActionBarTask extends BukkitRunnable {
         // NOUVEAU : Vérifie si la pioche est cassée
         boolean isPickaxeBroken = plugin.getEnchantmentManager().isPlayerPickaxeBroken(player);
 
-        // Si la pioche est cassée, affiche seulement un message d'avertissement
+        // HARMONISATION : Priorité aux messages temporaires de changement d'état
+        if (player.hasMetadata("pickaxe_just_broken")) {
+            // Message temporaire de casse (reste affiché 3 secondes)
+            long brokenTime = player.getMetadata("pickaxe_just_broken").get(0).asLong();
+            if (System.currentTimeMillis() - brokenTime < 3000) {
+                return "§c💥 PIOCHE CASSÉE! Tous enchantements désactivés sauf Token Greed (90% malus)";
+            } else {
+                // Retire le metadata après 3 secondes
+                player.removeMetadata("pickaxe_just_broken", plugin);
+            }
+        }
+
+        if (player.hasMetadata("pickaxe_just_repaired")) {
+            // Message temporaire de réparation (reste affiché 3 secondes)
+            long repairedTime = player.getMetadata("pickaxe_just_repaired").get(0).asLong();
+            if (System.currentTimeMillis() - repairedTime < 3000) {
+                return "§a✅ Pioche réparée! Tous les enchantements sont actifs";
+            } else {
+                // Retire le metadata après 3 secondes
+                player.removeMetadata("pickaxe_just_repaired", plugin);
+            }
+        }
+
+        // Si la pioche est cassée (état permanent), affiche le message d'avertissement
         if (isPickaxeBroken) {
-            return "§c💀 PIOCHE CASSÉE! §7Réparez-la pour réactiver les enchantements";
+            return "§c💀 PIOCHE CASSÉE! Réparez-la pour retrouver ses capacités!";
         }
 
-        // Combustion (si débloqué ET le joueur mine actuellement ET pioche pas cassée)
-        int combustionLevel = playerData.getEnchantmentLevel("combustion");
-        if (combustionLevel > 0 && currentlyMining) {
-            long currentCombustion = playerData.getCombustionLevel();
-
-            if (currentCombustion > 0) {
-                double multiplier = playerData.getCombustionMultiplier();
-                String combustionColor = getCombustionColor(currentCombustion);
-
-                status.append("§c🔥 Combustion: ")
-                        .append(combustionColor)
-                        .append(currentCombustion)
-                        .append("§7/§e1000 ")
-                        .append("§6(x")
-                        .append(String.format("%.2f", multiplier))
-                        .append(")");
-            }
+        // Reste du code existant pour les enchantements normaux...
+        if (!currentlyMining) {
+            return ""; // Pas de message si pas en train de miner
         }
 
-        // Abondance (si débloqué ET le joueur mine actuellement ET pioche pas cassée)
-        int abundanceLevel = playerData.getEnchantmentLevel("abundance");
-        if (abundanceLevel > 0 && currentlyMining) {
-            if (playerData.isAbundanceActive()) {
-                // Abondance est ACTIVE - priorité à l'affichage de l'effet actif
-                if (status.length() > 0) {
-                    status.append(" §8• ");
-                }
-                status.append("§6⭐ Abondance: §a✨ ACTIVE §7(x2 gains)");
+        // États spéciaux (combustion, abondance, etc.)
+        if (playerData.getCombustionLevel() > 0) {
+            if (status.length() > 0) status.append(" §8| ");
+            double multiplier = playerData.getCombustionMultiplier();
+            status.append("§c🔥 Combustion: §6x").append(String.format("%.2f", multiplier));
+        }
 
-            } else if (playerData.isAbundanceOnCooldown()) {
-                // Abondance est en COOLDOWN (seulement si pas active)
-                if (status.length() > 0) {
-                    status.append(" §8• ");
-                }
-                long cooldownSeconds = playerData.getAbundanceCooldownSecondsLeft();
-                long minutes = cooldownSeconds / 60;
-                long seconds = cooldownSeconds % 60;
-
-                status.append("§6⭐ Abondance: §c⏰ Cooldown ");
-                if (minutes > 0) {
-                    status.append(minutes).append("m ");
-                }
-                status.append(seconds).append("s");
-            }
-            // Si ni active ni en cooldown, on n'affiche rien (prêt à se déclencher)
+        if (playerData.isAbundanceActive()) {
+            if (status.length() > 0) status.append(" §8| ");
+            status.append("§6⭐ Abondance: §aACTIVE");
         }
 
         return status.toString();

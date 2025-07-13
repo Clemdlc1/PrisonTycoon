@@ -102,7 +102,7 @@ public class EnchantmentManager {
         // Ajoute aux statistiques de minage (MINÉ)
         playerData.addMinedBlock(blockType);
 
-        int blocksToGive = calculateFortuneBlocks(playerData, blockType);
+        int blocksToGive = calculateFortuneBlocks(player, playerData, blockType);
 
         // Ajoute les blocs à l'inventaire (quantité augmentée par Fortune)
         addBlocksToInventory(player, blockType, blocksToGive);
@@ -119,7 +119,11 @@ public class EnchantmentManager {
     /**
      * NOUVEAU & MODIFIÉ : Calcule le nombre de blocs à donner avec Fortune (formule rééquilibrée)
      */
-    private int calculateFortuneBlocks(PlayerData playerData, Material blockType) {
+    private int calculateFortuneBlocks(Player player, PlayerData playerData, Material blockType) {
+        if (isPlayerPickaxeBroken(player)) {
+            return 0; // Retourne 0 bloc bonus
+        }
+
         int fortuneLevel = playerData.getEnchantmentLevel("fortune");
 
         // Pour chaque 100 niveaux, on gagne 1 bloc bonus garanti.
@@ -133,12 +137,13 @@ public class EnchantmentManager {
             extraBlocks = 1;
         }
 
-        int totalBlocks = guaranteedBonus + extraBlocks;
+        // Le total retourné correspond uniquement aux blocs BONUS.
+        int bonusBlocks = guaranteedBonus + extraBlocks;
 
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
-                ": " + totalBlocks + " blocs (1 base + " + guaranteedBonus + " garanti + " + extraBlocks + " chance)");
+                ": " + bonusBlocks + " blocs bonus (" + guaranteedBonus + " garanti + " + extraBlocks + " chance)");
 
-        return totalBlocks;
+        return bonusBlocks;
     }
 
     /**
@@ -179,7 +184,7 @@ public class EnchantmentManager {
         playerData.addDestroyedBlocks(1);
 
         // NOUVEAU: Applique Fortune sur les blocs cassés
-        int blocksToGive = calculateFortuneBlocks(playerData, blockType);
+        int blocksToGive = calculateFortuneBlocks(player, playerData, blockType);
         addBlocksToInventory(player, blockType, blocksToGive);
 
         // LIMITATION : Seuls Money/Token/Exp Greed s'appliquent sur les gains de base

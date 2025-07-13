@@ -201,6 +201,8 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("pickaxe").setExecutor(new PickaxeCommand(this));
         getCommand("mine").setExecutor(new MineCommand(this));
         getCommand("sell").setExecutor(new SellCommand(this));
+        getCommand("repair").setExecutor(new RepairCommand(this)); // NOUVELLE LIGNE
+
 
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));

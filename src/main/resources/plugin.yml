@@ -55,6 +55,13 @@ commands:
     permission: specialmine.pickaxe
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
+  repair:
+    description: Ouvre le menu de réparation de la pioche légendaire
+    usage: /repair
+    permission: specialmine.repair
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [fix, reparer]
+
   sell:
     description: Vendre des items
     usage: /sell <all|hand>

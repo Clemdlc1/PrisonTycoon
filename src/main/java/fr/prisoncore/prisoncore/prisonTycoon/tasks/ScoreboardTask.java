@@ -234,32 +234,6 @@ public class ScoreboardTask extends BukkitRunnable {
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Enchantements: " +
                 ChatColor.LIGHT_PURPLE + enchantmentCount);
 
-        // États spéciaux actifs
-        if (combustionLevel > 0 || abundanceActive) {
-            setScoreboardLine(scoreboard, objective, line--, "   ");
-            setScoreboardLine(scoreboard, objective, line--, ChatColor.RED + "🔥 " + ChatColor.BOLD + "ÉTATS ACTIFS");
-
-            if (combustionLevel > 0) {
-                double multiplier = playerData.getCombustionMultiplier();
-                setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Combustion: " +
-                        ChatColor.GOLD + String.format("x%.2f", multiplier) + ChatColor.GRAY +
-                        " (" + combustionLevel + "/1000)");
-            }
-
-            if (abundanceActive) {
-                setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Abondance: " +
-                        ChatColor.GREEN + "ACTIVE");
-            }
-        }
-
-        // Position pioche
-        if (hasLegendaryPickaxe) {
-            setScoreboardLine(scoreboard, objective, line--, "    ");
-            setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "⛏️ " + ChatColor.BOLD + "PIOCHE");
-            String slotStatus = pickaxeInCorrectSlot ?
-                    ChatColor.GREEN + "Slot 1 ✓" : ChatColor.RED + "Mauvaise position!";
-            setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Position: " + slotStatus);
-        }
 
         // Ligne vide finale
         setScoreboardLine(scoreboard, objective, line--, "     ");

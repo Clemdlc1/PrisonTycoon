@@ -2,6 +2,10 @@ package fr.prisoncore.prisoncore.prisonTycoon.events;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -83,9 +87,6 @@ public class PickaxeDurabilityListener implements Listener {
                 " (solidité niveau " + durabilityLevel + ")");
     }
 
-    /**
-     * CORRIGÉ : Vérifie l'état avec la durabilité de base (pas augmentée)
-     */
     private void checkPickaxeState(Player player, ItemStack pickaxe, short currentDurability, short maxDurability) {
         // Calcule le pourcentage de durabilité restante avec la durabilité normale
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
@@ -103,14 +104,25 @@ public class PickaxeDurabilityListener implements Listener {
             }
         }
 
-        // CORRIGÉ : Messages d'avertissement dans l'action bar pour pioche cassée
         if (currentDurability >= maxDurability - 1) {
-            // Message critique dans l'action bar au lieu des messages chat
-            player.sendActionBar("§c💥 PIOCHE CASSÉE! Tous enchantements désactivés sauf Token Greed (90% malus)");
-        } else if (durabilityPercent < 0.10) { // Moins de 10% restant
-            player.sendMessage("§6⚠️ Votre pioche est très endommagée! Réparez-la rapidement.");
-        } else if (durabilityPercent < 0.25) { // Moins de 25% restant
-            player.sendMessage("§e⚠️ Votre pioche commence à être endommagée.");
+            // Le mode "pioche cassée" a ses propres notifications
+        } else if (durabilityPercent <= 0.10) { // Moins de 10% restant
+            // Crée le message cliquable
+            TextComponent message = new TextComponent("§6⚠️ Votre pioche est très endommagée ! §e[CLIQUEZ POUR RÉPARER]");
+            message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
+            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
+
+            // Envoie le message au joueur
+            player.spigot().sendMessage(message);
+
+        } else if (durabilityPercent <= 0.25) { // Moins de 25% restant
+            // Crée le message cliquable
+            TextComponent message = new TextComponent("§e⚠️ Votre pioche commence à être endommagée. §e[RÉPARER]");
+            message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
+            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
+
+            // Envoie le message au joueur
+            player.spigot().sendMessage(message);
         }
     }
 
@@ -128,13 +140,13 @@ public class PickaxeDurabilityListener implements Listener {
         // Marque le joueur comme ayant une pioche cassée
         player.setMetadata("pickaxe_broken", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
 
+        // HARMONISATION : Marque pour notification temporaire dans ActionBarTask
+        player.setMetadata("pickaxe_just_broken", new org.bukkit.metadata.FixedMetadataValue(plugin, System.currentTimeMillis()));
+
         // Retire tous les effets de mobilité
         plugin.getPickaxeManager().removeMobilityEffects(player);
 
         plugin.getEnchantmentManager().forceDisableAbundanceAndResetCombustion(player);
-
-        // CORRIGÉ : Message dans l'action bar au lieu du chat
-        player.sendActionBar("§c💀 PIOCHE CASSÉE! Réparez-la pour retrouver ses capacités!");
 
         // Son d'alerte
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_BREAK, 1.0f, 0.5f);
@@ -149,11 +161,11 @@ public class PickaxeDurabilityListener implements Listener {
         // Retire le metadata
         player.removeMetadata("pickaxe_broken", plugin);
 
+        // HARMONISATION : Marque pour notification temporaire dans ActionBarTask
+        player.setMetadata("pickaxe_just_repaired", new org.bukkit.metadata.FixedMetadataValue(plugin, System.currentTimeMillis()));
+
         // Réapplique les effets de mobilité si approprié
         plugin.getPickaxeManager().updateMobilityEffects(player);
-
-        // CORRIGÉ : Message dans l'action bar
-        player.sendActionBar("§a✅ Pioche réparée! Tous les enchantements sont actifs");
 
         // Son de récupération
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
