@@ -36,6 +36,8 @@ public class PlayerData {
 
     // Auto-amélioration des enchantements
     private final Set<String> autoUpgradeEnabled;
+    private final List<AutoUpgradeDetail> lastMinuteAutoUpgradeDetails = new ArrayList<>();
+
 
     // Enchantements mobilité désactivés
     private final Set<String> mobilityEnchantmentsDisabled;
@@ -383,18 +385,19 @@ public class PlayerData {
 
     public void resetLastMinuteStats() {
         synchronized (dataLock) {
-            lastMinuteCoins = 0;
-            lastMinuteTokens = 0;
-            lastMinuteExperience = 0;
-            lastMinuteCoinsViaPickaxe = 0;          // NOUVEAU
-            lastMinuteTokensViaPickaxe = 0;         // NOUVEAU
-            lastMinuteExperienceViaPickaxe = 0;     // NOUVEAU
-            lastMinuteAutoUpgrades = 0;
-            lastMinuteBlocksMined = 0;
-            lastMinuteBlocksDestroyed = 0;
-            lastMinuteGreedTriggers = 0;
-            lastMinuteKeysObtained = 0;
-            lastMinuteBlocksAddedToInventory = 0;
+            this.lastMinuteCoins = 0;
+            this.lastMinuteTokens = 0;
+            this.lastMinuteExperience = 0;
+            this.lastMinuteCoinsViaPickaxe = 0;
+            this.lastMinuteTokensViaPickaxe = 0;
+            this.lastMinuteExperienceViaPickaxe = 0;
+            this.lastMinuteAutoUpgrades = 0;
+            this.lastMinuteAutoUpgradeDetails.clear(); // ← NOUVEAU
+            this.lastMinuteBlocksMined = 0;
+            this.lastMinuteBlocksDestroyed = 0;
+            this.lastMinuteGreedTriggers = 0;
+            this.lastMinuteKeysObtained = 0;
+            this.lastMinuteBlocksAddedToInventory = 0;
         }
     }
 
@@ -409,6 +412,31 @@ public class PlayerData {
             autoUpgradeEnabled.add(enchantmentName);
         } else {
             autoUpgradeEnabled.remove(enchantmentName);
+        }
+    }
+
+    public void setLastMinuteAutoUpgrades(int count) {
+        synchronized (dataLock) {
+            this.lastMinuteAutoUpgrades += count;
+        }
+    }
+
+    /**
+     * Ajoute un détail d'auto-upgrade
+     */
+    public void addAutoUpgradeDetail(String enchantmentName, String displayName, int levelsGained, int newLevel) {
+        synchronized (dataLock) {
+            this.lastMinuteAutoUpgrades += levelsGained;
+            this.lastMinuteAutoUpgradeDetails.add(new AutoUpgradeDetail(enchantmentName, displayName, levelsGained, newLevel));
+        }
+    }
+
+    /**
+     * Obtient les détails des auto-upgrades de la dernière minute
+     */
+    public List<AutoUpgradeDetail> getLastMinuteAutoUpgradeDetails() {
+        synchronized (dataLock) {
+            return new ArrayList<>(lastMinuteAutoUpgradeDetails);
         }
     }
 
@@ -561,6 +589,25 @@ public class PlayerData {
             long now = System.currentTimeMillis();
             return (now - lastMiningTime) <= 3000; // 3 secondes
         }
+    }
+
+    public static class AutoUpgradeDetail {
+        private final String enchantmentName;
+        private final String displayName;
+        private final int levelsGained;
+        private final int newLevel;
+
+        public AutoUpgradeDetail(String enchantmentName, String displayName, int levelsGained, int newLevel) {
+            this.enchantmentName = enchantmentName;
+            this.displayName = displayName;
+            this.levelsGained = levelsGained;
+            this.newLevel = newLevel;
+        }
+
+        public String getEnchantmentName() { return enchantmentName; }
+        public String getDisplayName() { return displayName; }
+        public int getLevelsGained() { return levelsGained; }
+        public int getNewLevel() { return newLevel; }
     }
 
     // Autres getters

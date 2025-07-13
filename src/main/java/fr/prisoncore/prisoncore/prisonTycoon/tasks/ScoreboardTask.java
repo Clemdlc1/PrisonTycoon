@@ -282,6 +282,11 @@ public class ScoreboardTask extends BukkitRunnable {
      * Définit une ligne du scoreboard avec optimisations
      */
     private void setScoreboardLine(Scoreboard scoreboard, Objective objective, int score, String text) {
+        // CORRECTION : S'assurer que le score n'est pas négatif
+        if (score < 0) {
+         return;
+        }
+
         // Limite la longueur pour éviter les problèmes d'affichage
         if (text.length() > 40) {
             text = text.substring(0, 37) + "...";
@@ -292,8 +297,8 @@ public class ScoreboardTask extends BukkitRunnable {
         Team team = scoreboard.getTeam("line" + score);
 
         if (team != null) {
-            // OPTIMISATION : Met à jour seulement si le texte a changé
-            if (!text.equals(team.getPrefix())) {
+            String currentPrefix = team.getPrefix();
+            if (currentPrefix == null || !currentPrefix.equals(text)) {
                 team.setPrefix(text);
             }
 

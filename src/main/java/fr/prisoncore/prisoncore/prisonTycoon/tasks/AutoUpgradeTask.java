@@ -67,6 +67,14 @@ public class AutoUpgradeTask extends BukkitRunnable {
                     playersProcessed++;
                     lastUpgradeTime.put(playerId, now);
 
+                    // ====================================================================
+                    // CORRECTION CRITIQUE : Incrémenter lastMinuteAutoUpgrades !!
+                    // ====================================================================
+                    playerData.setLastMinuteAutoUpgrades(playerUpgrades);
+
+                    plugin.getPluginLogger().debug("Auto-upgrades effectués pour " + playerData.getPlayerName() +
+                            ": " + playerUpgrades + " (total minute: " + playerData.getLastMinuteAutoUpgrades() + ")");
+
                     // Marque le joueur comme modifié
                     plugin.getPlayerDataManager().markDirty(playerId);
 
@@ -135,7 +143,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ: Traite les auto-améliorations sans envoyer de messages (le summary s'en charge)
+     * CORRIGÉ: Traite les auto-améliorations avec tracking des détails
      */
     private int processPlayerAutoUpgrades(PlayerData playerData) {
         int totalUpgradesPerformed = 0;
@@ -156,7 +164,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
             if (enchantment == null) {
                 plugin.getPluginLogger().warning("§cEnchantement invalide dans auto-upgrade: '" +
                         enchantmentName + "' pour " + playerData.getPlayerName());
-                // Désactive cet auto-upgrade invalide
                 playerData.setAutoUpgrade(enchantmentName, false);
                 continue;
             }
@@ -169,46 +176,47 @@ public class AutoUpgradeTask extends BukkitRunnable {
 
             // Vérifie si peut encore être amélioré
             if (currentLevel >= enchantment.getMaxLevel()) {
-                // Désactive l'auto-amélioration si niveau max atteint
                 playerData.setAutoUpgrade(enchantmentName, false);
-
-                // SUPPRIMÉ : Message niveau max atteint (sera dans le summary si nécessaire)
-
                 plugin.getPluginLogger().info("Auto-upgrade désactivé pour " + enchantmentName +
                         " (niveau max atteint) - " + playerData.getPlayerName());
                 continue;
             }
 
-            // CORRIGÉ: Calcule le MAXIMUM de niveaux possibles avec les tokens disponibles
+            // Calcule le MAXIMUM de niveaux possibles avec les tokens disponibles
             long availableTokens = playerData.getTokens();
             int maxAffordableLevels = 0;
             long totalCost = 0;
 
-            // Calcule combien de niveaux on peut s'offrir
             for (int i = 1; i <= (enchantment.getMaxLevel() - currentLevel); i++) {
                 long levelCost = enchantment.getUpgradeCost(currentLevel + i);
                 if (totalCost + levelCost <= availableTokens) {
                     totalCost += levelCost;
                     maxAffordableLevels = i;
                 } else {
-                    break; // Plus assez de tokens
+                    break;
                 }
             }
 
-            plugin.getPluginLogger().debug("Auto-upgrade cost check: " + enchantmentName +
-                    " max affordable levels=" + maxAffordableLevels + ", total cost=" + totalCost +
-                    ", available tokens=" + availableTokens + " pour " + playerData.getPlayerName());
-
-            // CORRIGÉ: Améliore au MAXIMUM possible si on peut s'offrir au moins 1 niveau
+            // Améliore au MAXIMUM possible si on peut s'offrir au moins 1 niveau
             if (maxAffordableLevels > 0) {
-                // Effectue l'amélioration directement sur les données
                 if (playerData.removeTokens(totalCost)) {
-                    playerData.setEnchantmentLevel(enchantmentName, currentLevel + maxAffordableLevels);
+                    int newLevel = currentLevel + maxAffordableLevels;
+                    playerData.setEnchantmentLevel(enchantmentName, newLevel);
                     totalUpgradesPerformed += maxAffordableLevels;
 
+                    // ====================================================================
+                    // NOUVEAU : Ajouter les détails de l'upgrade pour le récapitulatif
+                    // ====================================================================
+                    playerData.addAutoUpgradeDetail(
+                            enchantmentName,
+                            enchantment.getDisplayName(),
+                            maxAffordableLevels,
+                            newLevel
+                    );
+
                     plugin.getPluginLogger().info("Auto-amélioration silencieuse réussie: " + playerData.getPlayerName() +
-                            " - " + enchantmentName + " +" + maxAffordableLevels + " niveaux (niveau " +
-                            (currentLevel + maxAffordableLevels) + ") (coût: " + totalCost + " tokens)");
+                            " - " + enchantment.getDisplayName() + " +" + maxAffordableLevels + " niveaux (niveau " +
+                            newLevel + ") (coût: " + totalCost + " tokens)");
                 } else {
                     plugin.getPluginLogger().warning("Échec retrait tokens pour auto-upgrade: " +
                             enchantmentName + " pour " + playerData.getPlayerName());

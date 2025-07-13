@@ -6,6 +6,8 @@ import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.List;
+
 /**
  * Tâche de récapitulatif minute dans le chat
  * CORRIGÉ : Affiche seulement les gains via pioche + auto-upgrades dans le summary
@@ -121,6 +123,7 @@ public class ChatTask extends BukkitRunnable {
 
     /**
      * CORRIGÉ : Génère un récapitulatif basé sur les gains VIA PIOCHE uniquement
+     * NOUVEAU : Affichage détaillé des auto-upgrades avec nom d'enchantement et niveau
      */
     private String generateCompleteSummary(PlayerData playerData) {
         StringBuilder summary = new StringBuilder();
@@ -132,62 +135,130 @@ public class ChatTask extends BukkitRunnable {
         long coinsGained = playerData.getLastMinuteCoinsViaPickaxe();      // VIA PIOCHE
         long tokensGained = playerData.getLastMinuteTokensViaPickaxe();    // VIA PIOCHE
         long expGained = playerData.getLastMinuteExperienceViaPickaxe();   // VIA PIOCHE
-        int autoUpgrades = playerData.getLastMinuteAutoUpgrades();
         long keysObtained = playerData.getLastMinuteKeysObtained();
-        long greedTriggers = playerData.getLastMinuteGreedTriggers();
 
-        // En-tête compact (ligne 1)
-        summary.append("§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        // NOUVEAU : Récupération des détails des auto-upgrades
+        List<PlayerData.AutoUpgradeDetail> upgradeDetails = playerData.getLastMinuteAutoUpgradeDetails();
 
-        // Titre compact (ligne 2)
-        summary.append("\n§e📊 §lRÉCAP MINUTE VIA PIOCHE §8• §7");
-
-        // Ligne minage si applicable (ligne 3-4)
-        if (blocksMined > 0 || blocksDestroyed > 0 || blocksInventory > 0) {
-            summary.append("\n§b⛏️ §lMinage: §3").append(NumberFormatter.format(blocksMined)).append(" minés");
-
-            if (blocksDestroyed > blocksMined) {
-                summary.append(" §8+ §5").append(NumberFormatter.format(blocksDestroyed - blocksMined)).append(" détruits");
+        // Calcul du pourcentage de remplissage de l'inventaire
+        Player player = plugin.getServer().getPlayer(playerData.getPlayerId());
+        int inventoryFillPercentage = 0;
+        if (player != null) {
+            int totalSlots = 36; // Slots principaux de l'inventaire
+            int usedSlots = 0;
+            for (int i = 0; i < totalSlots; i++) {
+                if (player.getInventory().getItem(i) != null) {
+                    usedSlots++;
+                }
             }
-
-            if (blocksInventory > 0) {
-                summary.append("\n§6📦 §lInventaire: §e+").append(NumberFormatter.format(blocksInventory)).append(" blocs récupérés");
-            }
+            inventoryFillPercentage = (usedSlots * 100) / totalSlots;
         }
 
-        // Ligne gains économiques VIA PIOCHE (ligne 5)
-        if (coinsGained > 0 || tokensGained > 0 || expGained > 0) {
-            summary.append("\n§6💰 §lGains via Pioche: ");
+        // ═══════════════════════════════════════════════════════════════
+        // 1ère LIGNE : RECAP MINUTE + icône pioche
+        // ═══════════════════════════════════════════════════════════════
+        summary.append("§8§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        summary.append("\n§6⛏ §e§l§nRECAP MINUTE§r §6⛏");
+
+        // ═══════════════════════════════════════════════════════════════
+        // 2ème LIGNE : Statistiques des blocs + % remplissage inventaire
+        // ═══════════════════════════════════════════════════════════════
+        summary.append("\n§7┃ §b§lBlocs:§r ");
+
+        // Blocs minés
+        summary.append("§a").append(NumberFormatter.format(blocksMined)).append(" minés");
+
+        // Blocs détruits (seulement si différent des blocs minés)
+        if (blocksDestroyed > 0 && blocksDestroyed != blocksMined) {
+            summary.append(" §8│ §c").append(NumberFormatter.format(blocksDestroyed)).append(" détruits");
+        }
+
+        // Blocs récupérés
+        if (blocksInventory > 0) {
+            summary.append(" §8│ §e").append(NumberFormatter.format(blocksInventory)).append(" récupérés");
+        }
+
+        // Pourcentage de remplissage inventaire
+        String fillColor = inventoryFillPercentage >= 90 ? "§c" :
+                inventoryFillPercentage >= 70 ? "§e" : "§a";
+        summary.append(" §8│ §7Inventaire: ").append(fillColor).append(inventoryFillPercentage).append("%");
+
+        // ═══════════════════════════════════════════════════════════════
+        // 3ème LIGNE : Gains de TOUS LES GREED (exp, coin, token, xp)
+        // ═══════════════════════════════════════════════════════════════
+        boolean hasGreedGains = coinsGained > 0 || tokensGained > 0 || expGained > 0 || keysObtained > 0;
+
+        if (hasGreedGains) {
+            summary.append("\n§7┃ §d§lGreed Gains:§r ");
             boolean first = true;
 
             if (coinsGained > 0) {
                 summary.append("§6+").append(NumberFormatter.format(coinsGained)).append(" coins");
                 first = false;
             }
+
             if (tokensGained > 0) {
-                if (!first) summary.append(" §8• ");
+                if (!first) summary.append(" §8│ ");
                 summary.append("§e+").append(NumberFormatter.format(tokensGained)).append(" tokens");
                 first = false;
             }
+
             if (expGained > 0) {
-                if (!first) summary.append(" §8• ");
+                if (!first) summary.append(" §8│ ");
                 summary.append("§a+").append(NumberFormatter.format(expGained)).append(" exp");
+                first = false;
             }
+
             if (keysObtained > 0) {
-                if (!first) summary.append(" §8• ");
-                summary.append("§e").append(NumberFormatter.format(keysObtained)).append(" clés");
+                if (!first) summary.append(" §8│ ");
+                summary.append("§b+").append(NumberFormatter.format(keysObtained)).append(" clés");
+            }
+        } else {
+            summary.append("\n§7┃ §d§lGreed Gains:§r §8Aucun gain cette minute");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // 4ème LIGNE : Auto-améliorations avec détails des enchantements
+        // ═══════════════════════════════════════════════════════════════
+        if (!upgradeDetails.isEmpty()) {
+            summary.append("\n§7┃ §5§lAuto-Upgrades:§r ");
+
+            if (upgradeDetails.size() == 1) {
+                // Un seul enchantement amélioré - Affichage compact sur une ligne
+                PlayerData.AutoUpgradeDetail detail = upgradeDetails.get(0);
+                summary.append("§d").append(detail.getDisplayName())
+                        .append(" §7(§a+").append(detail.getLevelsGained()).append("§7) ")
+                        .append("§8→ §eNiv. ").append(detail.getNewLevel());
+            } else {
+                // Plusieurs enchantements améliorés
+                int totalUpgrades = upgradeDetails.stream()
+                        .mapToInt(PlayerData.AutoUpgradeDetail::getLevelsGained)
+                        .sum();
+                summary.append("§d").append(totalUpgrades).append(" améliorations effectuées");
+
+                // Détails sur la ligne suivante si pas trop d'enchantements
+                if (upgradeDetails.size() <= 3) {
+                    summary.append("\n§7┃   §8• ");
+                    for (int i = 0; i < upgradeDetails.size(); i++) {
+                        PlayerData.AutoUpgradeDetail detail = upgradeDetails.get(i);
+                        if (i > 0) summary.append(" §8• ");
+
+                        // Format compact : Nom Niv.X
+                        String shortName = detail.getDisplayName().length() > 12 ?
+                                detail.getDisplayName().substring(0, 12) + "..." :
+                                detail.getDisplayName();
+                        summary.append("§d").append(shortName)
+                                .append(" §eNiv.").append(detail.getNewLevel());
+                    }
+                } else {
+                    // Trop d'enchantements, affichage condensé
+                    summary.append("\n§7┃   §8(Voir votre interface pour les détails)");
+                }
             }
         }
 
-        // NOUVEAU : Ligne enchantements avec auto-upgrades (ligne 6)
-        if (autoUpgrades > 0) {
-            summary.append("\n§d✨ §lEnchantements: ");
-            summary.append("§a").append(autoUpgrades).append(" auto-améliorations");
-
-        }
-
-        // Séparateur (ligne 8)
-        summary.append("\n§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        // Séparateur de fin
+        summary.append("\n§8§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         return summary.toString();
     }
