@@ -66,7 +66,7 @@ public class GUIListener implements Listener {
             plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
         }
         else if (title.contains("Réparation")) {
-            plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
+            plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         }
     }
 
@@ -87,7 +87,6 @@ public class GUIListener implements Listener {
     public void onInventoryDrag(InventoryDragEvent event) {
         String title = event.getView().getTitle();
         if (isPluginGUI(title)) {
-            // CORRIGÉ : Empêche TOUT drag dans les GUIs du plugin
             event.setCancelled(true);
             plugin.getPluginLogger().debug("Drag bloqué dans GUI: " + title);
         }

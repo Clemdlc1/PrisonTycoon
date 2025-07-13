@@ -1,6 +1,9 @@
 package fr.prisoncore.prisoncore.prisonTycoon.utils;
 
-import java.text.DecimalFormat; /**
+import java.text.DecimalFormat;
+import java.util.TreeMap;
+
+/**
  * Utilitaire de formatage des nombres
  *
  * Formate les grands nombres avec les suffixes appropriés (K, M, B, T).
@@ -10,6 +13,25 @@ public class NumberFormatter {
 
     private static final String[] SUFFIXES = {"", "K", "M", "B", "T", "Q", "Qi", "S", "Sp", "O", "N", "D"};
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
+
+    // Map pour la conversion en chiffres romains
+    private final static TreeMap<Integer, String> romanMap = new TreeMap<>();
+    static {
+        romanMap.put(1000, "M");
+        romanMap.put(900, "CM");
+        romanMap.put(500, "D");
+        romanMap.put(400, "CD");
+        romanMap.put(100, "C");
+        romanMap.put(90, "XC");
+        romanMap.put(50, "L");
+        romanMap.put(40, "XL");
+        romanMap.put(10, "X");
+        romanMap.put(9, "IX");
+        romanMap.put(5, "V");
+        romanMap.put(4, "IV");
+        romanMap.put(1, "I");
+    }
+
 
     /**
      * Formate un nombre avec les suffixes appropriés
@@ -170,6 +192,27 @@ public class NumberFormatter {
      */
     public static String formatWithSeparators(long number) {
         return String.format("%,d", number);
+    }
+
+    /**
+     * Convertit un entier en sa représentation en chiffres romains.
+     * Gère les nombres de 1 à 3999.
+     *
+     * @param number L'entier à convertir.
+     * @return La chaîne de caractères en chiffres romains.
+     */
+    public static String formatRoman(int number) {
+        if (number <= 0 || number >= 4000) {
+            // Les chiffres romains ne gèrent traditionnellement pas le zéro, les négatifs ou les très grands nombres
+            return String.valueOf(number);
+        }
+        // Trouve la plus grande clé <= au nombre
+        int key =  romanMap.floorKey(number);
+        if (number == key) {
+            return romanMap.get(number);
+        }
+        // Appel récursif pour le reste du nombre
+        return romanMap.get(key) + formatRoman(number - key);
     }
 
     /**
