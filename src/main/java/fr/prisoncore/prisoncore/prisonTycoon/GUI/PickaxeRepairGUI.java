@@ -17,7 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * CORRIGÉ : Menu de réparation avec nouveaux coûts et sans confirmation
+ * CORRIGÉ : Menu de réparation avec nouveaux coûts et empêche réparation à 100%
+ * INTÈGRE : Gestion des clics depuis GUIListener
  */
 public class PickaxeRepairGUI {
 
@@ -27,11 +28,44 @@ public class PickaxeRepairGUI {
     private static final int[] REPAIR_BAR_SLOTS = {11, 12, 13, 14, 15};
     private static final int PICKAXE_INFO_SLOT = 4;
     private static final int BACK_BUTTON_SLOT = 18;
-    // SUPPRIMÉ : Plus de bouton de confirmation
 
     public PickaxeRepairGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
     }
+
+    /**
+     * NOUVEAU : Gère les clics dans le menu de réparation, appelé par GUIListener.
+     * C'est la méthode qui manquait pour faire le lien.
+     */
+    public void handleRepairMenuClick(Player player, int slot, ItemStack clickedItem) {
+        // Clic sur le bouton retour
+        if (slot == BACK_BUTTON_SLOT) {
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            // Redirige vers le menu principal (à adapter si le nom de la méthode est différent)
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
+            return;
+        }
+
+        // Vérifie si le joueur a cliqué sur un bouton de réparation
+        int[] repairPercentages = {20, 40, 60, 80, 100};
+        for (int i = 0; i < REPAIR_BAR_SLOTS.length; i++) {
+            if (slot == REPAIR_BAR_SLOTS[i]) {
+                // Empêche l'action si c'est un bouton désactivé (barrière, pioche réparée)
+                if (clickedItem.getType() == Material.BARRIER || clickedItem.getType() == Material.DIAMOND) {
+                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return;
+                }
+
+                // C'est un clic valide sur un bouton de réparation
+                int percentage = repairPercentages[i];
+                handleDirectRepair(player, percentage);
+                return;
+            }
+        }
+        // Si le clic n'est sur aucun bouton interactif, ne rien faire.
+        // L'événement est déjà annulé par le GUIListener.
+    }
+
 
     /**
      * Ouvre le menu de réparation de la pioche
@@ -45,109 +79,183 @@ public class PickaxeRepairGUI {
         // Informations de la pioche
         gui.setItem(PICKAXE_INFO_SLOT, createPickaxeInfoItem(player));
 
-        // Barre de pourcentage de réparation (sans sélection, clics directs)
-        createRepairPercentageBar(gui, player);
+        // Barre de réparation avec pourcentages
+        createRepairBar(gui, player);
 
         // Bouton retour
         gui.setItem(BACK_BUTTON_SLOT, createBackButton());
 
         player.openInventory(gui);
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
     }
 
     /**
-     * CORRIGÉ : Gère les clics avec exécution directe
+     * NOUVEAU : Crée la barre de réparation avec le nouveau système de pourcentages
      */
-    public void handleRepairMenuClick(Player player, int slot, ItemStack item) {
-        if (slot == BACK_BUTTON_SLOT) {
-            plugin.getMainMenuGUI().openEnchantmentMenu(player);
+    private void createRepairBar(Inventory gui, Player player) {
+        ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
+        if (pickaxe == null) {
+            // Si pas de pioche, désactive tous les boutons
+            for (int slot : REPAIR_BAR_SLOTS) {
+                gui.setItem(slot, createDisabledButton());
+            }
             return;
         }
 
-        // CORRIGÉ : Clics directs sur la barre de pourcentage = réparation immédiate
-        for (int i = 0; i < REPAIR_BAR_SLOTS.length; i++) {
-            if (slot == REPAIR_BAR_SLOTS[i]) {
-                int percentage = (i + 1) * 20; // 20%, 40%, 60%, 80%, 100%
-                executeRepairDirect(player, percentage);
-                return;
+        // Calcul de l'état actuel
+        short currentDurability = pickaxe.getDurability();
+        short maxDurability = pickaxe.getType().getMaxDurability();
+        double currentHealthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+
+        // NOUVEAU : Si déjà à 100% ou presque, désactive la réparation
+        if (currentDurability <= 1) {
+            for (int slot : REPAIR_BAR_SLOTS) {
+                gui.setItem(slot, createFullyRepairedButton());
             }
+            return;
+        }
+
+        // Pourcentages de réparation (% de ce qu'il reste à réparer)
+        int[] repairPercentages = {20, 40, 60, 80, 100};
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        long totalInvested = calculateTotalInvestedTokens(playerData);
+
+        for (int i = 0; i < REPAIR_BAR_SLOTS.length; i++) {
+            int repairPercent = repairPercentages[i];
+
+            // NOUVEAU : Calcul basé sur ce qu'il reste à réparer
+            double remainingDamagePercent = 100.0 - currentHealthPercent;
+            double actualRepairPercent = (remainingDamagePercent * repairPercent) / 100.0;
+            double finalHealthPercent = currentHealthPercent + actualRepairPercent;
+
+            // NOUVEAU : Coût adapté au nouveau système
+            long cost = calculateNewRepairCost(totalInvested, repairPercent);
+
+            ItemStack button = createRepairButton(repairPercent, actualRepairPercent,
+                    finalHealthPercent, cost, playerData.getTokens());
+            gui.setItem(REPAIR_BAR_SLOTS[i], button);
         }
     }
 
     /**
-     * CORRIGÉ : Barre sans sélection, boutons directs
+     * NOUVEAU : Calcule le coût de réparation selon le nouveau système
      */
-    private void createRepairPercentageBar(Inventory gui, Player player) {
-        for (int i = 0; i < REPAIR_BAR_SLOTS.length; i++) {
-            int percentage = (i + 1) * 20; // 20%, 40%, 60%, 80%, 100%
+    private long calculateNewRepairCost(long totalInvested, int repairPercent) {
+        // Base : 0,01% du total investi pour 100% de réparation
+        double basePercentage = 0.0001; // 0,01%
 
-            Material material;
-            String color;
-            if (percentage <= 40) {
-                material = Material.YELLOW_STAINED_GLASS;
-                color = "§e";
-            } else if (percentage <= 80) {
-                material = Material.ORANGE_STAINED_GLASS;
-                color = "§6";
-            } else {
-                material = Material.RED_STAINED_GLASS;
-                color = "§c";
-            }
+        // Facteur selon le pourcentage de réparation demandé
+        double factor = Math.pow(repairPercent / 100.0, 0.8); // Coût légèrement progressif
 
-            ItemStack item = new ItemStack(material);
-            ItemMeta meta = item.getItemMeta();
+        return Math.max(1, (long) (totalInvested * basePercentage * factor));
+    }
 
-            meta.setDisplayName(color + "§l" + percentage + "% §7de réparation");
+    /**
+     * NOUVEAU : Crée un bouton de réparation avec le nouveau système
+     */
+    private ItemStack createRepairButton(int repairPercent, double actualRepairPercent,
+                                         double finalHealthPercent, long cost, long playerTokens) {
+        ItemStack item = new ItemStack(Material.EMERALD);
+        ItemMeta meta = item.getItemMeta();
 
-            List<String> lore = new ArrayList<>();
-            lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-            lore.add("§7Réparer §e" + percentage + "% §7de la durabilité");
-            lore.add("§7de votre pioche légendaire");
+        meta.setDisplayName("§a⚡ §lRÉPARER " + repairPercent + "%");
 
-            // CORRIGÉ : Calcul du coût avec nouveau système (0,01% pour 100%)
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            long totalInvested = calculateTotalInvestedTokens(playerData);
-            long cost = calculateNewRepairCost(totalInvested, percentage);
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§e📊 §lDÉTAILS DE LA RÉPARATION");
+        lore.add("§7│ §eRéparation demandée: §a" + repairPercent + "% §7du reste à réparer");
+        lore.add("§7│ §eRéparation effective: §a+" + String.format("%.1f%%", actualRepairPercent) + " §7de durabilité totale");
+        lore.add("§7│ §eÉtat final: " + getDurabilityColorForButton(finalHealthPercent) +
+                String.format("%.1f%%", finalHealthPercent));
+        lore.add("§7└");
+        lore.add("");
 
-            lore.add("§7");
-            lore.add("§6💰 §lCOÛT DE RÉPARATION");
-            lore.add("§7│ §6Coût: §e" + NumberFormatter.format(cost) + " tokens");
-            lore.add("§7│ §7Base: §6" + NumberFormatter.format(totalInvested) + " tokens investis");
-            lore.add("§7│ §7Pourcentage: §e" + String.format("%.3f%%", percentage * 0.01) + " du total");
+        lore.add("§6💰 §lCOÛT");
+        lore.add("§7│ §eCoût: §6" + NumberFormatter.format(cost) + " tokens");
+
+        if (playerTokens >= cost) {
+            lore.add("§7│ §aVous pouvez effectuer cette réparation!");
             lore.add("§7└");
+            lore.add("");
+            lore.add("§a✅ §lCLIQUEZ POUR RÉPARER");
+        } else {
+            lore.add("§7│ §cTokens insuffisants!");
+            lore.add("§7│ §cIl vous manque: §4" + NumberFormatter.format(cost - playerTokens) + " tokens");
+            lore.add("§7└");
+            lore.add("");
+            lore.add("§c❌ §lTOKENS INSUFFISANTS");
 
-            // Vérification fonds
-            if (playerData.getTokens() >= cost) {
-                lore.add("§a✅ Cliquez pour réparer immédiatement!");
-            } else {
-                lore.add("§c❌ Tokens insuffisants");
-            }
-
-            lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-            meta.setLore(lore);
-            item.setItemMeta(meta);
-            gui.setItem(REPAIR_BAR_SLOTS[i], item);
+            // Change l'item en barrière si pas assez de tokens
+            item.setType(Material.BARRIER);
         }
+
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+
+        return item;
     }
 
     /**
-     * NOUVEAU : Calcul de coût avec 0,01% du total pour 100%
+     * NOUVEAU : Bouton quand la pioche est déjà entièrement réparée
      */
-    private long calculateNewRepairCost(long totalInvested, int percentage) {
-        // 100% = 0,01% du total
-        // Donc : percentage% = (percentage / 100) * 0,01% du total
-        double costPercentage = (percentage / 100.0) * 0.0001; // 0,01% = 0.0001
-        return Math.max(1, (long)(totalInvested * costPercentage));
+    private ItemStack createFullyRepairedButton() {
+        ItemStack item = new ItemStack(Material.DIAMOND);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName("§a✅ §lPIOCHE ENTIÈREMENT RÉPARÉE");
+
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§a📊 §lÉTAT PARFAIT");
+        lore.add("§7│ §eDurabilité: §a100.0%");
+        lore.add("§7│ §eVotre pioche est en parfait état!");
+        lore.add("§7└");
+        lore.add("");
+        lore.add("§e⚠️ §lREPAR ATION IMPOSSIBLE");
+        lore.add("§7│ §7Votre pioche n'a pas besoin de réparation.");
+        lore.add("§7│ §7Utilisez-la pour miner et revenez quand");
+        lore.add("§7│ §7elle sera endommagée.");
+        lore.add("§7└");
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+
+        return item;
     }
 
     /**
-     * CORRIGÉ : Exécution directe de la réparation
+     * Traite la réparation directe selon le nouveau système.
+     * Maintenant appelée par handleRepairMenuClick.
      */
-    private void executeRepairDirect(Player player, int percentage) {
+    public void handleDirectRepair(Player player, int percentage) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Calcul du coût
+        // Vérification des conditions de base
+        ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
+        if (pickaxe == null) {
+            player.sendActionBar("§c❌ Pioche légendaire introuvable!");
+            return;
+        }
+
+        short currentDurability = pickaxe.getDurability();
+        short maxDurability = pickaxe.getType().getMaxDurability();
+
+        // NOUVEAU : Empêche la réparation si déjà à 100%
+        if (currentDurability <= 1) {
+            player.sendActionBar("§e⚠️ Votre pioche est déjà entièrement réparée!");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // NOUVEAU : Calcul avec le nouveau système de pourcentage
+        double currentHealthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+        double remainingDamagePercent = 100.0 - currentHealthPercent;
+        double actualRepairPercent = (remainingDamagePercent * percentage) / 100.0;
+
+        // Calcul du coût selon le nouveau système
         long totalInvested = calculateTotalInvestedTokens(playerData);
         long cost = calculateNewRepairCost(totalInvested, percentage);
 
@@ -160,54 +268,103 @@ public class PickaxeRepairGUI {
             return;
         }
 
-        // Trouver la pioche du joueur
-        ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
-        if (pickaxe == null) {
-            player.sendActionBar("§c❌ Pioche légendaire introuvable!");
-            return;
-        }
+        // Application de la réparation
+        int actualRepairPoints = (int) (maxDurability * (actualRepairPercent / 100.0));
+        int newDurability = Math.max(0, currentDurability - actualRepairPoints);
 
-        // CORRIGÉ : Calculer avec la durabilité de base (pas augmentée par solidité)
-        short currentDurability = pickaxe.getDurability();
-        short maxDurability = pickaxe.getType().getMaxDurability();
-
-        // Calculer la réparation sur la durabilité normale
-        int currentDamage = currentDurability;
-        int repairAmount = (int) (maxDurability * (percentage / 100.0));
-        int newDurability = Math.max(0, currentDamage - repairAmount);
-
-        // Appliquer la réparation
         pickaxe.setDurability((short) newDurability);
 
-        // Déduire les tokens
+        // Déduction des tokens
         playerData.removeTokens(cost);
 
-        // Mettre à jour la pioche
+        // Mise à jour de la pioche
         plugin.getPickaxeManager().updatePlayerPickaxe(player);
 
-        // Messages de succès dans l'action bar
-        double repairedPercent = ((double) repairAmount / maxDurability) * 100;
-        player.sendActionBar("§a✅ Pioche réparée: +" + String.format("%.1f%%", repairedPercent) +
+        // NOUVEAU : Reset les notifications de durabilité
+        player.removeMetadata("durability_notif_25", plugin);
+        player.removeMetadata("durability_notif_10", plugin);
+
+        // Messages de succès
+        player.sendActionBar("§a✅ Pioche réparée: +" + String.format("%.1f%%", actualRepairPercent) +
                 " (-" + NumberFormatter.format(cost) + " tokens)");
 
-        // Son de succès
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
 
-        // Fermer le menu et rouvrir pour mise à jour
-        player.closeInventory();
+        // CORRIGÉ : On met à jour le menu en place au lieu de le fermer/rouvrir
+        // ce qui évite un clignotement désagréable.
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            // Recrée juste les items qui changent
+            createRepairBar(player.getOpenInventory().getTopInventory(), player);
+            player.getOpenInventory().getTopInventory().setItem(PICKAXE_INFO_SLOT, createPickaxeInfoItem(player));
+        }, 1L); // 1 tick de délai pour que la mise à jour de l'item soit prise en compte
 
-        // Délai petit pour laisser le temps au son
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            openRepairGUI(player);
-        }, 5L);
-
-        plugin.getPluginLogger().info("Réparation directe effectuée pour " + player.getName() +
-                ": " + percentage + "% pour " + NumberFormatter.format(cost) + " tokens");
+        plugin.getPluginLogger().info("Réparation effectuée pour " + player.getName() +
+                ": " + percentage + "% du reste (+" + String.format("%.1f%%", actualRepairPercent) +
+                " effectif) pour " + NumberFormatter.format(cost) + " tokens");
     }
 
-    /**
-     * CORRIGÉ : Informations de la pioche avec durabilité de base
-     */
+    private void fillBorders(Inventory gui) {
+        ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta meta = borderItem.getItemMeta();
+        meta.setDisplayName(" ");
+        borderItem.setItemMeta(meta);
+
+        // Remplir les bordures
+        for (int i = 0; i < 9; i++) {
+            gui.setItem(i, borderItem);
+            gui.setItem(i + 18, borderItem);
+        }
+
+        for (int i = 9; i < 18; i += 9) {
+            gui.setItem(i, borderItem);
+            gui.setItem(i + 8, borderItem);
+        }
+    }
+
+    private ItemStack createBackButton() {
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName("§c⬅ §lRetour au menu principal");
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createDisabledButton() {
+        ItemStack item = new ItemStack(Material.BARRIER);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName("§c❌ §lREPAR ATION INDISPONIBLE");
+        List<String> lore = new ArrayList<>();
+        lore.add("§cPioche légendaire introuvable!");
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private String getDurabilityColorForButton(double healthPercent) {
+        if (healthPercent >= 90) return "§a";
+        if (healthPercent >= 70) return "§e";
+        if (healthPercent >= 40) return "§6";
+        if (healthPercent >= 20) return "§c";
+        return "§4";
+    }
+
+    private long calculateTotalInvestedTokens(PlayerData playerData) {
+        long total = 0;
+        Map<String, Integer> enchantments = playerData.getEnchantmentLevels();
+
+        for (Map.Entry<String, Integer> entry : enchantments.entrySet()) {
+            CustomEnchantment enchant = plugin.getEnchantmentManager().getEnchantment(entry.getKey());
+            if (enchant != null) {
+                int level = entry.getValue();
+                for (int i = 1; i <= level; i++) {
+                    total += enchant.getUpgradeCost(i);
+                }
+            }
+        }
+
+        return total;
+    }
+
     private ItemStack createPickaxeInfoItem(Player player) {
         ItemStack item = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemMeta meta = item.getItemMeta();
@@ -221,7 +378,6 @@ public class PickaxeRepairGUI {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (pickaxe != null) {
-            // CORRIGÉ : État avec durabilité normale (pas augmentée)
             short currentDurability = pickaxe.getDurability();
             short maxDurability = pickaxe.getType().getMaxDurability();
 
@@ -231,23 +387,12 @@ public class PickaxeRepairGUI {
             lore.add("§7│ §eDurabilité: " + getDurabilityColorForButton(healthPercent) + String.format("%.1f%%", healthPercent));
             lore.add("§7│ §ePoints: §6" + (maxDurability - currentDurability) + "§7/§6" + maxDurability);
 
-            // Afficher info solidité sans bonus de durabilité
-            int durabilityLevel = playerData.getEnchantmentLevel("durability");
-            if (durabilityLevel > 0) {
-                double preservationChance = Math.min(95.0, durabilityLevel * 5.0);
-                lore.add("§7│ §eBonus Solidité: §a" + String.format("%.0f%%", preservationChance) +
-                        " §7chance d'éviter la perte (Niv." + durabilityLevel + ")");
-            }
-
-            // CORRIGÉ : Recommandation basée sur l'état réel
-            if (currentDurability >= maxDurability - 1) {
-                lore.add("§7│ §c💀 PIOCHE CASSÉE! Réparation URGENTE!");
+            if (currentDurability <= 1) {
+                lore.add("§7│ §a✓ Pioche en parfait état!");
             } else if (healthPercent < 15) {
                 lore.add("§7│ §c⚠️ Réparation critique recommandée!");
             } else if (healthPercent < 30) {
                 lore.add("§7│ §e⚠️ Réparation recommandée");
-            } else if (healthPercent < 60) {
-                lore.add("§7│ §e⚠️ Réparation optionnelle");
             } else {
                 lore.add("§7│ §a✓ En bon état");
             }
@@ -255,28 +400,17 @@ public class PickaxeRepairGUI {
             lore.add("§7└");
             lore.add("");
 
-            // CORRIGÉ : Coûts avec nouveau système
+            // Coûts selon le nouveau système
             long totalInvested = calculateTotalInvestedTokens(playerData);
-            lore.add("§6💰 §lCOÛTS DE RÉPARATION (NOUVEAUX)");
+            lore.add("§6💰 §lCOÛTS DE RÉPARATION (NOUVEAU SYSTÈME)");
             lore.add("§7│ §6Base: §e" + NumberFormatter.format(totalInvested) + " tokens investis");
             lore.add("§7│ §7Réparation 20%: §6" + NumberFormatter.format(calculateNewRepairCost(totalInvested, 20)) + " tokens");
             lore.add("§7│ §7Réparation 50%: §6" + NumberFormatter.format(calculateNewRepairCost(totalInvested, 50)) + " tokens");
             lore.add("§7│ §7Réparation 100%: §6" + NumberFormatter.format(calculateNewRepairCost(totalInvested, 100)) + " tokens");
-            lore.add("§7└ §7Nouveau: 0,01% du total pour 100%");
+            lore.add("§7└ §7Nouveau: pourcentage du reste à réparer");
 
         } else {
             lore.add("§c❌ §lPIOCHE INTROUVABLE");
-            lore.add("§7│ §cVotre pioche légendaire est introuvable!");
-            lore.add("§7│ §7Assurez-vous qu'elle est dans votre inventaire.");
-            lore.add("§7└");
-        }
-
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-        if (pickaxe != null) {
-            lore.add("§e✨ Cliquez directement sur les pourcentages!");
-        } else {
-            lore.add("§7Récupérez votre pioche pour accéder à la réparation");
         }
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -285,74 +419,5 @@ public class PickaxeRepairGUI {
         item.setItemMeta(meta);
 
         return item;
-    }
-
-    /**
-     * Bouton retour
-     */
-    private ItemStack createBackButton() {
-        ItemStack item = new ItemStack(Material.ARROW);
-        ItemMeta meta = item.getItemMeta();
-
-        meta.setDisplayName("§c↩ §lRetour");
-
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Retourner au menu des enchantements");
-
-        meta.setLore(lore);
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
-    /**
-     * Remplissage décoratif des bordures
-     */
-    private void fillBorders(Inventory gui) {
-        ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = borderItem.getItemMeta();
-        meta.setDisplayName(" ");
-        borderItem.setItemMeta(meta);
-
-        // Remplir bordures
-        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26};
-        for (int slot : borderSlots) {
-            gui.setItem(slot, borderItem);
-        }
-    }
-
-    /**
-     * Calcule le total des tokens investis
-     */
-    private long calculateTotalInvestedTokens(PlayerData playerData) {
-        long total = 0;
-
-        Map<String, Integer> enchantments = playerData.getEnchantmentLevels();
-
-        for (Map.Entry<String, Integer> entry : enchantments.entrySet()) {
-            String enchantName = entry.getKey();
-            int currentLevel = entry.getValue();
-
-            CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantName);
-            if (enchantment != null) {
-                // Calcule le coût total pour atteindre ce niveau
-                for (int level = 1; level <= currentLevel; level++) {
-                    total += enchantment.getUpgradeCost(level);
-                }
-            }
-        }
-        return total;
-    }
-
-
-    /**
-     * Couleur selon la durabilité
-     */
-    private String getDurabilityColorForButton(double healthPercent) {
-        if (healthPercent >= 80) return "§a";
-        if (healthPercent >= 60) return "§e";
-        if (healthPercent >= 40) return "§6";
-        if (healthPercent >= 20) return "§c";
-        return "§4";
     }
 }

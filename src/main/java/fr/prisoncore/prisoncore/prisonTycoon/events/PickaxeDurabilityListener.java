@@ -8,181 +8,149 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
-import java.util.concurrent.ThreadLocalRandom;
+import org.bukkit.inventory.meta.Damageable;
+
+import java.util.Random;
 
 /**
- * CORRIGÉ : Gestionnaire de durabilité pour les pioches légendaires
- * - Solidité ne change plus la durabilité max mais donne chance d'éviter la perte
- * - Notifications pioche cassée dans action bar
+ * CORRIGÉ : Système de notifications une seule fois par niveau et message pour 100%
  */
 public class PickaxeDurabilityListener implements Listener {
 
     private final PrisonTycoon plugin;
+    private final Random random = new Random();
 
     public PickaxeDurabilityListener(PrisonTycoon plugin) {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerItemDamage(PlayerItemDamageEvent event) {
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        ItemStack item = event.getItem();
+        ItemStack tool = player.getInventory().getItemInMainHand();
 
-        // Vérifie si c'est une pioche légendaire
-        if (!plugin.getPickaxeManager().isLegendaryPickaxe(item)) {
-            return; // Laisse le comportement normal pour les autres items
-        }
-
-        // Vérifie que c'est bien la pioche du joueur
-        if (!plugin.getPickaxeManager().isOwner(item, player)) {
+        // Vérifier si c'est une pioche
+        if (!tool.getType().name().contains("PICKAXE")) {
             return;
         }
 
-        // CRITIQUE : Annule TOUJOURS les dégâts automatiques du jeu
-        event.setCancelled(true);
-
-        // Gère manuellement la durabilité
-        handleCustomDurability(player, item, event.getDamage());
-    }
-
-    /**
-     * CORRIGÉ : Gère la durabilité sans augmenter la durabilité max
-     */
-    private void handleCustomDurability(Player player, ItemStack pickaxe, int damage) {
+        // Obtenir les données du joueur pour l'enchantement de solidité
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int durabilityLevel = playerData.getEnchantmentLevel("durability");
 
-        short currentDurability = pickaxe.getDurability();
-        short maxDurability = pickaxe.getType().getMaxDurability();
-
-        // CORRIGÉ : La solidité donne une chance d'éviter la perte, pas d'augmentation max
+        // CORRIGÉ : Chance d'éviter la perte de durabilité avec solidité
         if (durabilityLevel > 0) {
-            // Chance de ne PAS perdre de durabilité basée sur le niveau
-            double preservationChance = Math.min(0.95, durabilityLevel * 0.05); // 5% par niveau, max 95%
-
-            if (ThreadLocalRandom.current().nextDouble() < preservationChance) {
-                // La pioche ne perd pas de durabilité cette fois
-                plugin.getPluginLogger().debug("Durabilité préservée pour " + player.getName() +
-                        " (chance: " + String.format("%.1f%%", preservationChance * 100) + ")");
-
-                // Vérifie quand même l'état de la pioche pour les effets
-                checkPickaxeState(player, pickaxe, currentDurability, maxDurability);
-                return;
+            double preservationChance = Math.min(95.0, durabilityLevel * 5.0);
+            if (random.nextDouble() * 100 < preservationChance) {
+                return; // La durabilité est préservée
             }
         }
 
-        // Applique la perte de durabilité normale
-        int newDurability = Math.min(currentDurability + damage, maxDurability - 1);
-        pickaxe.setDurability((short) newDurability);
+        // Appliquer le dommage normal (1 point)
+        if (tool.getItemMeta() instanceof Damageable) {
+            Damageable meta = (Damageable) tool.getItemMeta();
+            short maxDurability = tool.getType().getMaxDurability();
+            short currentDurability = (short) meta.getDamage();
 
-        // Vérifie l'état de la pioche après modification
-        checkPickaxeState(player, pickaxe, (short) newDurability, maxDurability);
+            // Augmente les dégâts de 1 point
+            short newDurability = (short) Math.min(currentDurability + 1, maxDurability - 1);
+            meta.setDamage(newDurability);
+            tool.setItemMeta(meta);
 
-        plugin.getPluginLogger().debug("Durabilité mise à jour pour " + player.getName() +
-                ": " + newDurability + "/" + maxDurability +
-                " (solidité niveau " + durabilityLevel + ")");
+            // Vérifier l'état après modification
+            checkPickaxeState(player, tool, newDurability, maxDurability);
+        }
     }
 
+    /**
+     * NOUVEAU : Vérification avec système de notification une seule fois par niveau
+     */
     private void checkPickaxeState(Player player, ItemStack pickaxe, short currentDurability, short maxDurability) {
-        // Calcule le pourcentage de durabilité restante avec la durabilité normale
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
 
-        // CORRIGÉ : Si durabilité = 0 (durabilité maximale atteinte)
+        // NOUVEAU : Message pour pioche à 100% (cassée)
         if (currentDurability >= maxDurability - 1) {
-            // Active le mode "pioche cassée" - tous enchantements désactivés sauf tokengreed avec malus
+            // Active le mode "pioche cassée"
             if (!isPickaxeBroken(player)) {
                 activateBrokenPickaxeMode(player);
+
+                // Message spécial pour pioche cassée (une seule fois)
+                if (!player.hasMetadata("durability_notif_broken")) {
+                    TextComponent message = new TextComponent("§c💀 PIOCHE CASSÉE! Tous enchantements désactivés! §e[RÉPARER IMMÉDIATEMENT]");
+                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
+                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§cRéparation critique requise!")));
+                    player.spigot().sendMessage(message);
+
+                    // Marque pour éviter le spam
+                    player.setMetadata("durability_notif_broken", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
+                }
             }
         } else {
             // Désactive le mode "pioche cassée" si il était actif
             if (isPickaxeBroken(player)) {
                 deactivateBrokenPickaxeMode(player);
+
+                // Reset le flag de notification cassée
+                player.removeMetadata("durability_notif_broken", plugin);
             }
-        }
 
-        if (currentDurability >= maxDurability - 1) {
-            // Le mode "pioche cassée" a ses propres notifications
-        } else if (durabilityPercent <= 0.10) { // Moins de 10% restant
-            // Crée le message cliquable
-            TextComponent message = new TextComponent("§6⚠️ Votre pioche est très endommagée ! §e[CLIQUEZ POUR RÉPARER]");
-            message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
+            // NOUVEAU : Système de notification une seule fois par niveau
+            if (durabilityPercent <= 0.10) { // Moins de 10% restant
+                if (!player.hasMetadata("durability_notif_10")) {
+                    TextComponent message = new TextComponent("§6⚠️ Votre pioche est très endommagée ! §e[CLIQUEZ POUR RÉPARER]");
+                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
+                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
+                    player.spigot().sendMessage(message);
 
-            // Envoie le message au joueur
-            player.spigot().sendMessage(message);
+                    // Marque pour éviter les répétitions
+                    player.setMetadata("durability_notif_10", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
+                }
+            } else if (durabilityPercent <= 0.25) { // Moins de 25% restant
+                if (!player.hasMetadata("durability_notif_25")) {
+                    TextComponent message = new TextComponent("§e⚠️ Votre pioche commence à être endommagée. §e[RÉPARER]");
+                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
+                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
+                    player.spigot().sendMessage(message);
 
-        } else if (durabilityPercent <= 0.25) { // Moins de 25% restant
-            // Crée le message cliquable
-            TextComponent message = new TextComponent("§e⚠️ Votre pioche commence à être endommagée. §e[RÉPARER]");
-            message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
-
-            // Envoie le message au joueur
-            player.spigot().sendMessage(message);
+                    // Marque pour éviter les répétitions
+                    player.setMetadata("durability_notif_25", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
+                }
+            }
         }
     }
 
-    /**
-     * Vérifie si la pioche est en mode "cassée"
-     */
     private boolean isPickaxeBroken(Player player) {
         return player.hasMetadata("pickaxe_broken");
     }
 
-    /**
-     * CORRIGÉ : Active le mode cassé avec notifications action bar
-     */
     private void activateBrokenPickaxeMode(Player player) {
-        // Marque le joueur comme ayant une pioche cassée
         player.setMetadata("pickaxe_broken", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
-
-        // HARMONISATION : Marque pour notification temporaire dans ActionBarTask
         player.setMetadata("pickaxe_just_broken", new org.bukkit.metadata.FixedMetadataValue(plugin, System.currentTimeMillis()));
 
-        // Retire tous les effets de mobilité
         plugin.getPickaxeManager().removeMobilityEffects(player);
-
         plugin.getEnchantmentManager().forceDisableAbundanceAndResetCombustion(player);
 
-        // Son d'alerte
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_BREAK, 1.0f, 0.5f);
-
         plugin.getPluginLogger().info("Mode pioche cassée activé pour " + player.getName());
     }
 
-    /**
-     * CORRIGÉ : Désactive le mode cassé avec notification action bar
-     */
     private void deactivateBrokenPickaxeMode(Player player) {
-        // Retire le metadata
         player.removeMetadata("pickaxe_broken", plugin);
-
-        // HARMONISATION : Marque pour notification temporaire dans ActionBarTask
         player.setMetadata("pickaxe_just_repaired", new org.bukkit.metadata.FixedMetadataValue(plugin, System.currentTimeMillis()));
 
-        // Réapplique les effets de mobilité si approprié
         plugin.getPickaxeManager().updateMobilityEffects(player);
 
-        // Son de récupération
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
-
         plugin.getPluginLogger().info("Mode pioche cassée désactivé pour " + player.getName());
     }
 
-    /**
-     * MÉTHODE PUBLIQUE : Vérifie si la pioche d'un joueur est cassée (pour les autres classes)
-     */
     public static boolean isPlayerPickaxeBroken(Player player) {
         return player.hasMetadata("pickaxe_broken");
     }
 
-    /**
-     * MÉTHODE PUBLIQUE : Calcule le malus à appliquer selon l'état de la pioche
-     */
     public static double getPickaxePenaltyMultiplier(Player player) {
         if (isPlayerPickaxeBroken(player)) {
             return 0.1; // 90% de malus = on garde 10%
