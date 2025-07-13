@@ -65,6 +65,9 @@ public class GUIListener implements Listener {
         else if (title.contains("Compagnons")) {
             plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
         }
+        else if (title.contains("Réparation")) {
+            plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
+        }
     }
 
     @EventHandler
@@ -104,6 +107,7 @@ public class GUIListener implements Listener {
                 title.contains("Spéciaux") ||
                 title.contains("Cristaux") ||
                 title.contains("Compagnons") ||
-                title.contains("🔧"); // Menu d'amélioration
+                title.contains("🔧") ||
+                title.contains("Réparation");
     }
 }

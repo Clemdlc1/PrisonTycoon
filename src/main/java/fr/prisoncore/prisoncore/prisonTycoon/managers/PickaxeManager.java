@@ -186,7 +186,6 @@ public class PickaxeManager {
             }
         }
 
-        // NOUVEAU : État de durabilité
         int durabilityLevel = playerData.getEnchantmentLevel("durability");
         if (durabilityLevel > 0) {
             double durabilityBonus = durabilityLevel * 10.0;
@@ -196,10 +195,54 @@ public class PickaxeManager {
             if (currentPickaxe != null) {
                 short currentDurability = currentPickaxe.getDurability();
                 double healthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+                int currentHealth = maxDurability - currentDurability;
 
-                lore.add("§e🔨 §lÉTAT DE LA PIOCHE");
-                lore.add("§7│ §eDurabilité: §a" + String.format("%.1f%%", healthPercent));
-                lore.add("§7│ §eDurabilité max: §6" + maxDurability + " §7(+" + String.format("%.0f%%", durabilityBonus) + ")");
+                lore.add("§c🔨 §lÉTAT DE LA PIOCHE");
+                lore.add("§7│ §eDurabilité: " + getDurabilityColor(healthPercent) + String.format("%.1f%%", healthPercent));
+                lore.add("§7│ §ePoints: §6" + currentHealth + "§7/§6" + maxDurability);
+                lore.add("§7│ §eBonus Solidité: §a+" + String.format("%.0f%%", durabilityBonus) + " §7(Niv." + durabilityLevel + ")");
+
+                // Indicateur visuel avec barre de durabilité
+                String durabilityBar = createDurabilityBar(healthPercent);
+                lore.add("§7│ " + durabilityBar);
+
+                // Statut et recommandations
+                if (healthPercent < 15) {
+                    lore.add("§7│ §c⚠️ CRITIQUE! Réparation URGENTE requise!");
+                    lore.add("§7│ §cRisque de casse élevé");
+                } else if (healthPercent < 30) {
+                    lore.add("§7│ §6⚠️ Durabilité faible, réparation recommandée");
+                } else if (healthPercent < 60) {
+                    lore.add("§7│ §e⚠️ Durabilité moyenne, surveillance conseillée");
+                } else {
+                    lore.add("§7│ §a✓ Pioche en bon état");
+                }
+
+                // Estimation du temps de vie restant
+                long blocksMinedTotal = playerData.getTotalBlocksMined();
+                if (blocksMinedTotal > 100) {
+                    double averageDurabilityLoss = (double)currentDurability / blocksMinedTotal;
+                    int estimatedBlocksLeft = (int)(currentHealth / Math.max(averageDurabilityLoss, 0.01));
+                    lore.add("§7│ §bEstimation: §3~" + NumberFormatter.format(estimatedBlocksLeft) + " blocs restants");
+                }
+
+                lore.add("§7└ §7Utilisez §c/repair §7ou le menu pour réparer");
+                lore.add("");
+            }
+        } else {
+            // Pas d'enchantement durabilité - affichage basique
+            ItemStack currentPickaxe = findPlayerPickaxe(player);
+            if (currentPickaxe != null) {
+                short currentDurability = currentPickaxe.getDurability();
+                short maxDurability = currentPickaxe.getType().getMaxDurability();
+                double healthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+
+                lore.add("§c🔨 §lÉTAT DE LA PIOCHE");
+                lore.add("§7│ §eDurabilité: " + getDurabilityColor(healthPercent) + String.format("%.1f%%", healthPercent));
+                lore.add("§7│ §ePoints: §6" + (maxDurability - currentDurability) + "§7/§6" + maxDurability);
+
+                String durabilityBar = createDurabilityBar(healthPercent);
+                lore.add("§7│ " + durabilityBar);
 
                 if (healthPercent < 25) {
                     lore.add("§7│ §c⚠️ Durabilité faible! Réparez bientôt.");
@@ -208,7 +251,8 @@ public class PickaxeManager {
                 } else {
                     lore.add("§7│ §a✓ Pioche en bon état.");
                 }
-                lore.add("§7└");
+
+                lore.add("§7└ §7Débloquez §6Solidité §7pour plus de durabilité");
                 lore.add("");
             }
         }
@@ -507,7 +551,39 @@ public class PickaxeManager {
             player.sendMessage("§c❌ Escalateur désactivé! Utilisez le clic molette pour l'activer.");
         }
     }
+    /**
+     * Retourne la couleur selon le pourcentage de durabilité
+     */
+    private String getDurabilityColor(double healthPercent) {
+        if (healthPercent >= 75) return "§a"; // Vert
+        if (healthPercent >= 50) return "§e"; // Jaune
+        if (healthPercent >= 25) return "§6"; // Orange
+        return "§c"; // Rouge
+    }
 
+    /**
+     * Crée une barre visuelle de durabilité
+     */
+    private String createDurabilityBar(double healthPercent) {
+        int totalBars = 10;
+        int filledBars = (int) Math.ceil((healthPercent / 100.0) * totalBars);
+
+        StringBuilder bar = new StringBuilder("§7[");
+
+        for (int i = 0; i < totalBars; i++) {
+            if (i < filledBars) {
+                if (healthPercent >= 75) bar.append("§a█");
+                else if (healthPercent >= 50) bar.append("§e█");
+                else if (healthPercent >= 25) bar.append("§6█");
+                else bar.append("§c█");
+            } else {
+                bar.append("§8▒");
+            }
+        }
+
+        bar.append("§7] ").append(getDurabilityColor(healthPercent)).append(String.format("%.0f%%", healthPercent));
+        return bar.toString();
+    }
     /**
      * NOUVEAU : Getter pour le slot obligatoire de la pioche
      */

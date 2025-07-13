@@ -37,6 +37,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private CrystalsMenuGUI crystalsMenuGUI;
     private UniqueEnchantsMenuGUI uniqueEnchantsMenuGUI;
     private PetsMenuGUI petsMenuGUI;
+    private PickaxeRepairGUI pickaxeRepairGUI;
+
 
     // 3 tâches séparées
     private ActionBarTask actionBarTask;
@@ -165,6 +167,8 @@ public final class PrisonTycoon extends JavaPlugin {
         crystalsMenuGUI = new CrystalsMenuGUI(this);
         uniqueEnchantsMenuGUI = new UniqueEnchantsMenuGUI(this);
         petsMenuGUI = new PetsMenuGUI(this);
+        pickaxeRepairGUI = new PickaxeRepairGUI(this);
+
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -372,5 +376,8 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public PetsMenuGUI getPetsMenuGUI() {
         return petsMenuGUI;
+    }
+    public PickaxeRepairGUI getPickaxeRepairMenu() {
+        return pickaxeRepairGUI;
     }
 }

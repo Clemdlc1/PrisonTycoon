@@ -2,6 +2,7 @@ package fr.prisoncore.prisoncore.prisonTycoon.GUI;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
+import fr.prisoncore.prisoncore.prisonTycoon.enchantments.CustomEnchantment;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentCategory;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
@@ -15,6 +16,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,6 +34,8 @@ public class EnchantmentMenu {
     private static final int UNIQUE_ENCHANTS_SLOT = 31;
     private static final int PETS_SLOT = 32;
     private static final int MAIN_MENU_SLOT = 27;
+    private static final int REPAIR_PICKAXE_SLOT = 35; // En bas à droite du menu
+
 
     private static final int ECONOMIC_SLOT = 10;
     private static final int UTILITY_SLOT = 12;
@@ -67,6 +71,8 @@ public class EnchantmentMenu {
         gui.setItem(MAIN_MENU_SLOT, createFutureFeatureItem("Menu Principal", Material.COMPASS,
                 "§eNavigation générale", "§7Implémentation future"));
 
+        gui.setItem(REPAIR_PICKAXE_SLOT, createRepairPickaxeButton(player));
+
         // CORRECTION: Catégories d'enchantements (ligne du bas)
         gui.setItem(ECONOMIC_SLOT, createCategoryItem(EnchantmentCategory.ECONOMIC, player));
         gui.setItem(UTILITY_SLOT, createCategoryItem(EnchantmentCategory.UTILITY, player));
@@ -87,6 +93,7 @@ public class EnchantmentMenu {
             case UNIQUE_ENCHANTS_SLOT -> plugin.getUniqueEnchantsMenuGUI().openUniqueEnchantsMenu(player);
             case PETS_SLOT -> plugin.getPetsMenuGUI().openPetsMenu(player);
             case MAIN_MENU_SLOT -> plugin.getMainMenuGUI().openGeneralMainMenu(player);
+            case REPAIR_PICKAXE_SLOT -> plugin.getPickaxeRepairMenu().openRepairGUI(player);
 
             // Catégories d'enchantements
             case ECONOMIC_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.ECONOMIC);
@@ -288,5 +295,122 @@ public class EnchantmentMenu {
                 gui.setItem(i, filler);
             }
         }
+    }
+    /**
+     * Crée le bouton de réparation de pioche
+     */
+    private ItemStack createRepairPickaxeButton(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
+
+        ItemStack item = new ItemStack(Material.ANVIL);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName("§c🔨 §lRÉPARATION DE PIOCHE");
+
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§7Réparez votre pioche légendaire contre");
+        lore.add("§7des tokens basés sur vos investissements.");
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        if (pickaxe != null) {
+            // État actuel de la pioche
+            short currentDurability = pickaxe.getDurability();
+            short maxDurability = pickaxe.getType().getMaxDurability();
+
+            // Prendre en compte l'enchantement durabilité
+            int durabilityLevel = playerData.getEnchantmentLevel("durability");
+            double durabilityBonus = durabilityLevel * 10.0;
+            int maxDurabilityWithBonus = (int) (maxDurability * (1.0 + durabilityBonus / 100.0));
+
+            double healthPercent = ((double)(maxDurabilityWithBonus - currentDurability) / maxDurabilityWithBonus) * 100;
+
+            lore.add("§e⛏️ §lÉTAT ACTUEL");
+            lore.add("§7│ §eDurabilité: " + getDurabilityColorForButton(healthPercent) + String.format("%.1f%%", healthPercent));
+            lore.add("§7│ §ePoints: §6" + (maxDurabilityWithBonus - currentDurability) + "§7/§6" + maxDurabilityWithBonus);
+
+            if (durabilityLevel > 0) {
+                lore.add("§7│ §eBonus Solidité: §a+" + String.format("%.0f%%", durabilityBonus) + " §7(Niv." + durabilityLevel + ")");
+            }
+
+            // Recommandation basée sur l'état
+            if (healthPercent < 30) {
+                lore.add("§7│ §c⚠️ Réparation recommandée!");
+            } else if (healthPercent < 60) {
+                lore.add("§7│ §e⚠️ Réparation optionnelle");
+            } else {
+                lore.add("§7│ §a✓ En bon état");
+            }
+
+            lore.add("§7└");
+            lore.add("");
+
+            // Estimation des coûts de réparation
+            long totalInvested = calculateTotalInvestedTokensForButton(playerData);
+            lore.add("§6💰 §lCOÛTS DE RÉPARATION");
+            lore.add("§7│ §6Base: §e" + NumberFormatter.format(totalInvested) + " tokens investis");
+            lore.add("§7│ §7Réparation 20%: §6" + NumberFormatter.format((long)(totalInvested * 0.01)) + " tokens");
+            lore.add("§7│ §7Réparation 50%: §6" + NumberFormatter.format((long)(totalInvested * 0.035)) + " tokens");
+            lore.add("§7│ §7Réparation 100%: §6" + NumberFormatter.format((long)(totalInvested * 0.10)) + " tokens");
+            lore.add("§7└ §7Coûts précis dans le menu de réparation");
+
+        } else {
+            lore.add("§c❌ §lPIOCHE INTROUVABLE");
+            lore.add("§7│ §cVotre pioche légendaire est introuvable!");
+            lore.add("§7│ §7Assurez-vous qu'elle est dans votre inventaire.");
+            lore.add("§7└");
+        }
+
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        if (pickaxe != null) {
+            lore.add("§e✨ Cliquez pour ouvrir le menu de réparation!");
+        } else {
+            lore.add("§7Récupérez votre pioche pour accéder à la réparation");
+        }
+
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+
+        return item;
+    }
+
+// 5. NOUVELLES MÉTHODES UTILITAIRES À AJOUTER :
+
+    /**
+     * Retourne la couleur selon le pourcentage de durabilité pour les boutons
+     */
+    private String getDurabilityColorForButton(double healthPercent) {
+        if (healthPercent >= 75) return "§a"; // Vert
+        if (healthPercent >= 50) return "§e"; // Jaune
+        if (healthPercent >= 25) return "§6"; // Orange
+        return "§c"; // Rouge
+    }
+
+    /**
+     * Calcule le coût total de tokens investis dans tous les enchantements (pour bouton)
+     */
+    private long calculateTotalInvestedTokensForButton(PlayerData playerData) {
+        long totalCost = 0;
+
+        Map<String, Integer> enchantments = playerData.getEnchantmentLevels();
+
+        for (Map.Entry<String, Integer> entry : enchantments.entrySet()) {
+            String enchantName = entry.getKey();
+            int currentLevel = entry.getValue();
+
+            CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantName);
+            if (enchantment != null) {
+                // Calcule le coût total pour atteindre ce niveau
+                for (int level = 1; level <= currentLevel; level++) {
+                    totalCost += enchantment.getUpgradeCost(level);
+                }
+            }
+        }
+
+        return totalCost;
     }
 }
