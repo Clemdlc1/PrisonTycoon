@@ -11,7 +11,6 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.NamespacedKey;
 import org.bukkit.potion.PotionEffectType;
@@ -544,8 +543,6 @@ public class PickaxeManager {
             }
         } else if (playerData.getEnchantmentLevel("escalator") > 0) {
             player.sendMessage("§c❌ Escalateur désactivé! Utilisez le clic molette pour l'activer.");
-        } else {
-            player.sendMessage("§c❌ Escalateur non débloqué!");
         }
     }
 

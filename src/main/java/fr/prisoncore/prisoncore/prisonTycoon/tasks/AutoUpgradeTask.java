@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tâche d'auto-amélioration des enchantements
- * CORRIGÉ : Auto-upgrade au maximum possible (pas seulement +1 niveau)
+ * OPTIMISÉ : Synchronisé avec ChatTask pour inclure les améliorations dans le récap minute
  */
 public class AutoUpgradeTask extends BukkitRunnable {
 
@@ -21,11 +21,10 @@ public class AutoUpgradeTask extends BukkitRunnable {
     // Cache pour éviter les vérifications répétées
     private final Map<UUID, Boolean> playerPermissionCache = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastPermissionCheck = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> lastUpgradeTime = new ConcurrentHashMap<>();
 
     // Configuration
     private static final long PERMISSION_CACHE_DURATION = 60000; // 1 minute
-    private static final long MIN_UPGRADE_INTERVAL = 10000; // 10 secondes entre upgrades d'un même joueur
+    private static final int MAX_UPGRADES_PER_MINUTE = 50; // Limite pour éviter le spam
 
     public AutoUpgradeTask(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -33,31 +32,42 @@ public class AutoUpgradeTask extends BukkitRunnable {
 
     @Override
     public void run() {
-        try {
-            cycleCount++;
-            int totalUpgrades = 0;
-            int playersProcessed = 0;
+        // OPTIMISÉ : Cette tâche ne fait plus rien car elle est appelée par ChatTask
+        // On garde la tâche pour la compatibilité mais elle fait juste du nettoyage périodique
+        cycleCount++;
 
-            // Nettoie le cache de permissions périodiquement
-            if (cycleCount % 60 == 0) { // Toutes les 10 minutes
+        try {
+            // Nettoie le cache de permissions toutes les 5 minutes
+            if (cycleCount % 60 == 0) { // Toutes les 5 minutes (5 * 60 secondes)
                 cleanupPermissionCache();
             }
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("Erreur dans AutoUpgradeTask cleanup:");
+            e.printStackTrace();
+        }
+    }
 
+    /**
+     * NOUVEAU : Traite TOUS les auto-upgrades pour TOUS les joueurs
+     * Appelé par ChatTask juste avant le récapitulatif minute
+     */
+    public AutoUpgradeResult processAllAutoUpgrades() {
+        plugin.getPluginLogger().debug("Traitement global des auto-upgrades (cycle #" + cycleCount + ")");
+
+        int totalUpgrades = 0;
+        int playersProcessed = 0;
+        int playersWithoutPermission = 0;
+        long startTime = System.currentTimeMillis();
+
+        try {
             // Traite tous les joueurs en cache
             for (PlayerData playerData : plugin.getPlayerDataManager().getAllCachedPlayers()) {
                 UUID playerId = playerData.getPlayerId();
 
                 // Vérifie les permissions avec cache
                 if (!hasAutoUpgradePermission(playerId)) {
-                    // Désactive silencieusement l'auto-upgrade si plus de permission
                     disableAllAutoUpgrades(playerData);
-                    continue;
-                }
-
-                // Vérifie l'intervalle minimum entre upgrades
-                Long lastUpgrade = lastUpgradeTime.get(playerId);
-                long now = System.currentTimeMillis();
-                if (lastUpgrade != null && now - lastUpgrade < MIN_UPGRADE_INTERVAL) {
+                    playersWithoutPermission++;
                     continue;
                 }
 
@@ -65,7 +75,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 if (playerUpgrades > 0) {
                     totalUpgrades += playerUpgrades;
                     playersProcessed++;
-                    lastUpgradeTime.put(playerId, now);
 
                     // Marque le joueur comme modifié
                     plugin.getPlayerDataManager().markDirty(playerId);
@@ -79,15 +88,18 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 }
             }
 
-            // Log périodique des statistiques
-            if (cycleCount % 30 == 0 || totalUpgrades > 0) {
-                plugin.getPluginLogger().info("AutoUpgrade cycle #" + cycleCount +
-                        ": " + totalUpgrades + " améliorations pour " + playersProcessed + " joueurs");
-            }
+            long duration = System.currentTimeMillis() - startTime;
+
+            plugin.getPluginLogger().info("Auto-upgrade global terminé: " + totalUpgrades +
+                    " améliorations pour " + playersProcessed + " joueurs" +
+                    " (" + playersWithoutPermission + " sans permission) en " + duration + "ms");
+
+            return new AutoUpgradeResult(totalUpgrades, playersProcessed, playersWithoutPermission, duration);
 
         } catch (Exception e) {
-            plugin.getPluginLogger().severe("Erreur dans AutoUpgradeTask:");
+            plugin.getPluginLogger().severe("Erreur dans processAllAutoUpgrades:");
             e.printStackTrace();
+            return new AutoUpgradeResult(0, 0, 0, 0);
         }
     }
 
@@ -135,7 +147,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ: Traite les auto-améliorations d'un joueur avec amélioration AU MAXIMUM POSSIBLE
+     * Traite les auto-améliorations d'un joueur avec amélioration AU MAXIMUM POSSIBLE
      */
     private int processPlayerAutoUpgrades(PlayerData playerData) {
         int totalUpgradesPerformed = 0;
@@ -156,20 +168,14 @@ public class AutoUpgradeTask extends BukkitRunnable {
             if (enchantment == null) {
                 plugin.getPluginLogger().warning("§cEnchantement invalide dans auto-upgrade: '" +
                         enchantmentName + "' pour " + playerData.getPlayerName());
-                // Désactive cet auto-upgrade invalide
                 playerData.setAutoUpgrade(enchantmentName, false);
                 continue;
             }
 
             int currentLevel = playerData.getEnchantmentLevel(enchantmentName);
 
-            plugin.getPluginLogger().debug("Auto-upgrade check: " + enchantmentName +
-                    " niveau " + currentLevel + "/" + enchantment.getMaxLevel() +
-                    " pour " + playerData.getPlayerName());
-
             // Vérifie si peut encore être amélioré
             if (currentLevel >= enchantment.getMaxLevel()) {
-                // Désactive l'auto-amélioration si niveau max atteint
                 playerData.setAutoUpgrade(enchantmentName, false);
 
                 // Notifie le joueur si en ligne
@@ -186,29 +192,26 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 continue;
             }
 
-            // CORRIGÉ: Calcule le MAXIMUM de niveaux possibles avec les tokens disponibles
+            // Calcule le MAXIMUM de niveaux possibles avec les tokens disponibles
             long availableTokens = playerData.getTokens();
             int maxAffordableLevels = 0;
             long totalCost = 0;
 
-            // Calcule combien de niveaux on peut s'offrir
-            for (int i = 1; i <= (enchantment.getMaxLevel() - currentLevel); i++) {
+            // LIMITATION : Maximum 50 niveaux par minute pour éviter le spam
+            int maxLevelsThisRound = Math.min(MAX_UPGRADES_PER_MINUTE, enchantment.getMaxLevel() - currentLevel);
+
+            for (int i = 1; i <= maxLevelsThisRound; i++) {
                 long levelCost = enchantment.getUpgradeCost(currentLevel + i);
                 if (totalCost + levelCost <= availableTokens) {
                     totalCost += levelCost;
                     maxAffordableLevels = i;
                 } else {
-                    break; // Plus assez de tokens
+                    break;
                 }
             }
 
-            plugin.getPluginLogger().debug("Auto-upgrade cost check: " + enchantmentName +
-                    " max affordable levels=" + maxAffordableLevels + ", total cost=" + totalCost +
-                    ", available tokens=" + availableTokens + " pour " + playerData.getPlayerName());
-
-            // CORRIGÉ: Améliore au MAXIMUM possible si on peut s'offrir au moins 1 niveau
+            // Améliore au MAXIMUM possible si on peut s'offrir au moins 1 niveau
             if (maxAffordableLevels > 0) {
-                // Effectue l'amélioration directement sur les données
                 if (playerData.removeTokens(totalCost)) {
                     playerData.setEnchantmentLevel(enchantmentName, currentLevel + maxAffordableLevels);
                     totalUpgradesPerformed += maxAffordableLevels;
@@ -230,13 +233,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
                     plugin.getPluginLogger().info("Auto-amélioration réussie: " + playerData.getPlayerName() +
                             " - " + enchantmentName + " +" + maxAffordableLevels + " niveaux (niveau " +
                             (currentLevel + maxAffordableLevels) + ") (coût: " + totalCost + " tokens)");
-                } else {
-                    plugin.getPluginLogger().warning("Échec retrait tokens pour auto-upgrade: " +
-                            enchantmentName + " pour " + playerData.getPlayerName());
                 }
-            } else {
-                plugin.getPluginLogger().debug("Auto-upgrade bloqué pour " + playerData.getPlayerName() +
-                        " - " + enchantmentName + ": pas assez de tokens pour le prochain niveau");
             }
         }
 
@@ -259,7 +256,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
         for (UUID playerId : toRemove) {
             playerPermissionCache.remove(playerId);
             lastPermissionCheck.remove(playerId);
-            lastUpgradeTime.remove(playerId);
         }
 
         if (!toRemove.isEmpty()) {
@@ -296,6 +292,34 @@ public class AutoUpgradeTask extends BukkitRunnable {
         }
 
         return new AutoUpgradeStats(enabledPlayers, totalAutoEnchantments, cycleCount, playersWithPermission);
+    }
+
+    /**
+     * NOUVEAU : Résultat d'un traitement global d'auto-upgrades
+     */
+    public static class AutoUpgradeResult {
+        private final int totalUpgrades;
+        private final int playersProcessed;
+        private final int playersWithoutPermission;
+        private final long processingTimeMs;
+
+        public AutoUpgradeResult(int totalUpgrades, int playersProcessed, int playersWithoutPermission, long processingTimeMs) {
+            this.totalUpgrades = totalUpgrades;
+            this.playersProcessed = playersProcessed;
+            this.playersWithoutPermission = playersWithoutPermission;
+            this.processingTimeMs = processingTimeMs;
+        }
+
+        public int getTotalUpgrades() { return totalUpgrades; }
+        public int getPlayersProcessed() { return playersProcessed; }
+        public int getPlayersWithoutPermission() { return playersWithoutPermission; }
+        public long getProcessingTimeMs() { return processingTimeMs; }
+
+        @Override
+        public String toString() {
+            return String.format("AutoUpgradeResult{upgrades=%d, players=%d, withoutPermission=%d, time=%dms}",
+                    totalUpgrades, playersProcessed, playersWithoutPermission, processingTimeMs);
+        }
     }
 
     /**

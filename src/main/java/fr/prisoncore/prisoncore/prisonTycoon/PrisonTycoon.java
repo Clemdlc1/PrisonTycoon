@@ -211,8 +211,8 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§7Démarrage des tâches asynchrones...");
 
         // Récupère les intervalles depuis la config
-        int actionBarInterval = getConfig().getInt("performance.task-intervals.action-bar-ticks", 10);
-        int scoreboardInterval = getConfig().getInt("performance.task-intervals.scoreboard-ticks", 400);
+        int actionBarInterval = getConfig().getInt("performance.task-intervals.action-bar-ticks", 5);
+        int scoreboardInterval = getConfig().getInt("performance.task-intervals.scoreboard-ticks", 50);
         int chatInterval = getConfig().getInt("performance.task-intervals.chat-ticks", 1200);
         int autoSaveInterval = getConfig().getInt("performance.task-intervals.auto-save-ticks", 6000);
         int combustionInterval = getConfig().getInt("performance.task-intervals.combustion-ticks", 20);
@@ -244,7 +244,7 @@ public final class PrisonTycoon extends JavaPlugin {
 
         combustionDecayTask = new CombustionDecayTask(this);
         combustionDecayTask.runTaskTimer(this, 0L, combustionInterval);
-        logger.info("§7- CombustionDecayTask démarrée (toutes les " + combustionInterval + " ticks)");
+        logger.info("§7- CombustionDecayTask démarrée (décroissance corrigée toutes les " + combustionInterval + " ticks)");
 
         autoUpgradeTask = new AutoUpgradeTask(this);
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);

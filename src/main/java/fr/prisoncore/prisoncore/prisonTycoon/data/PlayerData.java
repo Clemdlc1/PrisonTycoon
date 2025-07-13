@@ -279,15 +279,12 @@ public class PlayerData {
         }
     }
 
-    public void decayCombustion() {
+    /**
+     * NOUVEAU : Définit directement le niveau de combustion (pour CombustionDecayTask)
+     */
+    public void setCombustionLevel(long combustionLevel) {
         synchronized (dataLock) {
-            long now = System.currentTimeMillis();
-            long secondsSinceLastMining = (now - lastCombustionTime) / 1000;
-
-            if (secondsSinceLastMining > 0) {
-                this.combustionLevel = Math.max(0, this.combustionLevel - secondsSinceLastMining);
-                this.lastCombustionTime = now;
-            }
+            this.combustionLevel = Math.max(0, Math.min(1000, combustionLevel));
         }
     }
 

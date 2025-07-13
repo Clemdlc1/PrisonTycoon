@@ -8,7 +8,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Tâche de récapitulatif minute dans le chat
- * CORRIGÉ : Récapitulatif bien envoyé basé sur les blocs minés
+ * OPTIMISÉ : Déclenche les auto-upgrades juste avant le récapitulatif pour inclure les améliorations
  */
 public class ChatTask extends BukkitRunnable {
 
@@ -25,10 +25,14 @@ public class ChatTask extends BukkitRunnable {
         tickCount++;
 
         try {
-            sendMinuteSummaries();
+            // NOUVEAU : Traite TOUS les auto-upgrades AVANT les récapitulatifs
+            AutoUpgradeTask.AutoUpgradeResult autoUpgradeResult = processAutoUpgrades();
+
+            // Envoie les récapitulatifs (qui incluront maintenant les auto-upgrades)
+            sendMinuteSummaries(autoUpgradeResult);
             summaryCycles++;
 
-            // NOUVEAU : Reset des stats minute après envoi
+            // Reset des stats minute après envoi
             resetAllMinuteStats();
 
         } catch (Exception e) {
@@ -38,34 +42,47 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ : Envoie les récapitulatifs minute à tous les joueurs actifs
+     * NOUVEAU : Traite tous les auto-upgrades via l'AutoUpgradeTask
      */
-    private void sendMinuteSummaries() {
+    private AutoUpgradeTask.AutoUpgradeResult processAutoUpgrades() {
+        if (plugin.getAutoUpgradeTask() != null) {
+            return plugin.getAutoUpgradeTask().processAllAutoUpgrades();
+        } else {
+            return new AutoUpgradeTask.AutoUpgradeResult(0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * MODIFIÉ : Envoie les récapitulatifs avec les résultats des auto-upgrades
+     */
+    private void sendMinuteSummaries(AutoUpgradeTask.AutoUpgradeResult autoUpgradeResult) {
         int summariesSent = 0;
 
         plugin.getPluginLogger().debug("Vérification récapitulatif minute pour " +
-                plugin.getServer().getOnlinePlayers().size() + " joueurs (cycle #" + summaryCycles + ")");
+                plugin.getServer().getOnlinePlayers().size() + " joueurs (cycle #" + summaryCycles +
+                ") - Auto-upgrades: " + autoUpgradeResult.getTotalUpgrades());
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            if (sendMinuteSummaryIfActive(player)) {
+            if (sendMinuteSummaryIfActive(player, autoUpgradeResult)) {
                 summariesSent++;
             }
         }
 
         if (summariesSent > 0) {
-            plugin.getPluginLogger().info("Récapitulatifs minute envoyés à " + summariesSent + " joueurs actifs");
+            plugin.getPluginLogger().info("Récapitulatifs minute envoyés à " + summariesSent + " joueurs actifs" +
+                    " (Auto-upgrades global: " + autoUpgradeResult.getTotalUpgrades() + " améliorations)");
         } else {
             plugin.getPluginLogger().debug("Aucun joueur actif cette minute (cycle #" + summaryCycles + ")");
         }
     }
 
     /**
-     * CORRIGÉ : Envoie le récapitulatif minute si le joueur a eu de l'activité
+     * MODIFIÉ : Envoie le récapitulatif avec prise en compte des auto-upgrades
      */
-    private boolean sendMinuteSummaryIfActive(Player player) {
+    private boolean sendMinuteSummaryIfActive(Player player, AutoUpgradeTask.AutoUpgradeResult globalAutoUpgrades) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // CORRIGÉ : Critères plus larges pour l'activité
+        // Critères d'activité (auto-upgrades comptent maintenant)
         boolean hasBlockActivity = playerData.getLastMinuteBlocksMined() > 0 ||
                 playerData.getLastMinuteBlocksDestroyed() > 0;
         boolean hasEconomicActivity = playerData.getLastMinuteCoins() > 0 ||
@@ -82,7 +99,8 @@ public class ChatTask extends BukkitRunnable {
                 playerData.getLastMinuteBlocksDestroyed() + " détruits), " +
                 "économie=" + hasEconomicActivity + " (" + playerData.getLastMinuteCoins() + "c, " +
                 playerData.getLastMinuteTokens() + "t, " + playerData.getLastMinuteExperience() + "e), " +
-                "enchants=" + hasEnchantActivity + " (" + playerData.getLastMinuteGreedTriggers() + " greeds)");
+                "enchants=" + hasEnchantActivity + " (" + playerData.getLastMinuteGreedTriggers() + " greeds, " +
+                playerData.getLastMinuteAutoUpgrades() + " auto-upgrades)");
 
         if (!hasActivity) {
             plugin.getPluginLogger().debug("Aucune activité pour " + player.getName() + " cette minute");
@@ -91,12 +109,13 @@ public class ChatTask extends BukkitRunnable {
 
         plugin.getPluginLogger().debug("Activité détectée pour " + player.getName() + ", génération du récapitulatif");
 
-        // Génère et envoie le récapitulatif complet
-        String summary = generateCompleteSummary(playerData);
+        // Génère et envoie le récapitulatif complet avec auto-upgrades
+        String summary = generateCompleteSummary(playerData, globalAutoUpgrades);
         if (summary != null && !summary.isEmpty()) {
             player.sendMessage(summary);
 
-            plugin.getPluginLogger().debug("Récapitulatif minute envoyé à " + player.getName());
+            plugin.getPluginLogger().debug("Récapitulatif minute envoyé à " + player.getName() +
+                    " (inclut " + playerData.getLastMinuteAutoUpgrades() + " auto-upgrades)");
             return true;
         }
 
@@ -104,7 +123,7 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * NOUVEAU : Reset les stats minute pour tous les joueurs après envoi
+     * Reset les stats minute pour tous les joueurs après envoi
      */
     private void resetAllMinuteStats() {
         int resetCount = 0;
@@ -117,12 +136,12 @@ public class ChatTask extends BukkitRunnable {
     }
 
     /**
-     * OPTIMISÉ : Génère un récapitulatif compact en maximum 10 lignes
+     * AMÉLIORÉ : Génère un récapitulatif avec auto-upgrades inclus
      */
-    private String generateCompleteSummary(PlayerData playerData) {
+    private String generateCompleteSummary(PlayerData playerData, AutoUpgradeTask.AutoUpgradeResult globalAutoUpgrades) {
         StringBuilder summary = new StringBuilder();
 
-        // Vérifie s'il y a quelque chose à afficher
+        // Variables pour le récapitulatif
         long blocksMined = playerData.getLastMinuteBlocksMined();
         long blocksDestroyed = playerData.getLastMinuteBlocksDestroyed();
         long blocksInventory = playerData.getLastMinuteBlocksAddedToInventory();
@@ -130,6 +149,7 @@ public class ChatTask extends BukkitRunnable {
         long tokensGained = playerData.getLastMinuteTokens();
         long expGained = playerData.getLastMinuteExperience();
         int autoUpgrades = playerData.getLastMinuteAutoUpgrades();
+        long greeds = playerData.getLastMinuteGreedTriggers();
         long keysObtained = playerData.getLastMinuteKeysObtained();
 
         // En-tête compact (ligne 1)
@@ -152,7 +172,7 @@ public class ChatTask extends BukkitRunnable {
         }
 
         // Ligne gains économiques (ligne 5)
-        if (coinsGained > 0 || tokensGained > 0 || expGained > 0) {
+        if (coinsGained > 0 || tokensGained > 0 || expGained > 0 || keysObtained > 0) {
             summary.append("\n§6💰 §lGains: ");
             boolean first = true;
 
@@ -168,30 +188,29 @@ public class ChatTask extends BukkitRunnable {
             if (expGained > 0) {
                 if (!first) summary.append(" §8• ");
                 summary.append("§a+").append(NumberFormatter.format(expGained)).append(" exp");
-            }
-        }
 
-        // Ligne enchantements si applicable (ligne 6)
-        if (autoUpgrades > 0 || keysObtained > 0) {
-            summary.append("\n§d✨ §lEnchants: ");
-            boolean first = true;
-
-            if (autoUpgrades > 0) {
-                if (!first) summary.append(" §8• ");
-                summary.append("§b").append(autoUpgrades).append(" upgrades");
-                first = false;
             }
             if (keysObtained > 0) {
                 if (!first) summary.append(" §8• ");
-                summary.append("§e").append(NumberFormatter.format(keysObtained)).append(" clés");
+                summary.append("§e").append(NumberFormatter.format(keysObtained)).append(" clé").append(keysObtained > 1 ? "s" : "");
             }
+        }
+
+        // NOUVEAU : Ligne enchantements avec auto-upgrades prioritaires (ligne 6)
+        if (autoUpgrades > 0) {
+            summary.append("\n§d✨ §lEnchants: ");
+            summary.append("§a⚡").append(autoUpgrades).append(" auto-upgrade").append(autoUpgrades > 1 ? "s" : "");;
         }
 
         // Séparateur (ligne 8)
         summary.append("\n§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-        // Message motivation (ligne 9)
+        // AMÉLIORÉ : Message motivation avec mention auto-upgrades (ligne 9)
         summary.append("\n§7Continuez votre progression! §e⛏️ §7Total blocs minés: §b").append(NumberFormatter.format(playerData.getTotalBlocksMined()));
+
+        if (autoUpgrades > 0) {
+            summary.append(" §8• §a⚡ Auto-upgrades actifs!");
+        }
 
         return summary.toString();
     }

@@ -46,14 +46,11 @@ public class ScoreboardTask extends BukkitRunnable {
         tickCount++;
 
         try {
-            // OPTIMISÉ : Met à jour les scoreboards par batch
-            if (tickCount % 100 == 0) { // Toutes les 20 secondes
-                updateScoreboardsBatch();
-                updateCycles++;
-            }
+            // Appel direct de la mise à jour à chaque exécution de la tâche
+            updateScoreboardsBatch();
+            updateCycles++;
 
-            // Nettoyage périodique
-            if (tickCount % 5000 == 0) {
+            if (tickCount % 100 == 0) {
                 cleanupDisconnectedPlayers();
             }
 
