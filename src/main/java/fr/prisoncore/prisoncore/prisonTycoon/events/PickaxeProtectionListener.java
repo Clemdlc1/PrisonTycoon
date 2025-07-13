@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -15,6 +16,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 
 /**
  * Listener pour la protection de la pioche légendaire
@@ -474,6 +476,24 @@ public class PickaxeProtectionListener implements Listener {
                 }
             }
         }
+    }
+
+    /**
+     * Intercepte TOUTE perte de durabilité d'un item du joueur.
+     * C'est la méthode la plus propre et la plus sûre pour protéger la pioche.
+     * Elle remplace l'ancienne logique basée sur EntityDamageByEntityEvent.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPickaxeDamage(PlayerItemDamageEvent event) {
+        // 1. On vérifie si l'item endommagé est la pioche légendaire
+        ItemStack item = event.getItem();
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(item)) {
+            return;
+        }
+        event.setCancelled(true);
+
+        plugin.getPluginLogger().debug("Perte de durabilité de la pioche légendaire de "
+                + event.getPlayer().getName() + " annulée (source non-minage).");
     }
 
     /**

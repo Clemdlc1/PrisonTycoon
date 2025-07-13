@@ -218,8 +218,8 @@ public class EnchantmentManager {
      */
     private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType,
                                           Location blockLocation, boolean isMinedBlock) {
-        boolean pickaxeBroken = fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.isPlayerPickaxeBroken(player);
-        double penaltyMultiplier = fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.getPickaxePenaltyMultiplier(player);
+        boolean pickaxeBroken = fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.isPlayerPickaxeBroken(player);
+        double penaltyMultiplier = fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.getPickaxePenaltyMultiplier(player);
         int luckLevel = playerData.getEnchantmentLevel("luck");
 
         if (pickaxeBroken) {
@@ -327,7 +327,7 @@ public class EnchantmentManager {
      */
     private void processSpecialEnchantments(Player player, PlayerData playerData,
                                             Location blockLocation, String mineName) {
-        boolean pickaxeBroken = fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.isPlayerPickaxeBroken(player);
+        boolean pickaxeBroken = fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.isPlayerPickaxeBroken(player);
         if (pickaxeBroken) {
             return; // Arrête ici, aucun autre enchantement ne fonctionne
         }

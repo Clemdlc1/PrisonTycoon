@@ -187,15 +187,22 @@ public class PickaxeManager {
         }
 
         ItemStack currentPickaxe = findPlayerPickaxe(player);
-        short currentDurability = currentPickaxe.getDurability();
-        short maxDurability = currentPickaxe.getType().getMaxDurability();
+
+        // Valeurs par défaut si la pioche n'existe pas encore (création en cours)
+        short currentDurability = 0;
+        short maxDurability = Material.NETHERITE_PICKAXE.getMaxDurability();
+        boolean isBroken = false;
+
+        // NOUVEAU: Vérification null pour éviter la NullPointerException
+        if (currentPickaxe != null) {
+            currentDurability = currentPickaxe.getDurability();
+            maxDurability = currentPickaxe.getType().getMaxDurability();
+            isBroken = currentDurability >= maxDurability - 1;
+        }
 
         // CORRIGÉ : Utilise la durabilité de base (pas augmentée par solidité)
         double healthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
         int currentHealth = maxDurability - currentDurability;
-
-        // NOUVEAU : Vérification si la pioche est cassée
-        boolean isBroken = currentDurability >= maxDurability - 1;
 
         if (isBroken) {
             // PIOCHE CASSÉE - Affichage spécial
@@ -435,14 +442,14 @@ public class PickaxeManager {
      * NOUVEAU : Vérifie si la pioche d'un joueur est en mode "cassée"
      */
     public boolean isPickaxeBroken(Player player) {
-        return fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.isPlayerPickaxeBroken(player);
+        return fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.isPlayerPickaxeBroken(player);
     }
 
     /**
      * NOUVEAU : Obtient le multiplicateur de malus pour la pioche
      */
     public double getPickaxePenaltyMultiplier(Player player) {
-        return fr.prisoncore.prisoncore.prisonTycoon.events.PickaxeDurabilityListener.getPickaxePenaltyMultiplier(player);
+        return fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.getPickaxePenaltyMultiplier(player);
     }
 
     /**
