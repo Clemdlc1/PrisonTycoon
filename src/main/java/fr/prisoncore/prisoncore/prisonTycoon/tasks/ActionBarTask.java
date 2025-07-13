@@ -47,13 +47,13 @@ public class ActionBarTask extends BukkitRunnable {
     }
 
     /**
-     * MODIFIÉ : Génère le message d'état pour un joueur avec conditions mining
+     * CORRIGÉ : Génère le message d'état pour abondance sans conflit cooldown
      */
     private String generateStatusMessage(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         StringBuilder status = new StringBuilder();
 
-        // NOUVEAU : Vérifie si le joueur mine actuellement
+        // Vérifie si le joueur mine actuellement
         boolean currentlyMining = playerData.isCurrentlyMining();
 
         // Combustion (si débloqué ET le joueur mine actuellement)
@@ -63,8 +63,6 @@ public class ActionBarTask extends BukkitRunnable {
 
             if (currentCombustion > 0) {
                 double multiplier = playerData.getCombustionMultiplier();
-
-                // Couleur selon le niveau de combustion
                 String combustionColor = getCombustionColor(currentCombustion);
 
                 status.append("§c🔥 Combustion: ")
@@ -77,20 +75,17 @@ public class ActionBarTask extends BukkitRunnable {
             }
         }
 
-        // MODIFIÉ : Abondance avec cooldown et condition mining
         int abundanceLevel = playerData.getEnchantmentLevel("abundance");
         if (abundanceLevel > 0 && currentlyMining) {
-            // Si l'enchantement est débloqué ET que le joueur mine :
-
             if (playerData.isAbundanceActive()) {
-                // Abondance est active
+                // Abondance est ACTIVE - priorité à l'affichage de l'effet actif
                 if (status.length() > 0) {
                     status.append(" §8• ");
                 }
                 status.append("§6⭐ Abondance: §a✨ ACTIVE §7(x2 gains)");
 
             } else if (playerData.isAbundanceOnCooldown()) {
-                // Abondance est en cooldown
+                // Abondance est en COOLDOWN (seulement si pas active)
                 if (status.length() > 0) {
                     status.append(" §8• ");
                 }
@@ -104,7 +99,9 @@ public class ActionBarTask extends BukkitRunnable {
                 }
                 status.append(seconds).append("s");
             }
+            // Si ni active ni en cooldown, on n'affiche rien (prêt à se déclencher)
         }
+
         return status.toString();
     }
 

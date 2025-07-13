@@ -297,17 +297,27 @@ public class PlayerData {
         }
     }
 
+    /**
+     * CORRIGÉ : Vérifie si abondance est en cooldown (pas pendant qu'elle est active)
+     */
     public boolean isAbundanceOnCooldown() {
         synchronized (dataLock) {
             long now = System.currentTimeMillis();
-            return abundanceCooldownEnd > now;
+
+            // En cooldown seulement si l'effet est terminé ET que le cooldown n'est pas fini
+            return !abundanceActive && abundanceCooldownEnd > now;
         }
     }
 
-    // NOUVEAU : Obtient le temps de cooldown restant en secondes
+    /**
+     * CORRIGÉ : Cooldown restant seulement si pas active et en cooldown
+     */
     public long getAbundanceCooldownSecondsLeft() {
         synchronized (dataLock) {
             long now = System.currentTimeMillis();
+
+            if (abundanceActive) return 0;
+
             if (abundanceCooldownEnd <= now) return 0;
             return (abundanceCooldownEnd - now) / 1000;
         }
@@ -326,8 +336,8 @@ public class PlayerData {
             abundanceActive = true;
             abundanceEndTime = now + durationMs;
 
-            // NOUVEAU : Active le cooldown de 5 minutes après activation
-            abundanceCooldownEnd = now + (5 * 60 * 1000); // 5 minutes
+            // CORRIGÉ : Le cooldown commence APRÈS la fin de l'effet d'abondance
+            abundanceCooldownEnd = abundanceEndTime + (5 * 60 * 1000); // 5 minutes APRÈS la fin
         }
     }
 
@@ -341,31 +351,30 @@ public class PlayerData {
         }
     }
 
-    // CORRIGÉ : Statistiques avec distinction blocs minés vs cassés
-
     /**
-     * NOUVEAU : Ajoute un bloc MINÉ directement par le joueur
+     * CORRIGÉ : Ajoute un bloc MINÉ directement par le joueur avec la pioche
+     * Les blocs minés comptent aussi comme détruits dans le total général
      */
     public void addMinedBlock(Material material) {
         synchronized (dataLock) {
-            totalBlocksMined++;
-            totalBlocksDestroyed++; // Un bloc miné compte aussi comme détruit
-            lastMinuteBlocksMined++;
-            lastMinuteBlocksDestroyed++;
+            totalBlocksMined++;           // Blocs minés directement par la pioche
+            totalBlocksDestroyed++;       // Ces blocs comptent aussi dans le total général
+            lastMinuteBlocksMined++;      // Stats de la minute
+            lastMinuteBlocksDestroyed++;  // Ces blocs comptent aussi dans le total minute
 
             if (material != null) {
                 blocksMinedByType.merge(material, 1L, Long::sum);
             }
         }
     }
-
     /**
-     * NOUVEAU : Ajoute des blocs CASSÉS (laser/explosion)
+     * CORRIGÉ : Ajoute des blocs CASSÉS par laser/explosion (pas minés directement)
+     * Ces blocs s'ajoutent au total des blocs détruits mais pas au total des blocs minés
      */
     public void addDestroyedBlocks(int count) {
         synchronized (dataLock) {
-            totalBlocksDestroyed += count;
-            lastMinuteBlocksDestroyed += count;
+            totalBlocksDestroyed += count;       // S'ajoute au total général
+            lastMinuteBlocksDestroyed += count;  // S'ajoute au total minute
             // NE PAS ajouter à totalBlocksMined car ce ne sont pas des blocs minés directement
         }
     }
