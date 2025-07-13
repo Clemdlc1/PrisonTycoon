@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.events;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import io.papermc.paper.event.player.PlayerItemFrameChangeEvent;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -219,6 +220,11 @@ public class PickaxeProtectionListener implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
 
+        // NOUVELLE RÈGLE : Le joueur ne perd pas son exp vanilla
+        event.setKeepLevel(true);
+        event.setDroppedExp(0);
+        player.sendMessage("§a✅ Votre expérience vanilla a été conservée!");
+
         // Cherche la pioche légendaire dans les drops
         ItemStack pickaxeToSave = null;
         var drops = event.getDrops();
@@ -231,6 +237,11 @@ public class PickaxeProtectionListener implements Listener {
                 drops.remove(drop); // Retire des drops
                 break;
             }
+        }
+
+        // NOUVELLE RÈGLE : Si le joueur a une pioche légendaire, elle perd 5% de durabilité
+        if (pickaxeToSave != null) {
+            applyDeathDurabilityPenalty(pickaxeToSave, player);
         }
 
         // Remet la pioche dans le slot 0 après respawn
@@ -259,6 +270,47 @@ public class PickaxeProtectionListener implements Listener {
 
             }, 1L); // 1 tick après la mort
         }
+    }
+
+    /**
+     * NOUVELLE MÉTHODE : Applique la pénalité de durabilité de 5% à la mort
+     */
+    private void applyDeathDurabilityPenalty(ItemStack pickaxe, Player player) {
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(pickaxe)) return;
+
+        short currentDurability = pickaxe.getDurability();
+        short maxDurability = pickaxe.getType().getMaxDurability();
+
+        // Calcule 5% de la durabilité maximale
+        int durabilityPenalty = (int) Math.ceil(maxDurability * 0.05);
+
+        // Applique la pénalité
+        int newDurability = Math.min(currentDurability + durabilityPenalty, maxDurability - 1);
+        pickaxe.setDurability((short) newDurability);
+
+        // Vérifie les enchantements de solidité pour ajuster la durabilité
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        int durabilityLevel = playerData.getEnchantmentLevel("durability");
+
+        if (durabilityLevel > 0) {
+            // Calcule la durabilité bonus avec l'enchantement Solidité
+            double durabilityBonus = durabilityLevel * 10.0; // +10% par niveau
+            double durabilityMultiplier = 1.0 + (durabilityBonus / 100.0);
+            int maxDurabilityWithBonus = (int) (maxDurability * durabilityMultiplier);
+
+            // S'assure que la durabilité ne dépasse pas la limite avec bonus
+            if (newDurability >= maxDurabilityWithBonus) {
+                pickaxe.setDurability((short) (maxDurabilityWithBonus - 1));
+            }
+        }
+
+        // Affiche le message de pénalité
+        double percentageLost = (durabilityPenalty / (double) maxDurability) * 100;
+        player.sendMessage("§c⚠️ Votre pioche a perdu " + String.format("%.1f%%", percentageLost) +
+                " de durabilité due à votre mort (" + durabilityPenalty + " points)");
+
+        plugin.getPluginLogger().debug("Pénalité de mort appliquée à la pioche de " + player.getName() +
+                ": -" + durabilityPenalty + " durabilité (" + String.format("%.1f%%", percentageLost) + ")");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
