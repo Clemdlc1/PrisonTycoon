@@ -24,6 +24,8 @@ public class ConfigManager {
     private Map<String, MineData> minesData;
     private Map<Material, BlockValueData> blockValues;
     private Map<String, Object> enchantmentSettings;
+    private Map<Material, Long> sellPrices;
+
 
     public ConfigManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -44,16 +46,21 @@ public class ConfigManager {
         minesData = new HashMap<>();
         blockValues = new HashMap<>();
         enchantmentSettings = new HashMap<>();
+        sellPrices = new HashMap<>();
+
 
         try {
             // Charge les différentes sections
             loadMinesConfiguration();
             loadBlockValuesConfiguration();
             loadEnchantmentConfiguration();
+            loadSellPricesConfiguration();
 
             plugin.getPluginLogger().info("§aConfiguration chargée avec succès!");
             plugin.getPluginLogger().info("§7- " + minesData.size() + " mines configurées");
             plugin.getPluginLogger().info("§7- " + blockValues.size() + " types de blocs valorisés");
+            plugin.getPluginLogger().info("§7- " + sellPrices.size() + " prix de vente configurés"); // NOUVEAU
+
 
         } catch (Exception e) {
             plugin.getPluginLogger().severe("§cErreur lors du chargement de la configuration:");
@@ -355,6 +362,72 @@ public class ConfigManager {
         plugin.getPluginLogger().debug("Joueur hors mine à: " + location.getWorld().getName() +
                 " " + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ());
         return null;
+    }
+
+    /**
+     * NOUVEAU : Charge la configuration des prix de vente
+     */
+    private void loadSellPricesConfiguration() {
+        ConfigurationSection sellSection = config.getConfigurationSection("sell-prices");
+        if (sellSection == null) {
+            plugin.getPluginLogger().warning("§cAucune section 'sell-prices' trouvée dans la config!");
+            // Crée des prix par défaut
+            createDefaultSellPrices();
+            return;
+        }
+
+        for (String blockName : sellSection.getKeys(false)) {
+            try {
+                Material material = Material.valueOf(blockName.toUpperCase());
+                long price = sellSection.getLong(blockName, 0);
+
+                if (price > 0) {
+                    sellPrices.put(material, price);
+                    plugin.getPluginLogger().debug("Prix de vente chargé: " + blockName + " -> " + price + " coins");
+                }
+
+            } catch (IllegalArgumentException e) {
+                plugin.getPluginLogger().warning("§cMatériau invalide ignoré dans sell-prices: " + blockName);
+            }
+        }
+
+        plugin.getPluginLogger().info("§7" + sellPrices.size() + " prix de vente chargés.");
+    }
+
+    /**
+     * NOUVEAU : Crée des prix de vente par défaut
+     */
+    private void createDefaultSellPrices() {
+        plugin.getPluginLogger().info("§7Création de prix de vente par défaut...");
+
+        // Prix par défaut basés sur la rareté
+        sellPrices.put(Material.STONE, 1L);
+        sellPrices.put(Material.COBBLESTONE, 1L);
+        sellPrices.put(Material.COAL_ORE, 5L);
+        sellPrices.put(Material.IRON_ORE, 10L);
+        sellPrices.put(Material.GOLD_ORE, 25L);
+        sellPrices.put(Material.REDSTONE_ORE, 15L);
+        sellPrices.put(Material.LAPIS_ORE, 20L);
+        sellPrices.put(Material.DIAMOND_ORE, 50L);
+        sellPrices.put(Material.EMERALD_ORE, 75L);
+        sellPrices.put(Material.ANCIENT_DEBRIS, 200L);
+
+        // Items transformés
+        sellPrices.put(Material.COAL, 3L);
+        sellPrices.put(Material.IRON_INGOT, 8L);
+        sellPrices.put(Material.GOLD_INGOT, 20L);
+        sellPrices.put(Material.REDSTONE, 2L);
+        sellPrices.put(Material.LAPIS_LAZULI, 3L);
+        sellPrices.put(Material.DIAMOND, 40L);
+        sellPrices.put(Material.EMERALD, 60L);
+        sellPrices.put(Material.NETHERITE_SCRAP, 150L);
+    }
+
+    /**
+     * NOUVEAU : Obtient le prix de vente d'un matériau
+     */
+    public long getSellPrice(Material material) {
+        return sellPrices.getOrDefault(material, 0L);
     }
 
     /**

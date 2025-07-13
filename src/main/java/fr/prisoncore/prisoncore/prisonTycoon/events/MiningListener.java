@@ -89,12 +89,15 @@ public class MiningListener implements Listener {
     }
 
     /**
-     * CORRIGÉ : Traite le minage dans une mine avec nouveau système de notifications
+     * CORRIGÉ : Traite le minage dans une mine avec nouveau système de notifications et activité
      */
     private void processMiningInMine(Player player, Location location, Material material, String mineName) {
         plugin.getPluginLogger().debug("Traitement minage dans mine: " + mineName);
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // NOUVEAU : Met à jour l'activité de minage pour l'ActionBar
+        playerData.updateMiningActivity();
 
         // Ajoute le bloc directement à l'inventaire du joueur
         addBlockToInventory(player, material);
@@ -111,6 +114,15 @@ public class MiningListener implements Listener {
         // Traite ce bloc MINÉ directement par le joueur (avec Greeds, enchants spéciaux, etc.)
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
 
+        // Met à jour la pioche
+        plugin.getPickaxeManager().updatePlayerPickaxe(player);
+
+        // Gère la durabilité
+        var pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
+        if (pickaxe != null) {
+            plugin.getPickaxeManager().handleDurability(pickaxe, player);
+        }
+
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
@@ -122,9 +134,6 @@ public class MiningListener implements Listener {
      */
     private void processMiningOutsideMine(Player player, Location location, Material material) {
         plugin.getPluginLogger().debug("Traitement minage hors mine avec pioche légendaire");
-
-        // RESTRICTION : Seuls efficacité, solidité, mobilité actifs hors mine
-        // Donc PAS de gains économiques, PAS de Greeds, PAS d'effets spéciaux
 
         // Applique uniquement les enchantements autorisés hors mine
         plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);

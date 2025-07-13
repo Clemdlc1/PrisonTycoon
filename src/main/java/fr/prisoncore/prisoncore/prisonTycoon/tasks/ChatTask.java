@@ -137,7 +137,7 @@ public class ChatTask extends BukkitRunnable {
         summary.append("§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         // Titre compact (ligne 2)
-        summary.append("\n§e📊 §lRÉCAP MINUTE §8• §7").append(NumberFormatter.format(playerData.getCoins())).append("c §8• §e").append(NumberFormatter.format(playerData.getTokens())).append("t §8• §a").append(NumberFormatter.format(playerData.getExperience())).append("e");
+        summary.append("\n§e📊 §lRÉCAP MINUTE §8• §7").append(NumberFormatter.format(playerData.getCoins())).append(" coins §8• §e").append(NumberFormatter.format(playerData.getTokens())).append(" tokens §8• §a").append(NumberFormatter.format(playerData.getExperience())).append(" exp");
 
         // Ligne minage si applicable (ligne 3-4)
         if (blocksMined > 0 || blocksDestroyed > 0 || blocksInventory > 0) {
@@ -158,17 +158,17 @@ public class ChatTask extends BukkitRunnable {
             boolean first = true;
 
             if (coinsGained > 0) {
-                summary.append("§6+").append(NumberFormatter.format(coinsGained)).append("c");
+                summary.append("§6+").append(NumberFormatter.format(coinsGained)).append(" coins");
                 first = false;
             }
             if (tokensGained > 0) {
                 if (!first) summary.append(" §8• ");
-                summary.append("§e+").append(NumberFormatter.format(tokensGained)).append("t");
+                summary.append("§e+").append(NumberFormatter.format(tokensGained)).append(" tokens");
                 first = false;
             }
             if (expGained > 0) {
                 if (!first) summary.append(" §8• ");
-                summary.append("§a+").append(NumberFormatter.format(expGained)).append("e");
+                summary.append("§a+").append(NumberFormatter.format(expGained)).append(" exp");
             }
         }
 
@@ -177,10 +177,6 @@ public class ChatTask extends BukkitRunnable {
             summary.append("\n§d✨ §lEnchants: ");
             boolean first = true;
 
-            if (greedTriggers > 0) {
-                summary.append("§d").append(NumberFormatter.format(greedTriggers)).append(" Greeds");
-                first = false;
-            }
             if (autoUpgrades > 0) {
                 if (!first) summary.append(" §8• ");
                 summary.append("§b").append(autoUpgrades).append(" upgrades");
@@ -192,30 +188,11 @@ public class ChatTask extends BukkitRunnable {
             }
         }
 
-        // États spéciaux actifs si applicable (ligne 7)
-        if (playerData.getCombustionLevel() > 0 || playerData.isAbundanceActive()) {
-            summary.append("\n§c🔥 §lÉtats: ");
-            boolean first = true;
-
-            if (playerData.getCombustionLevel() > 0) {
-                double multiplier = playerData.getCombustionMultiplier();
-                summary.append("§cCombustion x").append(String.format("%.2f", multiplier));
-                first = false;
-            }
-            if (playerData.isAbundanceActive()) {
-                if (!first) summary.append(" §8• ");
-                summary.append("§6⭐ Abondance");
-            }
-        }
-
         // Séparateur (ligne 8)
         summary.append("\n§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         // Message motivation (ligne 9)
-        summary.append("\n§7Continuez votre progression! §e⛏️✨ §7Total blocs minés: §b").append(NumberFormatter.format(playerData.getTotalBlocksMined()));
-
-        // Pied de page (ligne 10)
-        summary.append("\n§7§m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        summary.append("\n§7Continuez votre progression! §e⛏️ §7Total blocs minés: §b").append(NumberFormatter.format(playerData.getTotalBlocksMined()));
 
         return summary.toString();
     }

@@ -47,15 +47,18 @@ public class ActionBarTask extends BukkitRunnable {
     }
 
     /**
-     * Génère le message d'état pour un joueur
+     * MODIFIÉ : Génère le message d'état pour un joueur avec conditions mining
      */
     private String generateStatusMessage(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         StringBuilder status = new StringBuilder();
 
-        // Combustion (si débloqué)
+        // NOUVEAU : Vérifie si le joueur mine actuellement
+        boolean currentlyMining = playerData.isCurrentlyMining();
+
+        // Combustion (si débloqué ET le joueur mine actuellement)
         int combustionLevel = playerData.getEnchantmentLevel("combustion");
-        if (combustionLevel > 0) {
+        if (combustionLevel > 0 && currentlyMining) {
             long currentCombustion = playerData.getCombustionLevel();
 
             if (currentCombustion > 0) {
@@ -74,28 +77,34 @@ public class ActionBarTask extends BukkitRunnable {
             }
         }
 
-        // Abondance (si débloqué et actif)
+        // MODIFIÉ : Abondance avec cooldown et condition mining
         int abundanceLevel = playerData.getEnchantmentLevel("abundance");
-        if (abundanceLevel > 0 && playerData.isAbundanceActive()) {
-            if (status.length() > 0) {
-                status.append(" §8• ");
+        if (abundanceLevel > 0 && currentlyMining) {
+            // Si l'enchantement est débloqué ET que le joueur mine :
+
+            if (playerData.isAbundanceActive()) {
+                // Abondance est active
+                if (status.length() > 0) {
+                    status.append(" §8• ");
+                }
+                status.append("§6⭐ Abondance: §a✨ ACTIVE §7(x2 gains)");
+
+            } else if (playerData.isAbundanceOnCooldown()) {
+                // Abondance est en cooldown
+                if (status.length() > 0) {
+                    status.append(" §8• ");
+                }
+                long cooldownSeconds = playerData.getAbundanceCooldownSecondsLeft();
+                long minutes = cooldownSeconds / 60;
+                long seconds = cooldownSeconds % 60;
+
+                status.append("§6⭐ Abondance: §c⏰ Cooldown ");
+                if (minutes > 0) {
+                    status.append(minutes).append("m ");
+                }
+                status.append(seconds).append("s");
             }
-
-            // Calcule le temps restant approximatif
-            String timeRemaining = "§a✨ ACTIVE";
-
-            status.append("§6⭐ Abondance: ")
-                    .append(timeRemaining)
-                    .append(" §7(x2 gains)");
         }
-
-        // Si aucun état actif et au moins un enchantement débloqué, affiche un message minimal
-        if (status.length() == 0) {
-            if (combustionLevel > 0 || abundanceLevel > 0) {
-                status.append("§7⛏️ Continuez à miner pour activer vos enchantements");
-            }
-        }
-
         return status.toString();
     }
 

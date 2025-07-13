@@ -332,6 +332,68 @@ costs:
     exponent: 1.05              # Croissance lente
 
 # ========================================
+#          PRIX DE VENTE
+# ========================================
+# Prix de vente des items pour /sell
+
+sell-prices:
+  # Blocs de base
+  stone: 1
+  cobblestone: 1
+  dirt: 0
+  grass_block: 1
+
+  # Minerais bruts
+  coal_ore: 5
+  iron_ore: 10
+  gold_ore: 25
+  redstone_ore: 15
+  lapis_ore: 20
+  diamond_ore: 50
+  emerald_ore: 75
+  ancient_debris: 200
+
+  # Minerais deepslate
+  deepslate_coal_ore: 6
+  deepslate_iron_ore: 12
+  deepslate_gold_ore: 30
+  deepslate_redstone_ore: 18
+  deepslate_lapis_ore: 25
+  deepslate_diamond_ore: 60
+  deepslate_emerald_ore: 90
+
+  # Items raffinés
+  coal: 3
+  iron_ingot: 8
+  gold_ingot: 20
+  redstone: 2
+  lapis_lazuli: 3
+  diamond: 40
+  emerald: 60
+  netherite_scrap: 150
+  netherite_ingot: 800
+
+  # Items de craft
+  iron_nugget: 1
+  gold_nugget: 2
+  diamond_nugget: 4
+
+  # Autres blocs utiles
+  obsidian: 5
+  quartz: 4
+  nether_quartz: 4
+
+  # Blocs de construction
+  oak_log: 2
+  spruce_log: 2
+  birch_log: 2
+  jungle_log: 2
+  acacia_log: 2
+  dark_oak_log: 2
+  crimson_stem: 3
+  warped_stem: 3
+
+# ========================================
 #            PIOCHE LÉGENDAIRE
 # ========================================
 

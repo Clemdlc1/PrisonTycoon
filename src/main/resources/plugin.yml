@@ -55,6 +55,13 @@ commands:
     permission: specialmine.pickaxe
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
+  sell:
+    description: Vendre des items
+    usage: /sell <all|hand>
+    permission: specialmine.sell
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [vendre]
+
   mine:
     description: Gérer les mines
     usage: /mine <generate|list|info|stats> [nom]

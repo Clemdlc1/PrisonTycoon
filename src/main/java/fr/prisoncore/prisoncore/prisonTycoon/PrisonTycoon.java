@@ -1,9 +1,6 @@
 package fr.prisoncore.prisoncore.prisonTycoon;
 
-import fr.prisoncore.prisoncore.prisonTycoon.commands.GiveTokensCommand;
-import fr.prisoncore.prisoncore.prisonTycoon.commands.MineCommand;
-import fr.prisoncore.prisoncore.prisonTycoon.commands.PickaxeCommand;
-import fr.prisoncore.prisoncore.prisonTycoon.commands.PrisonTycoonCommand;
+import fr.prisoncore.prisoncore.prisonTycoon.commands.*;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentManager;
 import fr.prisoncore.prisoncore.prisonTycoon.events.*;
 import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
@@ -198,6 +195,7 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes joueur
         getCommand("pickaxe").setExecutor(new PickaxeCommand(this));
         getCommand("mine").setExecutor(new MineCommand(this));
+        getCommand("sell").setExecutor(new SellCommand(this));
 
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
@@ -334,8 +332,6 @@ public final class PrisonTycoon extends JavaPlugin {
     public AutoUpgradeTask getAutoUpgradeTask() {
         return autoUpgradeTask;
     }
-
-    // SUPPRIMÉ : getScoreboardManager() - remplacé par getScoreboardTask()
 
     // Getters pour les tâches séparées
 

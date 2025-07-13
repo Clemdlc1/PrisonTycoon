@@ -398,7 +398,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ : Active l'effet laser - CASSE visuellement les blocs avec animation
+     * CORRIGÉ : Active l'effet laser - va dans la direction du joueur jusqu'au bout de la mine
      */
     private void activateLaser(Player player, Location start, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
@@ -408,7 +408,7 @@ public class EnchantmentManager {
         int blocksDestroyed = 0;
         int maxDistance = plugin.getConfigManager().getEnchantmentSetting("special.laser.max-distance", 1000);
 
-        // Mine en ligne droite 1x1
+        // CORRIGÉ : Continue jusqu'au bout de la mine, ne s'arrête pas aux blocs d'air
         for (int distance = 1; distance <= maxDistance; distance++) {
             Location target = start.clone().add(direction.clone().multiply(distance));
 
@@ -419,7 +419,12 @@ public class EnchantmentManager {
 
             Material originalType = target.getBlock().getType();
 
-            // Ne casse que les blocs qui ne sont pas de l'air
+            // NOUVEAU : Protection beacon - arrête le laser
+            if (originalType == Material.BEACON) {
+                plugin.getPluginLogger().debug("Laser arrêté par un beacon à " + target);
+                break;
+            }
+
             if (originalType != Material.AIR) {
                 // CORRECTION : CASSE visuellement (met en AIR)
                 target.getBlock().setType(Material.AIR);
@@ -432,22 +437,34 @@ public class EnchantmentManager {
                 // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
                 processBlockDestroyed(player, target, originalType, mineName);
             }
+
+            // Animation du rayon laser sur TOUS les blocs (air et solides)
+            target.getWorld().spawnParticle(Particle.DUST, target.clone().add(0.5, 0.5, 0.5), 2,
+                    0.1, 0.1, 0.1, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.5f));
         }
 
-        // Animation du rayon laser
-        for (int i = 0; i < maxDistance && i < 50; i++) {
+        // Animation du rayon laser complet
+        for (int i = 0; i < maxDistance && i < 100; i++) {
             Location particleLocation = start.clone().add(direction.clone().multiply(i));
 
+            // Arrête l'animation si on sort de la mine
+            if (!mineData.contains(particleLocation)) {
+                break;
+            }
+
             particleLocation.getWorld().spawnParticle(Particle.DUST, particleLocation, 1,
-                    0.1, 0.1, 0.1, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
+                    0.05, 0.05, 0.05, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
         }
 
         player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne !");
         player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
+
+        // Notifie l'effet spécial
+        plugin.getNotificationManager().queueSpecialEffectNotification(player, "Laser", blocksDestroyed);
     }
 
     /**
-     * CORRIGÉ : Active l'effet explosion - CASSE visuellement les blocs avec animation
+     * MODIFIÉ : Active l'effet explosion avec protection beacon
      */
     private void activateExplosion(Player player, Location center, String mineName) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
@@ -474,16 +491,25 @@ public class EnchantmentManager {
                         if (mineData.contains(target)) {
                             Material originalType = target.getBlock().getType();
 
-                            // CORRECTION : CASSE visuellement (met en AIR)
-                            target.getBlock().setType(Material.AIR);
-                            blocksDestroyed++;
+                            // NOUVEAU : Protection beacon - ne peut pas être cassé
+                            if (originalType == Material.BEACON) {
+                                plugin.getPluginLogger().debug("Explosion bloquée par beacon à " + target);
+                                continue; // Ignore ce bloc
+                            }
 
-                            // Animation de particules d'explosion
-                            target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
-                                    8, 0.4, 0.4, 0.4, 0.1, originalType.createBlockData());
+                            // Ne casse que les blocs solides (pas l'air)
+                            if (originalType != Material.AIR) {
+                                // CORRECTION : CASSE visuellement (met en AIR)
+                                target.getBlock().setType(Material.AIR);
+                                blocksDestroyed++;
 
-                            // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
-                            processBlockDestroyed(player, target, originalType, mineName);
+                                // Animation de particules d'explosion
+                                target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
+                                        8, 0.4, 0.4, 0.4, 0.1, originalType.createBlockData());
+
+                                // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
+                                processBlockDestroyed(player, target, originalType, mineName);
+                            }
                         }
                     }
                 }
@@ -492,6 +518,9 @@ public class EnchantmentManager {
 
         player.sendMessage("§4💥 Explosion rayon " + radius + "! §e" + blocksDestroyed + " blocs détruits!");
         player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+
+        // Notifie l'effet spécial
+        plugin.getNotificationManager().queueSpecialEffectNotification(player, "Explosion", blocksDestroyed);
     }
 
     /**

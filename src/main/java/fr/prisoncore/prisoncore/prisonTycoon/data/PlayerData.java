@@ -31,6 +31,8 @@ public class PlayerData {
     private long lastCombustionTime;
     private boolean abundanceActive;
     private long abundanceEndTime;
+    private long abundanceCooldownEnd;
+    private long lastMiningTime;
 
     // Auto-amélioration des enchantements
     private final Set<String> autoUpgradeEnabled;
@@ -295,17 +297,37 @@ public class PlayerData {
         }
     }
 
-    // Abondance
+    public boolean isAbundanceOnCooldown() {
+        synchronized (dataLock) {
+            long now = System.currentTimeMillis();
+            return abundanceCooldownEnd > now;
+        }
+    }
 
+    // NOUVEAU : Obtient le temps de cooldown restant en secondes
+    public long getAbundanceCooldownSecondsLeft() {
+        synchronized (dataLock) {
+            long now = System.currentTimeMillis();
+            if (abundanceCooldownEnd <= now) return 0;
+            return (abundanceCooldownEnd - now) / 1000;
+        }
+    }
+
+    // MODIFIÉ : Activation d'abondance avec cooldown
     public void activateAbundance(long durationMs) {
         synchronized (dataLock) {
             long now = System.currentTimeMillis();
-            if (abundanceActive && abundanceEndTime > now) {
-                abundanceEndTime = Math.max(abundanceEndTime, now + durationMs);
-            } else {
-                abundanceActive = true;
-                abundanceEndTime = now + durationMs;
+
+            // Vérifie le cooldown
+            if (abundanceCooldownEnd > now) {
+                return; // Encore en cooldown
             }
+
+            abundanceActive = true;
+            abundanceEndTime = now + durationMs;
+
+            // NOUVEAU : Active le cooldown de 5 minutes après activation
+            abundanceCooldownEnd = now + (5 * 60 * 1000); // 5 minutes
         }
     }
 
@@ -493,6 +515,20 @@ public class PlayerData {
         }
     }
 
+    // NOUVEAU : Met à jour le temps de minage (utilisé pour tracker l'activité)
+    public void updateMiningActivity() {
+        synchronized (dataLock) {
+            this.lastMiningTime = System.currentTimeMillis();
+        }
+    }
+
+    // NOUVEAU : Vérifie si le joueur mine actuellement (dans les dernières 3 secondes)
+    public boolean isCurrentlyMining() {
+        synchronized (dataLock) {
+            long now = System.currentTimeMillis();
+            return (now - lastMiningTime) <= 3000; // 3 secondes
+        }
+    }
 
     // Autres getters
     public UUID getPlayerId() { return playerId; }
