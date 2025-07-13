@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gestionnaire des données des joueurs
- * CORRIGÉ : Sauvegarde des gains pioche et enchantements mobilité désactivés
+ * CORRIGÉ : Synchronisation exp vanilla lors du chargement et expérience mise à jour
  */
 public class PlayerDataManager {
 
@@ -43,7 +43,7 @@ public class PlayerDataManager {
     }
 
     /**
-     * Charge les données d'un joueur (cache ou fichier)
+     * CORRIGÉ : Charge les données d'un joueur avec synchronisation exp vanilla
      */
     public PlayerData getPlayerData(UUID playerId) {
         // Vérifie d'abord le cache
@@ -56,6 +56,15 @@ public class PlayerDataManager {
         PlayerData loaded = loadPlayerDataFromFile(playerId);
         if (loaded != null) {
             playerDataCache.put(playerId, loaded);
+
+            // NOUVEAU : Synchronise l'exp vanilla si le joueur est en ligne
+            Player player = plugin.getServer().getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    plugin.getEconomyManager().updateVanillaExpFromCustom(player, loaded.getExperience());
+                }, 1L); // Petit délai pour s'assurer que tout est initialisé
+            }
+
             return loaded;
         }
 
@@ -280,11 +289,24 @@ public class PlayerDataManager {
     }
 
     /**
-     * CORRIGÉ: Retire un joueur du cache avec sauvegarde forcée
+     * CORRIGÉ : Retire un joueur du cache avec sauvegarde forcée et sync exp finale
      */
     public void unloadPlayer(UUID playerId) {
-        // Sauvegarde FORCÉE avant de décharger
+        // NOUVEAU : Synchronisation finale de l'expérience avant sauvegarde
+        Player player = plugin.getServer().getPlayer(playerId);
         PlayerData data = playerDataCache.get(playerId);
+
+        if (player != null && player.isOnline() && data != null) {
+            try {
+                // Sync finale pour s'assurer que l'exp vanilla est à jour
+                plugin.getEconomyManager().updateVanillaExpFromCustom(player, data.getExperience());
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur sync exp finale pour " +
+                        data.getPlayerName() + ": " + e.getMessage());
+            }
+        }
+
+        // Sauvegarde FORCÉE avant de décharger
         if (data != null) {
             savePlayerDataToFile(playerId, data);
             dirtyPlayers.remove(playerId);

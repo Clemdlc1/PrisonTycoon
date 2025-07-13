@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gestionnaire économique du plugin
- * CORRIGÉ : Retrait formatActionBar et generateMinuteSummary (maintenant dans ScoreboardManager et ActionBarTask)
+ * CORRIGÉ : Synchronisation expérience custom/vanilla améliorée et automatique
  */
 public class EconomyManager {
 
@@ -75,7 +75,7 @@ public class EconomyManager {
     }
 
     /**
-     * Ajoute de l'expérience avec mise à jour vanilla en temps réel (TOTAL - toutes sources)
+     * CORRIGÉ : Ajoute de l'expérience avec synchronisation vanilla AUTOMATIQUE
      */
     public boolean addExperience(Player player, long amount) {
         if (amount <= 0) return false;
@@ -91,7 +91,7 @@ public class EconomyManager {
 
         playerData.addExperience(amount);
 
-        // Met à jour immédiatement l'expérience vanilla
+        // CORRIGÉ : Synchronisation vanilla AUTOMATIQUE à chaque changement
         updateVanillaExpFromCustom(player, currentExp + amount);
 
         updateStats(player.getUniqueId(), 0, 0, amount);
@@ -101,37 +101,92 @@ public class EconomyManager {
     }
 
     /**
-     * Met à jour l'expérience vanilla basée sur l'expérience custom
+     * CORRIGÉ : Met à jour l'expérience vanilla avec formule rééquilibrée et logging
      */
     public void updateVanillaExpFromCustom(Player player, long customExp) {
-        // Formule améliorée : niveau = racine carrée de (exp custom / 1000)
-        int vanillaLevel = (int) Math.sqrt(customExp / 1000.0);
+        if (customExp < 0) customExp = 0; // Sécurité
 
-        // Calcule la progression vers le niveau suivant
-        long expForCurrentLevel = vanillaLevel * vanillaLevel * 1000L;
-        long expForNextLevel = (vanillaLevel + 1) * (vanillaLevel + 1) * 1000L;
-        long expInCurrentLevel = customExp - expForCurrentLevel;
+        // CORRIGÉ : Formule logarithmique plus équilibrée
+        // niveau = log₂(customExp / 1000) + 1, mais minimum 0
+        double rawLevel = Math.log(Math.max(1, customExp / 1000.0)) / Math.log(2);
+        int vanillaLevel = Math.max(0, (int) Math.floor(rawLevel));
+
+        // CORRIGÉ : Calcule la progression vers le niveau suivant avec la même formule logarithmique
+        long expForCurrentLevel = (long) (Math.pow(2, Math.max(0, vanillaLevel - 1)) * 1000);
+        long expForNextLevel = (long) (Math.pow(2, vanillaLevel) * 1000);
+
+        // Sécurité pour éviter la division par zéro
+        if (expForNextLevel <= expForCurrentLevel) {
+            expForNextLevel = expForCurrentLevel + 1000;
+        }
+
+        long expInCurrentLevel = Math.max(0, customExp - expForCurrentLevel);
         long expNeededForNext = expForNextLevel - expForCurrentLevel;
 
-        float progress = expNeededForNext > 0 ? (float) expInCurrentLevel / expNeededForNext : 0f;
-        progress = Math.max(0.0f, Math.min(1.0f, progress));
+        float progress = expNeededForNext > 0 ?
+                Math.max(0.0f, Math.min(1.0f, (float) expInCurrentLevel / expNeededForNext)) : 0f;
 
-        // Applique au joueur en évitant les changements inutiles
-        if (player.getLevel() != vanillaLevel || Math.abs(player.getExp() - progress) > 0.01f) {
-            player.setLevel(vanillaLevel);
-            player.setExp(progress);
+        // CORRIGÉ : Applique seulement si changement significatif (évite le spam)
+        boolean shouldUpdate = false;
 
-            plugin.getPluginLogger().debug("Vanilla exp update: " + vanillaLevel + " (+" +
-                    String.format("%.1f%%", progress * 100) + ") from custom " + customExp);
+        if (Math.abs(player.getLevel() - vanillaLevel) > 0) {
+            shouldUpdate = true;
+        } else if (Math.abs(player.getExp() - progress) > 0.01f) {
+            shouldUpdate = true;
+        }
+
+        if (shouldUpdate) {
+            // NOUVEAU : Protection contre les valeurs invalides
+            try {
+                player.setLevel(Math.max(0, Math.min(21863, vanillaLevel))); // Limite Minecraft
+                player.setExp(Math.max(0.0f, Math.min(1.0f, progress)));
+
+                plugin.getPluginLogger().debug("Sync exp pour " + player.getName() + ": " +
+                        "custom=" + customExp + " -> vanilla=" + vanillaLevel + " (+" +
+                        String.format("%.1f%%", progress * 100) + ") [" + expInCurrentLevel + "/" + expNeededForNext + "]");
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() +
+                        ": level=" + vanillaLevel + ", exp=" + progress + " - " + e.getMessage());
+            }
         }
     }
 
     /**
-     * Initialise l'expérience vanilla d'un joueur à la connexion
+     * NOUVEAU : Synchronise l'expérience vanilla pour tous les joueurs en ligne
+     */
+    public void syncAllVanillaExp() {
+        int synced = 0;
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            try {
+                PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+                updateVanillaExpFromCustom(player, playerData.getExperience());
+                synced++;
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() + ": " + e.getMessage());
+            }
+        }
+
+        if (synced > 0) {
+            plugin.getPluginLogger().debug("Synchronisation expérience vanilla pour " + synced + " joueurs");
+        }
+    }
+
+    /**
+     * CORRIGÉ : Initialise l'expérience vanilla d'un joueur à la connexion avec vérification
      */
     public void initializeVanillaExp(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        updateVanillaExpFromCustom(player, playerData.getExperience());
+        try {
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            long customExp = playerData.getExperience();
+
+            plugin.getPluginLogger().debug("Initialisation exp vanilla pour " + player.getName() +
+                    ": custom=" + customExp);
+
+            updateVanillaExpFromCustom(player, customExp);
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("Erreur initialisation exp vanilla pour " + player.getName() + ":");
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -173,9 +228,6 @@ public class EconomyManager {
                 playerData.getExperience()
         );
     }
-
-    // SUPPRIMÉ: formatActionBar() - maintenant dans ScoreboardManager pour notifications Greed
-    // SUPPRIMÉ: generateMinuteSummary() - maintenant dans ActionBarTask.generateCompleteSummary()
 
     /**
      * Effectue une transaction entre joueurs (future fonctionnalité)

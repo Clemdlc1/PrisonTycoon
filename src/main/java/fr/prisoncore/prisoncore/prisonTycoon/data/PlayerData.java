@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Données d'un joueur
- * CORRIGÉ : Distinction correcte gains pioche vs autres moyens, blocs minés vs cassés
+ * CORRIGÉ : Distinction correcte gains pioche vs autres moyens, tracking séparé dernière minute
  */
 public class PlayerData {
     private final UUID playerId;
@@ -49,17 +49,20 @@ public class PlayerData {
     private long totalGreedTriggers;
     private long totalKeysObtained;
 
-    // Gains de la dernière minute (pour récapitulatif)
-    private long lastMinuteCoins;
-    private long lastMinuteTokens;
-    private long lastMinuteExperience;
+    // NOUVEAU : Gains de la dernière minute SÉPARÉS (toutes sources vs via pioche)
+    private long lastMinuteCoins;                    // TOUS les gains coins
+    private long lastMinuteTokens;                   // TOUS les gains tokens
+    private long lastMinuteExperience;               // TOUS les gains expérience
+    private long lastMinuteCoinsViaPickaxe;          // SEULEMENT via pioche
+    private long lastMinuteTokensViaPickaxe;         // SEULEMENT via pioche
+    private long lastMinuteExperienceViaPickaxe;     // SEULEMENT via pioche
+
     private int lastMinuteAutoUpgrades;
     private long lastMinuteBlocksMined;
     private long lastMinuteBlocksDestroyed;
     private long lastMinuteGreedTriggers;
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
-
 
     // Données thread-safe
     private final Object dataLock = new Object();
@@ -86,7 +89,6 @@ public class PlayerData {
         this.lastCombustionTime = System.currentTimeMillis();
         this.abundanceActive = false;
         this.abundanceEndTime = 0;
-
 
         this.totalBlocksMined = 0;
         this.totalBlocksDestroyed = 0;
@@ -120,13 +122,14 @@ public class PlayerData {
         }
     }
 
-    // NOUVEAUX: Méthodes spécifiques VIA PIOCHE
+    // CORRIGÉ: Méthodes spécifiques VIA PIOCHE avec tracking séparé
 
     public void addCoinsViaPickaxe(long amount) {
         synchronized (dataLock) {
             this.coins = Math.max(0, this.coins + amount);
             this.coinsViaPickaxe = Math.max(0, this.coinsViaPickaxe + amount);
             this.lastMinuteCoins += Math.max(0, amount);
+            this.lastMinuteCoinsViaPickaxe += Math.max(0, amount); // NOUVEAU : Track séparé
         }
     }
 
@@ -135,6 +138,7 @@ public class PlayerData {
             this.tokens = Math.max(0, this.tokens + amount);
             this.tokensViaPickaxe = Math.max(0, this.tokensViaPickaxe + amount);
             this.lastMinuteTokens += Math.max(0, amount);
+            this.lastMinuteTokensViaPickaxe += Math.max(0, amount); // NOUVEAU : Track séparé
         }
     }
 
@@ -143,6 +147,7 @@ public class PlayerData {
             this.experience = Math.max(0, this.experience + amount);
             this.experienceViaPickaxe = Math.max(0, this.experienceViaPickaxe + amount);
             this.lastMinuteExperience += Math.max(0, amount);
+            this.lastMinuteExperienceViaPickaxe += Math.max(0, amount); // NOUVEAU : Track séparé
         }
     }
 
@@ -279,18 +284,18 @@ public class PlayerData {
         }
     }
 
+    public double getCombustionMultiplier() {
+        synchronized (dataLock) {
+            return 1.0 + (combustionLevel / 1000.0);
+        }
+    }
+
     /**
      * NOUVEAU : Définit directement le niveau de combustion (pour CombustionDecayTask)
      */
     public void setCombustionLevel(long combustionLevel) {
         synchronized (dataLock) {
             this.combustionLevel = Math.max(0, Math.min(1000, combustionLevel));
-        }
-    }
-
-    public double getCombustionMultiplier() {
-        synchronized (dataLock) {
-            return 1.0 + (combustionLevel / 1000.0);
         }
     }
 
@@ -381,6 +386,9 @@ public class PlayerData {
             lastMinuteCoins = 0;
             lastMinuteTokens = 0;
             lastMinuteExperience = 0;
+            lastMinuteCoinsViaPickaxe = 0;          // NOUVEAU
+            lastMinuteTokensViaPickaxe = 0;         // NOUVEAU
+            lastMinuteExperienceViaPickaxe = 0;     // NOUVEAU
             lastMinuteAutoUpgrades = 0;
             lastMinuteBlocksMined = 0;
             lastMinuteBlocksDestroyed = 0;
@@ -464,6 +472,25 @@ public class PlayerData {
     public long getLastMinuteExperience() {
         synchronized (dataLock) {
             return lastMinuteExperience;
+        }
+    }
+
+    // NOUVEAUX: Getters gains via pioche dernière minute
+    public long getLastMinuteCoinsViaPickaxe() {
+        synchronized (dataLock) {
+            return lastMinuteCoinsViaPickaxe;
+        }
+    }
+
+    public long getLastMinuteTokensViaPickaxe() {
+        synchronized (dataLock) {
+            return lastMinuteTokensViaPickaxe;
+        }
+    }
+
+    public long getLastMinuteExperienceViaPickaxe() {
+        synchronized (dataLock) {
+            return lastMinuteExperienceViaPickaxe;
         }
     }
 

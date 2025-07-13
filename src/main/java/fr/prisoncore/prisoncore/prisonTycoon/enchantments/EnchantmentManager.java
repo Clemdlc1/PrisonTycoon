@@ -254,7 +254,7 @@ public class EnchantmentManager {
                 playerData.addGreedTrigger();
 
                 // Met à jour l'expérience vanilla
-                plugin.getEconomyManager().initializeVanillaExp(player);
+                plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
 
                 // Notification via nouveau système
                 plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", bonusExp, "XP");
