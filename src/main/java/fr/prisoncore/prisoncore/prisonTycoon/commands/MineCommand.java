@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.commands;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -111,6 +112,53 @@ public class MineCommand implements CommandExecutor, TabCompleter {
 
                 return true;
             }
+            case "permission", "perm" -> {
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage("§cCette commande ne peut être utilisée que par un joueur!");
+                    return true;
+                }
+
+                Player player = (Player) sender;
+
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /mine permission <nom_mine>");
+                    return true;
+                }
+
+                String mineName = args[1];
+
+                // Vérifie que la mine existe
+                var mineData = plugin.getConfigManager().getMineData(mineName);
+                if (mineData == null) {
+                    sender.sendMessage("§cMine '" + mineName + "' introuvable!");
+                    return true;
+                }
+
+                PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+                // Vérifie si le joueur a déjà cette permission ou une supérieure
+                String currentHighest = playerData.getHighestMinePermission();
+                if (currentHighest != null && currentHighest.compareTo(mineName) >= 0) {
+                    sender.sendMessage("§aVous avez déjà accès à la mine '" + mineName + "' (permission actuelle: '" + currentHighest + "')!");
+                    return true;
+                }
+
+                // Logique d'attribution de permission (exemple simple)
+                // Ici, vous pouvez ajouter vos propres conditions (niveau, argent, etc.)
+                if (canPlayerObtainMinePermission(player, mineName)) {
+                    // Efface les anciennes permissions et ajoute la nouvelle (logique cumulative)
+                    playerData.clearMinePermissions();
+                    plugin.getPlayerDataManager().addMinePermissionToPlayer(player.getUniqueId(), mineName);
+                    sender.sendMessage("§a✅ Permission accordée pour la mine '" + mineName + "'!");
+                    sender.sendMessage("§7Vous pouvez maintenant miner dans les mines A à " + mineName.toUpperCase() + ".");
+                } else {
+                    sender.sendMessage("§cVous ne remplissez pas les conditions pour accéder à la mine '" + mineName + "'!");
+                    // Ici, vous pouvez afficher les conditions requises
+                    sendMineRequirements(player, mineName);
+                }
+
+                return true;
+            }
 
             default -> {
                 sendHelpMessage(sender);
@@ -119,12 +167,73 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * Vérifie si un joueur peut obtenir la permission pour une mine
+     * VOUS POUVEZ MODIFIER CETTE LOGIQUE SELON VOS BESOINS
+     */
+    private boolean canPlayerObtainMinePermission(Player player, String mineName) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Logique cumulative : pour obtenir la permission "b", il faut déjà avoir "a"
+        // Exception : la mine "a" est toujours accessible
+
+        if (mineName.equals("a")) {
+            return true; // Première mine, toujours accessible
+        }
+
+        // Pour les autres mines, vérifier qu'on a la mine précédente
+        char mineChar = mineName.charAt(0);
+        if (mineChar > 'a') {
+            char previousMineChar = (char) (mineChar - 1);
+            String previousMineName = String.valueOf(previousMineChar);
+
+            // Vérifie qu'on a au moins la permission précédente
+            String currentHighest = playerData.getHighestMinePermission();
+            if (currentHighest == null || currentHighest.compareTo(previousMineName) < 0) {
+                return false; // N'a pas la mine précédente
+            }
+        }
+
+        // Autres conditions possibles :
+        // - Niveau minimum
+        // - Argent requis
+        // - Quêtes complétées
+        // - etc.
+
+        return true; // Conditions remplies
+    }
+
+    /**
+     * Affiche les prérequis pour une mine
+     */
+    private void sendMineRequirements(Player player, String mineName) {
+        player.sendMessage("§c📋 Conditions requises pour la mine '" + mineName + "':");
+
+        if (!mineName.equals("a")) {
+            char mineChar = mineName.charAt(0);
+            char previousMineChar = (char) (mineChar - 1);
+            String previousMineName = String.valueOf(previousMineChar);
+
+            player.sendMessage("§7• Avoir accès à la mine '" + previousMineName + "'");
+        }
+
+        // Ici, vous pouvez ajouter d'autres conditions :
+        // player.sendMessage("§7• Niveau minimum: 10");
+        // player.sendMessage("§7• Argent requis: 10,000 coins");
+        // etc.
+    }
+
     private void sendHelpMessage(CommandSender sender) {
-        sender.sendMessage("§e⛏️ Commandes de gestion des mines:");
-        sender.sendMessage("§7/mine generate <nom> §8- §7Génère/régénère une mine");
-        sender.sendMessage("§7/mine list §8- §7Liste toutes les mines");
-        sender.sendMessage("§7/mine info <nom> §8- §7Informations sur une mine");
-        sender.sendMessage("§7/mine stats §8- §7Statistiques globales");
+        sender.sendMessage("§e📋 Commandes Mine:");
+        sender.sendMessage("§7• §6/mine list §7- Liste toutes les mines");
+        sender.sendMessage("§7• §6/mine info <nom> §7- Informations sur une mine");
+        sender.sendMessage("§7• §6/mine permission <nom> §7- Obtenir la permission pour une mine");
+
+        if (sender.hasPermission("specialmine.admin")) {
+            sender.sendMessage("§c🔧 Admin:");
+            sender.sendMessage("§7• §6/mine generate <nom> §7- Régénère une mine");
+            sender.sendMessage("§7• §6/mine stats §7- Statistiques globales");
+        }
     }
 
     private String formatLocation(org.bukkit.Location location) {
@@ -137,12 +246,15 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("generate", "list", "info", "stats");
+            List<String> subCommands = Arrays.asList("generate", "list", "info", "permission", "stats");
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
-        } else if (args.length == 2 && (args[0].equalsIgnoreCase("generate") ||
-                args[0].equalsIgnoreCase("info"))) {
-            Set<String> mineNames = plugin.getMineManager().getAllMineNames();
-            StringUtil.copyPartialMatches(args[1], mineNames, completions);
+        } else if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("generate") ||
+                    args[0].equalsIgnoreCase("info") ||
+                    args[0].equalsIgnoreCase("permission")) {
+                Set<String> mines = plugin.getMineManager().getAllMineNames();
+                StringUtil.copyPartialMatches(args[1], mines, completions);
+            }
         }
 
         Collections.sort(completions);

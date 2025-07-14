@@ -137,6 +137,13 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("mine-permissions")) {
+                List<String> minePermissions = config.getStringList("mine-permissions");
+                for (String mineName : minePermissions) {
+                    data.addMinePermission(mineName);
+                }
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -209,6 +216,11 @@ public class PlayerDataManager {
             Set<String> mobilityDisabled = data.getMobilityEnchantmentsDisabled();
             if (!mobilityDisabled.isEmpty()) {
                 config.set("mobility-disabled", new ArrayList<>(mobilityDisabled));
+            }
+
+            Set<String> minePermissions = data.getMinePermissions();
+            if (!minePermissions.isEmpty()) {
+                config.set("mine-permissions", new ArrayList<>(minePermissions));
             }
 
             // Statistiques complètes
@@ -329,6 +341,46 @@ public class PlayerDataManager {
 
         plugin.getPluginLogger().info("§7" + amount + " tokens ajoutés à " + data.getPlayerName());
         return true;
+    }
+
+    /**
+     * Ajoute une permission de mine à un joueur
+     */
+    public boolean addMinePermissionToPlayer(UUID playerId, String mineName) {
+        PlayerData data = getPlayerData(playerId);
+        data.addMinePermission(mineName);
+        markDirty(playerId);
+
+        plugin.getPluginLogger().info("§7Permission mine '" + mineName + "' ajoutée à " + data.getPlayerName());
+        return true;
+    }
+
+    /**
+     * Supprime une permission de mine à un joueur
+     */
+    public boolean removeMinePermissionFromPlayer(UUID playerId, String mineName) {
+        PlayerData data = getPlayerData(playerId);
+        data.removeMinePermission(mineName);
+        markDirty(playerId);
+
+        plugin.getPluginLogger().info("§7Permission mine '" + mineName + "' supprimée de " + data.getPlayerName());
+        return true;
+    }
+
+    /**
+     * Vérifie si un joueur a la permission pour une mine
+     */
+    public boolean hasPlayerMinePermission(UUID playerId, String mineName) {
+        PlayerData data = getPlayerData(playerId);
+        return data.hasMinePermission(mineName);
+    }
+
+    /**
+     * Retourne toutes les permissions de mine d'un joueur
+     */
+    public Set<String> getPlayerMinePermissions(UUID playerId) {
+        PlayerData data = getPlayerData(playerId);
+        return data.getMinePermissions();
     }
 
     /**

@@ -66,6 +66,9 @@ public class PlayerData {
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
 
+    private final Set<String> minePermissions;
+
+
     // Données thread-safe
     private final Object dataLock = new Object();
 
@@ -96,6 +99,9 @@ public class PlayerData {
         this.totalBlocksDestroyed = 0;
         this.totalGreedTriggers = 0;
         this.totalKeysObtained = 0;
+
+        this.minePermissions = ConcurrentHashMap.newKeySet();
+
 
         // Reset stats dernière minute
         resetLastMinuteStats();
@@ -450,6 +456,89 @@ public class PlayerData {
     public List<AutoUpgradeDetail> getLastMinuteAutoUpgradeDetails() {
         synchronized (dataLock) {
             return new ArrayList<>(lastMinuteAutoUpgradeDetails);
+        }
+    }
+
+    // Mine
+
+    /**
+     * Ajoute une permission de mine au joueur
+     */
+    public void addMinePermission(String mineName) {
+        synchronized (dataLock) {
+            minePermissions.add(mineName.toLowerCase());
+        }
+    }
+
+    /**
+     * Supprime une permission de mine du joueur
+     */
+    public void removeMinePermission(String mineName) {
+        synchronized (dataLock) {
+            minePermissions.remove(mineName.toLowerCase());
+        }
+    }
+
+    /**
+     * Vérifie si le joueur a la permission pour une mine spécifique
+     * Logique cumulative :
+     * - Permission "a" : peut miner dans A seulement
+     * - Permission "b" : peut miner dans A et B
+     * - Permission "c" : peut miner dans A, B et C
+     */
+    public boolean hasMinePermission(String mineName) {
+        if (mineName == null || mineName.isEmpty()) {
+            return false;
+        }
+
+        String targetMine = mineName.toLowerCase();
+        synchronized (dataLock) {
+            // Trouve la permission la plus élevée du joueur
+            String highestPermission = getHighestMinePermission();
+            if (highestPermission == null) {
+                return false; // Aucune permission
+            }
+
+            // Vérifie si la mine demandée est accessible avec la permission la plus élevée
+            return targetMine.compareTo(highestPermission) <= 0;
+        }
+    }
+
+    /**
+     * Retourne toutes les permissions de mine du joueur
+     */
+    public Set<String> getMinePermissions() {
+        synchronized (dataLock) {
+            return new HashSet<>(minePermissions);
+        }
+    }
+
+    /**
+     * Retourne la plus haute permission de mine (alphabétiquement)
+     */
+    public String getHighestMinePermission() {
+        synchronized (dataLock) {
+            return minePermissions.stream()
+                    .max(String::compareTo)
+                    .orElse(null);
+        }
+    }
+
+    /**
+     * Vérifie si le joueur a au moins une permission de mine
+     */
+    public boolean hasAnyMinePermission() {
+        synchronized (dataLock) {
+            return !minePermissions.isEmpty();
+        }
+    }
+
+    /**
+     * Efface toutes les permissions de mine
+     */
+    public void clearMinePermissions() {
+        synchronized (dataLock) {
+            minePermissions.clear();
         }
     }
 

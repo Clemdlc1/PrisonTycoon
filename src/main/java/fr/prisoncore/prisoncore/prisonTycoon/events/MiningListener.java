@@ -47,7 +47,6 @@ public class MiningListener implements Listener {
         Material material = event.getBlock().getType();
 
         // 1. GESTION DURABILITÉ : Traite d'abord la durabilité de TOUTES les pioches
-        handlePickaxeDurability(player, event);
 
         // 2. LOGIQUE MINAGE : Traite ensuite la logique spécifique aux pioches légendaires
         ItemStack playerPickaxe = getPlayerLegendaryPickaxe(player);
@@ -61,6 +60,23 @@ public class MiningListener implements Listener {
                 return;
             }
 
+            // NOUVEAU : Vérification des permissions de mine
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            if (!playerData.hasMinePermission(mineName)) {
+                event.setCancelled(true);
+                player.sendMessage("§c❌ Vous n'avez pas la permission de miner dans la mine '" + mineName + "'!");
+                player.sendMessage("§7Utilisez §e/mine permission " + mineName + " §7pour obtenir l'accès.");
+                return;
+            }
+
+            // Vérifie la propriété de la pioche
+            if (!plugin.getPickaxeManager().isOwner(playerPickaxe, player)) {
+                event.setCancelled(true);
+                player.sendMessage("§c❌ Cette pioche ne vous appartient pas!");
+                return;
+            }
+            handlePickaxeDurability(player, event);
+
             // Empêche TOUS les drops (items ET exp)
             event.setDropItems(false);
             event.setExpToDrop(0);
@@ -71,6 +87,8 @@ public class MiningListener implements Listener {
         } else if (playerPickaxe != null) {
             // Hors mine avec pioche légendaire - restrictions appliquées
             processMiningOutsideMine(player, location, material);
+            handlePickaxeDurability(player, event);
+
         }
         // Sinon : comportement normal de Minecraft (pas de pioche légendaire)
 

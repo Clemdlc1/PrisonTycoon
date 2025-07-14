@@ -2,6 +2,7 @@ package fr.prisoncore.prisoncore.prisonTycoon.managers;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.MineData;
+import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -191,5 +192,112 @@ public class MineManager {
         stats.put("total-blocks", totalVolume);
 
         return stats;
+    }
+    /**
+     * Vérifie si un joueur peut miner dans une mine (pioche + permissions)
+     */
+    public boolean canPlayerMineInMine(Player player, String mineName) {
+        // Vérification existante (pioche légendaire)
+        if (!canMineBlock(player.getLocation(), player)) {
+            return false;
+        }
+
+        // NOUVEAU : Vérification des permissions de mine
+        if (mineName != null) {
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            return playerData.hasMinePermission(mineName);
+        }
+
+        return true; // Hors mine
+    }
+
+    /**
+     * Retourne les mines accessibles par un joueur
+     */
+    public Set<String> getAccessibleMines(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Set<String> accessibleMines = new HashSet<>();
+
+        for (String mineName : getAllMineNames()) {
+            if (playerData.hasMinePermission(mineName)) {
+                accessibleMines.add(mineName);
+            }
+        }
+
+        return accessibleMines;
+    }
+
+    /**
+     * Retourne les mines non accessibles par un joueur
+     */
+    public Set<String> getInaccessibleMines(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Set<String> inaccessibleMines = new HashSet<>();
+
+        for (String mineName : getAllMineNames()) {
+            if (!playerData.hasMinePermission(mineName)) {
+                inaccessibleMines.add(mineName);
+            }
+        }
+
+        return inaccessibleMines;
+    }
+
+    /**
+     * Retourne la prochaine mine dans l'ordre alphabétique qu'un joueur peut débloquer
+     */
+    public String getNextUnlockableMine(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Trie les mines par ordre alphabétique
+        List<String> sortedMines = new ArrayList<>(getAllMineNames());
+        Collections.sort(sortedMines);
+
+        for (String mineName : sortedMines) {
+            if (!playerData.hasMinePermission(mineName)) {
+                return mineName; // Première mine non débloquée
+            }
+        }
+
+        return null; // Toutes les mines sont débloquées
+    }
+
+    /**
+     * Statistiques des permissions de mine pour un joueur
+     */
+    public Map<String, Object> getPlayerMineStats(Player player) {
+        Map<String, Object> stats = new HashMap<>();
+
+        Set<String> accessible = getAccessibleMines(player);
+        Set<String> inaccessible = getInaccessibleMines(player);
+
+        stats.put("accessible-mines", accessible.size());
+        stats.put("inaccessible-mines", inaccessible.size());
+        stats.put("total-mines", getAllMineNames().size());
+        stats.put("completion-percentage",
+                Math.round((accessible.size() * 100.0) / getAllMineNames().size()));
+
+        return stats;
+    }
+
+    /**
+     * Vérifie si une mine existe
+     */
+    public boolean mineExists(String mineName) {
+        return plugin.getConfigManager().getMineData(mineName) != null;
+    }
+
+    /**
+     * Retourne la mine recommandée pour un joueur (prochaine à débloquer)
+     */
+    public String getRecommendedMine(Player player) {
+        String nextUnlockable = getNextUnlockableMine(player);
+        if (nextUnlockable != null) {
+            return nextUnlockable;
+        }
+
+        // Si toutes sont débloquées, retourne la plus haute
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        return playerData.getHighestMinePermission();
     }
 }
