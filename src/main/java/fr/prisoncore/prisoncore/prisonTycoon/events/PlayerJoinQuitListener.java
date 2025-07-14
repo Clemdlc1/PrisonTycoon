@@ -71,7 +71,7 @@ public class PlayerJoinQuitListener implements Listener {
         }
 
         // NOUVEAU : Nettoie les notifications en attente
-        plugin.getNotificationManager().clearPlayerNotifications(player.getUniqueId());
+        plugin.getNotificationManager().cleanupPlayerData(player.getUniqueId());
 
         // Décharge les données du joueur (avec sauvegarde)
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());

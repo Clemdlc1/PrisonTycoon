@@ -9,7 +9,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,16 +19,22 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.metadata.FixedMetadataValue;
 
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * UNIFIÉ : Listener pour le minage ET la gestion de durabilité des pioches légendaires
- * Résout les conflits de priorité entre MiningListener et PickaxeDurabilityListener
+ * NOUVEAU : Système de notifications de durabilité basé sur les blocs cassés
  */
 public class MiningListener implements Listener {
 
     private final PrisonTycoon plugin;
     private final Random random = new Random();
+
+    // NOUVEAU : Compteur de blocs cassés par joueur pour les notifications de durabilité
+    private final Map<UUID, Integer> playerBlocksMinedCount = new ConcurrentHashMap<>();
 
     public MiningListener(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -72,6 +77,9 @@ public class MiningListener implements Listener {
         // 3. POST-TRAITEMENT : Mise à jour de la pioche légendaire si utilisée
         if (playerPickaxe != null) {
             postProcessLegendaryPickaxe(player, playerPickaxe);
+
+            // NOUVEAU : Incrémente le compteur de blocs et vérifie les notifications de durabilité
+            incrementBlockCountAndCheckDurabilityNotification(player, playerPickaxe);
         }
     }
 
@@ -195,6 +203,81 @@ public class MiningListener implements Listener {
         }
     }
 
+    /**
+     * NOUVEAU : Incrémente le compteur de blocs et vérifie s'il faut envoyer une notification de durabilité
+     */
+    private void incrementBlockCountAndCheckDurabilityNotification(Player player, ItemStack pickaxe) {
+        UUID playerId = player.getUniqueId();
+
+        // Incrémente le compteur de blocs cassés
+        int currentCount = playerBlocksMinedCount.getOrDefault(playerId, 0) + 1;
+        playerBlocksMinedCount.put(playerId, currentCount);
+
+        // Vérifie la durabilité de la pioche
+        short currentDurability = (short) ((Damageable) pickaxe.getItemMeta()).getDamage();
+        short maxDurability = pickaxe.getType().getMaxDurability();
+        double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
+
+        // Seulement envoyer des notifications quand la durabilité est < 25%
+        if (durabilityPercent > 0.25) {
+            return;
+        }
+
+        // Calcule la fréquence basée sur le niveau de durabilité
+        int notificationFrequency = calculateNotificationFrequency(durabilityPercent);
+
+        // Vérifie s'il faut envoyer une notification
+        if (currentCount % notificationFrequency == 0) {
+            String notificationMessage = createDurabilityNotificationMessage(durabilityPercent);
+
+            // Envoie une notification temporaire via le NotificationManager (durée: 2 secondes)
+            plugin.getNotificationManager().sendTemporaryDurabilityNotification(player, notificationMessage, 2000);
+
+            plugin.getPluginLogger().debug("Notification de durabilité envoyée à " + player.getName() +
+                    " après " + currentCount + " blocs (fréquence: " + notificationFrequency + ")");
+        }
+    }
+
+    /**
+     * NOUVEAU : Calcule la fréquence des notifications basée sur le niveau de durabilité
+     */
+    private int calculateNotificationFrequency(double durabilityPercent) {
+        if (durabilityPercent <= 0.05) { // Moins de 5% - très critique
+            return 10; // Toutes les 10 blocs
+        } else if (durabilityPercent <= 0.10) { // Moins de 10% - critique
+            return 20; // Toutes les 20 blocs
+        } else if (durabilityPercent <= 0.15) { // Moins de 15% - urgent
+            return 30; // Toutes les 30 blocs
+        } else { // 15-25% - attention
+            return 50; // Toutes les 50 blocs (fréquence de base)
+        }
+    }
+
+    /**
+     * NOUVEAU : Crée le message de notification de durabilité
+     */
+    private String createDurabilityNotificationMessage(double durabilityPercent) {
+        String percentageStr = String.format("%.1f%%", durabilityPercent * 100);
+
+        if (durabilityPercent <= 0.05) { // Moins de 5% - très critique
+            return "§c💀 URGENT! Pioche CRITIQUE! Réparez MAINTENANT! (" + percentageStr + ")";
+        } else if (durabilityPercent <= 0.10) { // Moins de 10% - critique
+            return "§c⚠️ CRITIQUE! Pioche très endommagée! (" + percentageStr + ")";
+        } else if (durabilityPercent <= 0.15) { // Moins de 15% - urgent
+            return "§6⚠️ URGENT! Réparez votre pioche! (" + percentageStr + ")";
+        } else { // 15-25% - attention
+            return "§e⚠️ Attention: Pioche endommagée (" + percentageStr + ")";
+        }
+    }
+
+    /**
+     * NOUVEAU : Réinitialise le compteur de blocs pour un joueur (utilisé lors de la réparation)
+     */
+    public void resetBlockCountForPlayer(Player player) {
+        playerBlocksMinedCount.remove(player.getUniqueId());
+        plugin.getPluginLogger().debug("Compteur de blocs réinitialisé pour " + player.getName());
+    }
+
     // ================================
     // SECTION 2: LOGIQUE MINAGE
     // ================================
@@ -224,27 +307,27 @@ public class MiningListener implements Listener {
 
         // Traite ce bloc MINÉ directement par le joueur (avec Greeds, enchants spéciaux, etc.)
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
-
-        plugin.getPluginLogger().debug("Bloc miné traité: " + material + " par " + player.getName());
     }
 
     /**
      * Traite le minage hors mine avec pioche légendaire (restrictions appliquées)
      */
     private void processMiningOutsideMine(Player player, Location location, Material material) {
-        plugin.getPluginLogger().debug("Traitement minage hors mine avec pioche légendaire");
+        plugin.getPluginLogger().debug("Traitement minage hors mine (restrictions)");
 
-        // Applique uniquement les enchantements autorisés hors mine
-        plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Notifie les restrictions occasionnellement
-        if (Math.random() < 0.1) { // 10% chance de rappeler les restrictions
-            plugin.getNotificationManager().queueSpecialStateNotification(player,
-                    "Hors Mine", "§7Greeds et effets spéciaux inactifs");
+        // Met à jour l'activité de minage pour l'ActionBar
+        playerData.updateMiningActivity();
+
+        // Avertissement si première fois hors mine
+        if (!player.hasMetadata("outside_mine_warning_shown")) {
+            player.sendMessage("§c⚠️ Hors mine: seuls efficacité, solidité et mobilité actifs!");
+            player.setMetadata("outside_mine_warning_shown", new FixedMetadataValue(plugin, true));
         }
 
-        plugin.getPluginLogger().debug("Bloc miné hors mine traité: " + material + " par " + player.getName() +
-                " (restrictions appliquées)");
+        // Traite le bloc MINÉ hors mine (restrictions)
+        plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
     }
 
     // ================================
@@ -252,33 +335,22 @@ public class MiningListener implements Listener {
     // ================================
 
     /**
-     * Obtient la pioche légendaire du joueur s'il en a une dans le bon slot
+     * Ajoute un bloc à l'inventaire du joueur
      */
-    private ItemStack getPlayerLegendaryPickaxe(Player player) {
-        // Vérifie d'abord si la pioche est au bon endroit (slot 0)
-        if (!plugin.getPickaxeManager().isPickaxeInCorrectSlot(player)) {
-            // Essaie de trouver la pioche ailleurs et la forcer au bon slot
-            ItemStack foundPickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
-            if (foundPickaxe != null) {
-                plugin.getPickaxeManager().enforcePickaxeSlot(player);
-                return foundPickaxe;
-            }
-            return null;
-        }
-
-        // Pioche au bon endroit - la retourne
-        ItemStack slotPickaxe = player.getInventory().getItem(0);
-        if (slotPickaxe != null &&
-                plugin.getPickaxeManager().isLegendaryPickaxe(slotPickaxe) &&
-                plugin.getPickaxeManager().isOwner(slotPickaxe, player)) {
-            return slotPickaxe;
-        }
-
-        return null;
+    private void addBlockToInventory(Player player, Material material) {
+        ItemStack blockStack = new ItemStack(material, 1);
+        player.getInventory().addItem(blockStack);
     }
 
     /**
-     * Post-traitement unifié de la pioche légendaire
+     * Trouve la pioche légendaire du joueur
+     */
+    private ItemStack getPlayerLegendaryPickaxe(Player player) {
+        return plugin.getPickaxeManager().findPlayerPickaxe(player);
+    }
+
+    /**
+     * Post-traitement après utilisation de la pioche légendaire
      */
     private void postProcessLegendaryPickaxe(Player player, ItemStack pickaxe) {
         plugin.getPluginLogger().debug("Post-traitement pioche légendaire pour " + player.getName());
@@ -296,89 +368,58 @@ public class MiningListener implements Listener {
     }
 
     /**
-     * Ajoute un bloc à l'inventaire avec gestion d'erreur
+     * Active le mode "pioche cassée"
      */
-    private void addBlockToInventory(Player player, Material material) {
-        ItemStack blockItem = new ItemStack(material, 1);
-
-        // Essaie d'ajouter à l'inventaire
-        var leftover = player.getInventory().addItem(blockItem);
-
-        if (!leftover.isEmpty()) {
-            plugin.getPluginLogger().debug("Inventaire plein pour " + player.getName() +
-                    " - bloc " + material + " perdu");
-        } else {
-            plugin.getPluginLogger().debug("Bloc ajouté à l'inventaire: " + material +
-                    " pour " + player.getName());
-        }
-    }
-
-    // ================================
-    // SECTION 4: GESTION ÉTAT "PIOCHE CASSÉE"
-    // ================================
-
-    private boolean isPickaxeBroken(Player player) {
-        return player.hasMetadata("pickaxe_broken");
-    }
-
     private void activateBrokenPickaxeMode(Player player) {
         player.setMetadata("pickaxe_broken", new FixedMetadataValue(plugin, true));
         player.setMetadata("pickaxe_just_broken", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-
-        plugin.getPickaxeManager().removeMobilityEffects(player);
-        plugin.getEnchantmentManager().forceDisableAbundanceAndResetCombustion(player);
-
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1.0f, 0.5f);
-        plugin.getPluginLogger().info("Mode pioche cassée activé pour " + player.getName());
+        plugin.getPluginLogger().debug("Mode pioche cassée activé pour " + player.getName());
     }
 
+    /**
+     * Désactive le mode "pioche cassée"
+     */
     private void deactivateBrokenPickaxeMode(Player player) {
         player.removeMetadata("pickaxe_broken", plugin);
         player.setMetadata("pickaxe_just_repaired", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-
-        plugin.getPickaxeManager().updateMobilityEffects(player);
-
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
-        plugin.getPluginLogger().info("Mode pioche cassée désactivé pour " + player.getName());
+        plugin.getPluginLogger().debug("Mode pioche cassée désactivé pour " + player.getName());
     }
 
-    // ================================
-    // SECTION 5: MÉTHODES STATIQUES (compatibilité)
-    // ================================
-
     /**
-     * Méthode statique pour compatibilité avec les autres classes
+     * Vérifie si la pioche du joueur est cassée
      */
     public static boolean isPlayerPickaxeBroken(Player player) {
         return player.hasMetadata("pickaxe_broken");
     }
 
     /**
-     * Méthode statique pour obtenir le multiplicateur de malus
+     * Retourne le multiplicateur de pénalité (90% de malus = 10% d'efficacité)
      */
     public static double getPickaxePenaltyMultiplier(Player player) {
-        if (isPlayerPickaxeBroken(player)) {
-            return 0.1; // 90% de malus = on garde 10%
-        }
-        return 1.0; // Aucun malus
+        return isPlayerPickaxeBroken(player) ? 0.10 : 1.0;
     }
 
-    // ================================
-    // SECTION 6: ÉVÉNEMENT PLACEMENT
-    // ================================
+    /**
+     * Vérifie si la pioche est cassée (legacy pour compatibilité)
+     */
+    private boolean isPickaxeBroken(Player player) {
+        return isPlayerPickaxeBroken(player);
+    }
 
-    @EventHandler(priority = EventPriority.LOW)
+    /**
+     * Nettoie les données d'un joueur à la déconnexion
+     */
+    public void cleanupPlayerData(UUID playerId) {
+        playerBlocksMinedCount.remove(playerId);
+    }
+
+    @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        Location location = event.getBlock().getLocation();
-
         // Empêche de placer des blocs dans les mines
-        String mineName = plugin.getConfigManager().getPlayerMine(location);
+        String mineName = plugin.getConfigManager().getPlayerMine(event.getBlock().getLocation());
         if (mineName != null) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("§c❌ Impossible de placer des blocs dans une mine!");
-
-            plugin.getPluginLogger().debug("Tentative de placement de bloc bloquée dans mine " +
-                    mineName + " par " + event.getPlayer().getName());
         }
     }
 }

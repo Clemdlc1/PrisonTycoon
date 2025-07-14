@@ -9,8 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Gestionnaire amélioré des notifications avec support multi-types
- * NOUVEAU : Gère Greed, gains normaux, enchantements, clés, etc.
+ * Gestionnaire amélioré des notifications avec support multi-types et gestion de durée
+ * NOUVEAU : Gère les notifications temporaires avec durée et priorité
  */
 public class NotificationManager {
 
@@ -25,6 +25,9 @@ public class NotificationManager {
     // Dernière notification envoyée par joueur
     private final Map<UUID, Long> lastNotificationTime;
 
+    // NOUVEAU : Notifications temporaires avec durée (pour les notifications de durabilité)
+    private final Map<UUID, TemporaryNotification> activeTemporaryNotifications;
+
     // Configuration
     private static final long NOTIFICATION_COOLDOWN = 800; // 0.8 seconde entre notifications
     private static final long ACCUMULATION_WINDOW = 2500; // 2.5 secondes pour cumuler gains
@@ -35,8 +38,78 @@ public class NotificationManager {
         this.playerNotificationQueues = new ConcurrentHashMap<>();
         this.playerGainAccumulators = new ConcurrentHashMap<>();
         this.lastNotificationTime = new ConcurrentHashMap<>();
+        this.activeTemporaryNotifications = new ConcurrentHashMap<>();
 
-        plugin.getPluginLogger().info("§aNotificationManager amélioré initialisé.");
+        plugin.getPluginLogger().info("§aNotificationManager amélioré initialisé (avec notifications temporaires).");
+    }
+
+    /**
+     * NOUVEAU : Ajoute une notification temporaire de durabilité avec durée spécifique
+     */
+    public void sendTemporaryDurabilityNotification(Player player, String message, long durationMs) {
+        UUID playerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+
+        // Crée une notification temporaire qui expire après durationMs
+        TemporaryNotification tempNotif = new TemporaryNotification(message, now + durationMs);
+        activeTemporaryNotifications.put(playerId, tempNotif);
+
+        // Envoie immédiatement la notification
+        player.sendActionBar(message);
+
+        plugin.getPluginLogger().debug("Notification temporaire de durabilité envoyée à " + player.getName() +
+                " pour " + durationMs + "ms: " + message);
+    }
+
+    /**
+     * NOUVEAU : Vérifie si un joueur a une notification temporaire active
+     */
+    public boolean hasActiveTemporaryNotification(Player player) {
+        UUID playerId = player.getUniqueId();
+        TemporaryNotification tempNotif = activeTemporaryNotifications.get(playerId);
+
+        if (tempNotif == null) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now > tempNotif.getExpiryTime()) {
+            // La notification a expiré, la supprime
+            activeTemporaryNotifications.remove(playerId);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * NOUVEAU : Obtient le message de la notification temporaire active (si elle existe)
+     */
+    public String getActiveTemporaryNotificationMessage(Player player) {
+        UUID playerId = player.getUniqueId();
+        TemporaryNotification tempNotif = activeTemporaryNotifications.get(playerId);
+
+        if (tempNotif == null) {
+            return null;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now > tempNotif.getExpiryTime()) {
+            // La notification a expiré, la supprime
+            activeTemporaryNotifications.remove(playerId);
+            return null;
+        }
+
+        return tempNotif.getMessage();
+    }
+
+    /**
+     * Nettoie les notifications temporaires expirées
+     */
+    public void cleanupExpiredTemporaryNotifications() {
+        long now = System.currentTimeMillis();
+        activeTemporaryNotifications.entrySet().removeIf(entry ->
+                now > entry.getValue().getExpiryTime());
     }
 
     /**
@@ -241,9 +314,7 @@ public class NotificationManager {
             case "xp", "experience" -> "§a";
             default -> {
                 if (currency.startsWith("clé")) {
-                    if (currency.contains("§")) {
-                        yield currency.substring(0, 2);
-                    }
+                    yield "§e";
                 }
                 yield "§f";
             }
@@ -251,48 +322,62 @@ public class NotificationManager {
     }
 
     /**
-     * Nettoie les anciens accumulateurs expirés
+     * Nettoie les données d'un joueur à la déconnexion
      */
-    public void cleanupExpiredAccumulators() {
-        long now = System.currentTimeMillis();
-
-        playerGainAccumulators.entrySet().removeIf(entry ->
-                now - entry.getValue().getStartTime() > ACCUMULATION_WINDOW * 3);
-    }
-
-    /**
-     * Retire toutes les notifications d'un joueur
-     */
-    public void clearPlayerNotifications(UUID playerId) {
+    public void cleanupPlayerData(UUID playerId) {
         playerNotificationQueues.remove(playerId);
         playerGainAccumulators.remove(playerId);
         lastNotificationTime.remove(playerId);
+        activeTemporaryNotifications.remove(playerId);
     }
 
     /**
-     * Obtient les statistiques du système de notifications
+     * Nettoie toutes les données
      */
-    public NotificationStats getStats() {
-        int totalQueued = 0;
-        int totalAccumulators = playerGainAccumulators.size();
-
-        for (Queue<GameNotification> queue : playerNotificationQueues.values()) {
-            totalQueued += queue.size();
-        }
-
-        return new NotificationStats(
-                playerNotificationQueues.size(),
-                totalQueued,
-                totalAccumulators
-        );
+    public void shutdown() {
+        playerNotificationQueues.clear();
+        playerGainAccumulators.clear();
+        lastNotificationTime.clear();
+        activeTemporaryNotifications.clear();
+        plugin.getPluginLogger().info("§7NotificationManager arrêté et nettoyé.");
     }
 
     // Classes internes
 
     /**
-     * Notification de jeu améliorée
+     * NOUVEAU : Classe pour les notifications temporaires avec durée
      */
-    private static class GameNotification {
+    private static class TemporaryNotification {
+        private final String message;
+        private final long expiryTime;
+
+        public TemporaryNotification(String message, long expiryTime) {
+            this.message = message;
+            this.expiryTime = expiryTime;
+        }
+
+        public String getMessage() { return message; }
+        public long getExpiryTime() { return expiryTime; }
+    }
+
+    /**
+     * Types de notifications
+     */
+    public enum NotificationType {
+        REGULAR_GAINS, GREED, ENCHANTMENT, KEY, SPECIAL_STATE, SPECIAL_EFFECT
+    }
+
+    /**
+     * Priorités des notifications
+     */
+    public enum NotificationPriority {
+        LOW, MEDIUM, HIGH, VERY_HIGH
+    }
+
+    /**
+     * Notification de jeu
+     */
+    public static class GameNotification {
         private final NotificationType type;
         private final String message;
         private final NotificationPriority priority;
@@ -312,16 +397,13 @@ public class NotificationManager {
      * Accumulateur de gains
      */
     private static class GainAccumulator {
+        private final long startTime;
         private long coins;
         private long tokens;
         private long experience;
-        private final long startTime;
 
         public GainAccumulator(long startTime) {
             this.startTime = startTime;
-            this.coins = 0;
-            this.tokens = 0;
-            this.experience = 0;
         }
 
         public void addGains(long coins, long tokens, long experience) {
@@ -334,56 +416,9 @@ public class NotificationManager {
             return coins > 0 || tokens > 0 || experience > 0;
         }
 
+        public long getStartTime() { return startTime; }
         public long getCoins() { return coins; }
         public long getTokens() { return tokens; }
         public long getExperience() { return experience; }
-        public long getStartTime() { return startTime; }
-    }
-
-    /**
-     * Types de notifications
-     */
-    public enum NotificationType {
-        REGULAR_GAINS,
-        GREED,
-        ENCHANTMENT,
-        KEY,
-        SPECIAL_STATE,
-        SPECIAL_EFFECT
-    }
-
-    /**
-     * Priorités des notifications
-     */
-    public enum NotificationPriority {
-        LOW,
-        MEDIUM,
-        HIGH,
-        VERY_HIGH
-    }
-
-    /**
-     * Statistiques du système de notifications
-     */
-    public static class NotificationStats {
-        private final int activePlayerQueues;
-        private final int totalQueuedNotifications;
-        private final int totalActiveAccumulators;
-
-        public NotificationStats(int activePlayerQueues, int totalQueuedNotifications, int totalActiveAccumulators) {
-            this.activePlayerQueues = activePlayerQueues;
-            this.totalQueuedNotifications = totalQueuedNotifications;
-            this.totalActiveAccumulators = totalActiveAccumulators;
-        }
-
-        public int getActivePlayerQueues() { return activePlayerQueues; }
-        public int getTotalQueuedNotifications() { return totalQueuedNotifications; }
-        public int getTotalActiveAccumulators() { return totalActiveAccumulators; }
-
-        @Override
-        public String toString() {
-            return String.format("NotificationStats{queues=%d, notifications=%d, accumulators=%d}",
-                    activePlayerQueues, totalQueuedNotifications, totalActiveAccumulators);
-        }
     }
 }

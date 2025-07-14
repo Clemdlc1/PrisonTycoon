@@ -9,7 +9,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.Random;
 
 /**
- * CORRIGÉ : Ajout des notifications régulières pour durabilité < 25%
+ * MODIFIÉ : ActionBarTask qui respecte les notifications temporaires du MiningListener
+ * Les notifications de durabilité ont la priorité sur les messages de combustion/abondance
  */
 public class ActionBarTask extends BukkitRunnable {
 
@@ -25,13 +26,29 @@ public class ActionBarTask extends BukkitRunnable {
     public void run() {
         tickCount++;
         updateActionBarStatus();
+
+        // Nettoie les notifications temporaires expirées
+        plugin.getNotificationManager().cleanupExpiredTemporaryNotifications();
     }
 
     /**
      * Met à jour l'action bar avec l'état des enchantements actifs
+     * MODIFIÉ : Respecte les notifications temporaires du MiningListener
      */
     public void updateActionBarStatus() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
+            // NOUVEAU : Vérifie d'abord s'il y a une notification temporaire active
+            if (plugin.getNotificationManager().hasActiveTemporaryNotification(player)) {
+                // Il y a une notification temporaire active (ex: durabilité),
+                // on laisse le NotificationManager s'en occuper
+                String tempMessage = plugin.getNotificationManager().getActiveTemporaryNotificationMessage(player);
+                if (tempMessage != null) {
+                    player.sendActionBar(tempMessage);
+                }
+                continue; // Passe au joueur suivant
+            }
+
+            // Aucune notification temporaire, on peut afficher nos messages normaux
             String statusMessage = generateStatusMessage(player);
             if (statusMessage != null && !statusMessage.isEmpty()) {
                 player.sendActionBar(statusMessage);
@@ -40,7 +57,8 @@ public class ActionBarTask extends BukkitRunnable {
     }
 
     /**
-     * CORRIGÉ : Génère le message avec notifications de durabilité régulières
+     * MODIFIÉ : Génère le message pour les enchantements actifs (seulement si pas de notification temporaire)
+     * Supprime les anciennes notifications de durabilité (maintenant gérées par MiningListener)
      */
     private String generateStatusMessage(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -73,20 +91,12 @@ public class ActionBarTask extends BukkitRunnable {
             return "§c💀 PIOCHE CASSÉE! Réparez-la pour retrouver ses capacités!";
         }
 
-        // NOUVEAU : Notifications régulières de durabilité quand le joueur mine
-        if (currentlyMining) {
-            String durabilityNotification = checkDurabilityWarnings(player);
-            if (durabilityNotification != null) {
-                return durabilityNotification;
-            }
-        }
-
         // Messages normaux d'enchantements si le joueur mine
         if (!currentlyMining) {
             return ""; // Pas de message si pas en train de miner
         }
 
-        // États spéciaux (combustion, abondance, etc.)
+        // États spéciaux (combustion, abondance, etc.) - SEULEMENT quand le joueur mine
         if (playerData.getCombustionLevel() > 0) {
             if (status.length() > 0) status.append(" §8| ");
             double multiplier = playerData.getCombustionMultiplier();
@@ -98,47 +108,28 @@ public class ActionBarTask extends BukkitRunnable {
             status.append("§6⭐ Abondance: §aACTIVE");
         }
 
+        // Si aucun état spécial actif pendant le minage, affiche un message d'info générale
+        if (status.length() == 0) {
+            // Affiche des informations sur les enchantements actifs
+            int combustionLevel = playerData.getEnchantmentLevel("combustion");
+            int abundanceLevel = playerData.getEnchantmentLevel("abundance");
+
+            if (combustionLevel > 0 || abundanceLevel > 0) {
+                if (combustionLevel > 0) {
+                    status.append("§7Combustion: §e").append(combustionLevel);
+                }
+                if (abundanceLevel > 0) {
+                    if (status.length() > 0) status.append(" §8| ");
+                    status.append("§7Abondance: §e").append(abundanceLevel);
+                }
+
+                if (status.length() > 0) {
+                    status.insert(0, "§7⛏️ ");
+                }
+            }
+        }
+
         return status.toString();
-    }
-
-    /**
-     * NOUVEAU : Vérifie et affiche les avertissements de durabilité de façon régulière
-     */
-    private String checkDurabilityWarnings(Player player) {
-        ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
-        if (pickaxe == null) return null;
-
-        short currentDurability = pickaxe.getDurability();
-        short maxDurability = pickaxe.getType().getMaxDurability();
-        double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
-
-        // Seulement quand < 25% de durabilité
-        if (durabilityPercent > 0.25) return null;
-
-        // Fréquence basée sur le niveau de durabilité (plus bas = plus fréquent)
-        int warningFrequency;
-        String warningMessage;
-
-        if (durabilityPercent <= 0.05) { // Moins de 5% - très critique
-            warningFrequency = 20; // Toutes les secondes (20 ticks)
-            warningMessage = "§c💀 URGENT! Pioche CRITIQUE! Réparez MAINTENANT! (" + String.format("%.1f%%", durabilityPercent * 100) + ")";
-        } else if (durabilityPercent <= 0.10) { // Moins de 10% - critique
-            warningFrequency = 40; // Toutes les 2 secondes
-            warningMessage = "§c⚠️ CRITIQUE! Pioche très endommagée! (" + String.format("%.1f%%", durabilityPercent * 100) + ")";
-        } else if (durabilityPercent <= 0.15) { // Moins de 15% - urgent
-            warningFrequency = 60; // Toutes les 3 secondes
-            warningMessage = "§6⚠️ URGENT! Réparez votre pioche! (" + String.format("%.1f%%", durabilityPercent * 100) + ")";
-        } else { // 15-25% - attention
-            warningFrequency = 100; // Toutes les 5 secondes
-            warningMessage = "§e⚠️ Attention: Pioche endommagée (" + String.format("%.1f%%", durabilityPercent * 100) + ")";
-        }
-
-        // Affiche le message selon la fréquence
-        if (tickCount % warningFrequency == 0) {
-            return warningMessage;
-        }
-
-        return null;
     }
 
     public ActionBarStats getStats() {
