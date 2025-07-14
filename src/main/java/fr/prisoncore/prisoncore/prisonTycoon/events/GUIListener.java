@@ -68,6 +68,9 @@ public class GUIListener implements Listener {
         else if (title.contains("Réparation")) {
             plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         }
+        else if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
+            plugin.getContainerGUI().handleContainerMenuClick(player, slot, item, title);
+        }
     }
 
     @EventHandler

@@ -26,6 +26,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private PickaxeManager pickaxeManager;
     private EconomyManager economyManager;
     private NotificationManager notificationManager;
+    private ContainerManager containerManager;
     private Logger logger;
 
     // SUPPRIMÉ : ScoreboardManager (maintenant intégré dans ScoreboardTask)
@@ -38,6 +39,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private UniqueEnchantsMenuGUI uniqueEnchantsMenuGUI;
     private PetsMenuGUI petsMenuGUI;
     private PickaxeRepairGUI pickaxeRepairGUI;
+    private ContainerGUI containerGUI;
+    private ContainerFilterGUI containerFilterGUI;
+
 
 
     // 3 tâches séparées
@@ -149,6 +153,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pickaxeManager = new PickaxeManager(this);
         mineManager = new MineManager(this);
         notificationManager = new NotificationManager(this); // NOUVEAU : Système amélioré
+        containerManager = new ContainerManager(this);
+
 
         // SUPPRIMÉ : scoreboardManager (maintenant dans ScoreboardTask)
 
@@ -168,7 +174,8 @@ public final class PrisonTycoon extends JavaPlugin {
         uniqueEnchantsMenuGUI = new UniqueEnchantsMenuGUI(this);
         petsMenuGUI = new PetsMenuGUI(this);
         pickaxeRepairGUI = new PickaxeRepairGUI(this);
-
+        containerGUI = new ContainerGUI(this);
+        containerFilterGUI = new ContainerFilterGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -187,6 +194,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new PickaxeProtectionListener(this), this);
         pluginManager.registerEvents(new GUIListener(this), this);
         pluginManager.registerEvents(new MobilityEffectsListener(this), this);
+        pluginManager.registerEvents(new ContainerListener(this), this);
+
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -207,6 +216,8 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
         getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
+        getCommand("conteneur").setExecutor(new ContainerCommand(this));
+
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -382,4 +393,23 @@ public final class PrisonTycoon extends JavaPlugin {
     public PickaxeRepairGUI getPickaxeRepairMenu() {
         return pickaxeRepairGUI;
     }
+
+    /**
+     * Getter pour le manager des conteneurs
+     */
+    public ContainerManager getContainerManager() {
+        return containerManager;
+    }
+
+    /**
+     * Getter pour le GUI des conteneurs
+     */
+    public ContainerGUI getContainerGUI() {
+        return containerGUI;
+    }
+
+    public ContainerFilterGUI getContainerFilterGUI() {
+        return containerFilterGUI;
+    }
+
 }

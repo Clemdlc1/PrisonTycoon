@@ -10,6 +10,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -147,35 +148,76 @@ public class EnchantmentManager {
     }
 
     /**
-     * MODIFIÉ : Ajoute plusieurs blocs à l'inventaire avec tracking
+     * MODIFIÉ : Ajoute plusieurs blocs à l'inventaire avec priorité aux conteneurs
      */
     private void addBlocksToInventory(Player player, Material material, int quantity) {
         if (quantity <= 0) return;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        ItemStack blockStack = new ItemStack(material, quantity);
+        int actuallyAdded = 0;
+        int remaining = quantity;
 
-        // Essaie d'ajouter à l'inventaire
-        Map<Integer, ItemStack> leftover = player.getInventory().addItem(blockStack);
+        plugin.getPluginLogger().debug("Tentative d'ajout de " + quantity + "x " + material.name() + " pour " + player.getName());
 
-        // Calcule combien de blocs ont réellement été ajoutés à l'inventaire
-        int actuallyAdded = quantity + 1;
-        if (!leftover.isEmpty()) {
-            for (ItemStack overflow : leftover.values()) {
-                actuallyAdded -= overflow.getAmount();
+        // NOUVEAU : Tente d'abord d'ajouter aux conteneurs
+        while (remaining > 0) {
+            ItemStack itemToAdd = new ItemStack(material, 1);
+            boolean addedToContainer = plugin.getContainerManager().addItemToContainers(player, itemToAdd);
+            if (addedToContainer) {
+                actuallyAdded++;
+                remaining--;
+                plugin.getPluginLogger().debug("1x " + material.name() + " ajouté au conteneur");
+            } else {
+                // Aucun conteneur disponible, sort de la boucle
+                break;
             }
-            player.sendMessage("§c⚠️ Inventaire plein! " + leftover.values().iterator().next().getAmount() + " blocs supprimés au sol.");
         }
-        // NOUVEAU : Track les blocs ajoutés à l'inventaire
+
+        // Si il reste des items, tente de les ajouter à l'inventaire normal
+        if (remaining > 0) {
+            ItemStack remainingStack = new ItemStack(material, remaining);
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(remainingStack);
+
+            if (leftover.isEmpty()) {
+                // Tous les items restants ont été ajoutés à l'inventaire
+                actuallyAdded += remaining;
+                plugin.getPluginLogger().debug(remaining + "x " + material.name() + " ajoutés à l'inventaire normal");
+            } else {
+                // Calcule combien ont vraiment été ajoutés à l'inventaire
+                int addedToInventory = remaining;
+                for (ItemStack overflow : leftover.values()) {
+                    addedToInventory -= overflow.getAmount();
+
+                    // Drop les items en trop au sol
+                }
+
+                actuallyAdded += addedToInventory;
+
+                // Message d'avertissement moins fréquent pour l'inventaire plein
+                if (!player.hasMetadata("inventory_full_warning") ||
+                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").get(0).asLong() > 30000) {
+
+                    int droppedCount = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
+                    player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items droppés au sol.");
+                    player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, System.currentTimeMillis()));
+
+                    // Suggestion d'utiliser /sell all
+                    player.sendMessage("§e💡 Utilisez §a/sell all §epour vider vos conteneurs et inventaire!");
+                }
+            }
+        }
+
+        // NOUVEAU : Track les blocs ajoutés à l'inventaire/conteneurs
         if (actuallyAdded > 0) {
             playerData.addBlocksToInventory(actuallyAdded);
         }
 
-        plugin.getPluginLogger().debug("Blocs ajoutés à l'inventaire: " + actuallyAdded + "/" + quantity + "x " + material.name());
+        plugin.getPluginLogger().debug("Blocs ajoutés au total: " + actuallyAdded + "/" + quantity + "x " + material.name() +
+                " (conteneurs + inventaire + droppés)");
     }
 
     /**
-     * NOUVEAU & MODIFIÉ : Traite un bloc CASSÉ par laser/explosion et applique Fortune
+     * MODIFIÉ : Traite un bloc CASSÉ par laser/explosion et applique Fortune
      */
     public void processBlockDestroyed(Player player, Location blockLocation, Material blockType, String mineName) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -192,6 +234,53 @@ public class EnchantmentManager {
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+    }
+
+    /**
+     * NOUVEAU : Vérifie si le joueur a de la place dans ses conteneurs
+     */
+    public boolean hasContainerSpace(Player player, Material material, int quantity) {
+        var containers = plugin.getContainerManager().getPlayerContainers(player);
+
+        int totalSpace = 0;
+        for (var container : containers) {
+            if (!container.isBroken()) {
+                // Vérifie la whitelist
+                if (container.getWhitelist().isEmpty() || container.getWhitelist().contains(material)) {
+                    totalSpace += container.getFreeSpace();
+                }
+            }
+        }
+
+        return totalSpace >= quantity;
+    }
+
+    /**
+     * NOUVEAU : Obtient un résumé de l'état des conteneurs pour les messages debug
+     */
+    private String getContainerSummary(Player player) {
+        var containers = plugin.getContainerManager().getPlayerContainers(player);
+
+        if (containers.isEmpty()) {
+            return "aucun conteneur";
+        }
+
+        int active = 0;
+        int totalSpace = 0;
+        int totalUsed = 0;
+
+        for (var container : containers) {
+            if (!container.isBroken()) {
+                active++;
+                totalSpace += container.getMaxCapacity();
+                totalUsed += container.getTotalItems();
+            }
+        }
+
+        double fillPercent = totalSpace > 0 ? (double) totalUsed / totalSpace * 100.0 : 0.0;
+
+        return active + "/" + containers.size() + " conteneurs actifs, " +
+                String.format("%.1f", fillPercent) + "% remplis";
     }
 
     /**
@@ -387,7 +476,7 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ : Donne une clé aléatoire au joueur - Fix ClassCastException
+     * MODIFIÉ : Donne une clé aléatoire au joueur - Utilise les conteneurs en priorité
      */
     private void giveRandomKey(Player player) {
         double rand = ThreadLocalRandom.current().nextDouble();
@@ -428,14 +517,24 @@ public class EnchantmentManager {
         ));
         key.setItemMeta(meta);
 
-        // Donne la clé au joueur
-        if (player.getInventory().firstEmpty() != -1) {
-            player.getInventory().addItem(key);
-            player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §eobtenue!");
+        // NOUVEAU : Tente d'abord d'ajouter aux conteneurs
+        boolean addedToContainer = plugin.getContainerManager().addItemToContainers(player, key);
+
+        if (addedToContainer) {
+            player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §eajoutée à vos conteneurs!");
             player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.5f);
+            plugin.getPluginLogger().debug("Clé " + keyType + " ajoutée au conteneur de " + player.getName());
         } else {
-            player.getWorld().dropItemNaturally(player.getLocation(), key);
-            player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §edroppée au sol (inventaire plein)!");
+            // Pas de conteneur disponible, essaie l'inventaire normal
+            if (player.getInventory().firstEmpty() != -1) {
+                player.getInventory().addItem(key);
+                player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §eobtenue!");
+                player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.5f);
+            } else {
+                // Inventaire aussi plein, drop au sol
+                player.getWorld().dropItemNaturally(player.getLocation(), key);
+                player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §edroppée au sol (inventaire et conteneurs pleins)!");
+            }
         }
     }
 

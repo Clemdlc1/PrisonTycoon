@@ -119,6 +119,13 @@ commands:
     usage: /prisontycoon [reload|stats|economy|top] [args...]
     aliases: [pt, ptycoon, prison]
 
+  conteneur:
+    description: Obtenir et gérer les conteneurs de collecte automatique.
+    usage: /conteneur <1-5|info|list>
+    permission: specialmine.container
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [ container, coffre, box ]
+
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

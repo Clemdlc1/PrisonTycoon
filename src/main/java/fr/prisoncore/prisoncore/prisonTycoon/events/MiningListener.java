@@ -353,11 +353,63 @@ public class MiningListener implements Listener {
     // ================================
 
     /**
-     * Ajoute un bloc à l'inventaire du joueur
+     * MODIFIÉ : Ajoute un bloc à l'inventaire du joueur ou dans ses conteneurs
+     * Priorité: Conteneurs -> Inventaire normal
      */
     private void addBlockToInventory(Player player, Material material) {
-        ItemStack blockStack = new ItemStack(material, 1);
-        player.getInventory().addItem(blockStack);
+        ItemStack itemToAdd = new ItemStack(material, 1);
+
+        // NOUVEAU: Tente d'abord d'ajouter aux conteneurs
+        if (plugin.getContainerManager().addItemToContainers(player, itemToAdd)) {
+            plugin.getPluginLogger().debug("Bloc " + material.name() + " ajouté au conteneur de " + player.getName());
+            return;
+        }
+
+        // Si aucun conteneur disponible, ajoute à l'inventaire normal
+        var remaining = player.getInventory().addItem(itemToAdd);
+
+        if (!remaining.isEmpty()) {
+
+            // Message d'avertissement moins fréquent
+            if (!player.hasMetadata("inventory_full_warning") ||
+                    System.currentTimeMillis() - player.getMetadata("inventory_full_warning").get(0).asLong() > 30000) {
+
+                player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! Items droppés au sol.");
+                player.sendMessage("§e💡 Utilisez §a/sell all §epour vider vos conteneurs!");
+                player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, System.currentTimeMillis()));
+            }
+        }
+    }
+
+    /**
+     * NOUVEAU : Affiche un résumé des conteneurs du joueur lors du minage
+     */
+    private void showContainerSummary(Player player) {
+        var containers = plugin.getContainerManager().getPlayerContainers(player);
+
+        if (containers.isEmpty()) {
+            player.sendMessage("§e💡 Conseil: Utilisez §a/conteneur 1 §epour obtenir un conteneur et collecter automatiquement vos blocs!");
+            return;
+        }
+
+        int totalItems = 0;
+        int totalCapacity = 0;
+        int activeContainers = 0;
+
+        for (var container : containers) {
+            totalItems += container.getTotalItems();
+            totalCapacity += container.getMaxCapacity();
+            if (!container.isBroken()) activeContainers++;
+        }
+
+        double fillPercentage = totalCapacity > 0 ? (double) totalItems / totalCapacity * 100.0 : 0.0;
+
+        player.sendMessage("§6📦 Conteneurs: §b" + activeContainers + "§7/§b" + containers.size() + " actifs §7- §d" +
+                String.format("%.1f", fillPercentage) + "% §7remplis");
+
+        if (fillPercentage > 90) {
+            player.sendMessage("§c⚠️ Vos conteneurs sont presque pleins! Utilisez §e/sell all §cpour les vider.");
+        }
     }
 
     /**
