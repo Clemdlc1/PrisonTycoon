@@ -86,7 +86,7 @@ public class EnchantmentUpgradeGUI {
             return;
         }
 
-        if (slot == 23) { // MAX possible
+        if (slot == 22) { // MAX possible
             String enchantmentName = extractEnchantmentNameFromTitle(title);
             upgradeToMax(player, enchantmentName);
             return;
@@ -559,7 +559,7 @@ public class EnchantmentUpgradeGUI {
                 }, 10L);
                 return;
             }
-
+            plugin.getPickaxeManager().updateMobilityEffects(player);
             openEnchantmentUpgradeMenu(player, enchantmentName);
         } else {
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.5f);

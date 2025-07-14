@@ -174,17 +174,24 @@ public class MineCommand implements CommandExecutor, TabCompleter {
     private boolean canPlayerObtainMinePermission(Player player, String mineName) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
+        // Extraire la lettre de la mine du format "mine-X" ou juste "X"
+        String mineChar;
+        if (mineName.startsWith("mine-")) {
+            mineChar = mineName.substring(5); // Récupère "a" de "mine-a"
+        } else {
+            mineChar = mineName; // Si c'est déjà juste "a"
+        }
+
         // Logique cumulative : pour obtenir la permission "b", il faut déjà avoir "a"
         // Exception : la mine "a" est toujours accessible
-
-        if (mineName.equals("a")) {
+        if (mineChar.equals("a")) {
             return true; // Première mine, toujours accessible
         }
 
         // Pour les autres mines, vérifier qu'on a la mine précédente
-        char mineChar = mineName.charAt(0);
-        if (mineChar > 'a') {
-            char previousMineChar = (char) (mineChar - 1);
+        char currentMineChar = mineChar.charAt(0);
+        if (currentMineChar > 'a') {
+            char previousMineChar = (char) (currentMineChar - 1);
             String previousMineName = String.valueOf(previousMineChar);
 
             // Vérifie qu'on a au moins la permission précédente
@@ -193,13 +200,6 @@ public class MineCommand implements CommandExecutor, TabCompleter {
                 return false; // N'a pas la mine précédente
             }
         }
-
-        // Autres conditions possibles :
-        // - Niveau minimum
-        // - Argent requis
-        // - Quêtes complétées
-        // - etc.
-
         return true; // Conditions remplies
     }
 
@@ -209,10 +209,18 @@ public class MineCommand implements CommandExecutor, TabCompleter {
     private void sendMineRequirements(Player player, String mineName) {
         player.sendMessage("§c📋 Conditions requises pour la mine '" + mineName + "':");
 
-        if (!mineName.equals("a")) {
-            char mineChar = mineName.charAt(0);
-            char previousMineChar = (char) (mineChar - 1);
-            String previousMineName = String.valueOf(previousMineChar);
+        // Extraire la lettre de la mine du format "mine-X" ou juste "X"
+        String mineChar;
+        if (mineName.startsWith("mine-")) {
+            mineChar = mineName.substring(5); // Récupère "a" de "mine-a"
+        } else {
+            mineChar = mineName;
+        }
+
+        if (!mineChar.equals("a")) {
+            char currentChar = mineChar.charAt(0);
+            char previousChar = (char) (currentChar - 1);
+            String previousMineName = String.valueOf(previousChar);
 
             player.sendMessage("§7• Avoir accès à la mine '" + previousMineName + "'");
         }
