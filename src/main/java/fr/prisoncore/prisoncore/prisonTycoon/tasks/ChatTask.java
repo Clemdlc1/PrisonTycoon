@@ -153,15 +153,12 @@ public class ChatTask extends BukkitRunnable {
             inventoryFillPercentage = (usedSlots * 100) / totalSlots;
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // 1ère LIGNE : RECAP MINUTE + icône pioche
-        // ═══════════════════════════════════════════════════════════════
-        summary.append("§8§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        summary.append("\n§6⛏ §e§l§nRECAP MINUTE§r §6⛏");
 
-        // ═══════════════════════════════════════════════════════════════
+        // 1ère LIGNE : RECAP MINUTE + icône pioche
+        summary.append("§8§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        summary.append("\n§6⛏ §e§lRECAP MINUTE§r §6⛏");
+
         // 2ème LIGNE : Statistiques des blocs + % remplissage inventaire
-        // ═══════════════════════════════════════════════════════════════
         summary.append("\n§7┃ §b§lBlocs:§r ");
 
         // Blocs minés
@@ -182,9 +179,8 @@ public class ChatTask extends BukkitRunnable {
                 inventoryFillPercentage >= 70 ? "§e" : "§a";
         summary.append(" §8│ §7Inventaire: ").append(fillColor).append(inventoryFillPercentage).append("%");
 
-        // ═══════════════════════════════════════════════════════════════
+
         // 3ème LIGNE : Gains de TOUS LES GREED (exp, coin, token, xp)
-        // ═══════════════════════════════════════════════════════════════
         boolean hasGreedGains = coinsGained > 0 || tokensGained > 0 || expGained > 0 || keysObtained > 0;
 
         if (hasGreedGains) {
@@ -216,9 +212,7 @@ public class ChatTask extends BukkitRunnable {
             summary.append("\n§7┃ §d§lGreed Gains:§r §8Aucun gain cette minute");
         }
 
-        // ═══════════════════════════════════════════════════════════════
         // 4ème LIGNE : Auto-améliorations avec détails des enchantements
-        // ═══════════════════════════════════════════════════════════════
         if (!upgradeDetails.isEmpty()) {
             summary.append("\n§7┃ §5§lAuto-Upgrades:§r ");
 
@@ -286,10 +280,6 @@ public class ChatTask extends BukkitRunnable {
             this.summaryCycles = summaryCycles;
             this.onlinePlayers = onlinePlayers;
         }
-
-        public long getTotalTicks() { return totalTicks; }
-        public int getSummaryCycles() { return summaryCycles; }
-        public int getOnlinePlayers() { return onlinePlayers; }
 
         @Override
         public String toString() {

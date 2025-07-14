@@ -147,43 +147,19 @@ public class PickaxeManager {
         List<String> lore = new ArrayList<>();
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§7Pioche légendaire unique et indestructible");
+        lore.add("§7Pioche légendaire");
         lore.add("§7Propriétaire: §e" + player.getName());
-        lore.add("§c⚠️ §lDOIT RESTER DANS LE SLOT 1");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("");
 
         // CORRIGÉ : Statistiques UNIQUEMENT via pioche avec distinction minés/cassés
-        lore.add("§6⛏️ §lSTATISTIQUES PIOCHE");
-        lore.add("§7│ §6Coins via pioche: §e" + NumberFormatter.formatWithColor(playerData.getCoinsViaPickaxe()));
-        lore.add("§7│ §eTokens via pioche: §6" + NumberFormatter.formatWithColor(playerData.getTokensViaPickaxe()));
-        lore.add("§7│ §aExpérience via pioche: §2" + NumberFormatter.formatWithColor(playerData.getExperienceViaPickaxe()));
+        lore.add("§6⛏ §lSTATISTIQUES PIOCHE");
+        lore.add("§7│ §6Coins : §e" + NumberFormatter.formatWithColor(playerData.getCoinsViaPickaxe()));
+        lore.add("§7│ §eTokens : §6" + NumberFormatter.formatWithColor(playerData.getTokensViaPickaxe()));
+        lore.add("§7│ §aExpérience : §2" + NumberFormatter.formatWithColor(playerData.getExperienceViaPickaxe()));
         lore.add("§7│ §bBlocs minés: §3" + NumberFormatter.formatWithColor(playerData.getTotalBlocksMined()));
-        lore.add("§7└ §dBlocs détruits (laser/explosion): §5" + NumberFormatter.formatWithColor(playerData.getTotalBlocksDestroyed() - playerData.getTotalBlocksMined()));
+        lore.add("§7└ §dBlocs détruits : §5" + NumberFormatter.formatWithColor(playerData.getTotalBlocksDestroyed() - playerData.getTotalBlocksMined()));
         lore.add("");
-
-        // États spéciaux actifs
-        boolean hasSpecialStates = false;
-        if (playerData.getCombustionLevel() > 0 || playerData.isAbundanceActive()) {
-            lore.add("§c🔥 §lÉTATS SPÉCIAUX");
-
-            if (playerData.getCombustionLevel() > 0) {
-                double multiplier = playerData.getCombustionMultiplier();
-                lore.add("§7│ §cCombustion: §6x" + String.format("%.2f", multiplier) +
-                        " §7(" + playerData.getCombustionLevel() + "/1000)");
-                hasSpecialStates = true;
-            }
-
-            if (playerData.isAbundanceActive()) {
-                lore.add("§7│ §6⭐ Abondance: §aACTIVE §7(x2 gains)");
-                hasSpecialStates = true;
-            }
-
-            if (hasSpecialStates) {
-                lore.add("§7└");
-                lore.add("");
-            }
-        }
 
         ItemStack currentPickaxe = findPlayerPickaxe(player);
 
@@ -215,8 +191,6 @@ public class PickaxeManager {
             // Barre de durabilité cassée
             String brokenBar = "§c▓▓▓▓▓▓▓▓▓▓";
             lore.add("§7│ " + brokenBar + " §c§l(CASSÉE)");
-
-            lore.add("§7└ §7Utilisez §c/repair §7ou le menu pour réparer");
             lore.add("");
 
         } else {
@@ -236,28 +210,6 @@ public class PickaxeManager {
             // Indicateur visuel avec barre de durabilité
             String durabilityBar = createDurabilityBar(healthPercent);
             lore.add("§7│ " + durabilityBar);
-
-            // Statut et recommandations
-            if (healthPercent < 15) {
-                lore.add("§7│ §c⚠️ CRITIQUE! Réparation URGENTE requise!");
-                lore.add("§7│ §cRisque de casse élevé");
-            } else if (healthPercent < 30) {
-                lore.add("§7│ §6⚠️ Durabilité faible, réparation recommandée");
-            } else if (healthPercent < 60) {
-                lore.add("§7│ §e⚠️ Durabilité moyenne, surveillance conseillée");
-            } else {
-                lore.add("§7│ §a✓ Pioche en bon état");
-            }
-
-            // Estimation du temps de vie restant
-            long blocksMinedTotal = playerData.getTotalBlocksMined();
-            if (blocksMinedTotal > 100) {
-                double averageDurabilityLoss = (double)currentDurability / blocksMinedTotal;
-                int estimatedBlocksLeft = (int)(currentHealth / Math.max(averageDurabilityLoss, 0.01));
-                lore.add("§7│ §bEstimation: §3~" + NumberFormatter.format(estimatedBlocksLeft) + " blocs restants");
-            }
-
-            lore.add("§7└ §7Utilisez §c/repair §7ou le menu pour réparer");
             lore.add("");
         }
 
@@ -278,7 +230,7 @@ public class PickaxeManager {
             }
 
             if (isBroken) {
-                lore.add("§7│ §c§l⚠️ TOUS DÉSACTIVÉS (pioche cassée)§r");
+                lore.add("§7│ §c§l⚠ TOUS DÉSACTIVÉS (pioche cassée)§r");
                 lore.add("§7│ §7Réparez pour les réactiver");
             }
 
@@ -333,21 +285,11 @@ public class PickaxeManager {
                 }
             }
 
-            lore.add("§7└ §7Clic droit: Gérer vos enchantements");
+            lore.add("§7└ §7Clic droit pour gérer vos enchantements");
         }
 
-        lore.add("");
-        lore.add("§e⚡ §lFONCTIONNALITÉS");
-        lore.add("§7│ §6Clic droit: §eMenu enchantements");
-        lore.add("§7│ §6Shift+Clic droit: §eÉscalateur §7(si débloqué)");
-        lore.add("§7│ §6Clic molette: §7Activer/désactiver mobilité");
-        lore.add("§7│ §6Auto-mine: §7Dans les mines uniquement");
-        lore.add("§7│ §cHors mine: §7Seuls efficacité/solidité/mobilité actifs");
-        lore.add("§7│ §6Protection: §cDoit rester dans le slot 1");
-        lore.add("§7│ §6Indestructible: §7Ne se casse jamais complètement");
-        lore.add("");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§6✨ §lPioche Légendaire PrisonTycoon §6✨");
+        lore.add("§6✨ §lPrisonTycoon §6✨");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);

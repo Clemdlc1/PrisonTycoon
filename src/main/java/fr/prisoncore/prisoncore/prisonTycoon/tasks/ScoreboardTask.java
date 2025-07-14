@@ -32,7 +32,6 @@ public class ScoreboardTask extends BukkitRunnable {
     private final Map<Player, Long> lastScoreboardUpdate;
 
     // Optimisations
-    private static final long INDIVIDUAL_UPDATE_INTERVAL = 5000; // 5 secondes entre mises à jour individuelles
     private static final int BATCH_SIZE = 10; // Nombre de scoreboards mis à jour par cycle
 
     public ScoreboardTask(PrisonTycoon plugin) {
@@ -191,13 +190,6 @@ public class ScoreboardTask extends BukkitRunnable {
         long experience = playerData.getExperience();
         long blocksMined = playerData.getTotalBlocksMined();
         long blocksDestroyed = playerData.getTotalBlocksDestroyed();
-        int enchantmentCount = playerData.getEnchantmentLevels().size();
-
-        // OPTIMISATION : Cache des états spéciaux
-        long combustionLevel = playerData.getCombustionLevel();
-        boolean abundanceActive = playerData.isAbundanceActive();
-        boolean pickaxeInCorrectSlot = plugin.getPickaxeManager().isPickaxeInCorrectSlot(player);
-        boolean hasLegendaryPickaxe = plugin.getPickaxeManager().hasLegendaryPickaxe(player);
 
         // Efface les anciens scores de manière optimisée
         clearScoreboardEntries(scoreboard);
@@ -230,10 +222,6 @@ public class ScoreboardTask extends BukkitRunnable {
             setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " +
                     ChatColor.LIGHT_PURPLE + NumberFormatter.format(specialDestroyed));
         }
-
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Enchantements: " +
-                ChatColor.LIGHT_PURPLE + enchantmentCount);
-
 
         // Ligne vide finale
         setScoreboardLine(scoreboard, objective, line--, "     ");
@@ -353,32 +341,6 @@ public class ScoreboardTask extends BukkitRunnable {
     }
 
     /**
-     * Obtient les statistiques de la tâche
-     */
-    public ScoreboardStats getStats() {
-        return new ScoreboardStats(
-                tickCount,
-                updateCycles,
-                plugin.getServer().getOnlinePlayers().size(),
-                playerScoreboards.size()
-        );
-    }
-
-    /**
-     * NOUVEAU : Obtient les statistiques détaillées
-     */
-    public Map<String, Object> getDetailedStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("total-ticks", tickCount);
-        stats.put("update-cycles", updateCycles);
-        stats.put("online-players", plugin.getServer().getOnlinePlayers().size());
-        stats.put("active-scoreboards", playerScoreboards.size());
-        stats.put("cached-updates", lastScoreboardUpdate.size());
-        stats.put("updates-per-minute", updateCycles > 0 ? (double) updateCycles / (tickCount / 1200.0) : 0.0);
-        return stats;
-    }
-
-    /**
      * Statistiques de la ScoreboardTask
      */
     public static class ScoreboardStats {
@@ -393,11 +355,6 @@ public class ScoreboardTask extends BukkitRunnable {
             this.onlinePlayers = onlinePlayers;
             this.activeScoreboards = activeScoreboards;
         }
-
-        public long getTotalTicks() { return totalTicks; }
-        public int getUpdateCycles() { return updateCycles; }
-        public int getOnlinePlayers() { return onlinePlayers; }
-        public int getActiveScoreboards() { return activeScoreboards; }
 
         @Override
         public String toString() {

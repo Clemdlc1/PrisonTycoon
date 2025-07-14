@@ -29,7 +29,6 @@ public class NotificationManager {
     private final Map<UUID, TemporaryNotification> activeTemporaryNotifications;
 
     // Configuration
-    private static final long NOTIFICATION_COOLDOWN = 800; // 0.8 seconde entre notifications
     private static final long ACCUMULATION_WINDOW = 2500; // 2.5 secondes pour cumuler gains
     private static final int MAX_QUEUE_SIZE = 15; // Maximum 15 notifications en attente
 
@@ -153,39 +152,6 @@ public class NotificationManager {
     }
 
     /**
-     * NOUVEAU : Ajoute une notification d'enchantement
-     */
-    public void queueEnchantmentNotification(Player player, String enchantName, int levelsGained) {
-        queueNotification(player, new GameNotification(
-                NotificationType.ENCHANTMENT,
-                "§a⚡ " + enchantName + " §a+" + levelsGained + " niveau" + (levelsGained > 1 ? "x" : "") + "!",
-                NotificationPriority.MEDIUM
-        ));
-    }
-
-    /**
-     * NOUVEAU : Ajoute une notification de clé
-     */
-    public void queueKeyNotification(Player player, String keyType, String keyColor) {
-        queueNotification(player, new GameNotification(
-                NotificationType.KEY,
-                "§e🗝️ Clé " + keyColor + keyType + " §eobtenue!",
-                NotificationPriority.HIGH
-        ));
-    }
-
-    /**
-     * NOUVEAU : Ajoute une notification d'état spécial
-     */
-    public void queueSpecialStateNotification(Player player, String stateName, String details) {
-        queueNotification(player, new GameNotification(
-                NotificationType.SPECIAL_STATE,
-                "§6✨ " + stateName + " " + details,
-                NotificationPriority.VERY_HIGH
-        ));
-    }
-
-    /**
      * NOUVEAU : Ajoute une notification d'effet spécial (laser, explosion)
      */
     public void queueSpecialEffectNotification(Player player, String effectName, int blocksAffected) {
@@ -214,41 +180,6 @@ public class NotificationManager {
         queue.offer(notification);
         plugin.getPluginLogger().debug("Notification ajoutée pour " + player.getName() +
                 ": " + notification.getMessage());
-    }
-
-    /**
-     * Traite les notifications en attente pour un joueur
-     */
-    public void processNotifications(Player player) {
-        UUID playerId = player.getUniqueId();
-        long now = System.currentTimeMillis();
-
-        // Vérifie d'abord l'accumulateur de gains
-        GainAccumulator accumulator = playerGainAccumulators.get(playerId);
-        if (accumulator != null && accumulator.hasGains() &&
-                now - accumulator.getStartTime() > ACCUMULATION_WINDOW) {
-
-            queueNotification(player, createGainNotification(accumulator));
-            playerGainAccumulators.remove(playerId);
-        }
-
-        // Vérifie le cooldown
-        Long lastTime = lastNotificationTime.get(playerId);
-        if (lastTime != null && (now - lastTime) < NOTIFICATION_COOLDOWN) {
-            return;
-        }
-
-        Queue<GameNotification> queue = playerNotificationQueues.get(playerId);
-        if (queue == null || queue.isEmpty()) {
-            return;
-        }
-
-        // Prend la notification de plus haute priorité
-        GameNotification notification = getHighestPriorityNotification(queue);
-        if (notification != null) {
-            sendNotificationToPlayer(player, notification);
-            lastNotificationTime.put(playerId, now);
-        }
     }
 
     /**
@@ -286,7 +217,7 @@ public class NotificationManager {
             parts.add("§a+" + NumberFormatter.format(accumulator.getExperience()) + " XP");
         }
 
-        String message = "§b⛏️ Gains: " + String.join("§7, ", parts);
+        String message = "§b⛏ Gains: " + String.join("§7, ", parts);
 
         return new GameNotification(
                 NotificationType.REGULAR_GAINS,

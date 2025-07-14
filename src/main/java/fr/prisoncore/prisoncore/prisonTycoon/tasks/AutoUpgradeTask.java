@@ -182,7 +182,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 continue;
             }
 
-            // ===== UTILISATION OPTIMISÉE D'UPGRADE_TO_MAX =====
             // Utilise la méthode optimisée d'EnchantmentUpgradeGUI en mode silencieux
             boolean upgradePerformed = plugin.getEnchantmentUpgradeGUI().upgradeToMax(player, enchantmentName, true);
 
@@ -192,9 +191,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 int levelsGained = newLevel - currentLevel;
                 totalUpgradesPerformed += levelsGained;
 
-                // ====================================================================
                 // NOUVEAU : Ajouter les détails de l'upgrade pour le récapitulatif
-                // ====================================================================
                 playerData.addAutoUpgradeDetail(
                         enchantmentName,
                         enchantment.getDisplayName(),
@@ -247,29 +244,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
     }
 
     /**
-     * Obtient les statistiques de l'auto-amélioration
-     */
-    public AutoUpgradeStats getStats() {
-        int enabledPlayers = 0;
-        int totalAutoEnchantments = 0;
-        int playersWithPermission = 0;
-
-        for (PlayerData playerData : plugin.getPlayerDataManager().getAllCachedPlayers()) {
-            var autoEnabled = playerData.getAutoUpgradeEnabled();
-            if (!autoEnabled.isEmpty()) {
-                enabledPlayers++;
-                totalAutoEnchantments += autoEnabled.size();
-
-                if (hasAutoUpgradePermission(playerData.getPlayerId())) {
-                    playersWithPermission++;
-                }
-            }
-        }
-
-        return new AutoUpgradeStats(enabledPlayers, totalAutoEnchantments, cycleCount, playersWithPermission);
-    }
-
-    /**
      * Statistiques de l'auto-amélioration
      */
     public static class AutoUpgradeStats {
@@ -284,11 +258,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
             this.totalCycles = totalCycles;
             this.playersWithPermission = playersWithPermission;
         }
-
-        public int getEnabledPlayers() { return enabledPlayers; }
-        public int getTotalAutoEnchantments() { return totalAutoEnchantments; }
-        public int getTotalCycles() { return totalCycles; }
-        public int getPlayersWithPermission() { return playersWithPermission; }
 
         @Override
         public String toString() {

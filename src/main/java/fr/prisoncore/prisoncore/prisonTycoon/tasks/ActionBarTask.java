@@ -3,10 +3,7 @@ package fr.prisoncore.prisoncore.prisonTycoon.tasks;
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Random;
 
 /**
  * MODIFIÉ : ActionBarTask qui respecte les notifications temporaires du MiningListener
@@ -16,7 +13,6 @@ public class ActionBarTask extends BukkitRunnable {
 
     private final PrisonTycoon plugin;
     private long tickCount = 0;
-    private final Random random = new Random();
 
     public ActionBarTask(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -108,53 +104,6 @@ public class ActionBarTask extends BukkitRunnable {
             status.append("§6⭐ Abondance: §aACTIVE");
         }
 
-        // Si aucun état spécial actif pendant le minage, affiche un message d'info générale
-        if (status.length() == 0) {
-            // Affiche des informations sur les enchantements actifs
-            int combustionLevel = playerData.getEnchantmentLevel("combustion");
-            int abundanceLevel = playerData.getEnchantmentLevel("abundance");
-
-            if (combustionLevel > 0 || abundanceLevel > 0) {
-                if (combustionLevel > 0) {
-                    status.append("§7Combustion: §e").append(combustionLevel);
-                }
-                if (abundanceLevel > 0) {
-                    if (status.length() > 0) status.append(" §8| ");
-                    status.append("§7Abondance: §e").append(abundanceLevel);
-                }
-
-                if (status.length() > 0) {
-                    status.insert(0, "§7⛏️ ");
-                }
-            }
-        }
-
         return status.toString();
-    }
-
-    public ActionBarStats getStats() {
-        return new ActionBarStats(
-                tickCount,
-                plugin.getServer().getOnlinePlayers().size()
-        );
-    }
-
-    public static class ActionBarStats {
-        private final long totalTicks;
-        private final int onlinePlayers;
-
-        public ActionBarStats(long totalTicks, int onlinePlayers) {
-            this.totalTicks = totalTicks;
-            this.onlinePlayers = onlinePlayers;
-        }
-
-        public long getTotalTicks() { return totalTicks; }
-        public int getOnlinePlayers() { return onlinePlayers; }
-
-        @Override
-        public String toString() {
-            return String.format("ActionBarStats{ticks=%d, players=%d}",
-                    totalTicks, onlinePlayers);
-        }
     }
 }

@@ -434,17 +434,4 @@ public class PlayerDataManager {
             plugin.getPluginLogger().info("§7Cache nettoyé: " + removedCount + " joueurs hors ligne retirés.");
         }
     }
-
-    /**
-     * Statistiques du cache
-     */
-    public Map<String, Object> getCacheStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("cached-players", playerDataCache.size());
-        stats.put("dirty-players", dirtyPlayers.size());
-        stats.put("memory-usage-mb",
-                (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024 / 1024);
-
-        return stats;
-    }
 }
