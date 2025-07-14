@@ -293,6 +293,8 @@ public class PickaxeRepairGUI {
         playerData.removeTokens(maxRepair.cost);
 
         // Mise à jour de la pioche
+        plugin.getPickaxeManager().deactivateBrokenPickaxeMode(player);
+        player.removeMetadata("durability_notif_broken", plugin);
         plugin.getPickaxeManager().updatePlayerPickaxe(player);
         plugin.getPickaxeManager().updateMobilityEffects(player);
 

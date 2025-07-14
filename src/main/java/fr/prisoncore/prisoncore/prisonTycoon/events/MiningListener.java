@@ -3,10 +3,6 @@ package fr.prisoncore.prisoncore.prisonTycoon.events;
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.BlockValueData;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -154,7 +150,7 @@ public class MiningListener implements Listener {
                 }
 
                 // Vérifier l'état mais ne pas augmenter les dégâts
-                checkLegendaryPickaxeState(player, tool, (short)(maxDurability - 1), maxDurability);
+                plugin.getPickaxeManager().checkLegendaryPickaxeState(player, tool, (short)(maxDurability - 1), maxDurability);
                 return;
             }
 
@@ -166,58 +162,7 @@ public class MiningListener implements Listener {
             plugin.getPluginLogger().debug("Durabilité pioche légendaire " + player.getName() + ": " + currentDurability + " -> " + newDurability + " (max: " + maxDurability + ")");
 
             // Vérifier l'état après modification
-            checkLegendaryPickaxeState(player, tool, newDurability, maxDurability);
-        }
-    }
-
-    /**
-     * Vérifie l'état de la pioche légendaire et affiche les notifications appropriées
-     */
-    private void checkLegendaryPickaxeState(Player player, ItemStack pickaxe, short currentDurability, short maxDurability) {
-        double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
-
-        // PIOCHE CASSÉE (100% utilisée)
-        if (currentDurability >= maxDurability - 1) {
-            if (!isPickaxeBroken(player)) {
-                activateBrokenPickaxeMode(player);
-
-                // Message spécial pour pioche cassée (une seule fois)
-                if (!player.hasMetadata("durability_notif_broken")) {
-                    TextComponent message = new TextComponent("§c💀 PIOCHE CASSÉE! Tous enchantements désactivés! §e[RÉPARER IMMÉDIATEMENT]");
-                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§cRéparation critique requise!")));
-                    player.spigot().sendMessage(message);
-
-                    player.setMetadata("durability_notif_broken", new FixedMetadataValue(plugin, true));
-                }
-            }
-        } else {
-            // Désactive le mode "pioche cassée" si il était actif
-            if (isPickaxeBroken(player)) {
-                deactivateBrokenPickaxeMode(player);
-                player.removeMetadata("durability_notif_broken", plugin);
-            }
-
-            // NOTIFICATIONS PAR SEUILS (une seule fois par niveau)
-            if (durabilityPercent <= 0.10) { // Moins de 10% restant
-                if (!player.hasMetadata("durability_notif_10")) {
-                    TextComponent message = new TextComponent("§6⚠️ Votre pioche est très endommagée ! §e[CLIQUEZ POUR RÉPARER]");
-                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
-                    player.spigot().sendMessage(message);
-
-                    player.setMetadata("durability_notif_10", new FixedMetadataValue(plugin, true));
-                }
-            } else if (durabilityPercent <= 0.25) { // Moins de 25% restant
-                if (!player.hasMetadata("durability_notif_25")) {
-                    TextComponent message = new TextComponent("§e⚠️ Votre pioche commence à être endommagée. §e[RÉPARER]");
-                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
-                    player.spigot().sendMessage(message);
-
-                    player.setMetadata("durability_notif_25", new FixedMetadataValue(plugin, true));
-                }
-            }
+            plugin.getPickaxeManager().checkLegendaryPickaxeState(player, tool, newDurability, maxDurability);
         }
     }
 
@@ -435,24 +380,6 @@ public class MiningListener implements Listener {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
         plugin.getPluginLogger().debug("Post-traitement pioche terminé pour " + player.getName());
-    }
-
-    /**
-     * Active le mode "pioche cassée"
-     */
-    private void activateBrokenPickaxeMode(Player player) {
-        player.setMetadata("pickaxe_broken", new FixedMetadataValue(plugin, true));
-        player.setMetadata("pickaxe_just_broken", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-        plugin.getPluginLogger().debug("Mode pioche cassée activé pour " + player.getName());
-    }
-
-    /**
-     * Désactive le mode "pioche cassée"
-     */
-    private void deactivateBrokenPickaxeMode(Player player) {
-        player.removeMetadata("pickaxe_broken", plugin);
-        player.setMetadata("pickaxe_just_repaired", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-        plugin.getPluginLogger().debug("Mode pioche cassée désactivé pour " + player.getName());
     }
 
     /**

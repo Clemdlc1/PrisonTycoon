@@ -261,15 +261,6 @@ public class PlayerData {
         }
     }
 
-    public boolean upgradeEnchantment(String enchantmentName) {
-        synchronized (dataLock) {
-            int currentLevel = enchantmentLevels.getOrDefault(enchantmentName, 0);
-            enchantmentLevels.put(enchantmentName, currentLevel + 1);
-            lastMinuteAutoUpgrades++;
-            return true;
-        }
-    }
-
     // NOUVEAU: Gestion des enchantements mobilité désactivés
     public boolean isMobilityEnchantmentEnabled(String enchantmentName) {
         return !mobilityEnchantmentsDisabled.contains(enchantmentName);

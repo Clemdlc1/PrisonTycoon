@@ -411,5 +411,4 @@ public final class PrisonTycoon extends JavaPlugin {
     public ContainerFilterGUI getContainerFilterGUI() {
         return containerFilterGUI;
     }
-
 }
