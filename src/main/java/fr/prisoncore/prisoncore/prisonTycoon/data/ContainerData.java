@@ -37,7 +37,7 @@ public class ContainerData {
     }
 
     /**
-     * Constructeur pour chargement depuis données
+     * CORRIGÉ : Constructeur pour chargement depuis données
      */
     public ContainerData(int tier, Map<ItemStack, Integer> contents, Set<Material> whitelist,
                          boolean sellEnabled, int durability) {
@@ -48,7 +48,7 @@ public class ContainerData {
         this.sellEnabled = sellEnabled;
         this.maxDurability = getDurabilityForTier(tier);
         this.durability = durability;
-
+        this.referenceItems = new HashMap<>(); // CORRIGÉ : Initialisation manquante
     }
 
     /**

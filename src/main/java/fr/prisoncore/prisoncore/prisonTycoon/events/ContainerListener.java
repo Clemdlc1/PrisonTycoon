@@ -18,7 +18,7 @@ import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Listener pour les événements liés aux conteneurs - MODIFIÉ pour filtres séparés
+ * Listener pour les événements liés aux conteneurs - MODIFIÉ pour autoriser mouvement libre
  */
 public class ContainerListener implements Listener {
 
@@ -47,7 +47,7 @@ public class ContainerListener implements Listener {
 
             event.setCancelled(true);
 
-            // MODIFIÉ : Permet d'ouvrir même si cassé (pour récupérer le contenu)
+            // Permet d'ouvrir même si cassé (pour récupérer le contenu)
             var data = plugin.getContainerManager().getContainerData(item);
             if (data != null && data.isBroken()) {
                 player.sendMessage("§c💥 Conteneur cassé! Ouverture en mode récupération...");
@@ -99,15 +99,30 @@ public class ContainerListener implements Listener {
                 plugin.getContainerGUI().handleContainerMenuClick(player, slot, clickedItem, title);
             }
         }
-        // NOUVEAU : GUI des filtres
+        // NOUVEAU : GUI des filtres - empêche de mettre des conteneurs
         else if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
-            // Dans le GUI des filtres, on permet TOUT (libre manipulation des 9 slots)
-            // Pas de cancellation ici, laisse le joueur faire ce qu'il veut
+            if (!(event.getWhoClicked() instanceof Player player)) {
+                return;
+            }
+
+            ItemStack clickedItem = event.getCurrentItem();
+            ItemStack cursorItem = event.getCursor();
+
+            // Vérifie si on essaie de mettre un conteneur dans les filtres
+            if ((clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
+                    (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem))) {
+
+                event.setCancelled(true);
+                player.sendMessage("§c❌ Vous ne pouvez pas mettre un conteneur comme filtre!");
+                player.sendMessage("§7Les conteneurs ne peuvent pas filtrer d'autres conteneurs.");
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            }
+            // Sinon, permet la manipulation libre dans le GUI des filtres
         }
     }
 
     /**
-     * MODIFIÉ : Gère la fermeture des inventaires (sauvegarde automatique des filtres)
+     * CORRIGÉ : Gère la fermeture des inventaires (sauvegarde automatique des filtres)
      */
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
@@ -117,12 +132,9 @@ public class ContainerListener implements Listener {
 
         String title = event.getView().getTitle();
 
-        // Sauvegarde automatique des filtres
+        // Sauvegarde automatique des filtres avec méthode corrigée
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
-            ItemStack containerItem = plugin.getContainerFilterGUI().findContainerFromFilterTitle(player, title);
-            if (containerItem != null) {
-                plugin.getContainerFilterGUI().saveFilters(player, event.getInventory(), String.valueOf(containerItem));
-            }
+            plugin.getContainerFilterGUI().saveFiltersFromInventory(player, event.getInventory(), title);
             return;
         }
 
@@ -141,7 +153,21 @@ public class ContainerListener implements Listener {
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
             event.setCancelled(true);
         }
-        // Les filtres permettent le drag libre
+
+        // NOUVEAU : Empêche de drag des conteneurs dans les filtres
+        if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
+            if (!(event.getWhoClicked() instanceof Player player)) {
+                return;
+            }
+
+            // Vérifie si on essaie de drag un conteneur
+            ItemStack draggedItem = event.getOldCursor();
+            if (draggedItem != null && plugin.getContainerManager().isContainer(draggedItem)) {
+                event.setCancelled(true);
+                player.sendMessage("§c❌ Vous ne pouvez pas mettre un conteneur comme filtre!");
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            }
+        }
     }
 
     /**
@@ -164,7 +190,7 @@ public class ContainerListener implements Listener {
     }
 
     /**
-     * NOUVEAU : Empêche les conteneurs dans les tables de craft et enclumes + déplacements clavier
+     * MODIFIÉ : Protections seulement pour tables de craft/enclume + placement au sol
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onCraftingTableUse(InventoryClickEvent event) {
@@ -172,134 +198,36 @@ public class ContainerListener implements Listener {
             return;
         }
 
-        // Vérifie le type d'inventaire
+        // Vérifie SEULEMENT les tables de craft, enclumes, etc. (pas l'inventaire du joueur)
         if (event.getInventory().getType() == InventoryType.WORKBENCH ||
                 event.getInventory().getType() == InventoryType.ANVIL ||
                 event.getInventory().getType() == InventoryType.GRINDSTONE ||
-                event.getInventory().getType() == InventoryType.SMITHING) {
+                event.getInventory().getType() == InventoryType.SMITHING ||
+                event.getInventory().getType() == InventoryType.ENCHANTING ||
+                event.getInventory().getType() == InventoryType.CARTOGRAPHY ||
+                event.getInventory().getType() == InventoryType.LOOM) {
 
             ItemStack clickedItem = event.getCurrentItem();
             ItemStack cursorItem = event.getCursor();
 
-            // NOUVEAU : Bloque aussi les déplacements par touches (shift+click, etc.)
-            if (event.isShiftClick() || event.isRightClick() || event.isLeftClick()) {
-                if ((clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
-                        (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem))) {
+            // Bloque les conteneurs dans ces interfaces spécifiques
+            if ((clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
+                    (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem))) {
 
-                    event.setCancelled(true);
-                    player.sendMessage("§c❌ Les conteneurs ne peuvent pas être utilisés dans les tables de craft, enclumes, meules ou tables de forge!");
-                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                    return;
-                }
+                event.setCancelled(true);
+                player.sendMessage("§c❌ Les conteneurs ne peuvent pas être utilisés dans les tables de craft, enclumes ou autres stations de travail!");
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             }
         }
     }
 
     /**
-     * NOUVEAU : Bloque les crafts dans l'inventaire du joueur quand il a des conteneurs
+     * SUPPRIMÉ : Plus de restrictions dans l'inventaire du joueur pour le craft
+     * Les joueurs peuvent maintenant bouger librement leurs items même avec des conteneurs
      */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onInventoryCraft(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-
-        // Vérifie si c'est un craft dans l'inventaire du joueur
-        if (event.getInventory() instanceof CraftingInventory craftingInv &&
-                event.getInventory().getType() == InventoryType.CRAFTING) {
-
-            // Vérifie si le joueur a des conteneurs
-            boolean hasContainers = false;
-            for (ItemStack item : player.getInventory().getContents()) {
-                if (plugin.getContainerManager().isContainer(item)) {
-                    hasContainers = true;
-                    break;
-                }
-            }
-
-            if (hasContainers) {
-                // Vérifie si le clic est dans la zone de craft (slots 1-4) ou résultat (slot 0)
-                if (event.getSlot() >= 0 && event.getSlot() <= 4) {
-                    event.setCancelled(true);
-                    player.sendMessage("§c❌ Impossible de crafter avec des conteneurs dans l'inventaire!");
-                    player.sendMessage("§7Les conteneurs peuvent interférer avec le système de craft.");
-                    player.sendMessage("§7Stockez-les temporairement dans un coffre pour crafter.");
-                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                }
-            }
-        }
-    }
 
     /**
-     * MODIFIÉ : Protection contre la modification des conteneurs (autoriser mouvement normal)
+     * SUPPRIMÉ : onContainerModification qui bloquait tout mouvement
+     * Les conteneurs peuvent maintenant être bougés librement dans l'inventaire
      */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onContainerModification(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-
-        String title = event.getView().getTitle();
-
-        // Ignore les GUIs de conteneurs et filtres
-        if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé") ||
-                plugin.getContainerFilterGUI().isFilterGUI(title)) {
-            return;
-        }
-
-        ItemStack clickedItem = event.getCurrentItem();
-        ItemStack cursorItem = event.getCursor();
-
-        // Vérifie si on manipule un conteneur
-        boolean isContainerClick = (clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
-                (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem));
-
-        if (isContainerClick) {
-            // NOUVEAU: Autoriser le mouvement normal mais bloquer certaines actions
-            switch (event.getClick()) {
-                case DROP, CONTROL_DROP -> {
-                    event.setCancelled(true);
-                    player.sendMessage("§c❌ Vous ne pouvez pas jeter les conteneurs!");
-                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                }
-                case SHIFT_LEFT, SHIFT_RIGHT -> {
-                    // NOUVEAU: Empêcher seulement la mise dans certains inventaires externes
-                    if (!event.getView().getTopInventory().equals(player.getInventory())) {
-                        String topTitle = event.getView().getTitle().toLowerCase();
-
-                        // Bloquer craft/anvil/enchanting mais autoriser coffres/shulkers
-                        if (topTitle.contains("crafting") || topTitle.contains("anvil") ||
-                                topTitle.contains("enchant") || topTitle.contains("grindstone") ||
-                                topTitle.contains("cartography") || topTitle.contains("loom") ||
-                                topTitle.contains("smithing")) {
-
-                            event.setCancelled(true);
-                            player.sendMessage("§c❌ Les conteneurs ne peuvent pas être utilisés dans les tables de craft/enclume!");
-                            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                        }
-                        // Autoriser le stockage dans les coffres normaux
-                    }
-                }
-                // Autoriser tous les autres types de clics (LEFT, RIGHT, etc.)
-            }
-        }
-    }
-
-    /**
-     * Nettoie les ressources quand un joueur se déconnecte
-     */
-    @EventHandler
-    public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-
-        // Ferme le GUI s'il est ouvert
-        if (player.getOpenInventory() != null &&
-                (player.getOpenInventory().getTitle().contains("Configuration Conteneur") ||
-                        player.getOpenInventory().getTitle().contains("Conteneur Cassé") ||
-                        plugin.getContainerFilterGUI().isFilterGUI(player.getOpenInventory().getTitle()))) {
-            player.closeInventory();
-        }
-
-        plugin.getPluginLogger().debug("Nettoyage des données de conteneur pour " + player.getName());
-    }
 }

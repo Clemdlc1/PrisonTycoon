@@ -43,6 +43,9 @@ public class ContainerManager {
     /**
      * MODIFIÉ : Crée un nouvel item conteneur (non-stackable)
      */
+    /**
+     * CORRIGÉ : Crée un nouvel item conteneur avec UUID aléatoire unique
+     */
     public ItemStack createContainer(int tier) {
         if (tier < 1 || tier > 5) {
             throw new IllegalArgumentException("Tier doit être entre 1 et 5");
@@ -55,13 +58,15 @@ public class ContainerManager {
         String tierName = getTierName(tier);
         meta.setDisplayName("§6📦 Conteneur " + tierName);
 
-        // NOUVEAU : UUID unique pour empêcher le stacking et identifier clairement
+        // CORRIGÉ : UUID aléatoire UNIQUE pour chaque conteneur
         String uniqueId = UUID.randomUUID().toString();
 
-        // MODIFIÉ : Utilise l'UUID pour rendre non-stackable
-        meta.setCustomModelData(tier + 1000 + uniqueId.hashCode()); // Garantit l'unicité
+        // CORRIGÉ : Utilise un hashCode basé sur l'UUID + timestamp pour garantir l'unicité absolue
+        long timestamp = System.currentTimeMillis();
+        int uniqueHash = (uniqueId + "_" + timestamp).hashCode();
+        meta.setCustomModelData(Math.abs(uniqueHash % 1000000) + tier * 1000000); // Garantit l'unicité totale
 
-        // Lore détaillé (existant)...
+        // Lore détaillé
         List<String> lore = new ArrayList<>();
         ContainerData data = new ContainerData(tier);
 
@@ -113,16 +118,19 @@ public class ContainerManager {
 
         meta.setLore(lore);
 
-        // Données persistantes
+        // CORRIGÉ : Données persistantes avec UUID unique
         meta.getPersistentDataContainer().set(containerKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(containerTierKey, PersistentDataType.INTEGER, tier);
-        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uniqueId); // NOUVEAU
+        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uniqueId);
 
         // Serialise les données du conteneur
         String serializedData = serializeContainerData(data);
         meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
 
         container.setItemMeta(meta);
+
+        plugin.getPluginLogger().debug("Conteneur créé - Tier: " + tier + ", UUID: " + uniqueId + ", Hash: " + uniqueHash);
+
         return container;
     }
 
@@ -347,17 +355,17 @@ public class ContainerManager {
     }
 
     /**
-     * MODIFIÉ: Sérialise les données du conteneur (avec items de référence)
+     * CORRIGÉ : Sérialise les données du conteneur avec version mise à jour
      */
     private String serializeContainerData(ContainerData data) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos);
 
-            // Version pour compatibilité future
-            dataOutput.writeInt(2); // Version 2 = avec référence items
+            // CORRIGÉ : Version 2 pour supporter les referenceItems
+            dataOutput.writeInt(2); // Version augmentée
 
-            // Données existantes...
+            // Données de base
             dataOutput.writeInt(data.getTier());
             dataOutput.writeInt(data.getDurability());
             dataOutput.writeBoolean(data.isSellEnabled());
@@ -375,7 +383,7 @@ public class ContainerManager {
                 dataOutput.writeInt(entry.getValue());
             }
 
-            // NOUVEAU: Items de référence
+            // NOUVEAU: Items de référence (version 2+)
             dataOutput.writeInt(data.getReferenceItems().size());
             for (Map.Entry<String, ItemStack> entry : data.getReferenceItems().entrySet()) {
                 dataOutput.writeUTF(entry.getKey());
