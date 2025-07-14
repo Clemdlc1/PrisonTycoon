@@ -230,44 +230,6 @@ public class EconomyManager {
     }
 
     /**
-     * Effectue une transaction entre joueurs (future fonctionnalité)
-     */
-    public boolean transferTokens(Player from, Player to, long amount) {
-        if (amount <= 0) return false;
-
-        PlayerData fromData = plugin.getPlayerDataManager().getPlayerData(from.getUniqueId());
-        PlayerData toData = plugin.getPlayerDataManager().getPlayerData(to.getUniqueId());
-
-        // Vérifie les fonds
-        if (fromData.getTokens() < amount) {
-            from.sendMessage("§cTokens insuffisants pour le transfert!");
-            return false;
-        }
-
-        // Vérifie les limites du destinataire
-        if (toData.getTokens() + amount > MAX_CURRENCY_VALUE) {
-            from.sendMessage("§cLe destinataire a atteint la limite de tokens!");
-            return false;
-        }
-
-        // Effectue la transaction (ces tokens ne comptent pas comme "via pioche")
-        if (fromData.removeTokens(amount)) {
-            toData.addTokens(amount);
-
-            from.sendMessage("§a✅ " + NumberFormatter.format(amount) + " tokens transférés à " + to.getName());
-            to.sendMessage("§a📥 " + NumberFormatter.format(amount) + " tokens reçus de " + from.getName());
-
-            // Marque les deux joueurs comme modifiés
-            plugin.getPlayerDataManager().markDirty(from.getUniqueId());
-            plugin.getPlayerDataManager().markDirty(to.getUniqueId());
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Calcule le classement économique des joueurs
      */
     public List<EconomicRanking> getTopPlayers(EconomicType type, int limit) {

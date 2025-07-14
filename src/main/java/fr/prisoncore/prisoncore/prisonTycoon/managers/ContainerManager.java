@@ -17,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gestionnaire des conteneurs - MODIFIÉ pour conserver les métadonnées
@@ -448,11 +447,6 @@ public class ContainerManager {
         return meta.getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
     }
 
-// ================================================================================
-// AJOUTS ET MODIFICATIONS POUR ContainerManager.java
-// À ajouter aux méthodes existantes ou à modifier
-// ================================================================================
-
     /**
      * RENFORCÉ : Trouve un conteneur spécifique par UUID dans l'inventaire
      */
@@ -488,18 +482,6 @@ public class ContainerManager {
             }
         }
         return false;
-    }
-
-    /**
-     * NOUVEAU : Vérifie si deux conteneurs sont le même (par UUID)
-     */
-    public boolean isSameContainer(ItemStack container1, ItemStack container2) {
-        if (!isContainer(container1) || !isContainer(container2)) return false;
-
-        String uuid1 = getContainerUUID(container1);
-        String uuid2 = getContainerUUID(container2);
-
-        return uuid1 != null && uuid1.equals(uuid2);
     }
 
     /**
@@ -628,35 +610,5 @@ public class ContainerManager {
         meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
 
         container.setItemMeta(meta);
-    }
-
-    /**
-     * NOUVEAU : Nettoie les données corrompues et recrée un conteneur valide
-     */
-    public ItemStack repairCorruptedContainer(ItemStack container, int tier) {
-        if (!isContainer(container)) return null;
-
-        plugin.getPluginLogger().warning("Réparation d'un conteneur corrompu détecté");
-
-        // Récupère l'UUID existant ou en crée un nouveau
-        String existingUUID = getContainerUUID(container);
-        if (existingUUID == null) {
-            existingUUID = UUID.randomUUID().toString();
-        }
-
-        // Crée de nouvelles données par défaut
-        ContainerData newData = new ContainerData(tier);
-
-        // Met à jour le conteneur avec les bonnes données
-        ItemMeta meta = container.getItemMeta();
-        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, existingUUID);
-
-        String serializedData = serializeContainerData(newData);
-        meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
-
-        container.setItemMeta(meta);
-        updateContainerItem(container, newData);
-
-        return container;
     }
 }

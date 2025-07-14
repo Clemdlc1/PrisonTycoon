@@ -261,43 +261,4 @@ public class MineManager {
 
         return null; // Toutes les mines sont débloquées
     }
-
-    /**
-     * Statistiques des permissions de mine pour un joueur
-     */
-    public Map<String, Object> getPlayerMineStats(Player player) {
-        Map<String, Object> stats = new HashMap<>();
-
-        Set<String> accessible = getAccessibleMines(player);
-        Set<String> inaccessible = getInaccessibleMines(player);
-
-        stats.put("accessible-mines", accessible.size());
-        stats.put("inaccessible-mines", inaccessible.size());
-        stats.put("total-mines", getAllMineNames().size());
-        stats.put("completion-percentage",
-                Math.round((accessible.size() * 100.0) / getAllMineNames().size()));
-
-        return stats;
-    }
-
-    /**
-     * Vérifie si une mine existe
-     */
-    public boolean mineExists(String mineName) {
-        return plugin.getConfigManager().getMineData(mineName) != null;
-    }
-
-    /**
-     * Retourne la mine recommandée pour un joueur (prochaine à débloquer)
-     */
-    public String getRecommendedMine(Player player) {
-        String nextUnlockable = getNextUnlockableMine(player);
-        if (nextUnlockable != null) {
-            return nextUnlockable;
-        }
-
-        // Si toutes sont débloquées, retourne la plus haute
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.getHighestMinePermission();
-    }
 }
