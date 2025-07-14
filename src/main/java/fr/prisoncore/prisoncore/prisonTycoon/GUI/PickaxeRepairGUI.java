@@ -304,7 +304,8 @@ public class PickaxeRepairGUI {
                 " (-" + NumberFormatter.format(maxRepair.cost) + " tokens)");
 
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
-
+        plugin.getActionBarTask().updateActionBarStatus();
+        
         // Mise à jour du menu
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             createRepairButtons(player.getOpenInventory().getTopInventory(), player);

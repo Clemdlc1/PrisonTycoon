@@ -86,11 +86,13 @@ public class MiningListener implements Listener {
         ItemStack tool = player.getInventory().getItemInMainHand();
 
         // Vérifier si c'est une pioche
+        if (!tool.getType().name().contains("PICKAXE")) {
+            return;
+        }
+
+        // DISTINCTION : Traitement différent selon le type de pioche
         if (plugin.getPickaxeManager().isLegendaryPickaxe(tool)) {
-            plugin.getPluginLogger().info("La pioche de " + player.getName() + " est bien légendaire. Application de la protection."); // <--- AJOUTEZ CECI
             handleLegendaryPickaxeDurability(player, tool, event);
-        } else if (tool.getType().name().contains("PICKAXE")) {
-            plugin.getPluginLogger().warning("La pioche de " + player.getName() + " N'EST PAS légendaire. Aucune protection appliquée."); // <--- ET CECI
         }
     }
 
@@ -98,51 +100,47 @@ public class MiningListener implements Listener {
      * Gère spécifiquement la durabilité des pioches légendaires
      */
     private void handleLegendaryPickaxeDurability(Player player, ItemStack tool, BlockBreakEvent event) {
-        if (!(tool.getItemMeta() instanceof Damageable)) {
-            return;
-        }
-
-        Damageable meta = (Damageable) tool.getItemMeta();
-        short maxDurability = tool.getType().getMaxDurability();
-        short currentDamage = (short) meta.getDamage();
-
-        // Le serveur appliquera +1 de dégât après cet événement.
-        // Notre logique doit anticiper et contrer ce comportement si nécessaire.
-
-        // 1. GESTION DE "SOLIDITÉ" (UNBREAKING)
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int durabilityLevel = playerData.getEnchantmentLevel("durability");
+
+        // SOLIDITÉ : Chance d'éviter la perte de durabilité
         if (durabilityLevel > 0) {
             double preservationChance = Math.min(95.0, durabilityLevel * 5.0);
             if (random.nextDouble() * 100 < preservationChance) {
-                // Pour PRÉSERVER la durabilité, nous devons annuler le +1 du serveur.
-                // Pour cela, nous appliquons -1 de dégât ici.
-                // Le calcul final sera : currentDamage - 1 (plugin) + 1 (serveur) = currentDamage (aucun changement)
-                meta.setDamage(Math.max(0, currentDamage - 1));
-                tool.setItemMeta(meta);
-
-                plugin.getPluginLogger().debug("Durabilité préservée par Solidité pour " + player.getName());
-                return; // La durabilité est préservée, on a fini.
+                return; // La durabilité est préservée
             }
         }
 
-        // 2. GESTION DE LA PROTECTION ANTI-CASSE
-        // Si la pioche est sur le point de recevoir le coup fatal...
-        // (c'est-à-dire si elle est déjà à sa durabilité max - 1)
-        if (currentDamage >= maxDurability - 1) {
-            // ...nous devons aussi annuler le coup du serveur pour la protéger.
-            // On fait -1 pour que le +1 du serveur la ramène simplement à son état actuel.
-            meta.setDamage(currentDamage - 1);
+        // APPLIQUER DOMMAGE : Seulement pour les pioches légendaires
+        if (tool.getItemMeta() instanceof Damageable) {
+            Damageable meta = (Damageable) tool.getItemMeta();
+            short maxDurability = tool.getType().getMaxDurability();
+            short currentDurability = (short) meta.getDamage();
+
+            // CORRECTION CRITIQUE: Empêcher la pioche de dépasser maxDurability - 1
+            if (currentDurability >= maxDurability - 1) {
+                plugin.getPluginLogger().debug("Pioche légendaire de " + player.getName() + " déjà au maximum de casse (" + currentDurability + "/" + maxDurability + ")");
+
+                // S'assurer qu'elle reste à maxDurability - 1 (état "cassée" mais pas détruite)
+                if (currentDurability > maxDurability - 1) {
+                    meta.setDamage(maxDurability - 1);
+                    tool.setItemMeta(meta);
+                }
+
+                // Vérifier l'état mais ne pas augmenter les dégâts
+                checkLegendaryPickaxeState(player, tool, (short)(maxDurability - 1), maxDurability);
+                return;
+            }
+
+            // Augmente les dégâts de 1 point SEULEMENT si pas encore cassée
+            short newDurability = (short) Math.min(currentDurability + 1, maxDurability - 1);
+            meta.setDamage(newDurability);
             tool.setItemMeta(meta);
 
-            plugin.getPluginLogger().debug("Casse finale de la pioche de " + player.getName() + " empêchée.");
+            plugin.getPluginLogger().debug("Durabilité pioche légendaire " + player.getName() + ": " + currentDurability + " -> " + newDurability + " (max: " + maxDurability + ")");
 
-            // On vérifie quand même son état pour activer le mode "cassé"
-            checkLegendaryPickaxeState(player, tool, currentDamage, maxDurability);
-        } else {
-            // La pioche n'est pas en danger critique. On laisse le serveur appliquer son dégât.
-            // On vérifie juste l'état en anticipant le futur dégât pour les notifications.
-            checkLegendaryPickaxeState(player, tool, (short)(currentDamage + 1), maxDurability);
+            // Vérifier l'état après modification
+            checkLegendaryPickaxeState(player, tool, newDurability, maxDurability);
         }
     }
 

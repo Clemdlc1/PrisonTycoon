@@ -30,7 +30,7 @@ public class ActionBarTask extends BukkitRunnable {
     /**
      * Met à jour l'action bar avec l'état des enchantements actifs
      */
-    private void updateActionBarStatus() {
+    public void updateActionBarStatus() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             String statusMessage = generateStatusMessage(player);
             if (statusMessage != null && !statusMessage.isEmpty()) {
