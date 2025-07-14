@@ -303,7 +303,7 @@ public class CategoryMenuGUI {
             }
             case "efficiency" -> {
                 lore.add("§7▸ §bVitesse de minage améliorée");
-                lore.add("§7▸ §7Niveau " + level + "/50 (Fast Digging " + level + ")");
+                lore.add("§7▸ §7Niveau " + level + "/100 (Fast Digging " + level + ")");
             }
             case "durability" -> {
                 double bonus = level * 10;

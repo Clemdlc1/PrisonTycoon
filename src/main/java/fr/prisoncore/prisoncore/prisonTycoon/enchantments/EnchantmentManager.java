@@ -198,19 +198,8 @@ public class EnchantmentManager {
      * NOUVEAU : Traite un bloc miné HORS mine (restrictions)
      */
     public void processBlockMinedOutsideMine(Player player, Material blockType) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // RESTRICTION : Seuls efficacité, solidité, mobilité actifs hors mine
-        // Donc PAS de Greeds, PAS d'effets spéciaux, PAS de Fortune
-
-        // Ajoute quand même aux statistiques
-        playerData.addMinedBlock(blockType);
-
         plugin.getPluginLogger().debug("Bloc miné hors mine: " + blockType + " par " + player.getName() +
                 " (seuls efficacité/solidité/mobilité actifs)");
-
-        // Marque les données comme modifiées
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
     }
 
     /**
@@ -780,7 +769,7 @@ class EfficiencyEnchantment implements CustomEnchantment {
     public String getDisplayName() { return "Efficacité"; }
     public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
     public String getDescription() { return "Réduit le temps de minage"; }
-    public int getMaxLevel() { return 50; }
+    public int getMaxLevel() { return 100; }
     public long getUpgradeCost(int level) { return 10000L * level * level; }
     public Material getDisplayMaterial() { return Material.REDSTONE; }
 }

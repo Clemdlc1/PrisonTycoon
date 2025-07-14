@@ -197,7 +197,7 @@ enchantments:
 
   # Efficacité
   efficiency:
-    max-level: 50               # Niveau maximum
+    max-level: 100               # Niveau maximum
     speed-bonus-per-level: 0.1  # Bonus de vitesse par niveau
 
   # Solidité
@@ -217,7 +217,7 @@ enchantments:
       cost-multiplier: 2        # Coût = base * niveau²
 
     haste:
-      max-level: 2
+      max-level: 5
       base-cost: 500000
       cost-multiplier: 3        # Coût = base * niveau³
 

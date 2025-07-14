@@ -74,7 +74,6 @@ public class ChatTask extends BukkitRunnable {
                 playerData.getLastMinuteTokensViaPickaxe() > 0 ||
                 playerData.getLastMinuteExperienceViaPickaxe() > 0;
         boolean hasEnchantActivity = playerData.getLastMinuteGreedTriggers() > 0 ||
-                playerData.getLastMinuteAutoUpgrades() > 0 ||
                 playerData.getLastMinuteKeysObtained() > 0;
 
         boolean hasActivity = hasBlockActivity || hasPickaxeEconomicActivity || hasEnchantActivity;

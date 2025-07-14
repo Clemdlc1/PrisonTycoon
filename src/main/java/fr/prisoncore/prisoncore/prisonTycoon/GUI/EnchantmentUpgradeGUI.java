@@ -126,7 +126,7 @@ public class EnchantmentUpgradeGUI {
 
         // MAX au milieu dernière ligne (slot 23)
         if (currentLevel < enchantment.getMaxLevel()) {
-            gui.setItem(23, createMaxUpgradeButton(enchantment, player));
+            gui.setItem(22, createMaxUpgradeButton(enchantment, player));
         }
     }
 
@@ -569,7 +569,9 @@ public class EnchantmentUpgradeGUI {
             } else if (!silent) {
                 openEnchantmentUpgradeMenu(player, enchantmentName);
             }
-            plugin.getPickaxeManager().updateMobilityEffects(player);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.getPickaxeManager().updateMobilityEffects(player);
+            });
             return true;
         } else {
             if (!silent) {
@@ -747,7 +749,7 @@ public class EnchantmentUpgradeGUI {
         filler.setItemMeta(meta);
 
         // CORRIGÉ: Bordures pour 27 slots
-        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 19, 20, 21, 22, 24, 25, 26};
+        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 19, 20, 21, 23, 24, 25, 26};
         for (int slot : borderSlots) {
             gui.setItem(slot, filler);
         }

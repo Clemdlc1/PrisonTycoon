@@ -186,6 +186,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new MiningListener(this), this);
         pluginManager.registerEvents(new PickaxeProtectionListener(this), this);
         pluginManager.registerEvents(new GUIListener(this), this);
+        pluginManager.registerEvents(new MobilityEffectsListener(this), this);
+
         logger.info("§aÉvénements enregistrés.");
     }
 

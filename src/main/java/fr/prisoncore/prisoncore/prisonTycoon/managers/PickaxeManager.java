@@ -449,13 +449,10 @@ public class PickaxeManager {
      * NOUVEAU : Met à jour les effets de mobilité selon les enchantements activés/désactivés
      */
     public void updateMobilityEffects(Player player) {
-        // Vérifie d'abord si la pioche légendaire est dans le slot 0
-        boolean hasPickaxeInSlot0 = isPickaxeInCorrectSlot(player);
 
-        // Si pas de pioche au slot 0, retire tous les effets
-        if (!hasPickaxeInSlot0 || isPickaxeBroken(player)) {
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player) || isPickaxeBroken(player)){
             removeMobilityEffects(player);
-            plugin.getPluginLogger().debug("Effets mobilité retirés pour " + player.getName() + " (pioche pas au slot 0)");
             return;
         }
 
@@ -497,9 +494,6 @@ public class PickaxeManager {
                     org.bukkit.potion.PotionEffectType.JUMP_BOOST,
                     Integer.MAX_VALUE, jumpLevel - 1, true, false));
         }
-
-        plugin.getPluginLogger().debug("Effets mobilité mis à jour pour " + player.getName() +
-                " (pioche au slot 0: " + hasPickaxeInSlot0 + ")");
     }
 
 
@@ -517,11 +511,13 @@ public class PickaxeManager {
      * CORRIGÉ : Gère la téléportation Escalateur (maintenant dans mobilité)
      */
     public void handleEscalator(Player player) {
-        // Vérifie que la pioche est au slot 0
-        if (!isPickaxeInCorrectSlot(player)) {
-            player.sendMessage("§c❌ Vous devez avoir la pioche légendaire dans le slot 1!");
+
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player)){
+            player.sendMessage("§c❌ Vous devez avoir la pioche légendaire en main!");
             return;
         }
+
         // NOUVEAU : Vérifie que la pioche n'est pas cassée
         if (isPickaxeBroken(player)) {
             player.sendMessage("§c❌ Votre pioche est trop endommagée pour utiliser Escalateur! Réparez-la d'abord.");
