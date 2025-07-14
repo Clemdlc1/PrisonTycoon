@@ -41,7 +41,7 @@ public class PickaxeManager {
     /**
      * CORRIGÉ : Crée une nouvelle pioche légendaire et la place dans le slot 0
      */
-    public ItemStack createLegendaryPickaxe(Player player) {
+    public void createLegendaryPickaxe(Player player) {
         ItemStack pickaxe = new ItemStack(Material.NETHERITE_PICKAXE);
         ItemMeta meta = pickaxe.getItemMeta();
 
@@ -74,7 +74,6 @@ public class PickaxeManager {
 
         plugin.getPluginLogger().info("§7Pioche légendaire créée pour: " + player.getName() +
                 " avec enchantements par défaut (placée slot 0)");
-        return pickaxe;
     }
 
     /**
@@ -445,21 +444,6 @@ public class PickaxeManager {
         return fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.isPlayerPickaxeBroken(player);
     }
 
-    /**
-     * NOUVEAU : Obtient le multiplicateur de malus pour la pioche
-     */
-    public double getPickaxePenaltyMultiplier(Player player) {
-        return fr.prisoncore.prisoncore.prisonTycoon.events.MiningListener.getPickaxePenaltyMultiplier(player);
-    }
-
-    /**
-     * Répare complètement la pioche légendaire
-     */
-    public void repairPickaxe(ItemStack pickaxe) {
-        if (isLegendaryPickaxe(pickaxe)) {
-            pickaxe.setDurability((short) 0);
-        }
-    }
 
     /**
      * NOUVEAU : Met à jour les effets de mobilité selon les enchantements activés/désactivés
@@ -518,12 +502,6 @@ public class PickaxeManager {
                 " (pioche au slot 0: " + hasPickaxeInSlot0 + ")");
     }
 
-    /**
-     * RENOMMÉ : Applique les effets de mobilité (utilise updateMobilityEffects)
-     */
-    public void applyMobilityEffects(Player player) {
-        updateMobilityEffects(player);
-    }
 
     /**
      * Retire les effets de mobilité
@@ -613,13 +591,4 @@ public class PickaxeManager {
         if (healthPercent >= 20) return "§c";
         return "§4";
     }
-
-    /**
-     * NOUVEAU : Getter pour le slot obligatoire de la pioche
-     */
-    public static int getPickaxeSlot() {
-        return PICKAXE_SLOT;
-    }
-
-
 }

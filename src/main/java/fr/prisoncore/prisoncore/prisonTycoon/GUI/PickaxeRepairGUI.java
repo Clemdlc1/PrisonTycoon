@@ -294,6 +294,7 @@ public class PickaxeRepairGUI {
 
         // Mise à jour de la pioche
         plugin.getPickaxeManager().updatePlayerPickaxe(player);
+        plugin.getPickaxeManager().updateMobilityEffects(player);
 
         // Reset les notifications de durabilité
         player.removeMetadata("durability_notif_25", plugin);

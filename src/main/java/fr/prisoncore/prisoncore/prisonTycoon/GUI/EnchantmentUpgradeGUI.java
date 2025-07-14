@@ -541,7 +541,15 @@ public class EnchantmentUpgradeGUI {
 
     // Actions et utilitaires...
 
-    private void upgradeEnchantment(Player player, String enchantmentName, int requestedLevels) {
+    /**
+     * Version optimisée d'upgradeEnchantment avec option de silence
+     * @param player Le joueur
+     * @param enchantmentName Nom de l'enchantement
+     * @param requestedLevels Nombre de niveaux demandés
+     * @param silent Si true, n'affiche pas les messages d'erreur ni les sons
+     * @return true si l'amélioration a réussi, false sinon
+     */
+    private boolean upgradeEnchantment(Player player, String enchantmentName, int requestedLevels, boolean silent) {
         boolean success = plugin.getEnchantmentManager().upgradeEnchantment(player, enchantmentName, requestedLevels);
 
         if (success) {
@@ -552,36 +560,76 @@ public class EnchantmentUpgradeGUI {
 
             if (newLevel >= enchantment.getMaxLevel()) {
                 playerData.setAutoUpgrade(enchantmentName, false);
-                player.sendMessage("§2🏆 " + enchantment.getDisplayName() + " §2niveau maximum atteint!");
-
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    plugin.getCategoryMenuGUI().openCategoryMenu(player, enchantment.getCategory());
-                }, 10L);
-                return;
+                if (!silent) {
+                    player.sendMessage("§2🏆 " + enchantment.getDisplayName() + " §2niveau maximum atteint!");
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        plugin.getCategoryMenuGUI().openCategoryMenu(player, enchantment.getCategory());
+                    }, 10L);
+                }
+            } else if (!silent) {
+                openEnchantmentUpgradeMenu(player, enchantmentName);
             }
             plugin.getPickaxeManager().updateMobilityEffects(player);
-            openEnchantmentUpgradeMenu(player, enchantmentName);
+            return true;
         } else {
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.5f);
+            if (!silent) {
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.5f);
+            }
+            return false;
         }
     }
 
-    private void upgradeToMax(Player player, String enchantmentName) {
+    /**
+     * Version publique originale (pour compatibilité)
+     */
+    private void upgradeEnchantment(Player player, String enchantmentName, int requestedLevels) {
+        upgradeEnchantment(player, enchantmentName, requestedLevels, false);
+    }
+
+    /**
+     * Version optimisée de upgradeToMax avec option de silence
+     * @param player Le joueur
+     * @param enchantmentName Nom de l'enchantement
+     * @param silent Si true, n'affiche pas les messages d'erreur ni les sons
+     * @return true si au moins une amélioration a été effectuée, false sinon
+     */
+    public boolean upgradeToMax(Player player, String enchantmentName, boolean silent) {
         CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
-        if (enchantment == null) return;
+        if (enchantment == null) return false;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int currentLevel = playerData.getEnchantmentLevel(enchantmentName);
+
+        // Vérifie si déjà au niveau max
+        if (currentLevel >= enchantment.getMaxLevel()) {
+            if (!silent) {
+                playerData.setAutoUpgrade(enchantmentName, false);
+                player.sendMessage("§2🏆 " + enchantment.getDisplayName() + " §2niveau maximum atteint!");
+            }
+            return false;
+        }
 
         long availableTokens = playerData.getTokens();
         int maxAffordableLevels = calculateMaxAffordableUpgrades(enchantment, currentLevel, availableTokens);
 
         if (maxAffordableLevels > 0) {
-            upgradeEnchantment(player, enchantmentName, maxAffordableLevels);
+            // Utilise la méthode upgradeEnchantment en mode silencieux
+            return upgradeEnchantment(player, enchantmentName, maxAffordableLevels, silent);
         } else {
-            player.sendMessage("§cPas assez de tokens pour améliorer cet enchantement!");
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.5f);
+            // Pas assez de tokens - ne fait rien en mode silencieux
+            if (!silent) {
+                player.sendMessage("§cPas assez de tokens pour améliorer cet enchantement!");
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.5f);
+            }
+            return false;
         }
+    }
+
+    /**
+     * Version publique originale (pour compatibilité)
+     */
+    public void upgradeToMax(Player player, String enchantmentName) {
+        upgradeToMax(player, enchantmentName, false);
     }
 
     /**
