@@ -13,32 +13,25 @@ public class ContainerData {
 
     private final int tier;
     private final int maxCapacity;
-    private final Map<ItemStack, Integer> contents; // ItemStack (avec meta) -> quantité
-    private final Set<Material> whitelist; // Filtres autorisés (par Material)
-    private boolean sellEnabled; // Vente activée via /sell all
-    private int durability; // Durabilité actuelle
-    private final int maxDurability; // Durabilité maximale
-    private Map<String, ItemStack> referenceItems;
+    private final Map<ItemStack, Integer> contents;
+    private final Set<Material> whitelist;
+    private boolean sellEnabled;
+    private int durability;
+    private final int maxDurability;
 
+    private Map<Integer, ItemStack> referenceItems;
 
-    /**
-     * Constructeur pour nouveau conteneur
-     */
     public ContainerData(int tier) {
         this.tier = tier;
         this.maxCapacity = getCapacityForTier(tier);
-        this.contents = new LinkedHashMap<>(); // LinkedHashMap pour préserver l'ordre
+        this.contents = new LinkedHashMap<>();
         this.whitelist = new HashSet<>();
-        this.sellEnabled = true; // Par défaut activé
+        this.sellEnabled = true;
         this.maxDurability = getDurabilityForTier(tier);
         this.durability = maxDurability;
-        this.referenceItems = new HashMap<>(); // NOUVEAU
-
+        this.referenceItems = new HashMap<>(); // Initialisation de la nouvelle structure
     }
 
-    /**
-     * CORRIGÉ : Constructeur pour chargement depuis données
-     */
     public ContainerData(int tier, Map<ItemStack, Integer> contents, Set<Material> whitelist,
                          boolean sellEnabled, int durability) {
         this.tier = tier;
@@ -48,7 +41,7 @@ public class ContainerData {
         this.sellEnabled = sellEnabled;
         this.maxDurability = getDurabilityForTier(tier);
         this.durability = durability;
-        this.referenceItems = new HashMap<>(); // CORRIGÉ : Initialisation manquante
+        this.referenceItems = new HashMap<>(); // Initialisation
     }
 
     /**
@@ -304,11 +297,11 @@ public class ContainerData {
     /**
      * NOUVEAU: Getters/Setters pour les items de référence
      */
-    public Map<String, ItemStack> getReferenceItems() {
+    public Map<Integer, ItemStack> getReferenceItems() {
         return new HashMap<>(referenceItems);
     }
 
-    public void setReferenceItems(Map<String, ItemStack> referenceItems) {
+    public void setReferenceItems(Map<Integer, ItemStack> referenceItems) {
         this.referenceItems = new HashMap<>(referenceItems);
     }
 

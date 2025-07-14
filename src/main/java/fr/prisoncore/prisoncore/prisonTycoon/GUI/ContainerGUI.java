@@ -5,29 +5,33 @@ import fr.prisoncore.prisoncore.prisonTycoon.data.ContainerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Interface graphique pour la configuration des conteneurs (RÉDUITE À 27 SLOTS)
+ * Interface graphique pour la configuration des conteneurs - CORRIGÉE
+ * Utilise des métadonnées invisibles pour identifier les conteneurs
  */
 public class ContainerGUI {
 
     private final PrisonTycoon plugin;
+    private final NamespacedKey containerUUIDKey;
 
     public ContainerGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
+        this.containerUUIDKey = new NamespacedKey(plugin, "container_gui_uuid");
     }
 
     /**
-     * MODIFIÉ : Ouvre le menu de configuration d'un conteneur (27 slots, même cassé)
+     * CORRIGÉ : Ouvre le menu de configuration avec titre simple et métadonnées UUID
      */
     public void openContainerMenu(Player player, ItemStack containerItem) {
         ContainerData data = plugin.getContainerManager().getContainerData(containerItem);
@@ -36,6 +40,13 @@ public class ContainerGUI {
             return;
         }
 
+        String containerUUID = plugin.getContainerManager().getContainerUUID(containerItem);
+        if (containerUUID == null) {
+            player.sendMessage("§cErreur: Conteneur sans UUID valide!");
+            return;
+        }
+
+        // CORRIGÉ : Titre simple et lisible, sans UUID
         String title;
         if (data.isBroken()) {
             title = "§c💥 Conteneur Cassé - Tier " + data.getTier();
@@ -46,10 +57,10 @@ public class ContainerGUI {
         Inventory inv = Bukkit.createInventory(null, 27, title);
 
         // Informations du conteneur (slots 0-8)
-        fillContainerInfo(inv, data);
+        fillContainerInfo(inv, data, containerUUID);
 
-        // Boutons de contrôle (slots 18-26)
-        fillControlButtons(inv, data);
+        // Boutons de contrôle (slots 18-26) avec UUID dans les métadonnées
+        fillControlButtons(inv, data, containerUUID);
 
         // Séparateurs (slots 9-17)
         for (int i = 9; i < 18; i++) {
@@ -65,63 +76,70 @@ public class ContainerGUI {
     }
 
     /**
-     * MODIFIÉ : Remplit la zone d'informations du conteneur
+     * CORRIGÉ : Remplit la zone d'informations avec UUID dans les métadonnées
      */
-    private void fillContainerInfo(Inventory inv, ContainerData data) {
+    private void fillContainerInfo(Inventory inv, ContainerData data, String containerUUID) {
         // Information générale
         ItemStack info = new ItemStack(data.isBroken() ? Material.BARRIER : Material.CHEST);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName(data.isBroken() ? "§c💥 Conteneur Cassé" : "§6📦 Conteneur Tier " + data.getTier());
+        infoMeta.setDisplayName(data.isBroken() ?
+                "§c💥 Conteneur Cassé" :
+                "§6📦 Conteneur Tier " + data.getTier());
 
         List<String> infoLore = new ArrayList<>();
         infoLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        infoLore.add("§e📊 Statistiques:");
+        infoLore.add("§e📊 Informations générales:");
+        infoLore.add("§7┃ Tier: §6" + data.getTier());
         infoLore.add("§7┃ Capacité: §a" + NumberFormatter.format(data.getMaxCapacity()) + " items");
-        infoLore.add("§7┃ Utilisé: §b" + NumberFormatter.format(data.getTotalItems()) + " items");
-        infoLore.add("§7┃ Libre: §a" + NumberFormatter.format(data.getFreeSpace()) + " items");
-        infoLore.add("§7┃ Remplissage: §d" + String.format("%.1f", data.getFillPercentage()) + "%");
-        infoLore.add("");
-        infoLore.add("§e🔧 Durabilité:");
-        String durabilityColor = data.getDurabilityPercentage() > 50 ? "§2" :
-                data.getDurabilityPercentage() > 25 ? "§e" : "§c";
-        infoLore.add("§7┃ État: " + durabilityColor + data.getDurability() + "§7/" + durabilityColor + data.getMaxDurability());
-        infoLore.add("§7┃ Pourcentage: " + durabilityColor + String.format("%.1f", data.getDurabilityPercentage()) + "%");
 
         if (data.isBroken()) {
-            infoLore.add("");
-            infoLore.add("§c💥 CONTENEUR CASSÉ!");
-            infoLore.add("§c┃ Ne collecte plus les items");
-            infoLore.add("§c┃ Configuration désactivée");
+            infoLore.add("§7┃ État: §c💥 CASSÉ");
+            infoLore.add("§7┃ Durabilité: §c0§7/§7" + data.getMaxDurability());
+        } else {
+            infoLore.add("§7┃ Durabilité: §2" + data.getDurability() + "§7/§2" + data.getMaxDurability());
+            double percentage = (double) data.getDurability() / data.getMaxDurability() * 100;
+            infoLore.add("§7┃ État: §a" + String.format("%.1f", percentage) + "%");
         }
 
         infoLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        infoMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
         infoMeta.setLore(infoLore);
         info.setItemMeta(infoMeta);
         inv.setItem(4, info);
 
-        // Contenu actuel avec noms d'items
-        if (!data.getContents().isEmpty()) {
+        // Contenu actuel
+        if (data.getTotalItems() > 0) {
             ItemStack contents = new ItemStack(Material.SHULKER_BOX);
             ItemMeta contentsMeta = contents.getItemMeta();
             contentsMeta.setDisplayName("§e📦 Contenu actuel");
 
             List<String> contentsLore = new ArrayList<>();
             contentsLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-            contentsLore.add("§e📋 Items stockés:");
+            contentsLore.add("§e📊 Inventaire du conteneur:");
+            contentsLore.add("§7┃ Items stockés: §a" + NumberFormatter.format(data.getTotalItems()));
+            contentsLore.add("§7┃ Capacité totale: §a" + NumberFormatter.format(data.getMaxCapacity()));
 
-            int displayCount = 0;
-            for (Map.Entry<ItemStack, Integer> entry : data.getContents().entrySet()) {
-                if (displayCount >= 8) {
-                    contentsLore.add("§7┃ §7... et " + (data.getContents().size() - 8) + " autres types");
+            double fillPercentage = (double) data.getTotalItems() / data.getMaxCapacity() * 100;
+            contentsLore.add("§7┃ Taux de remplissage: §d" + String.format("%.1f", fillPercentage) + "%");
+            contentsLore.add("");
+
+            var contents_map = data.getContents();
+            int itemCount = 0;
+            for (var entry : contents_map.entrySet()) {
+                if (itemCount >= 5) {
+                    contentsLore.add("§7┃ §7... et " + (contents_map.size() - 5) + " autres types");
                     break;
                 }
-                String itemName = ContainerData.getDisplayName(entry.getKey());
-                contentsLore.add("§7┃ §e" + NumberFormatter.format(entry.getValue()) + "x §7" + itemName);
-                displayCount++;
+                contentsLore.add("§7┃ §e" + formatMaterialName(entry.getKey().getType()) + "§7: §a" +
+                        NumberFormatter.format(entry.getValue()));
+                itemCount++;
             }
-
             contentsLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+            // NOUVEAU : Stocke l'UUID dans les métadonnées
+            contentsMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
             contentsMeta.setLore(contentsLore);
             contents.setItemMeta(contentsMeta);
             inv.setItem(6, contents);
@@ -154,17 +172,20 @@ public class ContainerGUI {
         }
 
         filtersLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        filtersMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
         filtersMeta.setLore(filtersLore);
         filters.setItemMeta(filtersMeta);
         inv.setItem(2, filters);
     }
 
     /**
-     * MODIFIÉ : Remplit les boutons de contrôle (slots 18-26)
+     * CORRIGÉ : Remplit les boutons de contrôle avec UUID dans les métadonnées
      */
-    private void fillControlButtons(Inventory inv, ContainerData data) {
+    private void fillControlButtons(Inventory inv, ContainerData data, String containerUUID) {
 
-        // NOUVEAU : Bouton configuration des filtres
+        // Bouton configuration des filtres
         ItemStack configFilters = new ItemStack(Material.ITEM_FRAME);
         ItemMeta configMeta = configFilters.getItemMeta();
         configMeta.setDisplayName("§e🎯 Configurer les filtres");
@@ -184,69 +205,70 @@ public class ContainerGUI {
         }
         configLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        configMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
         configMeta.setLore(configLore);
         configFilters.setItemMeta(configMeta);
         inv.setItem(19, configFilters);
 
-        // Bouton vente (désactivé si cassé)
+        // Bouton vente
         Material sellMaterial = data.isBroken() ? Material.GRAY_DYE :
                 (data.isSellEnabled() ? Material.EMERALD : Material.REDSTONE);
         String sellStatus = data.isBroken() ? "§8Indisponible" :
-                (data.isSellEnabled() ? "§aActivée" : "§cDésactivée");
+                (data.isSellEnabled() ? "§a✅ Activée" : "§c❌ Désactivée");
 
         ItemStack sellButton = new ItemStack(sellMaterial);
         ItemMeta sellMeta = sellButton.getItemMeta();
-        sellMeta.setDisplayName("§6💰 Vente automatique: " + sellStatus);
+        sellMeta.setDisplayName("§e💰 Vente automatique");
 
         List<String> sellLore = new ArrayList<>();
         sellLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        sellLore.add("§e⚙️ Configuration vente:");
+        sellLore.add("§e💸 Configuration de vente:");
+        sellLore.add("§7┃ État: " + sellStatus);
 
         if (data.isBroken()) {
-            sellLore.add("§c❌ Conteneur cassé");
-            sellLore.add("§7┃ Fonction de vente désactivée");
-        } else if (data.isSellEnabled()) {
-            sellLore.add("§a✅ Le contenu sera vendu avec /sell all");
-            sellLore.add("§7┃ §eUtilise 1 point de durabilité par vente");
-            sellLore.add("§e▸ Clic: §cDésactiver la vente");
+            sellLore.add("§7┃ Le conteneur doit être réparé");
         } else {
-            sellLore.add("§c❌ Le contenu ne sera PAS vendu avec /sell all");
-            sellLore.add("§7┃ §eLe conteneur ne perdra pas de durabilité");
-            sellLore.add("§e▸ Clic: §aActiver la vente");
+            sellLore.add("§7┃ Vend automatiquement le contenu");
+            sellLore.add("§7┃ Utilise les prix du /shop");
+            sellLore.add("§e▸ Clic: §7" + (data.isSellEnabled() ? "Désactiver" : "Activer"));
         }
         sellLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        sellMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
         sellMeta.setLore(sellLore);
         sellButton.setItemMeta(sellMeta);
         inv.setItem(21, sellButton);
 
-        // Bouton vider
-        ItemStack clearButton = new ItemStack(data.getContents().isEmpty() ? Material.BUCKET : Material.LAVA_BUCKET);
-        ItemMeta clearMeta = clearButton.getItemMeta();
-        clearMeta.setDisplayName("§c🗑️ Récupérer le contenu");
+        // Bouton récupérer contenu
+        ItemStack collectButton = new ItemStack(Material.HOPPER_MINECART);
+        ItemMeta collectMeta = collectButton.getItemMeta();
+        collectMeta.setDisplayName("§a📤 Récupérer le contenu");
 
-        List<String> clearLore = new ArrayList<>();
-        clearLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        if (data.getContents().isEmpty()) {
-            clearLore.add("§7Le conteneur est vide");
-            clearLore.add("§7┃ Rien à récupérer");
+        List<String> collectLore = new ArrayList<>();
+        collectLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        collectLore.add("§e📦 Récupération d'items:");
+
+        if (data.getTotalItems() == 0) {
+            collectLore.add("§7┃ Le conteneur est vide");
+            collectLore.add("§7┃ Rien à récupérer");
         } else {
-            clearLore.add("§e📦 Récupération intelligente:");
-            clearLore.add("§7┃ Calcule l'espace disponible");
-            clearLore.add("§7┃ Récupère ce qui rentre");
-            clearLore.add("§7┃ §aGarde le reste dans le conteneur");
-            clearLore.add("§7┃ Items à récupérer: §b" + NumberFormatter.format(data.getTotalItems()));
+            collectLore.add("§7┃ Items disponibles: §a" + NumberFormatter.format(data.getTotalItems()));
+            collectLore.add("§7┃ Transfère vers votre inventaire");
+            collectLore.add("§e▸ Clic: §aRécupérer tout le contenu");
         }
-        clearLore.add("");
-        clearLore.add("§e▸ Clic: §7Récupérer le contenu");
-        clearLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        collectLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        clearMeta.setLore(clearLore);
-        clearButton.setItemMeta(clearMeta);
-        inv.setItem(23, clearButton);
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        collectMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
+        collectMeta.setLore(collectLore);
+        collectButton.setItemMeta(collectMeta);
+        inv.setItem(23, collectButton);
 
-        // Bouton effacer filtres (désactivé si cassé)
-        ItemStack clearFiltersButton = new ItemStack(data.isBroken() ? Material.GRAY_DYE : Material.BARRIER);
+        // Bouton effacer filtres
+        ItemStack clearFiltersButton = new ItemStack(data.isBroken() ?
+                Material.GRAY_DYE : Material.BARRIER);
         ItemMeta clearFiltersMeta = clearFiltersButton.getItemMeta();
         clearFiltersMeta.setDisplayName("§c🚫 Effacer tous les filtres");
 
@@ -270,6 +292,8 @@ public class ContainerGUI {
         }
         clearFiltersLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        clearFiltersMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
         clearFiltersMeta.setLore(clearFiltersLore);
         clearFiltersButton.setItemMeta(clearFiltersMeta);
         inv.setItem(25, clearFiltersButton);
@@ -283,24 +307,43 @@ public class ContainerGUI {
         closeLore.add("§7Ferme ce menu");
         closeLore.add("§e▸ Clic: §7Retour au jeu");
 
+        // NOUVEAU : Stocke l'UUID dans les métadonnées
+        closeMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
         closeMeta.setLore(closeLore);
         closeButton.setItemMeta(closeMeta);
         inv.setItem(26, closeButton);
 
-        // Séparateurs
+        // Séparateurs avec UUID
         for (int i = 18; i < 27; i++) {
             if (inv.getItem(i) == null) {
-                inv.setItem(i, createGlassPane("", Material.BLACK_STAINED_GLASS_PANE));
+                ItemStack pane = createGlassPane("", Material.BLACK_STAINED_GLASS_PANE);
+                ItemMeta paneMeta = pane.getItemMeta();
+                paneMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
+                pane.setItemMeta(paneMeta);
+                inv.setItem(i, pane);
             }
         }
     }
 
     /**
-     * MODIFIÉ : Gère les clics dans le menu de conteneur (27 slots)
+     * CORRIGÉ : Gère les clics avec identification par métadonnées UUID
      */
     public void handleContainerMenuClick(Player player, int slot, ItemStack clickedItem, String title) {
-        // Récupère le conteneur depuis l'inventaire du joueur
-        ItemStack containerItem = findContainerInInventory(player, title);
+        // NOUVEAU : Récupère l'UUID depuis les métadonnées de l'item cliqué
+        String containerUUID = null;
+        if (clickedItem != null && clickedItem.hasItemMeta()) {
+            containerUUID = clickedItem.getItemMeta().getPersistentDataContainer()
+                    .get(containerUUIDKey, PersistentDataType.STRING);
+        }
+
+        if (containerUUID == null) {
+            player.sendMessage("§cErreur: Impossible d'identifier le conteneur!");
+            player.closeInventory();
+            return;
+        }
+
+        // CORRIGÉ : Trouve le conteneur exact par UUID
+        ItemStack containerItem = plugin.getContainerManager().findContainerByUUID(player, containerUUID);
         if (containerItem == null) {
             player.sendMessage("§cErreur: Conteneur introuvable!");
             player.closeInventory();
@@ -318,144 +361,72 @@ public class ContainerGUI {
         if (slot == 19) { // Configurer filtres
             if (data.isBroken()) {
                 player.sendMessage("§c❌ Impossible de configurer les filtres d'un conteneur cassé!");
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
                 return;
             }
-
-            player.closeInventory();
             plugin.getContainerFilterGUI().openFilterMenu(player, containerItem);
-            return;
         }
-        else if (slot == 21) { // Bouton vente
+        else if (slot == 21) { // Vente automatique
             if (data.isBroken()) {
-                player.sendMessage("§c❌ Impossible de modifier les paramètres d'un conteneur cassé!");
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
+                player.sendMessage("§c❌ Impossible de configurer la vente d'un conteneur cassé!");
                 return;
             }
 
             data.setSellEnabled(!data.isSellEnabled());
-            String status = data.isSellEnabled() ? "§aactivée" : "§cdésactivée";
-            player.sendMessage("§6💰 Vente automatique " + status + "!");
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+            plugin.getContainerManager().updateContainerItem(containerItem, data);
+
+            String status = data.isSellEnabled() ? "§a✅ activée" : "§c❌ désactivée";
+            player.sendMessage("§e💰 Vente automatique " + status + "!");
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+
+            // Recharge le menu pour mettre à jour l'affichage
+            openContainerMenu(player, containerItem);
+        }
+        else if (slot == 23) { // Récupérer contenu
+            if (data.getTotalItems() == 0) {
+                player.sendMessage("§c❌ Le conteneur est vide!");
+                return;
+            }
+
+            int itemsTransferred = plugin.getContainerManager().transferContainerToPlayer(player, data);
+
+            if (itemsTransferred > 0) {
+                plugin.getContainerManager().updateContainerItem(containerItem, data);
+                player.sendMessage("§a✅ " + NumberFormatter.format(itemsTransferred) +
+                        " items récupérés dans votre inventaire!");
+                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.2f);
+
+                // Recharge le menu pour mettre à jour l'affichage
+                openContainerMenu(player, containerItem);
+            } else {
+                player.sendMessage("§c❌ Votre inventaire est plein!");
+            }
         }
         else if (slot == 25) { // Effacer filtres
             if (data.isBroken()) {
                 player.sendMessage("§c❌ Impossible de modifier les filtres d'un conteneur cassé!");
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
                 return;
             }
 
-            if (!data.getWhitelist().isEmpty()) {
-                data.clearFilters();
-                player.sendMessage("§c🚫 Tous les filtres ont été effacés!");
-                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
-            } else {
-                player.sendMessage("§7Aucun filtre à effacer.");
+            if (data.getWhitelist().isEmpty()) {
+                player.sendMessage("§c❌ Aucun filtre à effacer!");
+                return;
             }
-        }
-        else if (slot == 23) { // Récupérer contenu
-            if (!data.getContents().isEmpty()) {
-                handleContentRecovery(player, data);
-            } else {
-                player.sendMessage("§7Le conteneur est déjà vide.");
-            }
+
+            data.clearFilters();
+            data.getReferenceItems().clear();
+            plugin.getContainerManager().updateContainerItem(containerItem, data);
+
+            player.sendMessage("§a✅ Tous les filtres ont été effacés!");
+            player.sendMessage("§7Le conteneur accepte maintenant tous les items.");
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+
+            // Recharge le menu pour mettre à jour l'affichage
+            openContainerMenu(player, containerItem);
         }
         else if (slot == 26) { // Fermer
             player.closeInventory();
-            return;
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.8f);
         }
-
-        // Met à jour le conteneur et rouvre le menu
-        plugin.getContainerManager().updateContainerItem(containerItem, data);
-        openContainerMenu(player, containerItem);
-    }
-
-    /**
-     * NOUVEAU : Gère la récupération intelligente du contenu
-     */
-    private void handleContentRecovery(Player player, ContainerData data) {
-        // Calcule l'espace disponible dans l'inventaire
-        int availableSpace = 0;
-        for (ItemStack invItem : player.getInventory().getStorageContents()) {
-            if (invItem == null || invItem.getType() == Material.AIR) {
-                availableSpace += 64; // Slot vide = 64 items max
-            } else if (invItem.getAmount() < invItem.getMaxStackSize()) {
-                availableSpace += invItem.getMaxStackSize() - invItem.getAmount();
-            }
-        }
-
-        Map<ItemStack, Integer> contentsToMove;
-        boolean partialRecovery = false;
-
-        if (availableSpace >= data.getTotalItems()) {
-            // Assez de place pour tout
-            contentsToMove = data.clearContents();
-        } else if (availableSpace > 0) {
-            // Place partielle
-            contentsToMove = data.clearContentsWithLimit(availableSpace);
-            partialRecovery = true;
-        } else {
-            // Aucune place
-            player.sendMessage("§c❌ Votre inventaire est plein! Impossible de récupérer le contenu.");
-            player.sendMessage("§7Libérez de l'espace ou utilisez §a/sell all §7pour vider vos conteneurs.");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
-
-        int recovered = 0;
-        int lost = 0;
-
-        for (Map.Entry<ItemStack, Integer> entry : contentsToMove.entrySet()) {
-            ItemStack itemToAdd = entry.getKey().clone();
-            itemToAdd.setAmount(entry.getValue());
-
-            Map<Integer, ItemStack> remaining = player.getInventory().addItem(itemToAdd);
-
-            if (remaining.isEmpty()) {
-                recovered += entry.getValue();
-            } else {
-                for (ItemStack remainingItem : remaining.values()) {
-                    lost += remainingItem.getAmount();
-                }
-                recovered += entry.getValue() - lost;
-            }
-        }
-
-        if (partialRecovery) {
-            player.sendMessage("§e⚠️ Contenu partiellement récupéré: §a" + NumberFormatter.format(recovered) + " items");
-            player.sendMessage("§7Il reste §e" + NumberFormatter.format(data.getTotalItems()) + " items §7dans le conteneur.");
-            player.sendMessage("§7Libérez plus d'espace pour récupérer le reste.");
-        } else {
-            player.sendMessage("§a✅ Contenu récupéré: §e" + NumberFormatter.format(recovered) + " items");
-        }
-
-        if (lost > 0) {
-            player.sendMessage("§c⚠️ §e" + NumberFormatter.format(lost) + " items perdus (calcul d'espace imprécis)!");
-        }
-
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-    }
-
-    /**
-     * Trouve le conteneur dans l'inventaire du joueur basé sur le titre
-     */
-    private ItemStack findContainerInInventory(Player player, String title) {
-        // Extrait le tier du titre
-        String tierStr = title.replaceAll(".* Tier (\\d+).*", "$1");
-        try {
-            int tier = Integer.parseInt(tierStr);
-
-            for (ItemStack item : player.getInventory().getContents()) {
-                if (plugin.getContainerManager().isContainer(item)) {
-                    ContainerData data = plugin.getContainerManager().getContainerData(item);
-                    if (data != null && data.getTier() == tier) {
-                        return item;
-                    }
-                }
-            }
-        } catch (NumberFormatException ignored) {}
-
-        return null;
     }
 
     /**

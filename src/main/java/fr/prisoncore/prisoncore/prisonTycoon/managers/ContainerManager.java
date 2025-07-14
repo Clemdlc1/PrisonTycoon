@@ -160,31 +160,6 @@ public class ContainerManager {
         return deserializeContainerData(serializedData);
     }
 
-    /**
-     * Met à jour un item conteneur avec de nouvelles données
-     */
-    public void updateContainerItem(ItemStack item, ContainerData data) {
-        if (!isContainer(item)) return;
-
-        ItemMeta meta = item.getItemMeta();
-
-        // Met à jour le nom si nécessaire
-        if (data.isBroken()) {
-            meta.setDisplayName("§c💥 Conteneur " + getTierName(data.getTier()) + " §c(CASSÉ)");
-        } else {
-            meta.setDisplayName("§6📦 Conteneur " + getTierName(data.getTier()));
-        }
-
-        // Met à jour le lore
-        List<String> lore = generateUpdatedLore(data);
-        meta.setLore(lore);
-
-        // Sauvegarde les données
-        String serializedData = serializeContainerData(data);
-        meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
-
-        item.setItemMeta(meta);
-    }
 
     /**
      * MODIFIÉ : Génère le lore mis à jour pour un conteneur
@@ -362,8 +337,7 @@ public class ContainerManager {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos);
 
-            // CORRIGÉ : Version 2 pour supporter les referenceItems
-            dataOutput.writeInt(2); // Version augmentée
+            dataOutput.writeInt(2); // Version 2 supporte les referenceItems
 
             // Données de base
             dataOutput.writeInt(data.getTier());
@@ -383,11 +357,11 @@ public class ContainerManager {
                 dataOutput.writeInt(entry.getValue());
             }
 
-            // NOUVEAU: Items de référence (version 2+)
-            dataOutput.writeInt(data.getReferenceItems().size());
-            for (Map.Entry<String, ItemStack> entry : data.getReferenceItems().entrySet()) {
-                dataOutput.writeUTF(entry.getKey());
-                dataOutput.writeObject(entry.getValue());
+            Map<Integer, ItemStack> refs = data.getReferenceItems();
+            dataOutput.writeInt(refs.size());
+            for (Map.Entry<Integer, ItemStack> entry : refs.entrySet()) {
+                dataOutput.writeInt(entry.getKey());      // Écrit le slot (Integer)
+                dataOutput.writeObject(entry.getValue()); // Écrit l'item (ItemStack)
             }
 
             dataOutput.close();
@@ -408,7 +382,6 @@ public class ContainerManager {
             ByteArrayInputStream bis = new ByteArrayInputStream(data);
             BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis);
 
-            // Version
             int version = dataInput.readInt();
 
             // Données de base
@@ -438,15 +411,14 @@ public class ContainerManager {
                 }
             }
 
-            // NOUVEAU: Items de référence (seulement version 2+)
-            Map<String, ItemStack> referenceItems = new HashMap<>();
+            Map<Integer, ItemStack> referenceItems = new HashMap<>();
             if (version >= 2) {
                 int refItemsSize = dataInput.readInt();
                 for (int i = 0; i < refItemsSize; i++) {
                     try {
-                        String key = dataInput.readUTF();
-                        ItemStack refItem = (ItemStack) dataInput.readObject();
-                        referenceItems.put(key, refItem);
+                        int slot = dataInput.readInt();             // Lit le slot (Integer)
+                        ItemStack refItem = (ItemStack) dataInput.readObject(); // Lit l'item (ItemStack)
+                        referenceItems.put(slot, refItem);
                     } catch (Exception e) {
                         plugin.getPluginLogger().warning("Erreur lecture item référence: " + e.getMessage());
                     }
@@ -476,12 +448,19 @@ public class ContainerManager {
         return meta.getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
     }
 
+// ================================================================================
+// AJOUTS ET MODIFICATIONS POUR ContainerManager.java
+// À ajouter aux méthodes existantes ou à modifier
+// ================================================================================
+
     /**
-     * NOUVEAU : Trouve un conteneur spécifique par UUID dans l'inventaire
+     * RENFORCÉ : Trouve un conteneur spécifique par UUID dans l'inventaire
      */
     public ItemStack findContainerByUUID(Player player, String uuid) {
+        if (uuid == null || player == null) return null;
+
         for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item)) {
+            if (item != null && isContainer(item)) {
                 String containerUUID = getContainerUUID(item);
                 if (uuid.equals(containerUUID)) {
                     return item;
@@ -489,5 +468,195 @@ public class ContainerManager {
             }
         }
         return null;
+    }
+
+    /**
+     * NOUVEAU : Méthode pour mettre à jour un conteneur spécifique dans l'inventaire
+     */
+    public boolean updateContainerInInventory(Player player, String uuid, ContainerData newData) {
+        if (uuid == null || player == null || newData == null) return false;
+
+        for (int i = 0; i < player.getInventory().getSize(); i++) {
+            ItemStack item = player.getInventory().getItem(i);
+            if (item != null && isContainer(item)) {
+                String containerUUID = getContainerUUID(item);
+                if (uuid.equals(containerUUID)) {
+                    updateContainerItem(item, newData);
+                    player.getInventory().setItem(i, item); // Force la mise à jour
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * NOUVEAU : Vérifie si deux conteneurs sont le même (par UUID)
+     */
+    public boolean isSameContainer(ItemStack container1, ItemStack container2) {
+        if (!isContainer(container1) || !isContainer(container2)) return false;
+
+        String uuid1 = getContainerUUID(container1);
+        String uuid2 = getContainerUUID(container2);
+
+        return uuid1 != null && uuid1.equals(uuid2);
+    }
+
+    /**
+     * NOUVEAU : Transfère le contenu d'un conteneur vers l'inventaire du joueur
+     */
+    public int transferContainerToPlayer(Player player, ContainerData data) {
+        if (player == null || data == null) return 0;
+
+        int totalTransferred = 0;
+        // Utiliser une copie pour éviter ConcurrentModificationException lors de la suppression
+        var contents = new HashMap<>(data.getContents());
+
+        for (var entry : contents.entrySet()) {
+            ItemStack itemKey = entry.getKey(); // L'ItemStack qui sert de clé
+            Material material = itemKey.getType();
+            int amount = entry.getValue();
+
+            int amountToRemoveFromContainer = 0; // Quantité à retirer du conteneur
+
+            while (amount > 0) {
+                int stackSize = Math.min(amount, material.getMaxStackSize());
+
+                // On utilise l'itemKey cloné pour l'ajout, afin de préserver les métadonnées
+                ItemStack itemToAdd = itemKey.clone();
+                itemToAdd.setAmount(stackSize);
+
+                // Essaie d'ajouter l'item à l'inventaire
+                var leftover = player.getInventory().addItem(itemToAdd);
+
+                if (leftover.isEmpty()) {
+                    // Tout le stack a été ajouté
+                    totalTransferred += stackSize;
+                    amountToRemoveFromContainer += stackSize;
+                    amount -= stackSize;
+                } else {
+                    // L'inventaire est plein, on calcule ce qui a été ajouté
+                    int addedAmount = stackSize - leftover.get(0).getAmount();
+                    if (addedAmount > 0) {
+                        totalTransferred += addedAmount;
+                        amountToRemoveFromContainer += addedAmount;
+                    }
+                    // L'inventaire est plein, on arrête
+                    break;
+                }
+            }
+
+            // Met à jour le conteneur APRES la boucle pour cet item
+            if (amountToRemoveFromContainer > 0) {
+                data.removeItem(itemKey, amountToRemoveFromContainer);
+            }
+
+            if (player.getInventory().firstEmpty() == -1) {
+                // L'inventaire est plein, inutile de continuer la boucle principale
+                break;
+            }
+        }
+
+        return totalTransferred;
+    }
+
+    /**
+     * MODIFIÉ : Met à jour un item conteneur avec de nouvelles données
+     */
+    public void updateContainerItem(ItemStack container, ContainerData data) {
+        if (!isContainer(container) || data == null) return;
+
+        ItemMeta meta = container.getItemMeta();
+        if (meta == null) return;
+
+        // Met à jour la lore avec les nouvelles informations
+        List<String> lore = new ArrayList<>();
+        lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§e📊 Informations du conteneur:");
+        lore.add("§7┃ Tier: §6" + data.getTier() + " §7(" + getTierName(data.getTier()) + "§7)");
+        lore.add("§7┃ Capacité: §a" + NumberFormatter.format(data.getMaxCapacity()) + " items");
+
+        if (data.isBroken()) {
+            lore.add("§7┃ Durabilité: §c0§7/§7" + data.getMaxDurability());
+            lore.add("§7┃ État: §c💥 CASSÉ");
+            meta.setDisplayName("§c💥 Conteneur Cassé - " + getTierName(data.getTier()));
+        } else {
+            lore.add("§7┃ Durabilité: §2" + data.getDurability() + "§7/§2" + data.getMaxDurability());
+            double percentage = (double) data.getDurability() / data.getMaxDurability() * 100;
+            lore.add("§7┃ État: §a" + String.format("%.1f", percentage) + "%");
+            meta.setDisplayName("§6📦 Conteneur " + getTierName(data.getTier()));
+        }
+
+        lore.add("");
+        lore.add("§e📦 Contenu actuel:");
+
+        if (data.getTotalItems() == 0) {
+            lore.add("§7┃ Vide");
+        } else {
+            lore.add("§7┃ Items: §a" + NumberFormatter.format(data.getTotalItems()) +
+                    "§7/§a" + NumberFormatter.format(data.getMaxCapacity()));
+            double fillPercentage = (double) data.getTotalItems() / data.getMaxCapacity() * 100;
+            lore.add("§7┃ Remplissage: §d" + String.format("%.1f", fillPercentage) + "%");
+        }
+
+        lore.add("");
+        lore.add("§e🎯 Filtres:");
+
+        if (data.getWhitelist().isEmpty()) {
+            lore.add("§7┃ Accepte tous les items");
+        } else {
+            lore.add("§7┃ §a" + data.getWhitelist().size() + " matériaux filtrés");
+        }
+
+        lore.add("");
+        lore.add("§e💰 Vente automatique:");
+
+        if (data.isBroken()) {
+            lore.add("§7┃ §8Indisponible");
+        } else {
+            lore.add("§7┃ " + (data.isSellEnabled() ? "§a✅ Activée" : "§c❌ Désactivée"));
+        }
+
+        lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§e⚙️ §aShift + Clic droit §7pour configurer");
+        lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+
+        // Sérialise et sauvegarde les nouvelles données
+        String serializedData = serializeContainerData(data);
+        meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
+
+        container.setItemMeta(meta);
+    }
+
+    /**
+     * NOUVEAU : Nettoie les données corrompues et recrée un conteneur valide
+     */
+    public ItemStack repairCorruptedContainer(ItemStack container, int tier) {
+        if (!isContainer(container)) return null;
+
+        plugin.getPluginLogger().warning("Réparation d'un conteneur corrompu détecté");
+
+        // Récupère l'UUID existant ou en crée un nouveau
+        String existingUUID = getContainerUUID(container);
+        if (existingUUID == null) {
+            existingUUID = UUID.randomUUID().toString();
+        }
+
+        // Crée de nouvelles données par défaut
+        ContainerData newData = new ContainerData(tier);
+
+        // Met à jour le conteneur avec les bonnes données
+        ItemMeta meta = container.getItemMeta();
+        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, existingUUID);
+
+        String serializedData = serializeContainerData(newData);
+        meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
+
+        container.setItemMeta(meta);
+        updateContainerItem(container, newData);
+
+        return container;
     }
 }

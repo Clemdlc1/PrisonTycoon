@@ -12,8 +12,8 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Listener pour les interfaces graphiques
- * CORRIGÉ : Protection complète contre déplacement d'items dans tous les menus
+ * Listener pour les interfaces graphiques générales
+ * CORRIGÉ : N'interfère plus avec les GUIs de conteneur
  */
 public class GUIListener implements Listener {
 
@@ -23,18 +23,25 @@ public class GUIListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         String title = event.getView().getTitle();
+
+        // NOUVEAU : Ignore complètement les GUIs de conteneur (gérés par ContainerListener)
+        if (isContainerGUI(title)) {
+            return; // Laisse ContainerListener gérer ces GUIs
+        }
+
         if (!isPluginGUI(title)) return;
 
         // ÉTAPE CRUCIALE : Toujours annuler l'événement pour prendre le contrôle total.
         event.setCancelled(true);
 
         ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || clickedItem.getType() == Material.AIR || !clickedItem.hasItemMeta() || !clickedItem.getItemMeta().hasDisplayName()) {
+        if (clickedItem == null || clickedItem.getType() == Material.AIR ||
+                !clickedItem.hasItemMeta() || !clickedItem.getItemMeta().hasDisplayName()) {
             return; // Ne rien faire si c'est un slot vide ou un item décoratif.
         }
 
@@ -42,8 +49,25 @@ public class GUIListener implements Listener {
         handleGUIClick(player, title, event.getSlot(), clickedItem, event.getClick());
     }
 
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+
+        String title = event.getView().getTitle();
+
+        // NOUVEAU : Ignore complètement les GUIs de conteneur
+        if (isContainerGUI(title)) {
+            return; // Laisse ContainerListener gérer ces GUIs
+        }
+
+        if (!isPluginGUI(title)) return;
+
+        // Empêche le glisser-déposer dans tous les autres GUIs du plugin
+        event.setCancelled(true);
+    }
+
     /**
-     * Délègue les clics vers les bonnes GUIs
+     * Délègue les clics vers les bonnes GUIs (sauf conteneurs)
      */
     private void handleGUIClick(Player player, String title, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
         if (title.contains("Menu Principal") || title.contains("Menu Enchantement")) {
@@ -68,9 +92,7 @@ public class GUIListener implements Listener {
         else if (title.contains("Réparation")) {
             plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         }
-        else if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
-            plugin.getContainerGUI().handleContainerMenuClick(player, slot, item, title);
-        }
+        // SUPPRIMÉ : La gestion des conteneurs (maintenant dans ContainerListener)
     }
 
     @EventHandler
@@ -78,38 +100,39 @@ public class GUIListener implements Listener {
         if (!(event.getPlayer() instanceof Player player)) return;
 
         String title = event.getView().getTitle();
-        if (isPluginGUI(title)) {
-            // Met à jour la pioche quand on ferme le menu
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                plugin.getPickaxeManager().updatePlayerPickaxe(player);
-            }, 1L);
-        }
-    }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryDrag(InventoryDragEvent event) {
-        String title = event.getView().getTitle();
-        if (isPluginGUI(title)) {
-            event.setCancelled(true);
-            plugin.getPluginLogger().debug("Drag bloqué dans GUI: " + title);
+        // NOUVEAU : Ignore complètement les GUIs de conteneur
+        if (isContainerGUI(title)) {
+            return; // Laisse ContainerListener gérer la fermeture
         }
+
+        // Gestion de la fermeture pour les autres GUIs si nécessaire
+        // (Actuellement aucune action spéciale requise)
     }
 
     /**
-     * CORRIGÉ : Vérifie si le titre correspond à une GUI du plugin (toutes les nouvelles)
+     * NOUVEAU : Vérifie si c'est un GUI de conteneur
+     */
+    private boolean isContainerGUI(String title) {
+        return title.contains("Configuration Conteneur") ||
+                title.contains("Conteneur Cassé") ||
+                plugin.getContainerFilterGUI().isFilterGUI(title);
+    }
+
+    /**
+     * Vérifie si c'est un GUI du plugin (sauf conteneurs)
      */
     private boolean isPluginGUI(String title) {
-        return title.contains("PrisonTycoon") ||
-                title.contains("Menu Principal") ||
+        return title.contains("Menu Principal") ||
                 title.contains("Menu Enchantement") ||
-                title.contains("Enchantements") ||
                 title.contains("Économiques") ||
                 title.contains("Utilités") ||
                 title.contains("Mobilité") ||
                 title.contains("Spéciaux") ||
-                title.contains("Cristaux") ||
-                title.contains("Compagnons") ||
                 title.contains("🔧") ||
+                title.contains("Cristaux") ||
+                title.contains("Enchantements Uniques") ||
+                title.contains("Compagnons") ||
                 title.contains("Réparation");
     }
 }

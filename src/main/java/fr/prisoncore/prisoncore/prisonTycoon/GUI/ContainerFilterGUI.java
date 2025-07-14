@@ -4,29 +4,34 @@ import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 import fr.prisoncore.prisoncore.prisonTycoon.data.ContainerData;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
 /**
- * Interface graphique dédiée à la configuration des filtres - CORRIGÉE
+ * Interface graphique dédiée à la configuration des filtres - VERSION FINALE CORRIGÉE
+ * Sauvegarde et restaure l'état exact de l'inventaire des filtres.
  */
 public class ContainerFilterGUI {
 
     private final PrisonTycoon plugin;
-    // NOUVEAU : Map pour associer les GUIs aux conteneurs
-    private final Map<String, ItemStack> openFilterGUIs = new HashMap<>();
+    private final NamespacedKey containerUUIDKey;
+    // Map pour associer les inventaires ouverts aux UUIDs des conteneurs
+    private final Map<String, String> activeFilterGUIs = new HashMap<>();
 
     public ContainerFilterGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
+        this.containerUUIDKey = new NamespacedKey(plugin, "filter_container_uuid");
     }
 
     /**
-     * CORRIGÉ : Ouvre le menu de configuration des filtres sans modifier les items
+     * Ouvre le menu de filtres et restaure l'état exact (position, meta, quantité).
      */
     public void openFilterMenu(Player player, ItemStack containerItem) {
         ContainerData data = plugin.getContainerManager().getContainerData(containerItem);
@@ -35,222 +40,158 @@ public class ContainerFilterGUI {
             return;
         }
 
-        // NOUVEAU : Crée un UUID unique pour ce GUI
-        String guiId = player.getUniqueId().toString() + "_" + System.currentTimeMillis();
-        String title = "§e🎯 Filtres - ID:" + guiId.substring(0, 8);
-
-        Inventory filterInv = Bukkit.createInventory(null, 9, title);
-
-        // CORRIGÉ : Place les items de référence EXACTEMENT comme ils sont sauvegardés
-        Map<String, ItemStack> referenceItems = data.getReferenceItems();
-        int slot = 0;
-
-        for (ItemStack referenceItem : referenceItems.values()) {
-            if (slot >= 9) break;
-
-            // IMPORTANT : Clone l'item exact sans aucune modification
-            ItemStack exactItem = referenceItem.clone();
-            filterInv.setItem(slot, exactItem);
-            slot++;
+        String containerUUID = plugin.getContainerManager().getContainerUUID(containerItem);
+        if (containerUUID == null) {
+            player.sendMessage("§cErreur: Conteneur sans UUID valide!");
+            return;
         }
 
-        // NOUVEAU : Stocke la référence du conteneur
-        openFilterGUIs.put(title, containerItem.clone());
+        // Titre simple et lisible
+        String title = "§e🎯 Filtres - Conteneur Tier " + data.getTier();
+        Inventory filterInv = Bukkit.createInventory(null, 9, title);
+
+        // Place les items de référence en utilisant le slot sauvegardé (la clé de la Map).
+        Map<Integer, ItemStack> referenceItems = data.getReferenceItems();
+        for (Map.Entry<Integer, ItemStack> entry : referenceItems.entrySet()) {
+            int slot = entry.getKey();
+            ItemStack referenceItem = entry.getValue();
+
+            if (slot < 9) { // Sécurité pour s'assurer que le slot est valide
+                // On clone l'item pour que l'inventaire ait sa propre copie.
+                filterInv.setItem(slot, referenceItem.clone());
+            }
+        }
+
+        // Associe ce GUI à l'UUID du conteneur pour le retrouver à la fermeture
+        activeFilterGUIs.put(title, containerUUID);
 
         player.openInventory(filterInv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
 
-        // Message d'instructions
+        // Messages d'instructions
         player.sendMessage("§e🎯 §lConfiguration des filtres:");
         player.sendMessage("§7┃ Glissez vos items dans les 9 slots");
-        player.sendMessage("§7┃ Les items seront préservés exactement comme ils sont");
+        player.sendMessage("§7┃ L'emplacement, la quantité et les métadonnées seront préservés");
         player.sendMessage("§7┃ Fermez l'inventaire pour sauvegarder");
         player.sendMessage("§7┃ §eAucun filtre = accepte tous les items");
     }
 
     /**
-     * CORRIGÉ : Sauvegarde les filtres depuis l'inventaire sans modifier les items
+     * CORRIGÉ : Sauvegarde l'état exact de l'inventaire des filtres (position, meta, quantité).
      */
     public void saveFiltersFromInventory(Player player, Inventory filterInventory, String title) {
-        // NOUVEAU : Utilise d'abord la map de tracking
-        ItemStack trackedContainer = openFilterGUIs.get(title);
-
-        ItemStack containerItem = null;
-
-        if (trackedContainer != null) {
-            // Trouve le conteneur correspondant dans l'inventaire du joueur
-            containerItem = findMatchingContainerInInventory(player, trackedContainer);
-        }
-
-        // FALLBACK : Si pas trouvé, utilise l'ancienne méthode mais améliorée
-        if (containerItem == null) {
-            containerItem = findContainerFromFilterTitle(player, title);
-        }
-
-        if (containerItem == null) {
-            plugin.getPluginLogger().warning("Conteneur introuvable pour " + player.getName() +
-                    " - title: " + title + " - tracked: " + (trackedContainer != null));
-            player.sendMessage("§c❌ Erreur: Conteneur introuvable! Vérifiez que le conteneur est toujours dans votre inventaire.");
+        // Récupère l'UUID depuis la map de tracking
+        String containerUUID = activeFilterGUIs.get(title);
+        if (containerUUID == null) {
+            player.sendMessage("§c❌ Erreur: Impossible d'identifier le conteneur pour la sauvegarde!");
             return;
         }
 
-        ContainerData data = plugin.getContainerManager().getContainerData(containerItem);
+        // Trouve le conteneur exact par UUID pour récupérer ses données
+        ItemStack currentContainerItem = plugin.getContainerManager().findContainerByUUID(player, containerUUID);
+        if (currentContainerItem == null) {
+            player.sendMessage("§c❌ Erreur: Conteneur introuvable! La sauvegarde a échoué.");
+            return;
+        }
+
+        ContainerData data = plugin.getContainerManager().getContainerData(currentContainerItem);
         if (data == null) {
-            player.sendMessage("§cErreur: Données du conteneur corrompues!");
+            player.sendMessage("§cErreur: Données du conteneur corrompues! La sauvegarde a échoué.");
             return;
         }
 
-        // Efface les anciens filtres
-        data.clearFilters();
-
-        // CORRIGÉ : Collecte les items EXACTEMENT comme ils sont, sans modification
-        Map<String, ItemStack> exactItems = new HashMap<>();
+        // Crée la nouvelle map de filtres en préservant slot, meta ET quantité.
+        Map<Integer, ItemStack> newReferenceItems = new HashMap<>();
         Set<Material> uniqueMaterials = new HashSet<>();
-        int totalItems = 0;
+        int totalStacks = 0;
 
-        for (ItemStack item : filterInventory.getContents()) {
+        // On parcourt l'inventaire slot par slot pour conserver la position.
+        for (int i = 0; i < filterInventory.getSize(); i++) {
+            ItemStack item = filterInventory.getItem(i);
+
             if (item != null && item.getType() != Material.AIR) {
-                totalItems++;
+                totalStacks++;
 
-                // IMPORTANT : Clone l'item EXACT sans aucune modification
+                // ----- CORRECTION N°1 : CONSERVATION DE LA QUANTITÉ ET DES METAS -----
+                // On clone l'item EXACTEMENT comme il est, SANS changer la quantité ou autre chose.
                 ItemStack exactClone = item.clone();
-                exactClone.setAmount(1); // Normalise seulement la quantité
 
-                Material material = item.getType();
+                // Stocke le clone exact dans la map avec son slot (i) comme clé.
+                newReferenceItems.put(i, exactClone);
 
-                // Génère une clé unique pour cet item exact (Material + hash des métadonnées)
-                String itemKey = material.name();
-                if (item.hasItemMeta()) {
-                    itemKey += "_" + item.getItemMeta().hashCode();
-                }
-
-                // Stocke l'item exact (pas de doublons par clé)
-                exactItems.put(itemKey, exactClone);
-
-                // Ajoute le Material pour les filtres (dédoublonné automatiquement par le Set)
-                uniqueMaterials.add(material);
+                // Ajoute le Material pour la logique de filtrage interne (whitelist)
+                uniqueMaterials.add(item.getType());
             }
         }
 
-        // CORRIGÉ : Applique les filtres basés sur les Materials uniques
+        // Met à jour l'objet "data" avec les nouvelles informations
+        data.clearFilters();
         for (Material material : uniqueMaterials) {
             data.toggleFilter(material);
         }
+        data.setReferenceItems(newReferenceItems);
 
-        // CORRIGÉ : Stocke les items exacts comme référence
-        data.setReferenceItems(exactItems);
+        // ----- CORRECTION N°2 : MISE À JOUR DE L'ITEM RÉEL DANS L'INVENTAIRE -----
+        // On utilise une méthode dédiée qui trouve l'item dans l'inventaire du joueur,
+        // applique les nouvelles données (qui sont sérialisées à l'intérieur), et force la mise à jour.
+        // C'est l'étape cruciale qui manquait pour rendre la sauvegarde persistante.
+        boolean success = plugin.getContainerManager().updateContainerInInventory(player, containerUUID, data);
 
-        // Met à jour le conteneur
-        plugin.getContainerManager().updateContainerItem(containerItem, data);
+        if (!success) {
+            player.sendMessage("§c❌ Une erreur critique est survenue lors de la sauvegarde des filtres.");
+            plugin.getPluginLogger().warning("Échec de updateContainerInInventory pour " + player.getName() + " (UUID: " + containerUUID + ")");
+            activeFilterGUIs.remove(title); // Nettoyage même en cas d'échec
+            return;
+        }
 
         // Messages de confirmation
-        if (totalItems == 0) {
+        if (totalStacks == 0) {
             player.sendMessage("§a✅ Filtres supprimés! Le conteneur accepte maintenant tous les items.");
         } else {
-            player.sendMessage("§a✅ Filtres sauvegardés! §e" + totalItems + " items exacts §7→ §e" + uniqueMaterials.size() + " matériaux filtrés:");
-
-            int displayCount = 0;
-            for (Material material : uniqueMaterials) {
-                if (displayCount >= 5) {
-                    player.sendMessage("§7   ... et " + (uniqueMaterials.size() - 5) + " autres");
-                    break;
-                }
-                player.sendMessage("§7   • §e" + formatMaterialName(material));
-                displayCount++;
-            }
-
-            if (totalItems > uniqueMaterials.size()) {
-                player.sendMessage("§7   §8(§7" + (totalItems - uniqueMaterials.size()) + " items en doublon ignorés§8)");
-            }
+            long totalItemCount = newReferenceItems.values().stream().mapToLong(ItemStack::getAmount).sum();
+            player.sendMessage("§a✅ Filtres sauvegardés! §e" + totalItemCount + " items §7(dans §e" + totalStacks + " stacks§7) sur §e" + uniqueMaterials.size() + " matériaux.");
         }
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
 
-        // NOUVEAU : Nettoie la référence
-        openFilterGUIs.remove(title);
+        // Nettoie la référence de l'inventaire actif
+        activeFilterGUIs.remove(title);
 
         plugin.getPluginLogger().debug("Filtres sauvegardés pour " + player.getName() +
-                ": " + totalItems + " items exacts → " + uniqueMaterials.size() + " matériaux");
+                " (UUID: " + containerUUID.substring(0, 8) + "): " +
+                totalStacks + " slots utilisés.");
     }
 
     /**
-     * NOUVEAU : Trouve un conteneur correspondant dans l'inventaire du joueur
-     */
-    private ItemStack findMatchingContainerInInventory(Player player, ItemStack referenceContainer) {
-        ContainerData referenceData = plugin.getContainerManager().getContainerData(referenceContainer);
-        if (referenceData == null) return null;
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (plugin.getContainerManager().isContainer(item)) {
-                ContainerData itemData = plugin.getContainerManager().getContainerData(item);
-                if (itemData != null && itemData.getTier() == referenceData.getTier()) {
-                    // Vérifie si c'est le même conteneur (même UUID si disponible)
-                    String refUUID = plugin.getContainerManager().getContainerUUID(referenceContainer);
-                    String itemUUID = plugin.getContainerManager().getContainerUUID(item);
-
-                    if (refUUID != null && itemUUID != null && refUUID.equals(itemUUID)) {
-                        return item;
-                    }
-
-                    // FALLBACK : Si pas d'UUID, compare les données
-                    if (itemData.getTotalItems() == referenceData.getTotalItems() &&
-                            itemData.getDurability() == referenceData.getDurability()) {
-                        return item;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Vérifie si un inventaire est un GUI de filtres
+     * Vérifie si un inventaire est un GUI de filtres via son titre.
      */
     public boolean isFilterGUI(String title) {
-        return title.contains("🎯 Filtres - ID:") || title.contains("🎯 Filtres - Conteneur Tier");
+        return title.contains("🎯 Filtres - Conteneur Tier");
     }
 
     /**
-     * AMÉLIORÉ : Trouve le conteneur correspondant au GUI de filtres (méthode fallback)
-     */
-    public ItemStack findContainerFromFilterTitle(Player player, String title) {
-        // Nouvelle méthode avec ID unique
-        if (title.contains("🎯 Filtres - ID:")) {
-            return openFilterGUIs.get(title);
-        }
-
-        // Ancienne méthode pour compatibilité
-        if (title.contains("🎯 Filtres - Conteneur Tier")) {
-            String tierStr = title.replaceAll(".*Tier (\\d+).*", "$1");
-            try {
-                int tier = Integer.parseInt(tierStr);
-
-                for (ItemStack item : player.getInventory().getContents()) {
-                    if (plugin.getContainerManager().isContainer(item)) {
-                        ContainerData data = plugin.getContainerManager().getContainerData(item);
-                        if (data != null && data.getTier() == tier) {
-                            return item;
-                        }
-                    }
-                }
-            } catch (NumberFormatException e) {
-                plugin.getPluginLogger().warning("Erreur parsing tier du titre: " + title);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * NOUVEAU : Nettoie les références des GUIs fermés
+     * Nettoie les références quand un GUI est fermé (par le listener).
      */
     public void cleanupClosedGUI(String title) {
-        openFilterGUIs.remove(title);
+        activeFilterGUIs.remove(title);
     }
 
     /**
-     * Formate le nom d'un matériau pour l'affichage
+     * Obtient l'UUID du conteneur associé à un GUI de filtres.
+     */
+    public String getContainerUUIDFromFilterGUI(String title) {
+        return activeFilterGUIs.get(title);
+    }
+
+    /**
+     * Vérifie si un GUI de filtres est actif pour un conteneur donné.
+     */
+    public boolean hasActiveFilterGUI(String containerUUID) {
+        return activeFilterGUIs.containsValue(containerUUID);
+    }
+
+    /**
+     * Formate le nom d'un matériau pour un affichage plus lisible.
      */
     private String formatMaterialName(Material material) {
         String name = material.name().toLowerCase().replace("_", " ");

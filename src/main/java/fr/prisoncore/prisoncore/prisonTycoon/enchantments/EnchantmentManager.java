@@ -187,8 +187,6 @@ public class EnchantmentManager {
                 int addedToInventory = remaining;
                 for (ItemStack overflow : leftover.values()) {
                     addedToInventory -= overflow.getAmount();
-
-                    // Drop les items en trop au sol
                 }
 
                 actuallyAdded += addedToInventory;
@@ -226,7 +224,9 @@ public class EnchantmentManager {
         playerData.addDestroyedBlocks(1);
 
         // NOUVEAU: Applique Fortune sur les blocs cassés
-        int blocksToGive = calculateFortuneBlocks(player, playerData, blockType);
+
+        int blocksfortune = calculateFortuneBlocks(player, playerData, blockType);
+        int blocksToGive = blocksfortune + 1;
         addBlocksToInventory(player, blockType, blocksToGive);
 
         // LIMITATION : Seuls Money/Token/Exp Greed s'appliquent sur les gains de base
