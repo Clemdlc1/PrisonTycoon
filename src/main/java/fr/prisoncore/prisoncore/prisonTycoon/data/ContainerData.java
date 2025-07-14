@@ -18,6 +18,8 @@ public class ContainerData {
     private boolean sellEnabled; // Vente activée via /sell all
     private int durability; // Durabilité actuelle
     private final int maxDurability; // Durabilité maximale
+    private Map<String, ItemStack> referenceItems;
+
 
     /**
      * Constructeur pour nouveau conteneur
@@ -30,6 +32,8 @@ public class ContainerData {
         this.sellEnabled = true; // Par défaut activé
         this.maxDurability = getDurabilityForTier(tier);
         this.durability = maxDurability;
+        this.referenceItems = new HashMap<>(); // NOUVEAU
+
     }
 
     /**
@@ -44,6 +48,7 @@ public class ContainerData {
         this.sellEnabled = sellEnabled;
         this.maxDurability = getDurabilityForTier(tier);
         this.durability = durability;
+
     }
 
     /**
@@ -294,6 +299,21 @@ public class ContainerData {
         }
 
         return removed;
+    }
+
+    /**
+     * NOUVEAU: Getters/Setters pour les items de référence
+     */
+    public Map<String, ItemStack> getReferenceItems() {
+        return new HashMap<>(referenceItems);
+    }
+
+    public void setReferenceItems(Map<String, ItemStack> referenceItems) {
+        this.referenceItems = new HashMap<>(referenceItems);
+    }
+
+    public ItemStack getReferenceItem(Material material) {
+        return referenceItems.get(material.name());
     }
 
     /**

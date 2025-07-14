@@ -121,7 +121,7 @@ public class ContainerListener implements Listener {
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
             ItemStack containerItem = plugin.getContainerFilterGUI().findContainerFromFilterTitle(player, title);
             if (containerItem != null) {
-                plugin.getContainerFilterGUI().saveFiltersFromInventory(player, event.getInventory(), containerItem);
+                plugin.getContainerFilterGUI().saveFilters(player, event.getInventory(), String.valueOf(containerItem));
             }
             return;
         }
@@ -231,7 +231,7 @@ public class ContainerListener implements Listener {
     }
 
     /**
-     * Protection contre la modification des conteneurs dans l'inventaire normal
+     * MODIFIÉ : Protection contre la modification des conteneurs (autoriser mouvement normal)
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onContainerModification(InventoryClickEvent event) {
@@ -250,12 +250,12 @@ public class ContainerListener implements Listener {
         ItemStack clickedItem = event.getCurrentItem();
         ItemStack cursorItem = event.getCursor();
 
-        // Empêche de modifier les conteneurs dans l'inventaire normal via certaines actions
+        // Vérifie si on manipule un conteneur
         boolean isContainerClick = (clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
                 (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem));
 
         if (isContainerClick) {
-            // Permet le déplacement normal mais empêche certaines actions dangereuses
+            // NOUVEAU: Autoriser le mouvement normal mais bloquer certaines actions
             switch (event.getClick()) {
                 case DROP, CONTROL_DROP -> {
                     event.setCancelled(true);
@@ -263,21 +263,24 @@ public class ContainerListener implements Listener {
                     player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 }
                 case SHIFT_LEFT, SHIFT_RIGHT -> {
-                    // Permet les shift-clics pour organiser l'inventaire
-                    // Mais vérifie que ce n'est pas dans un inventaire externe
+                    // NOUVEAU: Empêcher seulement la mise dans certains inventaires externes
                     if (!event.getView().getTopInventory().equals(player.getInventory())) {
-                        // Empêche de mettre les conteneurs dans d'autres inventaires
-                        event.setCancelled(true);
-                        player.sendMessage("§c❌ Les conteneurs doivent rester dans votre inventaire!");
-                        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                        String topTitle = event.getView().getTitle().toLowerCase();
+
+                        // Bloquer craft/anvil/enchanting mais autoriser coffres/shulkers
+                        if (topTitle.contains("crafting") || topTitle.contains("anvil") ||
+                                topTitle.contains("enchant") || topTitle.contains("grindstone") ||
+                                topTitle.contains("cartography") || topTitle.contains("loom") ||
+                                topTitle.contains("smithing")) {
+
+                            event.setCancelled(true);
+                            player.sendMessage("§c❌ Les conteneurs ne peuvent pas être utilisés dans les tables de craft/enclume!");
+                            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                        }
+                        // Autoriser le stockage dans les coffres normaux
                     }
                 }
-                // NOUVEAU : Bloque aussi les double-clics et autres
-                case DOUBLE_CLICK -> {
-                    event.setCancelled(true);
-                    player.sendMessage("§c❌ Action bloquée avec les conteneurs!");
-                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                }
+                // Autoriser tous les autres types de clics (LEFT, RIGHT, etc.)
             }
         }
     }

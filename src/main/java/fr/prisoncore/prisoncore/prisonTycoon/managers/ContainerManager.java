@@ -28,12 +28,14 @@ public class ContainerManager {
     private final NamespacedKey containerKey;
     private final NamespacedKey containerTierKey;
     private final NamespacedKey containerDataKey;
+    private final NamespacedKey containerUUIDKey; // NOUVEAU: Identifiant unique
 
     public ContainerManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.containerKey = new NamespacedKey(plugin, "container");
         this.containerTierKey = new NamespacedKey(plugin, "container_tier");
         this.containerDataKey = new NamespacedKey(plugin, "container_data");
+        this.containerUUIDKey = new NamespacedKey(plugin, "container_uuid"); // NOUVEAU
 
         plugin.getPluginLogger().info("§aContainerManager initialisé.");
     }
@@ -53,10 +55,13 @@ public class ContainerManager {
         String tierName = getTierName(tier);
         meta.setDisplayName("§6📦 Conteneur " + tierName);
 
-        // NOUVEAU : Rend le conteneur non-stackable
-        meta.setCustomModelData(tier + 1000); // Différencie visuellement les tiers
+        // NOUVEAU : UUID unique pour empêcher le stacking et identifier clairement
+        String uniqueId = UUID.randomUUID().toString();
 
-        // Lore détaillé
+        // MODIFIÉ : Utilise l'UUID pour rendre non-stackable
+        meta.setCustomModelData(tier + 1000 + uniqueId.hashCode()); // Garantit l'unicité
+
+        // Lore détaillé (existant)...
         List<String> lore = new ArrayList<>();
         ContainerData data = new ContainerData(tier);
 
@@ -111,6 +116,7 @@ public class ContainerManager {
         // Données persistantes
         meta.getPersistentDataContainer().set(containerKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(containerTierKey, PersistentDataType.INTEGER, tier);
+        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uniqueId); // NOUVEAU
 
         // Serialise les données du conteneur
         String serializedData = serializeContainerData(data);
@@ -341,55 +347,68 @@ public class ContainerManager {
     }
 
     /**
-     * MODIFIÉ : Sérialise les données d'un conteneur avec ItemStack
+     * MODIFIÉ: Sérialise les données du conteneur (avec items de référence)
      */
     private String serializeContainerData(ContainerData data) {
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos);
 
-            // Écrire les données de base
+            // Version pour compatibilité future
+            dataOutput.writeInt(2); // Version 2 = avec référence items
+
+            // Données existantes...
             dataOutput.writeInt(data.getTier());
             dataOutput.writeInt(data.getDurability());
             dataOutput.writeBoolean(data.isSellEnabled());
 
-            // Écrire la whitelist
+            // Whitelist
             dataOutput.writeInt(data.getWhitelist().size());
-            for (Material mat : data.getWhitelist()) {
-                dataOutput.writeUTF(mat.name());
+            for (Material material : data.getWhitelist()) {
+                dataOutput.writeUTF(material.name());
             }
 
-            // Écrire le contenu (ItemStack + quantité)
-            Map<ItemStack, Integer> contents = data.getContents();
-            dataOutput.writeInt(contents.size());
-            for (Map.Entry<ItemStack, Integer> entry : contents.entrySet()) {
+            // Contents
+            dataOutput.writeInt(data.getContents().size());
+            for (Map.Entry<ItemStack, Integer> entry : data.getContents().entrySet()) {
                 dataOutput.writeObject(entry.getKey());
                 dataOutput.writeInt(entry.getValue());
             }
 
+            // NOUVEAU: Items de référence
+            dataOutput.writeInt(data.getReferenceItems().size());
+            for (Map.Entry<String, ItemStack> entry : data.getReferenceItems().entrySet()) {
+                dataOutput.writeUTF(entry.getKey());
+                dataOutput.writeObject(entry.getValue());
+            }
+
             dataOutput.close();
-            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+            return Base64.getEncoder().encodeToString(bos.toByteArray());
 
         } catch (IOException e) {
             plugin.getPluginLogger().warning("Erreur sérialisation conteneur: " + e.getMessage());
-            return null;
+            return "";
         }
     }
 
     /**
-     * MODIFIÉ : Désérialise les données d'un conteneur avec ItemStack
+     * MODIFIÉ: Désérialise les données du conteneur (avec items de référence)
      */
-    private ContainerData deserializeContainerData(String serialized) {
+    private ContainerData deserializeContainerData(String serializedData) {
         try {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(serialized));
-            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
+            byte[] data = Base64.getDecoder().decode(serializedData);
+            ByteArrayInputStream bis = new ByteArrayInputStream(data);
+            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis);
 
-            // Lire les données de base
+            // Version
+            int version = dataInput.readInt();
+
+            // Données de base
             int tier = dataInput.readInt();
             int durability = dataInput.readInt();
             boolean sellEnabled = dataInput.readBoolean();
 
-            // Lire la whitelist
+            // Whitelist
             Set<Material> whitelist = new HashSet<>();
             int whitelistSize = dataInput.readInt();
             for (int i = 0; i < whitelistSize; i++) {
@@ -398,7 +417,7 @@ public class ContainerManager {
                 } catch (IllegalArgumentException ignored) {}
             }
 
-            // Lire le contenu
+            // Contents
             Map<ItemStack, Integer> contents = new LinkedHashMap<>();
             int contentsSize = dataInput.readInt();
             for (int i = 0; i < contentsSize; i++) {
@@ -411,12 +430,56 @@ public class ContainerManager {
                 }
             }
 
+            // NOUVEAU: Items de référence (seulement version 2+)
+            Map<String, ItemStack> referenceItems = new HashMap<>();
+            if (version >= 2) {
+                int refItemsSize = dataInput.readInt();
+                for (int i = 0; i < refItemsSize; i++) {
+                    try {
+                        String key = dataInput.readUTF();
+                        ItemStack refItem = (ItemStack) dataInput.readObject();
+                        referenceItems.put(key, refItem);
+                    } catch (Exception e) {
+                        plugin.getPluginLogger().warning("Erreur lecture item référence: " + e.getMessage());
+                    }
+                }
+            }
+
             dataInput.close();
-            return new ContainerData(tier, contents, whitelist, sellEnabled, durability);
+
+            // Crée les données avec les nouvelles informations
+            ContainerData containerData = new ContainerData(tier, contents, whitelist, sellEnabled, durability);
+            containerData.setReferenceItems(referenceItems);
+
+            return containerData;
 
         } catch (Exception e) {
             plugin.getPluginLogger().warning("Erreur désérialisation conteneur: " + e.getMessage());
             return null;
         }
+    }
+    /**
+     * NOUVEAU : Obtient l'UUID unique d'un conteneur
+     */
+    public String getContainerUUID(ItemStack item) {
+        if (!isContainer(item)) return null;
+
+        ItemMeta meta = item.getItemMeta();
+        return meta.getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
+    }
+
+    /**
+     * NOUVEAU : Trouve un conteneur spécifique par UUID dans l'inventaire
+     */
+    public ItemStack findContainerByUUID(Player player, String uuid) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isContainer(item)) {
+                String containerUUID = getContainerUUID(item);
+                if (uuid.equals(containerUUID)) {
+                    return item;
+                }
+            }
+        }
+        return null;
     }
 }

@@ -237,53 +237,6 @@ public class EnchantmentManager {
     }
 
     /**
-     * NOUVEAU : Vérifie si le joueur a de la place dans ses conteneurs
-     */
-    public boolean hasContainerSpace(Player player, Material material, int quantity) {
-        var containers = plugin.getContainerManager().getPlayerContainers(player);
-
-        int totalSpace = 0;
-        for (var container : containers) {
-            if (!container.isBroken()) {
-                // Vérifie la whitelist
-                if (container.getWhitelist().isEmpty() || container.getWhitelist().contains(material)) {
-                    totalSpace += container.getFreeSpace();
-                }
-            }
-        }
-
-        return totalSpace >= quantity;
-    }
-
-    /**
-     * NOUVEAU : Obtient un résumé de l'état des conteneurs pour les messages debug
-     */
-    private String getContainerSummary(Player player) {
-        var containers = plugin.getContainerManager().getPlayerContainers(player);
-
-        if (containers.isEmpty()) {
-            return "aucun conteneur";
-        }
-
-        int active = 0;
-        int totalSpace = 0;
-        int totalUsed = 0;
-
-        for (var container : containers) {
-            if (!container.isBroken()) {
-                active++;
-                totalSpace += container.getMaxCapacity();
-                totalUsed += container.getTotalItems();
-            }
-        }
-
-        double fillPercent = totalSpace > 0 ? (double) totalUsed / totalSpace * 100.0 : 0.0;
-
-        return active + "/" + containers.size() + " conteneurs actifs, " +
-                String.format("%.1f", fillPercent) + "% remplis";
-    }
-
-    /**
      * NOUVEAU : Traite un bloc miné HORS mine (restrictions)
      */
     public void processBlockMinedOutsideMine(Player player, Material blockType) {

@@ -10,10 +10,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Interface graphique dédiée à la configuration des filtres
@@ -69,47 +66,64 @@ public class ContainerFilterGUI {
     }
 
     /**
-     * Sauvegarde les filtres depuis l'inventaire de filtres
+     * MODIFIÉ : Sauvegarde les filtres en préservant les métadonnées exactes
      */
-    public void saveFiltersFromInventory(Player player, Inventory filterInventory, ItemStack containerItem) {
+    public void saveFilters(Player player, Inventory filterInventory, String title) {
+        ItemStack containerItem = findContainerFromFilterTitle(player, title);
+        if (containerItem == null) {
+            player.sendMessage("§cErreur: Conteneur introuvable!");
+            return;
+        }
+
         ContainerData data = plugin.getContainerManager().getContainerData(containerItem);
         if (data == null) {
-            player.sendMessage("§cErreur: Impossible de sauvegarder les filtres!");
+            player.sendMessage("§cErreur: Données du conteneur corrompues!");
             return;
         }
 
         // Efface les anciens filtres
         data.clearFilters();
 
-        // Collecte les nouveaux filtres
-        Set<Material> newFilters = new HashSet<>();
+        // NOUVEAU: Collecte les items exacts (avec métadonnées) pour référence
+        Set<Material> newMaterialFilters = new HashSet<>();
+        Map<String, ItemStack> referenceItems = new HashMap<>(); // Stocke les items de référence
         int filtersCount = 0;
 
         for (ItemStack item : filterInventory.getContents()) {
             if (item != null && item.getType() != Material.AIR) {
-                newFilters.add(item.getType());
+                Material material = item.getType();
+                newMaterialFilters.add(material);
+
+                // NOUVEAU: Stocke l'item exact comme référence (clone pour éviter modifications)
+                ItemStack reference = item.clone();
+                reference.setAmount(1); // Normalise la quantité
+                referenceItems.put(material.name(), reference);
                 filtersCount++;
             }
         }
 
-        // Applique les nouveaux filtres
-        for (Material material : newFilters) {
+        // Applique les nouveaux filtres (basés sur Material pour compatibilité)
+        for (Material material : newMaterialFilters) {
             data.toggleFilter(material);
         }
+
+        // NOUVEAU: Stocke les items de référence dans les données du conteneur
+        // (Nécessite une modification de ContainerData pour stocker les items de référence)
+        data.setReferenceItems(referenceItems);
 
         // Met à jour le conteneur
         plugin.getContainerManager().updateContainerItem(containerItem, data);
 
-        // Messages de confirmation
+        // Messages de confirmation (existant)...
         if (filtersCount == 0) {
             player.sendMessage("§a✅ Filtres supprimés! Le conteneur accepte maintenant tous les items.");
         } else {
             player.sendMessage("§a✅ Filtres sauvegardés! §e" + filtersCount + " matériaux autorisés:");
 
             int displayCount = 0;
-            for (Material material : newFilters) {
+            for (Material material : newMaterialFilters) {
                 if (displayCount >= 5) {
-                    player.sendMessage("§7   ... et " + (newFilters.size() - 5) + " autres");
+                    player.sendMessage("§7   ... et " + (newMaterialFilters.size() - 5) + " autres");
                     break;
                 }
                 player.sendMessage("§7   • §e" + formatMaterialName(material));
@@ -120,7 +134,7 @@ public class ContainerFilterGUI {
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
 
         plugin.getPluginLogger().debug("Filtres sauvegardés pour " + player.getName() +
-                ": " + filtersCount + " matériaux");
+                ": " + filtersCount + " matériaux avec métadonnées préservées");
     }
 
     /**
