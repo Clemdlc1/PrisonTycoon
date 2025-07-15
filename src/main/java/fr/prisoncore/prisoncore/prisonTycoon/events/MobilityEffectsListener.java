@@ -9,6 +9,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class MobilityEffectsListener implements Listener {
@@ -30,7 +32,7 @@ public class MobilityEffectsListener implements Listener {
     }
 
     /**
-     * Gère le respawn du joueur - remet les effets si il a la pioche
+     * Gère le respawn du joueur - remet les effets si il a la pioche + vérifie l'état de la pioche
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
@@ -40,7 +42,18 @@ public class MobilityEffectsListener implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
+
+                // NOUVEAU : Vérifie l'état de la pioche légendaire après respawn
+                ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
+                if (pickaxe != null && pickaxe.getItemMeta() instanceof Damageable) {
+                    Damageable meta = (Damageable) pickaxe.getItemMeta();
+                    short currentDurability = (short) meta.getDamage();
+                    short maxDurability = pickaxe.getType().getMaxDurability();
+
+                    plugin.getPickaxeManager().checkLegendaryPickaxeState(player, pickaxe, currentDurability, maxDurability);
+                }
                 plugin.getPickaxeManager().updateMobilityEffects(player);
+
             }
         }.runTaskLater(plugin, 1L);
     }

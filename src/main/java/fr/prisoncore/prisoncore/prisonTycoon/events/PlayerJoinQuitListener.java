@@ -7,10 +7,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 
 /**
  * Listener pour les événements de connexion/déconnexion
- * CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager
+ * CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager + ajout checkLegendaryPickaxeState
  */
 public class PlayerJoinQuitListener implements Listener {
 
@@ -37,7 +39,16 @@ public class PlayerJoinQuitListener implements Listener {
             // Initialise l'expérience vanilla basée sur l'expérience custom
             plugin.getEconomyManager().initializeVanillaExp(player);
 
-            // Applique les effets de mobilité
+            // NOUVEAU : Vérifie l'état de la pioche légendaire à la connexion
+            ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
+            if (pickaxe != null && pickaxe.getItemMeta() instanceof Damageable) {
+                Damageable meta = (Damageable) pickaxe.getItemMeta();
+                short currentDurability = (short) meta.getDamage();
+                short maxDurability = pickaxe.getType().getMaxDurability();
+
+                plugin.getPickaxeManager().checkLegendaryPickaxeState(player, pickaxe, currentDurability, maxDurability);
+            }
+
             plugin.getPickaxeManager().updateMobilityEffects(player);
 
             // Force refresh des permissions auto-upgrade si le joueur en avait

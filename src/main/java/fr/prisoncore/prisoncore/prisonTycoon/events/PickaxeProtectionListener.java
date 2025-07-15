@@ -225,7 +225,6 @@ public class PickaxeProtectionListener implements Listener {
         // NOUVELLE RÈGLE : Le joueur ne perd pas son exp vanilla
         event.setKeepLevel(true);
         event.setDroppedExp(0);
-        player.sendMessage("§a✅ Votre expérience vanilla a été conservée!");
 
         // Cherche la pioche légendaire dans les drops
         ItemStack pickaxeToSave = null;
@@ -266,8 +265,6 @@ public class PickaxeProtectionListener implements Listener {
                         }
                     }
                 }
-
-                player.sendMessage("§a✅ Votre pioche légendaire a été récupérée dans le slot 1!");
                 plugin.getPickaxeManager().updatePlayerPickaxe(player);
 
             }, 1L); // 1 tick après la mort

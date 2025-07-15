@@ -408,8 +408,6 @@ public class PickaxeManager {
         // Retire tous les effets d'abord
         removeMobilityEffects(player);
 
-        // Applique seulement les effets activés ET si pioche au slot 0
-
         // Vision nocturne
         if (playerData.getEnchantmentLevel("night_vision") > 0 &&
                 playerData.isMobilityEnchantmentEnabled("night_vision")) {
@@ -582,7 +580,8 @@ public class PickaxeManager {
         player.setMetadata("pickaxe_broken", new FixedMetadataValue(plugin, true));
         player.setMetadata("pickaxe_just_broken", new FixedMetadataValue(plugin, System.currentTimeMillis()));
         plugin.getEnchantmentManager().forceDisableAbundanceAndResetCombustion(player);
-        plugin.getPickaxeManager().updatePlayerPickaxe(player);
+        updatePlayerPickaxe(player);
+        updateMobilityEffects(player);
         plugin.getPluginLogger().debug("Mode pioche cassée activé pour " + player.getName());
     }
 
@@ -592,7 +591,8 @@ public class PickaxeManager {
     public void deactivateBrokenPickaxeMode(Player player) {
         player.removeMetadata("pickaxe_broken", plugin);
         player.setMetadata("pickaxe_just_repaired", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-        plugin.getPickaxeManager().updatePlayerPickaxe(player);
+        updatePlayerPickaxe(player);
+        updateMobilityEffects(player);
         plugin.getPluginLogger().debug("Mode pioche cassée désactivé pour " + player.getName());
     }
 
