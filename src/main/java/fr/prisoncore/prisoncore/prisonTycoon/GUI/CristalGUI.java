@@ -116,13 +116,14 @@ public class CristalGUI {
     }
 
     /**
-     * Affiche les cristaux actuellement appliqués
+     * Affiche les cristaux actuellement appliqués avec lore dynamique pour les emplacements vides
      */
     private void fillAppliedCristals(Inventory inv, Player player) {
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         // Slots pour les cristaux appliqués (10-13)
-        int[] slots = {14, 11, 12, 15};
+        int[] slots = {11, 12, 14, 15};
 
         for (int i = 0; i < 4; i++) {
             if (i < cristals.size()) {
@@ -148,17 +149,40 @@ public class CristalGUI {
 
                 inv.setItem(slots[i], cristalItem);
             } else {
-                // Slot vide
+                // Slot vide avec lore dynamique
                 ItemStack emptySlot = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
                 ItemMeta meta = emptySlot.getItemMeta();
-                meta.setDisplayName("§7⬜ Emplacement libre");
-                meta.setLore(Arrays.asList(
-                        "§7Cet emplacement est libre.",
-                        "",
-                        "§e▸ Cliquez sur un cristal révélé",
-                        "§e  dans votre inventaire pour",
-                        "§e  l'appliquer ici"
-                ));
+                meta.setDisplayName("§7⬜ Emplacement libre §8(" + (i + 1) + "/4)");
+
+                // NOUVEAU: Lore dynamique avec coût XP
+                List<String> lore = new ArrayList<>();
+                lore.add("§7Cet emplacement est libre.");
+                lore.add("");
+
+                // Calculer le coût pour cet emplacement
+                long applicationCost = plugin.getCristalManager().getApplicationCost(player);
+                long playerXP = playerData.getExperience();
+
+                if (applicationCost > 0) {
+                    lore.add("§6💰 Coût d'application:");
+                    lore.add("§e  " + NumberFormatter.format(applicationCost) + " XP");
+                    lore.add("");
+
+                    if (playerXP >= applicationCost) {
+                        lore.add("§a✅ Vous avez assez d'XP!");
+                    } else {
+                        long missing = applicationCost - playerXP;
+                        lore.add("§c❌ XP insuffisant");
+                        lore.add("§c  Il vous manque: " + NumberFormatter.format(missing) + " XP");
+                    }
+                    lore.add("");
+                }
+
+                lore.add("§e▸ Cliquez sur un cristal révélé");
+                lore.add("§e  dans votre inventaire pour");
+                lore.add("§e  l'appliquer ici");
+
+                meta.setLore(lore);
                 meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "slot");
                 emptySlot.setItemMeta(meta);
                 inv.setItem(slots[i], emptySlot);
@@ -308,16 +332,17 @@ public class CristalGUI {
      * Séparateurs visuels
      */
     private void fillSeparators(Inventory inv) {
-        ItemStack separator = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta meta = separator.getItemMeta();
-        meta.setDisplayName(" ");
-        separator.setItemMeta(meta);
+        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta meta = filler.getItemMeta();
 
-        // Lignes de séparation pour 27 slots
-        int[] separatorSlots = {0, 1, 2, 3, 5, 6, 9, 14, 15, 16, 17, 23, 24, 25};
-        for (int slot : separatorSlots) {
-            if (inv.getItem(slot) == null) { // Ne pas écraser les items déjà placés
-                inv.setItem(slot, separator);
+        if (meta != null) {
+            meta.setDisplayName("§7");
+            filler.setItemMeta(meta);
+        }
+
+        for (int i = 0; i < inv.getSize(); i++) {
+            if (inv.getItem(i) == null) {
+                inv.setItem(i, filler);
             }
         }
     }
@@ -436,6 +461,9 @@ public class CristalGUI {
     /**
      * Applique un cristal sur la pioche
      */
+    /**
+     * Applique un cristal sur la pioche
+     */
     private void handleApplyCristal(Player player, ItemStack clickedItem) {
         Cristal cristal = plugin.getCristalManager().getCristalFromItem(clickedItem);
         if (cristal == null) {
@@ -446,33 +474,15 @@ public class CristalGUI {
         ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
         if (pickaxe == null) {
             player.sendMessage("§cPioche légendaire introuvable!");
-            player.closeInventory();
             return;
         }
-
-        // Recherche et suppression du cristal de l'inventaire
-        boolean found = false;
-        for (int i = 0; i < player.getInventory().getSize(); i++) {
-            ItemStack item = player.getInventory().getItem(i);
-            if (plugin.getCristalManager().isCristal(item)) {
-                Cristal invCristal = plugin.getCristalManager().getCristalFromItem(item);
-                if (invCristal != null && invCristal.getUuid().equals(cristal.getUuid())) {
-                    // Application du cristal
-                    if (plugin.getCristalManager().applyCristalToPickaxe(player, pickaxe, cristal)) {
-                        // Suppression de l'inventaire
-                        player.getInventory().setItem(i, null);
-                        found = true;
-                        player.sendMessage("hello");
-                        // Rafraîchissement du menu
-                        openCristalMenu(player);
-                    }
-                    break;
-                }
-            }
-        }
-
-        if (!found) {
-            player.sendMessage("§cCristal introuvable dans votre inventaire!");
+        player.sendMessage("hello");
+        // Tenter l'application du cristal
+        if (plugin.getCristalManager().applyCristalToPickaxe(player, pickaxe, cristal)) {
+            // NOUVEAU: Actualiser le GUI immédiatement après l'application
+            player.closeInventory();
+            openCristalMenu(player);
+            player.sendMessage("lol");
         }
     }
 
@@ -579,6 +589,24 @@ public class CristalGUI {
                     player.getWorld().dropItem(player.getLocation(), item);
                 }
             }
+        }
+    }
+
+    /**
+     * NOUVEAU: Actualise le GUI des cristaux si un joueur l'a ouvert
+     */
+    public void refreshCristalGUI(Player player) {
+        if (player.getOpenInventory() != null &&
+                player.getOpenInventory().getTitle().equals("§d✨ Gestion des Cristaux ✨")) {
+
+            // Actualiser seulement les parties dynamiques du GUI
+            Inventory inv = player.getOpenInventory().getTopInventory();
+
+            // Actualiser les informations de la pioche (slot 4)
+            fillPickaxeInfo(inv, player);
+
+            // Actualiser les cristaux appliqués (slots avec lore dynamique)
+            fillAppliedCristals(inv, player);
         }
     }
 }
