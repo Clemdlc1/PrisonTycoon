@@ -29,6 +29,8 @@ public class PickaxeRepairGUI {
     private static final int[] REPAIR_BUTTON_SLOTS = {11, 12, 13, 14, 15};
     private static final int PICKAXE_INFO_SLOT = 4;
     private static final int BACK_BUTTON_SLOT = 18;
+    private static final double COST_BASE_FACTOR = 0.0001; // 0.01% de l'investissement total
+    private static final double DAMAGE_EXPONENT = 2.5;     // Exposant de la courbe de coût
 
     public PickaxeRepairGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -98,7 +100,6 @@ public class PickaxeRepairGUI {
         // CORRIGÉ : Calcul précis de l'état actuel
         short currentDurability = pickaxe.getDurability();
         short maxDurability = pickaxe.getType().getMaxDurability();
-        double currentHealthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
 
         // CORRIGÉ : Si déjà à 100% (durabilité = 0), désactive la réparation
         if (currentDurability == 0) {
@@ -121,8 +122,27 @@ public class PickaxeRepairGUI {
         }
     }
 
+    private long calculateCostToRepairRange(long totalInvested, short maxDurability, int fromDurability, int toDurability) {
+        if (fromDurability <= toDurability) {
+            return 0;
+        }
+
+        // Constante C de la formule f(x) = C * x^k
+        double constant = (totalInvested * COST_BASE_FACTOR) / Math.pow(maxDurability, DAMAGE_EXPONENT);
+
+        // Nouvel exposant k+1
+        double newExponent = DAMAGE_EXPONENT + 1.0;
+
+        // Calcul de l'intégrale définie : F(from) - F(to)
+        double integralFrom = Math.pow(fromDurability, newExponent) / newExponent;
+        double integralTo = Math.pow(toDurability, newExponent) / newExponent;
+
+        return Math.max(1, (long) (constant * (integralFrom - integralTo)));
+    }
+
     /**
-     * NOUVEAU : Calcule la réparation maximale possible avec les tokens disponibles
+     * CORRIGÉ : Calcule la réparation maximale en additionnant le coût de chaque point.
+     * Cette méthode est juste et empêche de "tricher" en réparant en plusieurs fois.
      */
     private MaxRepairResult calculateMaxRepair(short currentDurability, short maxDurability, long playerTokens, PlayerData playerData) {
         if (currentDurability == 0) {
@@ -131,49 +151,48 @@ public class PickaxeRepairGUI {
 
         long totalInvested = calculateTotalInvestedTokens(playerData);
 
-        // Recherche binaire pour trouver la réparation maximale possible
-        int maxRepairPoints = currentDurability; // Maximum possible
-        int bestRepairPoints = 0;
-        long bestCost = 0;
+        // Bornes pour la recherche dichotomique
+        int low = 0; // 0 points réparés
+        int high = currentDurability; // Tous les points réparés
+        int bestRepairAmount = 0;
 
-        for (int repairPoints = 1; repairPoints <= maxRepairPoints; repairPoints++) {
-            long cost = calculateExponentialRepairCost(totalInvested, currentDurability, maxDurability, repairPoints);
+        // La recherche s'arrête après ~11-12 itérations au lieu de ~1500
+        while (low <= high) {
+            int mid = low + (high - low) / 2; // Le nombre de points qu'on essaie de réparer
+            if (mid == 0) {
+                low = 1;
+                continue;
+            }
+
+            // Durabilité finale si on répare 'mid' points
+            int finalDurability = currentDurability - mid;
+
+            // On utilise la formule O(1) pour calculer le coût
+            long cost = calculateCostToRepairRange(totalInvested, maxDurability, currentDurability, finalDurability);
+
             if (cost <= playerTokens) {
-                bestRepairPoints = repairPoints;
-                bestCost = cost;
+                // On peut se le permettre. On stocke ce résultat et on essaie d'en réparer plus.
+                bestRepairAmount = mid;
+                low = mid + 1;
             } else {
-                break; // Coût trop élevé, on s'arrête
+                // Trop cher. On cherche dans la moitié inférieure.
+                high = mid - 1;
             }
         }
 
-        // Calcul des pourcentages
+        if (bestRepairAmount == 0) {
+            return new MaxRepairResult(0, 0, 0, ((double)(maxDurability - currentDurability) / maxDurability) * 100);
+        }
+
+        long finalCost = calculateCostToRepairRange(totalInvested, maxDurability, currentDurability, currentDurability - bestRepairAmount);
+
+        // Calcul des pourcentages pour l'affichage
         double currentHealthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
-        double newDurability = currentDurability - bestRepairPoints;
+        double newDurability = currentDurability - bestRepairAmount;
         double newHealthPercent = ((double)(maxDurability - newDurability) / maxDurability) * 100;
         double repairPercent = newHealthPercent - currentHealthPercent;
 
-        return new MaxRepairResult(bestRepairPoints, bestCost, repairPercent, newHealthPercent);
-    }
-
-    /**
-     * NOUVEAU : Calcul du coût exponentiel selon les nouvelles règles
-     * Plus la pioche est endommagée, plus c'est cher
-     */
-    private long calculateExponentialRepairCost(long totalInvested, short currentDurability, short maxDurability, int repairPoints) {
-        // Base du coût selon l'investissement total
-        double baseCost = totalInvested * 0.0001; // 0.01%
-
-        // NOUVEAU : Facteur d'endommagement (plus c'est endommagé, plus c'est cher)
-        double damagePercent = ((double) currentDurability / maxDurability);
-        double damageFactor = Math.pow(damagePercent + 0.1, 2.5); // Exponentiel
-
-        // NOUVEAU : Facteur de réparation (plus on répare, plus c'est cher par point)
-        double repairFactor = Math.pow(repairPoints, 1.8);
-
-        // Coût final exponentiel
-        long cost = Math.max(1, (long) (baseCost * damageFactor * repairFactor));
-
-        return cost;
+        return new MaxRepairResult(bestRepairAmount, finalCost, repairPercent, newHealthPercent);
     }
 
     /**
@@ -232,8 +251,8 @@ public class PickaxeRepairGUI {
             }
         } else {
             lore.add("§c❌ §lAUCUNE RÉPARATION POSSIBLE");
-            lore.add("§7│ §cTokens insuffisants pour toute réparation");
-            lore.add("§7│ §eContinuez à miner pour obtenir plus de tokens!");
+            lore.add("§7│ §cTokens insuffisants pour réparer");
+            lore.add("§7│ §emême un seul point de durabilité.");
             lore.add("§7└");
             item.setType(Material.BARRIER);
         }
@@ -308,11 +327,13 @@ public class PickaxeRepairGUI {
 
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
         plugin.getActionBarTask().updateActionBarStatus();
-        
+
         // Mise à jour du menu
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            createRepairButtons(player.getOpenInventory().getTopInventory(), player);
-            player.getOpenInventory().getTopInventory().setItem(PICKAXE_INFO_SLOT, createPickaxeInfoItem(player));
+            if (player.getOpenInventory().getTitle().equals("§c🔨 §lRéparation de Pioche §c🔨")) {
+                createRepairButtons(player.getOpenInventory().getTopInventory(), player);
+                player.getOpenInventory().getTopInventory().setItem(PICKAXE_INFO_SLOT, createPickaxeInfoItem(player));
+            }
         }, 1L);
 
         plugin.getPluginLogger().info("Réparation maximale effectuée pour " + player.getName() +
@@ -373,8 +394,6 @@ public class PickaxeRepairGUI {
         lore.add("");
         lore.add("§e⚠️ §lRÉPARATION IMPOSSIBLE");
         lore.add("§7│ §7Votre pioche n'a pas besoin de réparation.");
-        lore.add("§7│ §7Utilisez-la pour miner et revenez quand");
-        lore.add("§7│ §7elle sera endommagée.");
         lore.add("§7└");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 

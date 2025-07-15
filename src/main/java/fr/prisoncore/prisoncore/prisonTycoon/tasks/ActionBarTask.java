@@ -82,14 +82,14 @@ public class ActionBarTask extends BukkitRunnable {
             }
         }
 
-        // Si la pioche est cassée (état permanent), affiche le message d'avertissement
-        if (isPickaxeBroken) {
-            return "§c💀 PIOCHE CASSÉE! Réparez-la pour retrouver ses capacités!";
-        }
-
         // Messages normaux d'enchantements si le joueur mine
         if (!currentlyMining) {
             return ""; // Pas de message si pas en train de miner
+        }
+
+        // Si la pioche est cassée (état permanent), affiche le message d'avertissement
+        if (isPickaxeBroken) {
+            return "§c💥 PIOCHE CASSÉE! Tous enchantements désactivés sauf Token Greed (90% malus)";
         }
 
         // États spéciaux (combustion, abondance, etc.) - SEULEMENT quand le joueur mine

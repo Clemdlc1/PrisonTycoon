@@ -16,6 +16,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Listener pour les événements liés aux conteneurs - CORRIGÉ
@@ -74,6 +75,39 @@ public class ContainerListener implements Listener {
             player.sendMessage("§7Gardez-les dans votre inventaire pour qu'ils collectent automatiquement les blocs minés.");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         }
+
+        if (isKey(item)) {
+            event.setCancelled(true);
+            Player player = event.getPlayer();
+            player.sendMessage("§c❌ Les clés ne peuvent pas être posées au sol!");
+            player.sendMessage("§7Gardez-les dans votre inventaire ou utilisez-les pour ouvrir des coffres.");
+            plugin.getPluginLogger().debug("Tentative de placement de clé bloquée: " + player.getName());
+        }
+    }
+
+    /**
+     * Vérifie si un item est une clé
+     */
+    private boolean isKey(ItemStack item) {
+        if (item == null || item.getType() != Material.TRIPWIRE_HOOK) {
+            return false;
+        }
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null || meta.getDisplayName() == null) {
+            return false;
+        }
+
+        String displayName = meta.getDisplayName().toLowerCase();
+
+        // Vérifie si le nom contient "clé" et l'un des types de clés
+        return displayName.contains("clé") && (
+                displayName.contains("cristal") ||
+                        displayName.contains("légendaire") ||
+                        displayName.contains("rare") ||
+                        displayName.contains("peu commune") ||
+                        displayName.contains("commune")
+        );
     }
 
     /**
