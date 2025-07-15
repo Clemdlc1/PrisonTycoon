@@ -11,12 +11,14 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
 /**
  * Commandes /sell all et /sell hand
  * Vend les items selon les prix configurés
+ * Refactorisé pour centraliser la logique de vente et corriger les bugs de bonus.
  */
 public class SellCommand implements CommandExecutor, TabCompleter {
 
@@ -27,7 +29,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
             return true;
@@ -38,136 +40,78 @@ public class SellCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String subCommand = args[0].toLowerCase();
-
-        switch (subCommand) {
-            case "all" -> {
-                sellAll(player);
-                return true;
-            }
-            case "hand" -> {
-                sellHand(player);
-                return true;
-            }
-            default -> {
-                sendHelpMessage(player);
-                return true;
-            }
+        switch (args[0].toLowerCase()) {
+            case "all" -> sellAll(player);
+            case "hand" -> sellHand(player);
+            default -> sendHelpMessage(player);
         }
+        return true;
     }
 
     /**
-     * MODIFIÉ : Vend tout l'inventaire du joueur ET le contenu des conteneurs
+     * Vend tout l'inventaire du joueur ET le contenu de tous ses conteneurs.
      */
     private void sellAll(Player player) {
         long totalValue = 0;
         int totalItems = 0;
         Map<Material, Integer> soldItems = new HashMap<>();
 
-        // NOUVEAU : Vend d'abord le contenu des conteneurs
+        // Vend le contenu des conteneurs et récupère la valeur (on suppose que cette méthode ne donne pas l'argent)
         long containerValue = plugin.getContainerManager().sellAllContainerContents(player);
         totalValue += containerValue;
+        // Note: Nous ne pouvons pas détailler les items des conteneurs ici sans modifier sellAllContainerContents.
 
-        // Parcourt tout l'inventaire (sauf la pioche légendaire et les conteneurs)
+        // Parcourt l'inventaire du joueur
         for (int i = 0; i < player.getInventory().getSize(); i++) {
             ItemStack item = player.getInventory().getItem(i);
 
-            if (item == null || item.getType() == Material.AIR) continue;
-
-            // Vérifie si c'est la pioche légendaire
-            if (plugin.getPickaxeManager().isLegendaryPickaxe(item)) {
-                continue; // Ne pas vendre la pioche légendaire
+            if (item == null || item.getType() == Material.AIR ||
+                    plugin.getPickaxeManager().isLegendaryPickaxe(item) ||
+                    plugin.getContainerManager().isContainer(item)) {
+                continue;
             }
 
-            // NOUVEAU : Vérifie si c'est un conteneur
-            if (plugin.getContainerManager().isContainer(item)) {
-                continue; // Ne pas vendre les conteneurs eux-mêmes
-            }
-
-            // Obtient le prix de l'item
             long sellPrice = plugin.getConfigManager().getSellPrice(item.getType());
-            if (sellPrice <= 0) continue; // Item non vendable
+            if (sellPrice <= 0) continue;
 
             int amount = item.getAmount();
-            long itemTotalValue = sellPrice * amount;
-
-            totalValue += itemTotalValue;
-
+            totalValue += sellPrice * amount;
             totalItems += amount;
             soldItems.merge(item.getType(), amount, Integer::sum);
 
-            // Retire l'item de l'inventaire
             player.getInventory().setItem(i, null);
         }
 
-        if (totalValue <= 0) {
-            player.sendMessage("§c❌ Aucun item vendable trouvé dans votre inventaire ou vos conteneurs!");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
-
-        // Ajoute l'argent au joueur
-        long finalPrice = (long) plugin.getCristalBonusHelper().applySellBoost(player, totalValue);
-        plugin.getEconomyManager().addCoins(player, finalPrice);
-
-        // Message de succès amélioré
-        player.sendMessage("§a✅ §lVente réussie!");
-        player.sendMessage("§7▸ Items vendus: §e" + NumberFormatter.format(totalItems));
-        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(finalPrice) + " coins");
-
-        // NOUVEAU : Affiche séparément la valeur des conteneurs si significative
-        if (containerValue > 0) {
-            player.sendMessage("§7▸ Dont conteneurs: §6" + NumberFormatter.format(containerValue) + " coins");
-        }
-
-        if (soldItems.size() <= 5) {
-            player.sendMessage("§7▸ Détails:");
-            for (Map.Entry<Material, Integer> entry : soldItems.entrySet()) {
-                long itemPrice = plugin.getConfigManager().getSellPrice(entry.getKey());
-                player.sendMessage("§7  • §e" + entry.getValue() + "x §7" +
-                        formatMaterialName(entry.getKey()) + " §7(§6" +
-                        NumberFormatter.format(itemPrice * entry.getValue()) + " coins§7)");
-            }
-        } else {
-            player.sendMessage("§7▸ §e" + soldItems.size() + " types d'items différents vendus");
-        }
-
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-
-        plugin.getPluginLogger().info("§7" + player.getName() + " a vendu " + totalItems +
-                " items pour " + NumberFormatter.format(finalPrice) + " coins (dont " +
-                NumberFormatter.format(containerValue) + " des conteneurs)");
+        String logContext = "sell all (" + player.getName() + ")";
+        processSale(player, totalValue, totalItems, soldItems, containerValue, logContext);
     }
 
     /**
-     * MODIFIÉ : Vend l'item en main OU le contenu d'un conteneur en main
+     * Vend l'item en main ou le contenu du conteneur en main.
      */
     private void sellHand(Player player) {
         ItemStack handItem = player.getInventory().getItemInMainHand();
 
-        if (handItem == null || handItem.getType() == Material.AIR) {
+        if (handItem.getType() == Material.AIR) {
             player.sendMessage("§c❌ Vous n'avez rien en main!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        // NOUVEAU : Vérifie si c'est un conteneur
         if (plugin.getContainerManager().isContainer(handItem)) {
-            sellContainerContent(player, handItem);
+            sellContainerInHand(player, handItem);
             return;
         }
 
-        // Vérifie si c'est la pioche légendaire
         if (plugin.getPickaxeManager().isLegendaryPickaxe(handItem)) {
             player.sendMessage("§c❌ Vous ne pouvez pas vendre la pioche légendaire!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        // Obtient le prix de l'item
         long sellPrice = plugin.getConfigManager().getSellPrice(handItem.getType());
         if (sellPrice <= 0) {
-            player.sendMessage("§c❌ §7" + formatMaterialName(handItem.getType()) + " §cn'est pas vendable!");
+            player.sendMessage("§c❌ Cet item ne peut pas être vendu!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -175,158 +119,135 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         int amount = handItem.getAmount();
         long totalValue = sellPrice * amount;
 
-        // Ajoute l'argent au joueur
-        long finalPrice = (long) plugin.getCristalBonusHelper().applySellBoost(player, totalValue);
+        Map<Material, Integer> soldItems = new HashMap<>();
+        soldItems.put(handItem.getType(), amount);
 
-        plugin.getEconomyManager().addCoins(player, finalPrice);
-
-        // Retire l'item de la main
         player.getInventory().setItemInMainHand(null);
 
-        // Message de succès
-        player.sendMessage("§a✅ §lVente réussie!");
-        player.sendMessage("§7▸ Item: §e" + amount + "x §7" + formatMaterialName(handItem.getType()));
-        player.sendMessage("§7▸ Prix unitaire: §6" + NumberFormatter.format(sellPrice) + " coins");
-        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(finalPrice) + " coins");
-
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
-
-        plugin.getPluginLogger().info("§7" + player.getName() + " a vendu " + amount + "x " +
-                handItem.getType().name() + " pour " + NumberFormatter.format(finalPrice) + " coins");
+        String logContext = "sell hand (" + player.getName() + ")";
+        processSale(player, totalValue, amount, soldItems, 0, logContext);
     }
 
     /**
-     * NOUVEAU : Vend le contenu d'un conteneur spécifique
+     * Logique de vente pour un conteneur tenu en main.
      */
-    private void sellContainerContent(Player player, ItemStack containerItem) {
+    private void sellContainerInHand(Player player, ItemStack containerItem) {
         var containerData = plugin.getContainerManager().getContainerData(containerItem);
         if (containerData == null) {
             player.sendMessage("§c❌ Erreur: Impossible de lire les données du conteneur!");
+            return;
+        }
+
+        if (containerData.isBroken() || !containerData.isSellEnabled()) {
+            // Envoyer des messages d'erreur spécifiques
+            if (containerData.isBroken()) {
+                player.sendMessage("§c❌ Ce conteneur est cassé et ne peut pas être utilisé pour la vente!");
+            } else {
+                player.sendMessage("§c❌ La vente est désactivée pour ce conteneur!");
+            }
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        if (containerData.isBroken()) {
-            player.sendMessage("§c❌ Ce conteneur est cassé et ne peut pas être utilisé pour la vente!");
-            player.sendMessage("§7Vous pouvez encore récupérer son contenu via la configuration.");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
-            return;
-        }
-
-        if (!containerData.isSellEnabled()) {
-            player.sendMessage("§c❌ La vente est désactivée pour ce conteneur!");
-            player.sendMessage("§7Utilisez §aShift + Clic droit §7pour activer la vente automatique.");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
-
-        // Calcule la valeur du contenu
         long totalValue = 0;
         int totalItems = 0;
         Map<Material, Integer> soldItems = new HashMap<>();
 
         for (Map.Entry<ItemStack, Integer> entry : containerData.getContents().entrySet()) {
-            long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType()); // .getType() ajouté
+            long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType());
             if (price > 0) {
-                long itemValue = price * entry.getValue();
-                totalValue += itemValue;
+                totalValue += price * entry.getValue();
                 totalItems += entry.getValue();
-                soldItems.put(entry.getKey().getType(), entry.getValue());
+                soldItems.merge(entry.getKey().getType(), entry.getValue(), Integer::sum);
             }
         }
 
+        // D'abord, traiter la vente pour donner l'argent (CORRIGÉ : applique les bonus)
+        String logContext = "conteneur T" + containerData.getTier() + " (" + player.getName() + ")";
+        processSale(player, totalValue, totalItems, soldItems, 0, logContext);
+
+        // Si la vente a eu lieu, gérer la logique du conteneur
+        if (totalValue > 0) {
+            containerData.clearContents();
+            boolean stillFunctional = containerData.useDurability(1);
+
+            // Gérer les messages de durabilité
+            if (!stillFunctional) {
+                player.sendMessage("§c💥 Le conteneur s'est cassé lors de la vente!");
+                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
+            } else {
+                double durabilityPercent = containerData.getDurabilityPercentage();
+                if (durabilityPercent <= 25) {
+                    player.sendMessage("§7▸ Durabilité: " + (durabilityPercent <= 10 ? "§c" : "§e") +
+                            String.format("%.1f%%", durabilityPercent));
+                }
+            }
+            plugin.getContainerManager().updateContainerItem(containerItem, containerData);
+        }
+    }
+
+    /**
+     * Méthode centrale qui finalise la vente : applique les bonus, donne l'argent et envoie les messages.
+     *
+     * @param player         Le joueur qui vend.
+     * @param totalValue     La valeur totale brute des items.
+     * @param totalItems     Le nombre total d'items vendus.
+     * @param soldItems      La map des items vendus pour les détails.
+     * @param containerValue La valeur provenant de la vente groupée de conteneurs (pour /sell all).
+     * @param logContext     Une chaîne décrivant le contexte de la vente pour les logs.
+     */
+    private void processSale(Player player, long totalValue, int totalItems, Map<Material, Integer> soldItems, long containerValue, String logContext) {
         if (totalValue <= 0) {
-            player.sendMessage("§c❌ Ce conteneur ne contient aucun item vendable!");
+            player.sendMessage("§c❌ Aucun item vendable trouvé!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        // Vide le conteneur
-        containerData.clearContents();
+        // Applique les bonus globaux
+        double finalPrice = plugin.getGlobalBonusManager().applySellBonus(player, totalValue);
+        plugin.getEconomyManager().addCoins(player, (long) finalPrice);
 
-        // Utilise la durabilité
-        boolean stillFunctional = containerData.useDurability(1);
-
-        // Ajoute l'argent au joueur
-        plugin.getEconomyManager().addCoins(player, totalValue);
-
-        // Messages de succès
-        player.sendMessage("§a✅ §lContenu du conteneur vendu!");
-        player.sendMessage("§7▸ Conteneur: §6Tier " + containerData.getTier());
+        // Envoi des messages de succès
+        player.sendMessage("§a✅ §lVente réussie!");
         player.sendMessage("§7▸ Items vendus: §e" + NumberFormatter.format(totalItems));
-        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(totalValue) + " coins");
+        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format((long) finalPrice) + " coins");
 
-        if (soldItems.size() <= 5) {
-            player.sendMessage("§7▸ Détails:");
-            for (Map.Entry<Material, Integer> entry : soldItems.entrySet()) {
-                long itemPrice = plugin.getConfigManager().getSellPrice(entry.getKey());
-                player.sendMessage("§7  • §e" + entry.getValue() + "x §7" +
-                        formatMaterialName(entry.getKey()) + " §7(§6" +
-                        NumberFormatter.format(itemPrice * entry.getValue()) + " coins§7)");
-            }
-        } else {
-            player.sendMessage("§7▸ §e" + soldItems.size() + " types d'items différents vendus");
+        if (containerValue > 0) {
+            player.sendMessage("§7▸ Dont conteneurs: §6" + NumberFormatter.format(plugin.getGlobalBonusManager().applySellBonus(player, containerValue)) + " coins");
         }
 
-        // État de la durabilité
-        if (!stillFunctional) {
-            player.sendMessage("§c💥 Le conteneur s'est cassé lors de la vente!");
-            player.sendMessage("§7Le contenu était déjà vidé, mais il ne peut plus collecter d'items.");
-            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
-        } else {
-            double durabilityPercent = containerData.getDurabilityPercentage();
-            if (durabilityPercent <= 25) {
-                String durabilityColor = durabilityPercent <= 10 ? "§c" : "§e";
-                player.sendMessage("§7▸ Durabilité: " + durabilityColor + containerData.getDurability() +
-                        "§7/" + durabilityColor + containerData.getMaxDurability() +
-                        " §7(" + String.format("%.1f", durabilityPercent) + "%)");
-
-                if (durabilityPercent <= 10) {
-                    player.sendMessage("§c⚠️ Attention: Le conteneur est presque cassé!");
+        if (!soldItems.isEmpty()) {
+            if (soldItems.size() <= 5) {
+                player.sendMessage("§7▸ Détails:");
+                for (Map.Entry<Material, Integer> entry : soldItems.entrySet()) {
+                    player.sendMessage("§7  • §e" + entry.getValue() + "x §7" + formatMaterialName(entry.getKey()));
                 }
+            } else {
+                player.sendMessage("§7▸ §e" + soldItems.size() + " types d'items différents vendus.");
             }
         }
 
-        // Met à jour l'item du conteneur
-        plugin.getContainerManager().updateContainerItem(containerItem, containerData);
-
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
-
-        plugin.getPluginLogger().info("§7" + player.getName() + " a vendu le contenu d'un conteneur tier " +
-                containerData.getTier() + " pour " + NumberFormatter.format(totalValue) + " coins (" +
-                totalItems + " items)");
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        plugin.getPluginLogger().info("Vente: " + NumberFormatter.format((long) finalPrice) + " coins pour " +
+                NumberFormatter.format(totalItems) + " items via " + logContext);
     }
 
-    /**
-     * Formate le nom d'un matériau pour l'affichage
-     */
     private String formatMaterialName(Material material) {
         String name = material.name().toLowerCase().replace("_", " ");
         return name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
-    /**
-     * Envoie le message d'aide
-     */
     private void sendHelpMessage(Player player) {
         player.sendMessage("§e💰 §lCommandes de vente:");
-        player.sendMessage("§7/sell all §8- §7Vend tout l'inventaire et les conteneurs");
-        player.sendMessage("§7/sell hand §8- §7Vend l'item en main ou le contenu du conteneur en main");
-        player.sendMessage("§7");
-        player.sendMessage("§c⚠️ §7La pioche légendaire ne peut pas être vendue");
-        player.sendMessage("§e💡 §7Les conteneurs perdent de la durabilité à chaque vente");
+        player.sendMessage("§7/sell all §8- §7Vend tout votre inventaire et le contenu des conteneurs.");
+        player.sendMessage("§7/sell hand §8- §7Vend l'item (ou le contenu du conteneur) en main.");
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("all", "hand");
-            StringUtil.copyPartialMatches(args[0], subCommands, completions);
+            return StringUtil.copyPartialMatches(args[0], Arrays.asList("all", "hand"), new ArrayList<>());
         }
-
-        Collections.sort(completions);
-        return completions;
+        return Collections.emptyList();
     }
 }

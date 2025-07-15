@@ -28,6 +28,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private EconomyManager economyManager;
     private NotificationManager notificationManager;
     private ContainerManager containerManager;
+    private GlobalBonusManager globalBonusManager;
+
     private Logger logger;
 
     // SUPPRIMÉ : ScoreboardManager (maintenant intégré dans ScoreboardTask)
@@ -160,6 +162,8 @@ public final class PrisonTycoon extends JavaPlugin {
         containerManager = new ContainerManager(this);
         cristalManager = new CristalManager(this);
         cristalBonusHelper = new CristalBonusHelper(this);
+        globalBonusManager = new GlobalBonusManager(this);
+
 
         // SUPPRIMÉ : scoreboardManager (maintenant dans ScoreboardTask)
 
@@ -425,4 +429,8 @@ public final class PrisonTycoon extends JavaPlugin {
     public CristalManager getCristalManager() { return cristalManager; }
     public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
     public CristalGUI getCristalGUI() { return cristalGUI; }
+
+    public GlobalBonusManager getGlobalBonusManager() {
+        return globalBonusManager;
+    }
 }
