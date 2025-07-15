@@ -25,6 +25,7 @@ public class PlayerData {
 
     // Enchantements de la pioche (nom -> niveau)
     private final Map<String, Integer> enchantmentLevels;
+    private final Map<String, String> pickaxeCristals;
 
     // États temporaires
     private long combustionLevel;
@@ -103,6 +104,8 @@ public class PlayerData {
         this.totalKeysObtained = 0;
 
         this.minePermissions = ConcurrentHashMap.newKeySet();
+
+        this.pickaxeCristals = new ConcurrentHashMap<>(); // NOUVEAU
 
 
         // Reset stats dernière minute
@@ -761,6 +764,36 @@ public class PlayerData {
     public void setAutoRankup(boolean enabled) {
         synchronized (dataLock) {
             this.autoRankup = enabled;
+        }
+    }
+
+    public Map<String, String> getPickaxeCristals() {
+        synchronized (dataLock) {
+            return new HashMap<>(pickaxeCristals);
+        }
+    }
+
+    public void setPickaxeCristal(String cristalUuid, String cristalData) {
+        synchronized (dataLock) {
+            pickaxeCristals.put(cristalUuid, cristalData);
+        }
+    }
+
+    public void removePickaxeCristal(String cristalUuid) {
+        synchronized (dataLock) {
+            pickaxeCristals.remove(cristalUuid);
+        }
+    }
+
+    public void clearPickaxeCristals() {
+        synchronized (dataLock) {
+            pickaxeCristals.clear();
+        }
+    }
+
+    public boolean hasPickaxeCristal(String cristalUuid) {
+        synchronized (dataLock) {
+            return pickaxeCristals.containsKey(cristalUuid);
         }
     }
 }

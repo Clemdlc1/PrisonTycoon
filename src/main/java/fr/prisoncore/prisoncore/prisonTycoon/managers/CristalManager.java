@@ -15,7 +15,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.*;
 
 /**
- * Gestionnaire des cristaux - Gère la création, application et retrait des cristaux
+ * Gestionnaire des cristaux - MODIFIÉ pour sauvegarder dans PlayerData
  */
 public class CristalManager {
 
@@ -24,7 +24,6 @@ public class CristalManager {
     private final NamespacedKey cristalLevelKey;
     private final NamespacedKey cristalTypeKey;
     private final NamespacedKey cristalViergeKey;
-    private final NamespacedKey pickaxeCristalsKey;
 
     // Coûts pour appliquer les cristaux (en XP joueur)
     private static final long[] APPLICATION_COSTS = {1000, 2500, 5000, 5000}; // 1er, 2e, 3e, 4e cristal
@@ -35,7 +34,6 @@ public class CristalManager {
         this.cristalLevelKey = new NamespacedKey(plugin, "cristal_level");
         this.cristalTypeKey = new NamespacedKey(plugin, "cristal_type");
         this.cristalViergeKey = new NamespacedKey(plugin, "cristal_vierge");
-        this.pickaxeCristalsKey = new NamespacedKey(plugin, "pickaxe_cristals");
 
         plugin.getPluginLogger().info("§aCristalManager initialisé.");
     }
@@ -155,7 +153,7 @@ public class CristalManager {
     }
 
     /**
-     * Applique un cristal sur une pioche
+     * MODIFIÉ : Applique un cristal sur une pioche (sauvegarde dans PlayerData)
      */
     public boolean applyCristalToPickaxe(Player player, ItemStack pickaxe, Cristal cristal) {
         if (!plugin.getPickaxeManager().isLegendaryPickaxe(pickaxe)) {
@@ -168,8 +166,8 @@ public class CristalManager {
             return false;
         }
 
-        // Récupération des cristaux actuels
-        List<Cristal> currentCristals = getPickaxeCristals(pickaxe);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        List<Cristal> currentCristals = getPickaxeCristals(player);
 
         // Vérification du nombre maximum
         if (currentCristals.size() >= 4) {
@@ -188,7 +186,6 @@ public class CristalManager {
 
         // Vérification du coût en XP
         long cost = APPLICATION_COSTS[currentCristals.size()];
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (playerData.getExperience() < cost) {
             player.sendMessage("§cVous n'avez pas assez d'XP! Coût: §e" + cost + " XP");
@@ -198,8 +195,10 @@ public class CristalManager {
         // Application du cristal
         playerData.removeExperience(cost);
         plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
-        currentCristals.add(cristal);
-        setPickaxeCristals(pickaxe, currentCristals);
+
+        // NOUVEAU : Sauvegarde dans PlayerData au lieu de la pioche
+        String cristalData = cristal.getNiveau() + "," + cristal.getType().name();
+        playerData.setPickaxeCristal(cristal.getUuid(), cristalData);
 
         // Mise à jour de la pioche
         plugin.getPickaxeManager().updatePickaxeLore(pickaxe.getItemMeta(), player);
@@ -214,7 +213,7 @@ public class CristalManager {
     }
 
     /**
-     * Retire un cristal d'une pioche (50% chance de destruction)
+     * MODIFIÉ : Retire un cristal d'une pioche (depuis PlayerData)
      */
     public ItemStack removeCristalFromPickaxe(Player player, ItemStack pickaxe, String cristalUuid) {
         if (!plugin.getPickaxeManager().isLegendaryPickaxe(pickaxe)) {
@@ -222,7 +221,8 @@ public class CristalManager {
             return null;
         }
 
-        List<Cristal> currentCristals = getPickaxeCristals(pickaxe);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        List<Cristal> currentCristals = getPickaxeCristals(player);
         Cristal toRemove = null;
 
         // Recherche du cristal à retirer
@@ -238,62 +238,46 @@ public class CristalManager {
             return null;
         }
 
-        // Retrait du cristal
-        currentCristals.remove(toRemove);
-        setPickaxeCristals(pickaxe, currentCristals);
+        // Suppression du PlayerData
+        playerData.removePickaxeCristal(cristalUuid);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        // 50% chance de destruction
-        boolean destroyed = Math.random() < 0.5;
+        // Mise à jour de la pioche
+        plugin.getPickaxeManager().updatePickaxeLore(pickaxe.getItemMeta(), player);
 
-        if (destroyed) {
-            player.sendMessage("§c💥 Le cristal §d" + toRemove.getType().getDisplayName() +
-                    " §ca été détruit lors du retrait!");
+        // 50% de chance de récupération
+        if (Math.random() < 0.5) {
+            player.sendMessage("§a✓ Cristal récupéré!");
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+            return toRemove.toItemStack(cristalUuidKey, cristalLevelKey, cristalTypeKey, cristalViergeKey);
+        } else {
+            player.sendMessage("§c✗ Cristal détruit lors du retrait!");
             player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
             return null;
-        } else {
-            player.sendMessage("§a✓ Cristal §d" + toRemove.getType().getDisplayName() +
-                    " §aretiré avec succès!");
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
-
-            // Mise à jour de la pioche
-            plugin.getPickaxeManager().updatePickaxeLore(pickaxe.getItemMeta(), player);
-
-            return toRemove.toItemStack(cristalUuidKey, cristalLevelKey, cristalTypeKey, cristalViergeKey);
         }
     }
 
     /**
-     * Récupère les cristaux appliqués sur une pioche
+     * MODIFIÉ : Récupère les cristaux de la pioche depuis PlayerData
      */
-    public List<Cristal> getPickaxeCristals(ItemStack pickaxe) {
-        if (!plugin.getPickaxeManager().isLegendaryPickaxe(pickaxe)) {
-            return new ArrayList<>();
-        }
-
-        ItemMeta meta = pickaxe.getItemMeta();
-        String cristalsData = meta.getPersistentDataContainer().get(pickaxeCristalsKey, PersistentDataType.STRING);
-
-        if (cristalsData == null || cristalsData.isEmpty()) {
-            return new ArrayList<>();
-        }
+    public List<Cristal> getPickaxeCristals(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Map<String, String> pickaxeCristals = playerData.getPickaxeCristals();
 
         List<Cristal> cristals = new ArrayList<>();
-        String[] cristalEntries = cristalsData.split(";");
 
-        for (String entry : cristalEntries) {
-            if (entry.trim().isEmpty()) continue;
-
-            String[] parts = entry.split(",");
-            if (parts.length >= 3) {
-                try {
-                    String uuid = parts[0];
-                    int niveau = Integer.parseInt(parts[1]);
-                    CristalType type = CristalType.valueOf(parts[2]);
+        for (Map.Entry<String, String> entry : pickaxeCristals.entrySet()) {
+            try {
+                String[] parts = entry.getValue().split(",");
+                if (parts.length == 2) {
+                    String uuid = entry.getKey();
+                    int niveau = Integer.parseInt(parts[0]);
+                    CristalType type = CristalType.valueOf(parts[1]);
 
                     cristals.add(new Cristal(uuid, niveau, type, false));
-                } catch (Exception e) {
-                    plugin.getPluginLogger().warning("Erreur de parsing cristal: " + entry);
                 }
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur de parsing cristal: " + entry.getValue());
             }
         }
 
@@ -301,36 +285,19 @@ public class CristalManager {
     }
 
     /**
-     * Définit les cristaux sur une pioche
+     * MODIFIÉ : Récupère les cristaux de la pioche depuis PlayerData (overload pour ItemStack)
      */
-    private void setPickaxeCristals(ItemStack pickaxe, List<Cristal> cristals) {
-        ItemMeta meta = pickaxe.getItemMeta();
-
-        if (cristals.isEmpty()) {
-            meta.getPersistentDataContainer().remove(pickaxeCristalsKey);
-        } else {
-            StringBuilder data = new StringBuilder();
-            for (int i = 0; i < cristals.size(); i++) {
-                Cristal cristal = cristals.get(i);
-                if (i > 0) data.append(";");
-                data.append(cristal.getUuid()).append(",")
-                        .append(cristal.getNiveau()).append(",")
-                        .append(cristal.getType().name());
-            }
-            meta.getPersistentDataContainer().set(pickaxeCristalsKey, PersistentDataType.STRING, data.toString());
-        }
-
-        pickaxe.setItemMeta(meta);
+    public List<Cristal> getPickaxeCristals(ItemStack pickaxe) {
+        // Cette méthode n'est plus utilisée car on récupère depuis PlayerData
+        // Garde pour compatibilité, mais retourne une liste vide
+        return new ArrayList<>();
     }
 
     /**
      * Calcule le bonus total d'un type de cristal sur une pioche
      */
     public double getTotalCristalBonus(Player player, CristalType type) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return 0;
-
-        List<Cristal> cristals = getPickaxeCristals(pickaxe);
+        List<Cristal> cristals = getPickaxeCristals(player);
         for (Cristal cristal : cristals) {
             if (cristal.getType() == type) {
                 return cristal.getType().getBonus(cristal.getNiveau());
@@ -343,20 +310,46 @@ public class CristalManager {
     /**
      * Vérifie si une pioche a un cristal d'un type spécifique
      */
-    public boolean hasPickaxeCristalType(ItemStack pickaxe, CristalType type) {
-        List<Cristal> cristals = getPickaxeCristals(pickaxe);
+    public boolean hasPickaxeCristalType(Player player, CristalType type) {
+        List<Cristal> cristals = getPickaxeCristals(player);
         return cristals.stream().anyMatch(c -> c.getType() == type);
     }
 
     /**
      * Récupère le coût d'application pour le prochain cristal
      */
-    public long getApplicationCost(ItemStack pickaxe) {
-        List<Cristal> currentCristals = getPickaxeCristals(pickaxe);
+    public long getApplicationCost(Player player) {
+        List<Cristal> currentCristals = getPickaxeCristals(player);
         int count = currentCristals.size();
 
         if (count >= 4) return -1; // Maximum atteint
         return APPLICATION_COSTS[count];
+    }
+
+    /**
+     * NOUVEAU : Fusionne 9 cristaux du même niveau en 1 cristal de niveau supérieur
+     */
+    public boolean fuseCristals(List<Cristal> cristals) {
+        if (cristals.size() != 9) return false;
+
+        // Vérification que tous les cristaux sont du même niveau
+        int niveau = cristals.get(0).getNiveau();
+        if (niveau >= 20) return false; // Niveau max
+
+        for (Cristal cristal : cristals) {
+            if (cristal.getNiveau() != niveau || cristal.isVierge()) {
+                return false;
+            }
+        }
+
+        return true; // Fusion valide
+    }
+
+    /**
+     * NOUVEAU : Crée un cristal de fusion
+     */
+    public Cristal createFusedCristal(int nouveauNiveau) {
+        return createCristalVierge(nouveauNiveau);
     }
 
     // Getters pour les clés

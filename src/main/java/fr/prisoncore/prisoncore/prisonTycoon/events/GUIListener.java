@@ -29,6 +29,11 @@ public class GUIListener implements Listener {
 
         String title = event.getView().getTitle();
 
+        if (title.equals("§6⚡ Fusion de Cristaux ⚡")) {
+            plugin.getCristalGUI().handleFusionInventoryClick(event);
+            return; // Le traitement est entièrement délégué, on arrête ici.
+        }
+
         // NOUVEAU : Ignore complètement les GUIs de conteneur (gérés par ContainerListener)
         if (isContainerGUI(title)) {
             return; // Laisse ContainerListener gérer ces GUIs
@@ -80,7 +85,7 @@ public class GUIListener implements Listener {
         else if (title.contains("🔧")) {
             plugin.getEnchantmentUpgradeGUI().handleUpgradeMenuClick(player, slot, item, clickType, title);
         }
-        else if (title.contains("Cristaux")) {
+        else if (title.contains("Gestion des Cristaux")) {
             plugin.getCristalGUI().handleCristalMenuClick(player, slot, item);
         }
         else if (title.contains("Enchantements Uniques")) {
@@ -92,7 +97,6 @@ public class GUIListener implements Listener {
         else if (title.contains("Réparation")) {
             plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         }
-        // SUPPRIMÉ : La gestion des conteneurs (maintenant dans ContainerListener)
     }
 
     @EventHandler

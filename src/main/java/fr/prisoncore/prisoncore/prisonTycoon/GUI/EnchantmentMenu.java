@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.GUI;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.cristaux.Cristal;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.CustomEnchantment;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentCategory;
@@ -58,9 +59,8 @@ public class EnchantmentMenu {
         // Tête du joueur avec informations économiques
         gui.setItem(PLAYER_HEAD_SLOT, createPlayerHead(player));
 
-        // NOUVEAU: Features futures (ligne du milieu)
-        gui.setItem(CRYSTALS_SLOT, createFutureFeatureItem("Cristaux", Material.AMETHYST_SHARD,
-                "§5Système de cristaux magiques", "§7Implémentation future"));
+        gui.setItem(CRYSTALS_SLOT, createCristalsButton(player));
+
 
         gui.setItem(UNIQUE_ENCHANTS_SLOT, createFutureFeatureItem("Enchantements Uniques", Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE,
                 "§dEnchantements légendaires rares", "§7Implémentation future"));
@@ -412,5 +412,46 @@ public class EnchantmentMenu {
         }
 
         return totalCost;
+    }
+
+    /**
+     * NOUVEAU: Crée le bouton cristaux amélioré
+     */
+    private ItemStack createCristalsButton(Player player) {
+        ItemStack cristalsBtn = new ItemStack(Material.NETHER_STAR);
+        ItemMeta meta = cristalsBtn.getItemMeta();
+        meta.setDisplayName("§d✨ §lGestion des Cristaux §d✨");
+
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§7Améliorez votre pioche avec des");
+        lore.add("§7cristaux magiques puissants!");
+        lore.add("");
+
+        // Affichage des cristaux actuels
+        List<Cristal> currentCristals = plugin.getCristalManager().getPickaxeCristals(player);
+        lore.add("§7Cristaux appliqués: §d" + currentCristals.size() + "§8/§d4");
+
+        if (!currentCristals.isEmpty()) {
+            lore.add("§7Bonus actifs:");
+            for (Cristal cristal : currentCristals) {
+                lore.add("§8• §d" + cristal.getType().getDisplayName() + " " + cristal.getNiveau());
+            }
+        }
+
+        lore.add("");
+        lore.add("§e▸ Appliquer des cristaux sur la pioche");
+        lore.add("§e▸ Fusionner 9 cristaux → niveau +1");
+        lore.add("§e▸ Bonus permanents de minage");
+        lore.add("");
+        lore.add("§a🖱 Clic pour ouvrir le menu");
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+        meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+        cristalsBtn.setItemMeta(meta);
+
+        return cristalsBtn;
     }
 }

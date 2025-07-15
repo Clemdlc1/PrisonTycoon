@@ -144,6 +144,15 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("pickaxe-cristals")) {
+                for (String cristalUuid : config.getConfigurationSection("pickaxe-cristals").getKeys(false)) {
+                    String cristalData = config.getString("pickaxe-cristals." + cristalUuid);
+                    if (cristalData != null && !cristalData.isEmpty()) {
+                        data.setPickaxeCristal(cristalUuid, cristalData);
+                    }
+                }
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -221,6 +230,13 @@ public class PlayerDataManager {
             Set<String> minePermissions = data.getMinePermissions();
             if (!minePermissions.isEmpty()) {
                 config.set("mine-permissions", new ArrayList<>(minePermissions));
+            }
+
+            Map<String, String> pickaxeCristals = data.getPickaxeCristals();
+            if (!pickaxeCristals.isEmpty()) {
+                for (Map.Entry<String, String> entry : pickaxeCristals.entrySet()) {
+                    config.set("pickaxe-cristals." + entry.getKey(), entry.getValue());
+                }
             }
 
             // Statistiques complètes

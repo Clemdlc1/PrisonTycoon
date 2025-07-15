@@ -294,14 +294,14 @@ public class PickaxeManager {
             lore.add("§7└ §7Clic droit pour gérer vos enchantements");
         }
 
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(getPlayerPickaxe(player));
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         if (!cristals.isEmpty()) {
-            lore.add("§d✨ Cristaux appliqués:");
+            lore.add("§d✨ Cristaux Appliqués §8(" + cristals.size() + "/4)§d:");
             for (Cristal cristal : cristals) {
-                lore.add("§7│  §8• §d" + cristal.getType().getDisplayName() + " " +
-                        cristal.getNiveau() + " §8: §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
+                lore.add("§8• §d" + cristal.getType().getDisplayName() + " " + cristal.getNiveau() +
+                        " §8- §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
             }
-            lore.add("§7└ §7Clic-milieu pour gérer vos cristaux"); // Nouvelle ligne
+            lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         }
 
         lore.add("");

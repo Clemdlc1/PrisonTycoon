@@ -165,16 +165,6 @@ public class CristalBonusHelper {
     }
 
     /**
-     * Vérifie si le joueur a un cristal spécifique
-     */
-    public boolean hasCristalType(Player player, CristalType type) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return false;
-
-        return plugin.getCristalManager().hasPickaxeCristalType(pickaxe, type);
-    }
-
-    /**
      * Récupère le niveau du cristal d'un type spécifique
      */
     public int getCristalLevel(Player player, CristalType type) {
