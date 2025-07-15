@@ -112,53 +112,6 @@ public class MineCommand implements CommandExecutor, TabCompleter {
 
                 return true;
             }
-            case "permission", "perm" -> {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage("§cCette commande ne peut être utilisée que par un joueur!");
-                    return true;
-                }
-
-                Player player = (Player) sender;
-
-                if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /mine permission <nom_mine>");
-                    return true;
-                }
-
-                String mineName = args[1];
-
-                // Vérifie que la mine existe
-                var mineData = plugin.getConfigManager().getMineData(mineName);
-                if (mineData == null) {
-                    sender.sendMessage("§cMine '" + mineName + "' introuvable!");
-                    return true;
-                }
-
-                PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-                // Vérifie si le joueur a déjà cette permission ou une supérieure
-                String currentHighest = playerData.getHighestMinePermission();
-                if (currentHighest != null && currentHighest.compareTo(mineName) >= 0) {
-                    sender.sendMessage("§aVous avez déjà accès à la mine '" + mineName + "' (permission actuelle: '" + currentHighest + "')!");
-                    return true;
-                }
-
-                // Logique d'attribution de permission (exemple simple)
-                // Ici, vous pouvez ajouter vos propres conditions (niveau, argent, etc.)
-                if (canPlayerObtainMinePermission(player, mineName)) {
-                    // Efface les anciennes permissions et ajoute la nouvelle (logique cumulative)
-                    playerData.clearMinePermissions();
-                    plugin.getPlayerDataManager().addMinePermissionToPlayer(player.getUniqueId(), mineName);
-                    sender.sendMessage("§a✅ Permission accordée pour la mine '" + mineName + "'!");
-                    sender.sendMessage("§7Vous pouvez maintenant miner dans les mines A à " + mineName.toUpperCase() + ".");
-                } else {
-                    sender.sendMessage("§cVous ne remplissez pas les conditions pour accéder à la mine '" + mineName + "'!");
-                    // Ici, vous pouvez afficher les conditions requises
-                    sendMineRequirements(player, mineName);
-                }
-
-                return true;
-            }
 
             default -> {
                 sendHelpMessage(sender);
@@ -235,7 +188,6 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e📋 Commandes Mine:");
         sender.sendMessage("§7• §6/mine list §7- Liste toutes les mines");
         sender.sendMessage("§7• §6/mine info <nom> §7- Informations sur une mine");
-        sender.sendMessage("§7• §6/mine permission <nom> §7- Obtenir la permission pour une mine");
 
         if (sender.hasPermission("specialmine.admin")) {
             sender.sendMessage("§c🔧 Admin:");
@@ -254,12 +206,11 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("generate", "list", "info", "permission", "stats");
+            List<String> subCommands = Arrays.asList("generate", "list", "info", "stats");
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("generate") ||
-                    args[0].equalsIgnoreCase("info") ||
-                    args[0].equalsIgnoreCase("permission")) {
+                    args[0].equalsIgnoreCase("info")) {
                 Set<String> mines = plugin.getMineManager().getAllMineNames();
                 StringUtil.copyPartialMatches(args[1], mines, completions);
             }

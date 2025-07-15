@@ -20,9 +20,9 @@ cache-cleanup-interval: 3000 # secondes (50 minutes)
 # Format: nom_mine -> coordonnées + composition
 
 mines:
-  # Mine A - Mine de débutant
+  # Mine A - Mine de débutant (rang par défaut, pas de prix)
   mine-a:
-    world: world  # Nom du monde (optionnel, utilise le monde principal par défaut)
+    world: world
     coordinates:
       min-x: 100
       min-y: 10
@@ -31,10 +31,11 @@ mines:
       max-y: 60
       max-z: 150
     blocks:
-      stone: 0.5      # 50% de pierre
-      cobblestone: 0.3 # 30% de cobblestone
-      coal_ore: 0.15   # 15% de minerai de charbon
-      iron_ore: 0.05   # 5% de minerai de fer
+      stone: 0.5
+      cobblestone: 0.3
+      coal_ore: 0.15
+      iron_ore: 0.05
+    # Pas de prix car c'est le rang de départ
 
   # Mine B - Mine intermédiaire
   mine-b:
@@ -53,6 +54,7 @@ mines:
       gold_ore: 0.05
       redstone_ore: 0.04
       diamond_ore: 0.01
+    rankup-price: 1000  # 1,000 coins pour passer au rang B
 
   # Mine C - Mine avancée
   mine-c:
@@ -73,6 +75,7 @@ mines:
       diamond_ore: 0.05
       emerald_ore: 0.03
       ancient_debris: 0.02
+    rankup-price: 5000  # 5,000 coins pour passer au rang C
 
   # Mine D - Mine légendaire
   mine-d:
@@ -92,6 +95,125 @@ mines:
       diamond_ore: 0.1
       emerald_ore: 0.05
       ancient_debris: 0.05
+    rankup-price: 15000  # 15,000 coins pour passer au rang D
+
+  # Ajout de nouvelles mines jusqu'au rang Z
+  mine-e:
+    coordinates:
+      min-x: 200
+      min-y: 10
+      min-z: 200
+      max-x: 250
+      max-y: 60
+      max-z: 250
+    blocks:
+      coal_ore: 0.2
+      iron_ore: 0.15
+      gold_ore: 0.15
+      redstone_ore: 0.1
+      lapis_ore: 0.1
+      diamond_ore: 0.15
+      emerald_ore: 0.1
+      ancient_debris: 0.05
+    rankup-price: 50000  # 50,000 coins
+
+  mine-f:
+    coordinates:
+      min-x: -250
+      min-y: 10
+      min-z: 200
+      max-x: -200
+      max-y: 60
+      max-z: 250
+    blocks:
+      iron_ore: 0.1
+      gold_ore: 0.2
+      redstone_ore: 0.15
+      lapis_ore: 0.1
+      diamond_ore: 0.2
+      emerald_ore: 0.15
+      ancient_debris: 0.1
+    rankup-price: 125000  # 125,000 coins
+
+  mine-g:
+    coordinates:
+      min-x: 200
+      min-y: 10
+      min-z: -250
+      max-x: 250
+      max-y: 60
+      max-z: -200
+    blocks:
+      gold_ore: 0.25
+      redstone_ore: 0.15
+      lapis_ore: 0.1
+      diamond_ore: 0.25
+      emerald_ore: 0.15
+      ancient_debris: 0.1
+    rankup-price: 300000  # 300,000 coins
+
+  # Continuer avec des prix exponentiels pour les autres rangs...
+  mine-h:
+    coordinates:
+      min-x: -250
+      min-y: 10
+      min-z: -250
+      max-x: -200
+      max-y: 60
+      max-z: -200
+    blocks:
+      gold_ore: 0.2
+      redstone_ore: 0.1
+      lapis_ore: 0.1
+      diamond_ore: 0.3
+      emerald_ore: 0.2
+      ancient_debris: 0.1
+    rankup-price: 750000  # 750,000 coins
+
+  mine-i:
+    coordinates:
+      min-x: 300
+      min-y: 10
+      min-z: 300
+      max-x: 350
+      max-y: 60
+      max-z: 350
+    blocks:
+      gold_ore: 0.15
+      lapis_ore: 0.1
+      diamond_ore: 0.35
+      emerald_ore: 0.25
+      ancient_debris: 0.15
+    rankup-price: 1500000  # 1.5M coins
+
+  mine-j:
+    coordinates:
+      min-x: -350
+      min-y: 10
+      min-z: 300
+      max-x: -300
+      max-y: 60
+      max-z: 350
+    blocks:
+      diamond_ore: 0.4
+      emerald_ore: 0.35
+      ancient_debris: 0.25
+    rankup-price: 3000000  # 3M coins
+
+  # Exemple jusqu'au rang Z (les autres rangs suivent la même logique)
+  # Les prix augmentent de façon exponentielle
+  mine-z:
+    coordinates:
+      min-x: 1000
+      min-y: 10
+      min-z: 1000
+      max-x: 1050
+      max-y: 60
+      max-z: 1050
+    blocks:
+      emerald_ore: 0.5
+      ancient_debris: 0.5
+    rankup-price: 1000000000  # 1 milliard de coins (rang maximum)
 
 # ========================================
 #          VALEURS DES BLOCS

@@ -192,7 +192,7 @@ public class MiningListener implements Listener {
 
         // Vérifie s'il faut envoyer une notification
         if (currentCount % notificationFrequency == 0) {
-            String notificationMessage = createDurabilityNotificationMessage(durabilityPercent);
+            String notificationMessage = createDurabilityNotificationMessage(player, durabilityPercent);
 
             // Envoie une notification temporaire via le NotificationManager (durée: 2 secondes)
             plugin.getNotificationManager().sendTemporaryDurabilityNotification(player, notificationMessage, 2000);
@@ -220,10 +220,10 @@ public class MiningListener implements Listener {
     /**
      * NOUVEAU : Crée le message de notification de durabilité
      */
-    private String createDurabilityNotificationMessage(double durabilityPercent) {
+    private String createDurabilityNotificationMessage(Player player, double durabilityPercent) {
         String percentageStr = String.format("%.1f%%", durabilityPercent * 100);
 
-        if (durabilityPercent <= 0.05) { // Moins de 5% - très critique
+        if ((durabilityPercent <= 0.05) && !plugin.getPickaxeManager().isPickaxeBroken(player)) {
             return "§c💀 URGENT! Pioche CRITIQUE! Réparez MAINTENANT! (" + percentageStr + ")";
         } else if (durabilityPercent <= 0.10) { // Moins de 10% - critique
             return "§c⚠️ CRITIQUE! Pioche très endommagée! (" + percentageStr + ")";

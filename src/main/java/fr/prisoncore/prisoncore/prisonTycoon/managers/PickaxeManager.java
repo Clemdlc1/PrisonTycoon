@@ -163,7 +163,7 @@ public class PickaxeManager {
         lore.add("§7│ §eTokens : §6" + NumberFormatter.formatWithColor(playerData.getTokensViaPickaxe()));
         lore.add("§7│ §aExpérience : §2" + NumberFormatter.formatWithColor(playerData.getExperienceViaPickaxe()));
         lore.add("§7│ §bBlocs minés: §3" + NumberFormatter.formatWithColor(playerData.getTotalBlocksMined()));
-        lore.add("§7└ §dBlocs détruits : §5" + NumberFormatter.formatWithColor(playerData.getTotalBlocksDestroyed() - playerData.getTotalBlocksMined()));
+        lore.add("§7└ §dBlocs détruits : §5" + NumberFormatter.formatWithColor(playerData.getTotalBlocksDestroyed()));
         lore.add("");
 
         ItemStack currentPickaxe = findPlayerPickaxe(player);
@@ -463,13 +463,13 @@ public class PickaxeManager {
             return;
         }
 
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
         // NOUVEAU : Vérifie que la pioche n'est pas cassée
-        if (isPickaxeBroken(player)) {
+        if (isPickaxeBroken(player) && playerData.getEnchantmentLevel("escalator") > 0) {
             player.sendMessage("§c❌ Votre pioche est trop endommagée pour utiliser Escalateur! Réparez-la d'abord.");
             return;
         }
-
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (playerData.getEnchantmentLevel("escalator") > 0 &&
                 playerData.isMobilityEnchantmentEnabled("escalator")) {

@@ -66,12 +66,24 @@ permissions:
     description: Permet de générer ou de supprimer une mine.
     default: op
 
+  # NOUVELLES permissions
+  specialmine.rankup:
+    description: Utiliser le système de rankup
+    default: true
+
+  specialmine.vip:
+    description: Fonctionnalités VIP (auto-rankup, auto-upgrade)
+    default: false
+    children:
+      specialmine.rankup: true
+      specialmine.pickaxe: true
+      specialmine.mine: true
+
   # Permission globale pour les administrateurs
   specialmine.admin:
     description: Accès complet aux fonctionnalités administrateur.
     default: op
     children:
-      - specialmine.admin.mine.permission
       - specialmine.admin.givetokens
       - specialmine.admin.reload
       - specialmine.admin.economy
@@ -102,7 +114,7 @@ commands:
 
   mine:
     description: Gérer les mines et obtenir des informations.
-    usage: /mine <generate|list|info|permission|stats> [nom]
+    usage: /mine <generate|list|info|stats> [nom]
     permission: specialmine.mine
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [mines, prisonmine]
@@ -125,6 +137,11 @@ commands:
     permission: specialmine.container
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ container, coffre, box ]
+
+  rankup:
+    description: Système de montée en rang pour les mines
+    usage: /<command> [all|auto|info]
+    aliases: [ rank, rk ]
 
 # Chargement
 load: POSTWORLD

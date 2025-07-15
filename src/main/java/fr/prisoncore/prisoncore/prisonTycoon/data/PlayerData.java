@@ -33,6 +33,8 @@ public class PlayerData {
     private long abundanceEndTime;
     private long abundanceCooldownEnd;
     private long lastMiningTime;
+    private boolean autoRankup = false;
+
 
     // Auto-amélioration des enchantements
     private final Set<String> autoUpgradeEnabled;
@@ -242,6 +244,14 @@ public class PlayerData {
                 return true;
             }
             return false;
+        }
+    }
+
+    public void removeCoins(long amount) {
+        synchronized (dataLock) {
+            if (this.coins >= amount) {
+                this.coins -= amount;
+            }
         }
     }
 
@@ -724,6 +734,24 @@ public class PlayerData {
     public boolean hasMinedThisMinute() {
         synchronized (dataLock) {
             return lastMinuteBlocksMined > 0; // Seulement les blocs MINÉS comptent pour le récapitulatif
+        }
+    }
+
+    /**
+     * Obtient l'état de l'auto-rankup
+     */
+    public boolean hasAutoRankup() {
+        synchronized (dataLock) {
+            return autoRankup;
+        }
+    }
+
+    /**
+     * Définit l'état de l'auto-rankup
+     */
+    public void setAutoRankup(boolean enabled) {
+        synchronized (dataLock) {
+            this.autoRankup = enabled;
         }
     }
 }

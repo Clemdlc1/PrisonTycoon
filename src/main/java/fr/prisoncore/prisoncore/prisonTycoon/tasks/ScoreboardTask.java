@@ -218,9 +218,8 @@ public class ScoreboardTask extends BukkitRunnable {
 
         // Affiche les blocs cassés seulement si différent des blocs minés
         if (blocksDestroyed > blocksMined) {
-            long specialDestroyed = blocksDestroyed - blocksMined;
             setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " +
-                    ChatColor.LIGHT_PURPLE + NumberFormatter.format(specialDestroyed));
+                    ChatColor.LIGHT_PURPLE + NumberFormatter.format(blocksDestroyed));
         }
 
         // Ligne vide finale

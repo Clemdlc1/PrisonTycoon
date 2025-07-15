@@ -42,6 +42,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private ContainerGUI containerGUI;
     private ContainerFilterGUI containerFilterGUI;
 
+    private RankupCommand rankupCommand;
 
 
     // 3 tâches séparées
@@ -53,6 +54,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutoSaveTask autoSaveTask;
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
+
+
 
     @Override
     public void onEnable() {
@@ -208,16 +211,25 @@ public final class PrisonTycoon extends JavaPlugin {
 
         // Commandes joueur
         getCommand("pickaxe").setExecutor(new PickaxeCommand(this));
+        getCommand("pickaxe").setTabCompleter(new PickaxeCommand(this));
         getCommand("mine").setExecutor(new MineCommand(this));
+        getCommand("mine").setTabCompleter(new MineCommand(this));
         getCommand("sell").setExecutor(new SellCommand(this));
+        getCommand("sell").setTabCompleter(new SellCommand(this));
         getCommand("repair").setExecutor(new RepairCommand(this)); // NOUVELLE LIGNE
+        getCommand("repair").setTabCompleter(new RepairCommand(this));
 
+        this.rankupCommand = new RankupCommand(this);
+        getCommand("rankup").setExecutor(this.rankupCommand);
+        getCommand("rankup").setTabCompleter(this.rankupCommand);
 
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
+        getCommand("givetokens").setTabCompleter(new GiveTokensCommand(this));
         getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
+        getCommand("prisontycoon").setTabCompleter(new PrisonTycoonCommand(this));
         getCommand("conteneur").setExecutor(new ContainerCommand(this));
-
+        getCommand("conteneur").setTabCompleter(new ContainerCommand(this));
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -410,5 +422,9 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public ContainerFilterGUI getContainerFilterGUI() {
         return containerFilterGUI;
+    }
+
+    public RankupCommand getRankupCommand() {
+        return this.rankupCommand;
     }
 }

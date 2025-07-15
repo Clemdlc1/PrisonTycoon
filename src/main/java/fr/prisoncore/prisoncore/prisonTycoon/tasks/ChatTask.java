@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.tasks;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.commands.RankupCommand;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.entity.Player;
@@ -99,7 +100,7 @@ public class ChatTask extends BukkitRunnable {
         String summary = generateCompleteSummary(playerData);
         if (summary != null && !summary.isEmpty()) {
             player.sendMessage(summary);
-
+            performAutoRankupIfEnabled(player);
             plugin.getPluginLogger().debug("Récapitulatif minute envoyé à " + player.getName());
             return true;
         }
@@ -254,6 +255,17 @@ public class ChatTask extends BukkitRunnable {
         summary.append("\n§8§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         return summary.toString();
+    }
+
+    /**
+     * NOUVEAU : Effectue l'auto-rankup VIP si activé et si le joueur a miné
+     */
+    private void performAutoRankupIfEnabled(Player player) {
+            RankupCommand rankupCommand = plugin.getRankupCommand();
+            if (rankupCommand.canAutoRankup(player)) {
+                plugin.getPluginLogger().debug("Tentative d'auto-rankup pour " + player.getName());
+                rankupCommand.performAutoRankup(player);
+            }
     }
 
     /**
