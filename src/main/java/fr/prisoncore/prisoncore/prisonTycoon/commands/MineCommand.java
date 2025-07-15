@@ -1,7 +1,6 @@
 package fr.prisoncore.prisoncore.prisonTycoon.commands;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
-import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

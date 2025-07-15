@@ -253,7 +253,7 @@ public class CristalGUI {
         ItemStack back = new ItemStack(Material.ARROW);
         ItemMeta backMeta = back.getItemMeta();
         backMeta.setDisplayName("§e↩ Retour");
-        backMeta.setLore(Arrays.asList("§7Retour au menu des enchantements"));
+        backMeta.setLore(List.of("§7Retour au menu des enchantements"));
         backMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back");
         back.setItemMeta(backMeta);
         inv.setItem(18, back);
@@ -262,7 +262,7 @@ public class CristalGUI {
         ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = close.getItemMeta();
         closeMeta.setDisplayName("§c❌ Fermer");
-        closeMeta.setLore(Arrays.asList("§7Ferme ce menu"));
+        closeMeta.setLore(List.of("§7Ferme ce menu"));
         closeMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         close.setItemMeta(closeMeta);
         inv.setItem(26, close);

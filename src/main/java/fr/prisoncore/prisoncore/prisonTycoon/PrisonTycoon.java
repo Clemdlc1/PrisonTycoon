@@ -123,9 +123,6 @@ public final class PrisonTycoon extends JavaPlugin {
                 logger.info("§aDonnées joueurs sauvegardées.");
             }
 
-            // Nettoyage des managers
-            cleanupManagers();
-
         } catch (Exception e) {
             logger.severe("§cErreur lors de la désactivation:");
             e.printStackTrace();
@@ -320,14 +317,6 @@ public final class PrisonTycoon extends JavaPlugin {
             autoUpgradeTask.cancel();
             logger.debug("AutoUpgradeTask arrêtée");
         }
-    }
-
-    /**
-     * Nettoie tous les managers
-     */
-    private void cleanupManagers() {
-        // Les managers se nettoient automatiquement
-        // Cette méthode est prête pour d'éventuels nettoyages futurs
     }
 
     // Getters pour accès aux managers
