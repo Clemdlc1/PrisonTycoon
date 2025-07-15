@@ -171,7 +171,6 @@ public class ContainerListener implements Listener {
                 }
 
                 // Annule tous les autres clics dans l'inventaire du joueur
-                event.setCancelled(true);
                 return;
             }
 
@@ -205,7 +204,6 @@ public class ContainerListener implements Listener {
                 event.setCancelled(true);
                 Player player = (Player) event.getWhoClicked();
                 player.sendMessage("§c❌ Vous ne pouvez pas utiliser un conteneur comme filtre!");
-                return;
             }
         }
     }

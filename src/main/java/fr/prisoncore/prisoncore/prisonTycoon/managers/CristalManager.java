@@ -201,7 +201,15 @@ public class CristalManager {
         playerData.setPickaxeCristal(cristal.getUuid(), cristalData);
 
         // Mise à jour de la pioche
-        plugin.getPickaxeManager().updatePickaxeLore(pickaxe.getItemMeta(), player);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            // Récupérer la pioche mise à jour
+            ItemStack updatedPickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
+            if (updatedPickaxe != null) {
+                ItemMeta meta = updatedPickaxe.getItemMeta();
+                plugin.getPickaxeManager().updatePickaxeLore(meta, player);
+                updatedPickaxe.setItemMeta(meta);
+            }
+        }, 1L);
 
         player.sendMessage("§d✨ Cristal §d" + cristal.getType().getDisplayName() +
                 " §7(Niveau " + cristal.getNiveau() + ") §aappliqué!");
@@ -243,7 +251,14 @@ public class CristalManager {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
         // Mise à jour de la pioche
-        plugin.getPickaxeManager().updatePickaxeLore(pickaxe.getItemMeta(), player);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            ItemStack updatedPickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
+            if (updatedPickaxe != null) {
+                ItemMeta meta = updatedPickaxe.getItemMeta();
+                plugin.getPickaxeManager().updatePickaxeLore(meta, player);
+                updatedPickaxe.setItemMeta(meta);
+            }
+        }, 1L);
 
         // 50% de chance de récupération
         if (Math.random() < 0.5) {

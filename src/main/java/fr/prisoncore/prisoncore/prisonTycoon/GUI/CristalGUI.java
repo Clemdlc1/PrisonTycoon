@@ -54,9 +54,6 @@ public class CristalGUI {
         // Cristaux appliqués (slots 10-13)
         fillAppliedCristals(inv, player);
 
-        // Cristaux dans l'inventaire (slots 19-22)
-        fillInventoryCristals(inv, player);
-
         // Boutons de contrôle
         fillControlButtons(inv);
 
@@ -74,20 +71,7 @@ public class CristalGUI {
      * Ouvre le menu de fusion des cristaux
      */
     public void openFusionMenu(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, "§6⚡ Fusion de Cristaux ⚡");
-
-        // Informations de fusion (slot 4)
-        fillFusionInfo(inv);
-
-        // Slots de fusion (slots 10-18) - 9 emplacements
-        fillFusionSlots(inv);
-
-        // Boutons de contrôle fusion
-        fillFusionControlButtons(inv);
-
-        // Séparateurs
-        fillSeparators(inv);
-
+        Inventory inv = Bukkit.createInventory(null, 9, "§6⚡ Fusion de Cristaux ⚡");
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
     }
@@ -138,7 +122,7 @@ public class CristalGUI {
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
 
         // Slots pour les cristaux appliqués (10-13)
-        int[] slots = {10, 11, 12, 13};
+        int[] slots = {14, 11, 12, 15};
 
         for (int i = 0; i < 4; i++) {
             if (i < cristals.size()) {
@@ -179,64 +163,6 @@ public class CristalGUI {
                 emptySlot.setItemMeta(meta);
                 inv.setItem(slots[i], emptySlot);
             }
-        }
-    }
-
-    /**
-     * Affiche les cristaux dans l'inventaire (révélés uniquement)
-     */
-    private void fillInventoryCristals(Inventory inv, Player player) {
-        List<ItemStack> cristalsInInventory = new ArrayList<>();
-
-        // Recherche des cristaux révélés dans l'inventaire
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (plugin.getCristalManager().isCristal(item)) {
-                Cristal cristal = plugin.getCristalManager().getCristalFromItem(item);
-                if (cristal != null && !cristal.isVierge()) {
-                    // Clone l'item pour l'affichage
-                    ItemStack displayItem = item.clone();
-                    ItemMeta meta = displayItem.getItemMeta();
-                    List<String> lore = meta.getLore();
-                    lore.add("");
-                    lore.add("§e▸ Clic-gauche pour appliquer sur la pioche");
-
-                    // Marque pour l'action d'application
-                    meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "apply");
-                    meta.setLore(lore);
-                    displayItem.setItemMeta(meta);
-
-                    cristalsInInventory.add(displayItem);
-                }
-            }
-        }
-
-        // Affichage dans les slots 19-22 (4 slots)
-        int[] slots = {19, 20, 21, 22};
-        for (int i = 0; i < 4 && i < cristalsInInventory.size(); i++) {
-            inv.setItem(slots[i], cristalsInInventory.get(i));
-        }
-
-        // Message si aucun cristal ou slots vides
-        for (int i = cristalsInInventory.size(); i < 4; i++) {
-            ItemStack notice = new ItemStack(Material.BARRIER);
-            ItemMeta meta = notice.getItemMeta();
-            if (cristalsInInventory.isEmpty() && i == 0) {
-                meta.setDisplayName("§c⚠ Aucun cristal révélé");
-                meta.setLore(Arrays.asList(
-                        "§7Vous n'avez aucun cristal révélé",
-                        "§7dans votre inventaire.",
-                        "",
-                        "§e▸ Utilisez §6/cristal <niveau> §epour",
-                        "§e  obtenir des cristaux vierges",
-                        "§e▸ Clic-droit sur un cristal vierge",
-                        "§e  pour révéler son type"
-                ));
-            } else {
-                meta.setDisplayName("§7⬜ Emplacement vide");
-                meta.setLore(Arrays.asList("§7Aucun cristal à afficher"));
-            }
-            notice.setItemMeta(meta);
-            inv.setItem(slots[i], notice);
         }
     }
 
@@ -430,43 +356,30 @@ public class CristalGUI {
         }
     }
 
-    // Ajout dans la classe qui gère les événements d'inventaire (probablement InventoryClickListener ou similaire)
-
-    /**
-     * NOUVEAU : Gère les clics spéciaux dans le menu de fusion
-     */
-// Dans fr.prisoncore.prisoncore.prisonTycoon.GUI.CristalGUI.java
-
     /**
      * Gère les clics dans le menu de fusion.
      * Reçoit l'événement complet pour gérer les items sur le curseur.
      */
     public void handleFusionInventoryClick(InventoryClickEvent event) {
-        // S'assurer que le clic provient d'un joueur
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        // Vérifier que c'est bien le menu de fusion
+        if (!event.getView().getTitle().equals("§6⚡ Fusion de Cristaux ⚡")) return;
+
+        // Si le clic est dans l'inventaire du joueur, on autorise
+        if (event.getClickedInventory() == player.getInventory()) {
+            return; // Laisser le joueur gérer ses items
         }
 
-        // Vérifier que le clic a lieu dans l'inventaire du GUI et non celui du joueur
-        if (event.getClickedInventory() == null || !event.getView().getTitle().equals("§6⚡ Fusion de Cristaux ⚡")) {
-            // Si le clic est dans l'inventaire du joueur, on l'autorise (pour qu'il puisse bouger ses propres items)
-            return;
-        }
+        // Si le clic est dans le menu de fusion
+        if (event.getClickedInventory() != null && event.getClickedInventory().getSize() == 9) {
+            event.setCancelled(true);
 
-        // On prend le contrôle total sur l'événement dans ce GUI
-        event.setCancelled(true);
+            int slot = event.getSlot();
+            ItemStack currentItem = event.getCurrentItem();
+            ItemStack cursorItem = event.getCursor();
 
-        int slot = event.getSlot();
-        ItemStack currentItem = event.getCurrentItem(); // L'item dans le slot cliqué
-        ItemStack cursorItem = event.getCursor(); // L'item sur le curseur
-
-        // Déterminer si c'est un slot de fusion (slots 10 à 18)
-        boolean isFusionSlot = slot >= 10 && slot <= 18;
-
-        if (isFusionSlot) {
-            // --- LOGIQUE POUR LES SLOTS DE FUSION ---
-
-            // Cas 1 : Le joueur veut PLACER un item depuis son curseur
+            // Cas 1: Le joueur veut placer un cristal depuis son curseur
             if (cursorItem != null && cursorItem.getType() != Material.AIR) {
                 if (plugin.getCristalManager().isCristal(cursorItem)) {
                     Cristal cristal = plugin.getCristalManager().getCristalFromItem(cursorItem);
@@ -476,36 +389,22 @@ public class CristalGUI {
                         player.setItemOnCursor(null);
                         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 1.2f);
                     } else {
-                        player.sendMessage("§cSeuls les cristaux de niveau 1 à 19 peuvent être fusionnés !");
+                        player.sendMessage("§cSeuls les cristaux de niveau 1 à 19 peuvent être fusionnés!");
                         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                     }
                 } else {
-                    player.sendMessage("§cSeuls les cristaux peuvent être placés ici !");
+                    player.sendMessage("§cSeuls les cristaux peuvent être placés ici!");
                     player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 }
             }
-            // Cas 2 : Le joueur veut REPRENDRE un item sur son curseur
-            else if (currentItem != null && plugin.getCristalManager().isCristal(currentItem)) {
-                // Mettre l'item sur le curseur
-                player.setItemOnCursor(currentItem.clone());
-
-                // Recréer le placeholder pour le slot de fusion
-                ItemStack fusionSlotPlaceholder = new ItemStack(Material.ORANGE_STAINED_GLASS_PANE);
-                ItemMeta meta = fusionSlotPlaceholder.getItemMeta();
-                meta.setDisplayName("§6⬜ Emplacement de fusion");
-                meta.setLore(Arrays.asList("§7Placez un cristal ici", "§7(niveau 1 à 19)"));
-                meta.getPersistentDataContainer().set(this.actionKey, PersistentDataType.STRING, "fusion_slot");
-                fusionSlotPlaceholder.setItemMeta(meta);
-                event.getClickedInventory().setItem(slot, fusionSlotPlaceholder);
-
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 0.9f);
-            }
-        } else if (currentItem != null && currentItem.hasItemMeta()) {
-            // --- LOGIQUE POUR LES BOUTONS (HORS SLOTS DE FUSION) ---
-            String action = currentItem.getItemMeta().getPersistentDataContainer().get(this.actionKey, PersistentDataType.STRING);
-            if (action != null) {
-                // On délègue l'action à la méthode qui gère les clics sur les boutons
-                this.handleFusionMenuClick(player, slot, currentItem);
+            // Cas 2: Le joueur veut récupérer un cristal
+            else if (currentItem != null && currentItem.getType() != Material.AIR) {
+                if (plugin.getCristalManager().isCristal(currentItem)) {
+                    // Mettre le cristal sur le curseur et vider le slot
+                    player.setItemOnCursor(currentItem.clone());
+                    event.getClickedInventory().setItem(slot, null);
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 0.8f);
+                }
             }
         }
     }
@@ -563,7 +462,7 @@ public class CristalGUI {
                         // Suppression de l'inventaire
                         player.getInventory().setItem(i, null);
                         found = true;
-
+                        player.sendMessage("hello");
                         // Rafraîchissement du menu
                         openCristalMenu(player);
                     }

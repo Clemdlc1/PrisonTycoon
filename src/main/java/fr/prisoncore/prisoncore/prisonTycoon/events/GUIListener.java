@@ -13,7 +13,6 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Listener pour les interfaces graphiques générales
- * CORRIGÉ : N'interfère plus avec les GUIs de conteneur
  */
 public class GUIListener implements Listener {
 
