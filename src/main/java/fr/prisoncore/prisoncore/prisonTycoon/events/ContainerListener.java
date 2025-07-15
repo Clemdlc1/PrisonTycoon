@@ -223,27 +223,4 @@ public class ContainerListener implements Listener {
             plugin.getContainerFilterGUI().cleanupClosedGUI(title);
         }
     }
-
-    /**
-     * NOUVEAU : Empêche l'utilisation des conteneurs dans le crafting
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onCraftingAttempt(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-
-        if (event.getInventory() instanceof CraftingInventory) {
-            ItemStack clickedItem = event.getCurrentItem();
-            ItemStack cursorItem = event.getCursor();
-
-            if ((clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
-                    (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem))) {
-
-                event.setCancelled(true);
-                player.sendMessage("§c❌ Les conteneurs ne peuvent pas être utilisés dans le crafting!");
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            }
-        }
-    }
 }

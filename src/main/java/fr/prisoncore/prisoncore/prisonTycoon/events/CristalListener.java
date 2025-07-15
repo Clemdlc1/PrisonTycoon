@@ -78,45 +78,6 @@ public class CristalListener implements Listener {
     }
 
     @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        // Vérifier que le clic est dans l'inventaire du joueur (pas dans un GUI)
-        if (event.getClickedInventory() != player.getInventory()) return;
-
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || !plugin.getCristalManager().isCristal(clickedItem)) return;
-
-        // Vérifier que c'est un clic gauche/droit simple
-        if (!event.getClick().isLeftClick() && !event.getClick().isRightClick()) return;
-        if (event.getClick().isShiftClick()) return;
-
-        Cristal cristal = plugin.getCristalManager().getCristalFromItem(clickedItem);
-        if (cristal == null || cristal.isVierge()) return;
-
-        // Obtenir la pioche du joueur
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) {
-            player.sendMessage("§cVous devez avoir une pioche légendaire pour appliquer des cristaux!");
-            return;
-        }
-
-        event.setCancelled(true);
-
-        // Tenter l'application du cristal
-        if (plugin.getCristalManager().applyCristalToPickaxe(player, pickaxe, cristal)) {
-            // Supprimer le cristal de l'inventaire
-            clickedItem.setAmount(clickedItem.getAmount() - 1);
-            if (clickedItem.getAmount() <= 0) {
-                event.getClickedInventory().setItem(event.getSlot(), null);
-            }
-
-            // Forcer la mise à jour du lore de la pioche
-            plugin.getPickaxeManager().updatePlayerPickaxe(player);
-        }
-    }
-
-    @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
 

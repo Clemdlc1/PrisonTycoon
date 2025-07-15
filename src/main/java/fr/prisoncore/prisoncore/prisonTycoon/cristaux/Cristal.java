@@ -88,8 +88,7 @@ public class Cristal {
                     "",
                     "§e▸ Clic-droit pour révéler son type",
                     "§7Niveau: §f" + niveau,
-                    "",
-                    "§8UUID: " + uuid.substring(0, 8) + "..."
+                    ""
             ));
         } else {
             meta.setDisplayName("§d✨ Cristal " + type.getDisplayName() + " §7(Niveau " + niveau + ")");
@@ -101,8 +100,7 @@ public class Cristal {
                     "",
                     "§e▸ Placez sur une pioche pour l'améliorer",
                     "§c▸ Retrait: 50% chance de destruction",
-                    "",
-                    "§8UUID: " + uuid.substring(0, 8) + "..."
+                    ""
             ));
         }
 

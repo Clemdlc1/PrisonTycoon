@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.events;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.cristaux.Cristal;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -30,30 +31,33 @@ public class GUIListener implements Listener {
 
         if (title.equals("§6⚡ Fusion de Cristaux ⚡")) {
             plugin.getCristalGUI().handleFusionInventoryClick(event);
-            return; // Le traitement est entièrement délégué, on arrête ici.
-        }
-
-        // NOUVEAU : Ignore complètement les GUIs de conteneur (gérés par ContainerListener)
-        if (isContainerGUI(title)) {
-            return; // Laisse ContainerListener gérer ces GUIs
-        }
-
-        if (event.getClickedInventory() == player.getInventory()) {
             return;
         }
 
+        if (isContainerGUI(title)) {
+            return;
+        }
+
+        // Si le clic est dans l'inventaire du joueur
+        if (event.getClickedInventory() == player.getInventory()) {
+            // On agit uniquement si le GUI des cristaux est ouvert
+            if (title.contains("Gestion des Cristaux")) {
+                handleCristalApplicationClick(player, event);
+            }
+            // Pour tous les autres GUIs, on n'interfère pas avec l'inventaire du joueur.
+            return;
+        }
+
+        // Si on arrive ici, le clic a eu lieu dans l'inventaire du haut (le GUI)
         if (!isPluginGUI(title)) return;
 
-        // ÉTAPE CRUCIALE : Toujours annuler l'événement pour prendre le contrôle total.
         event.setCancelled(true);
 
         ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || clickedItem.getType() == Material.AIR ||
-                !clickedItem.hasItemMeta() || !clickedItem.getItemMeta().hasDisplayName()) {
-            return; // Ne rien faire si c'est un slot vide ou un item décoratif.
+        if (clickedItem == null || clickedItem.getType() == Material.AIR) {
+            return;
         }
 
-        // Déléguer le traitement à la méthode centrale.
         handleGUIClick(player, title, event.getSlot(), clickedItem, event.getClick());
     }
 
@@ -100,6 +104,44 @@ public class GUIListener implements Listener {
         else if (title.contains("Réparation")) {
             plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         }
+    }
+
+    /**
+     * NOUVEAU : Gère la tentative d'application d'un cristal en cliquant dessus
+     * depuis l'inventaire du joueur lorsque le GUI des cristaux est ouvert.
+     */
+    private void handleCristalApplicationClick(Player player, InventoryClickEvent event) {
+        ItemStack clickedItem = event.getCurrentItem();
+
+        // On vérifie si l'item cliqué est un cristal révélé
+        if (clickedItem == null || !plugin.getCristalManager().isCristal(clickedItem)) {
+            return;
+        }
+
+        Cristal cristal = plugin.getCristalManager().getCristalFromItem(clickedItem);
+        if (cristal == null || cristal.isVierge()) {
+            player.sendMessage("§cCe cristal doit d'abord être révélé (clic-droit en main).");
+            return;
+        }
+
+        // C'est un cristal applicable, on annule l'événement pour prendre le contrôle.
+        event.setCancelled(true);
+
+        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
+        if (pickaxe == null) {
+            player.sendMessage("§cVous devez avoir une pioche légendaire pour appliquer des cristaux!");
+            return;
+        }
+
+        // On tente l'application du cristal
+        if (plugin.getCristalManager().applyCristalToPickaxe(player, pickaxe, cristal)) {
+            // L'application a réussi, on consomme l'item
+            clickedItem.setAmount(clickedItem.getAmount() - 1);
+
+            // On rafraîchit l'interface pour montrer le changement
+            plugin.getCristalGUI().refreshCristalGUI(player);
+        }
+        // Si l'application échoue, les messages d'erreur sont déjà envoyés par applyCristalToPickaxe.
     }
 
     @EventHandler
