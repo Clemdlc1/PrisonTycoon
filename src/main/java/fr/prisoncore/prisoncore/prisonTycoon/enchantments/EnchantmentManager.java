@@ -418,14 +418,16 @@ public class EnchantmentManager {
             long normalTokens = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens * 2));
             long penalizedTokens = Math.round(normalTokens * penaltyMultiplier);
 
-            playerData.addTokensViaPickaxe(penalizedTokens);
+            long finalGains = plugin.getCristalBonusHelper().applyTokenBoost(player, penalizedTokens);
+
+            playerData.addTokensViaPickaxe(finalGains);
             playerData.addGreedTrigger();
 
             // Notification spéciale pour indiquer le malus
-            plugin.getNotificationManager().queueGreedNotification(player, "Token Greed §c(Malus)", penalizedTokens, "tokens");
+            plugin.getNotificationManager().queueGreedNotification(player, "Token Greed §c(Malus)", finalGains, "tokens");
 
             plugin.getPluginLogger().debug("Token Greed avec malus pour " + player.getName() +
-                    ": " + normalTokens + " → " + penalizedTokens + " tokens (" +
+                    ": " + normalTokens + " → " + finalGains + " tokens (" +
                     String.format("%.1f%%", (1-penaltyMultiplier)*100) + " malus)");
         }
     }
