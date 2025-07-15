@@ -81,7 +81,7 @@ public class GUIListener implements Listener {
             plugin.getEnchantmentUpgradeGUI().handleUpgradeMenuClick(player, slot, item, clickType, title);
         }
         else if (title.contains("Cristaux")) {
-            plugin.getCrystalsMenuGUI().handleCrystalsMenuClick(player, slot, item);
+            plugin.getCristalGUI().handleCristalMenuClick(player, slot, item);
         }
         else if (title.contains("Enchantements Uniques")) {
             plugin.getUniqueEnchantsMenuGUI().handleUniqueEnchantsMenuClick(player, slot, item);

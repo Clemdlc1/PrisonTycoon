@@ -143,6 +143,11 @@ commands:
     usage: /<command> [all|auto|info]
     aliases: [ rank, rk ]
 
+  cristal:
+    description: Gère les cristaux.
+    usage: /cristal <niveau> [joueur] [type]
+    permission: specialmine.admin
+
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

@@ -92,6 +92,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
             long itemTotalValue = sellPrice * amount;
 
             totalValue += itemTotalValue;
+
             totalItems += amount;
             soldItems.merge(item.getType(), amount, Integer::sum);
 
@@ -106,12 +107,13 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         }
 
         // Ajoute l'argent au joueur
-        plugin.getEconomyManager().addCoins(player, totalValue);
+        long finalPrice = (long) plugin.getCristalBonusHelper().applySellBoost(player, totalValue);
+        plugin.getEconomyManager().addCoins(player, finalPrice);
 
         // Message de succès amélioré
         player.sendMessage("§a✅ §lVente réussie!");
         player.sendMessage("§7▸ Items vendus: §e" + NumberFormatter.format(totalItems));
-        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(totalValue) + " coins");
+        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(finalPrice) + " coins");
 
         // NOUVEAU : Affiche séparément la valeur des conteneurs si significative
         if (containerValue > 0) {
@@ -133,7 +135,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
         plugin.getPluginLogger().info("§7" + player.getName() + " a vendu " + totalItems +
-                " items pour " + NumberFormatter.format(totalValue) + " coins (dont " +
+                " items pour " + NumberFormatter.format(finalPrice) + " coins (dont " +
                 NumberFormatter.format(containerValue) + " des conteneurs)");
     }
 
@@ -174,7 +176,9 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         long totalValue = sellPrice * amount;
 
         // Ajoute l'argent au joueur
-        plugin.getEconomyManager().addCoins(player, totalValue);
+        long finalPrice = (long) plugin.getCristalBonusHelper().applySellBoost(player, totalValue);
+
+        plugin.getEconomyManager().addCoins(player, finalPrice);
 
         // Retire l'item de la main
         player.getInventory().setItemInMainHand(null);
@@ -183,12 +187,12 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§a✅ §lVente réussie!");
         player.sendMessage("§7▸ Item: §e" + amount + "x §7" + formatMaterialName(handItem.getType()));
         player.sendMessage("§7▸ Prix unitaire: §6" + NumberFormatter.format(sellPrice) + " coins");
-        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(totalValue) + " coins");
+        player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format(finalPrice) + " coins");
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
 
         plugin.getPluginLogger().info("§7" + player.getName() + " a vendu " + amount + "x " +
-                handItem.getType().name() + " pour " + NumberFormatter.format(totalValue) + " coins");
+                handItem.getType().name() + " pour " + NumberFormatter.format(finalPrice) + " coins");
     }
 
     /**

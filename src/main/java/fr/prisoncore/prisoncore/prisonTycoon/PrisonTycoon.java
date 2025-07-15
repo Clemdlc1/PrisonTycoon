@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon;
 
 import fr.prisoncore.prisoncore.prisonTycoon.commands.*;
+import fr.prisoncore.prisoncore.prisonTycoon.cristaux.CristalBonusHelper;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentManager;
 import fr.prisoncore.prisoncore.prisonTycoon.events.*;
 import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
@@ -35,7 +36,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
-    private CrystalsMenuGUI crystalsMenuGUI;
     private UniqueEnchantsMenuGUI uniqueEnchantsMenuGUI;
     private PetsMenuGUI petsMenuGUI;
     private PickaxeRepairGUI pickaxeRepairGUI;
@@ -44,6 +44,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
     private RankupCommand rankupCommand;
 
+    //cristaux
+    private CristalManager cristalManager;
+    private CristalBonusHelper cristalBonusHelper;
+    private CristalGUI cristalGUI;
 
     // 3 tâches séparées
     private ActionBarTask actionBarTask;
@@ -157,7 +161,8 @@ public final class PrisonTycoon extends JavaPlugin {
         mineManager = new MineManager(this);
         notificationManager = new NotificationManager(this); // NOUVEAU : Système amélioré
         containerManager = new ContainerManager(this);
-
+        cristalManager = new CristalManager(this);
+        cristalBonusHelper = new CristalBonusHelper(this);
 
         // SUPPRIMÉ : scoreboardManager (maintenant dans ScoreboardTask)
 
@@ -173,7 +178,7 @@ public final class PrisonTycoon extends JavaPlugin {
         mainMenuGUI = new EnchantmentMenu(this);
         categoryMenuGUI = new CategoryMenuGUI(this);
         enchantmentUpgradeGUI = new EnchantmentUpgradeGUI(this);
-        crystalsMenuGUI = new CrystalsMenuGUI(this);
+        cristalGUI = new CristalGUI(this);
         uniqueEnchantsMenuGUI = new UniqueEnchantsMenuGUI(this);
         petsMenuGUI = new PetsMenuGUI(this);
         pickaxeRepairGUI = new PickaxeRepairGUI(this);
@@ -198,7 +203,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new GUIListener(this), this);
         pluginManager.registerEvents(new MobilityEffectsListener(this), this);
         pluginManager.registerEvents(new ContainerListener(this), this);
-
+        pluginManager.registerEvents(new CristalListener(this), this);
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -230,6 +235,10 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("prisontycoon").setTabCompleter(new PrisonTycoonCommand(this));
         getCommand("conteneur").setExecutor(new ContainerCommand(this));
         getCommand("conteneur").setTabCompleter(new ContainerCommand(this));
+
+        getCommand("cristal").setExecutor(new CristalCommand(this));
+        getCommand("cristal").setTabCompleter(new CristalCommand(this));
+
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -391,10 +400,6 @@ public final class PrisonTycoon extends JavaPlugin {
         return enchantmentUpgradeGUI;
     }
 
-    public CrystalsMenuGUI getCrystalsMenuGUI() {
-        return crystalsMenuGUI;
-    }
-
     public UniqueEnchantsMenuGUI getUniqueEnchantsMenuGUI() {
         return uniqueEnchantsMenuGUI;
     }
@@ -427,4 +432,8 @@ public final class PrisonTycoon extends JavaPlugin {
     public RankupCommand getRankupCommand() {
         return this.rankupCommand;
     }
+
+    public CristalManager getCristalManager() { return cristalManager; }
+    public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
+    public CristalGUI getCristalGUI() { return cristalGUI; }
 }

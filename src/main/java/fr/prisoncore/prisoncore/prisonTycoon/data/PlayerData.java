@@ -255,6 +255,15 @@ public class PlayerData {
         }
     }
 
+    public void removeExperience(long amount) {
+        synchronized (dataLock) {
+            if (this.experience >= amount) {
+                this.experience -= amount;
+
+            }
+        }
+    }
+
     // Méthodes d'enchantements
 
     public int getEnchantmentLevel(String enchantmentName) {

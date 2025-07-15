@@ -11,6 +11,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -139,12 +140,15 @@ public class EnchantmentManager {
         }
 
         // Le total retourné correspond uniquement aux blocs BONUS.
-        int bonusBlocks = guaranteedBonus + extraBlocks;
+        int baseBonusBlocks = guaranteedBonus + extraBlocks;
+
+        // MODIFIÉ: Applique le bonus du cristal MineralGreed
+        int finalBonusBlocks = plugin.getCristalBonusHelper().applyMineralGreed(player, baseBonusBlocks);
 
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
-                ": " + bonusBlocks + " blocs bonus (" + guaranteedBonus + " garanti + " + extraBlocks + " chance)");
+                ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
 
-        return bonusBlocks;
+        return finalBonusBlocks;
     }
 
     /**
@@ -224,7 +228,6 @@ public class EnchantmentManager {
         playerData.addDestroyedBlocks(1);
 
         // NOUVEAU: Applique Fortune sur les blocs cassés
-
         int blocksfortune = calculateFortuneBlocks(player, playerData, blockType);
         int blocksToGive = blocksfortune + 1;
         addBlocksToInventory(player, blockType, blocksToGive);
@@ -259,7 +262,10 @@ public class EnchantmentManager {
             return; // Arrête ici, aucun autre enchantement ne fonctionne
         }
 
-        double combustionMultiplier = playerData.getCombustionMultiplier();
+        // MODIFIÉ: Applique le bonus d'efficacité de Combustion
+        double baseCombustionMultiplier = playerData.getCombustionMultiplier();
+        double combustionMultiplier = plugin.getCristalBonusHelper().applyCombustionEfficiency(player, baseCombustionMultiplier);
+
         double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
 
         // Base des gains sur la valeur du bloc (SANS Fortune pour les Greeds)
@@ -274,13 +280,16 @@ public class EnchantmentManager {
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
                 long blockTokens = blockValue.getTokens();
-                long bonusTokens = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens * 2) * combustionMultiplier * abundanceMultiplier);
+                long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens * 2) * combustionMultiplier * abundanceMultiplier);
 
-                playerData.addTokensViaPickaxe(bonusTokens);
+                // MODIFIÉ: Applique le bonus du cristal TokenBoost
+                long finalGains = plugin.getCristalBonusHelper().applyTokenBoost(player, baseGains);
+
+                playerData.addTokensViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
 
                 // Notification via nouveau système
-                plugin.getNotificationManager().queueGreedNotification(player, "Token Greed", bonusTokens, "tokens");
+                plugin.getNotificationManager().queueGreedNotification(player, "Token Greed", finalGains, "tokens");
             }
         }
 
@@ -293,16 +302,19 @@ public class EnchantmentManager {
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
                 long blockExp = blockValue.getExperience();
-                long bonusExp = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
+                long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
 
-                playerData.addExperienceViaPickaxe(bonusExp);
+                // MODIFIÉ: Applique le bonus du cristal XPBoost
+                long finalGains = plugin.getCristalBonusHelper().applyXPBoost(player, baseGains);
+
+                playerData.addExperienceViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
 
                 // Met à jour l'expérience vanilla
                 plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
 
                 // Notification via nouveau système
-                plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", bonusExp, "XP");
+                plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", finalGains, "XP");
             }
         }
 
@@ -315,13 +327,16 @@ public class EnchantmentManager {
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
                 long blockCoins = blockValue.getCoins();
-                long bonusCoins = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
+                long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
 
-                playerData.addCoinsViaPickaxe(bonusCoins);
+                // MODIFIÉ: Applique le bonus du cristal MoneyBoost
+                long finalGains = plugin.getCristalBonusHelper().applyMoneyBoost(player, baseGains);
+
+                playerData.addCoinsViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
 
                 // Notification via nouveau système
-                plugin.getNotificationManager().queueGreedNotification(player, "Money Greed", bonusCoins, "coins");
+                plugin.getNotificationManager().queueGreedNotification(player, "Money Greed", finalGains, "coins");
             }
         }
 
@@ -341,7 +356,9 @@ public class EnchantmentManager {
             if (abundanceLevel > 0 && !playerData.isAbundanceActive() && !playerData.isAbundanceOnCooldown()) {
                 double chance = plugin.getConfigManager().getEnchantmentSetting("abundance.base-chance", 0.000001) * abundanceLevel;
                 if (ThreadLocalRandom.current().nextDouble() < chance) {
-                    int duration = plugin.getConfigManager().getEnchantmentSetting("abundance.duration-seconds", 60);
+                    // MODIFIÉ: Calcule la durée avec le bonus du cristal
+                    int duration = plugin.getCristalBonusHelper().getAbondanceDuration(player, 60); // 60s de base
+
                     playerData.activateAbundance(duration * 1000L);
                     player.sendMessage("§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant " + duration + " secondes!");
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
@@ -370,7 +387,7 @@ public class EnchantmentManager {
         if (laserLevel > 0) {
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.00002) * laserLevel;
             if (ThreadLocalRandom.current().nextDouble() < chance) {
-                activateLaser(player, blockLocation, mineName);
+                activateLaser(player, blockLocation, mineName, false);
             }
         }
 
@@ -533,7 +550,7 @@ public class EnchantmentManager {
     /**
      * CORRIGÉ : Active l'effet laser - va dans la direction du joueur jusqu'au bout de la mine
      */
-    private void activateLaser(Player player, Location start, String mineName) {
+    private void activateLaser(Player player, Location start, String mineName, boolean isEcho) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) return;
 
@@ -592,8 +609,13 @@ public class EnchantmentManager {
         player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne !");
         player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
 
-        // Notifie l'effet spécial
-        plugin.getNotificationManager().queueSpecialEffectNotification(player, "Laser", blocksDestroyed);
+        // MODIFIÉ: Logique pour les échos
+        if (!isEcho && plugin.getCristalBonusHelper().shouldTriggerEcho(player)) {
+            int echoCount = plugin.getCristalBonusHelper().getEchoCount(player);
+            if (echoCount > 0) {
+                triggerEchos(player, start, echoCount, mineName, "laser");
+            }
+        }
     }
 
     /**
@@ -651,10 +673,32 @@ public class EnchantmentManager {
 
         player.sendMessage("§4💥 Explosion rayon " + radius + "! §e" + blocksDestroyed + " blocs détruits!");
         player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
-
-        // Notifie l'effet spécial
-        plugin.getNotificationManager().queueSpecialEffectNotification(player, "Explosion", blocksDestroyed);
     }
+
+    /**
+     * NOUVEAU : Déclenche les échos pour Laser/Explosion
+     */
+    private void triggerEchos(Player player, Location origin, int echoCount, String mineName, String enchantmentType) {
+        for (int i = 0; i < echoCount; i++) {
+            // Calculer direction aléatoire
+            Vector randomDirection = new Vector(
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2,
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2,
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2
+            ).normalize();
+
+            Location echoLocation = origin.clone().add(randomDirection.multiply(3 + i));
+
+            // Déclencher à nouveau l'enchantement à cette position (en mode écho)
+            if ("laser".equalsIgnoreCase(enchantmentType)) {
+                activateLaser(player, echoLocation, mineName, true);
+            }
+
+            // Effets visuels pour distinguer les échos
+            player.getWorld().spawnParticle(Particle.DUST, echoLocation, 20, 0.5, 0.5, 0.5);
+        }
+    }
+
 
     /**
      * Calcule le coût d'amélioration d'un enchantement
@@ -729,6 +773,8 @@ public class EnchantmentManager {
         return player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
     }
 }
+
+// ... (Le reste du fichier avec les classes d'implémentation des enchantements reste inchangé)
 
 // Implémentations des enchantements avec coûts depuis config
 class TokenGreedEnchantment implements CustomEnchantment {

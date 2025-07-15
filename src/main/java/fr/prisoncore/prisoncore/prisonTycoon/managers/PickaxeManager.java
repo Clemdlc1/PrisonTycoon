@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.managers;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.cristaux.Cristal;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentCategory;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
@@ -292,6 +293,17 @@ public class PickaxeManager {
 
             lore.add("§7└ §7Clic droit pour gérer vos enchantements");
         }
+
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(getPlayerPickaxe(player));
+        if (!cristals.isEmpty()) {
+            lore.add("§d✨ Cristaux appliqués:");
+            for (Cristal cristal : cristals) {
+                lore.add("§7│  §8• §d" + cristal.getType().getDisplayName() + " " +
+                        cristal.getNiveau() + " §8: §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
+            }
+            lore.add("§7└ §7Clic-milieu pour gérer vos cristaux"); // Nouvelle ligne
+        }
+
         lore.add("");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§6✨ §lPrisonTycoon §6✨");
@@ -605,5 +617,19 @@ public class PickaxeManager {
         if (healthPercent >= 40) return "§6";
         if (healthPercent >= 20) return "§c";
         return "§4";
+    }
+
+    public ItemStack getPlayerPickaxe(Player player) {
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        if (isLegendaryPickaxe(mainHand)) {
+            return mainHand;
+        }
+        // Chercher dans tout l'inventaire
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isLegendaryPickaxe(item)) {
+                return item;
+            }
+        }
+        return null;
     }
 }
