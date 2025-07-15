@@ -188,6 +188,8 @@ public class ScoreboardTask extends BukkitRunnable {
         long coins = playerData.getCoins();
         long tokens = playerData.getTokens();
         long experience = playerData.getExperience();
+        long beacons = playerData.getBeacons();
+
         long blocksMined = playerData.getTotalBlocksMined();
         long blocksDestroyed = playerData.getTotalBlocksDestroyed();
 
@@ -207,6 +209,8 @@ public class ScoreboardTask extends BukkitRunnable {
                 ChatColor.WHITE + NumberFormatter.formatWithColor(tokens));
         setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Expérience: " +
                 ChatColor.WHITE + NumberFormatter.formatWithColor(experience));
+        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Beacons: " +
+                ChatColor.WHITE + NumberFormatter.formatWithColor(beacons));
 
         // Ligne vide
         setScoreboardLine(scoreboard, objective, line--, "  ");

@@ -316,7 +316,6 @@ public class PickaxeManager {
      * NOUVEAU : Applique les enchantements vanilla selon les enchantements custom
      */
     private void applyVanillaEnchantments(ItemMeta meta, PlayerData playerData) {
-        // Retire tous les enchantements vanilla existants d'abord
         for (Enchantment ench : meta.getEnchants().keySet()) {
             if (ench != Enchantment.UNBREAKING) { // Garde Unbreaking pour l'effet glowing
                 meta.removeEnchant(ench);
@@ -326,11 +325,8 @@ public class PickaxeManager {
         // Applique Efficacité selon le niveau custom
         int efficiencyLevel = playerData.getEnchantmentLevel("efficiency");
         if (efficiencyLevel > 0) {
-            // Limite à Efficiency V (5) pour la compatibilité vanilla
-            int vanillaEfficiencyLevel = Math.min(efficiencyLevel, 5);
-            meta.addEnchant(Enchantment.EFFICIENCY, vanillaEfficiencyLevel, true);
-
-            plugin.getPluginLogger().debug("Efficacité appliquée niveau " + vanillaEfficiencyLevel +
+            meta.addEnchant(Enchantment.EFFICIENCY, efficiencyLevel, true);
+            plugin.getPluginLogger().debug("Efficacité appliquée niveau " + efficiencyLevel +
                     " (custom: " + efficiencyLevel + ") pour " + playerData.getPlayerName());
         }
     }

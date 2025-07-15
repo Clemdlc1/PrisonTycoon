@@ -97,10 +97,13 @@ public class PlayerDataManager {
             long savedCoins = config.getLong("coins", 0);
             long savedTokens = config.getLong("tokens", 0);
             long savedExperience = config.getLong("experience", 0);
+            long savedBeacons = config.getLong("beacons", 0);
 
             if (savedCoins > 0) data.setCoins(savedCoins);
             if (savedTokens > 0) data.setTokens(savedTokens);
             if (savedExperience > 0) data.setExperience(savedExperience);
+            if (savedBeacons > 0) data.setBeacons(savedBeacons);
+
 
             // NOUVEAU: Gains spécifiques VIA PIOCHE
             long coinsViaPickaxe = config.getLong("coins-via-pickaxe", 0);
@@ -196,6 +199,7 @@ public class PlayerDataManager {
             config.set("coins", data.getCoins());
             config.set("tokens", data.getTokens());
             config.set("experience", data.getExperience());
+            config.set("beacons", data.getBeacons());
 
             // NOUVEAU: Gains spécifiques VIA PIOCHE
             config.set("coins-via-pickaxe", data.getCoinsViaPickaxe());
@@ -205,7 +209,8 @@ public class PlayerDataManager {
             plugin.getPluginLogger().debug("Sauvegarde de " + data.getPlayerName() +
                     ": " + data.getCoins() + " coins (" + data.getCoinsViaPickaxe() + " pioche), " +
                     data.getTokens() + " tokens (" + data.getTokensViaPickaxe() + " pioche), " +
-                    data.getExperience() + " exp (" + data.getExperienceViaPickaxe() + " pioche)");
+                    data.getExperience() + " exp (" + data.getExperienceViaPickaxe() + " pioche)" +
+                    data.getBeacons() + " beacons");
 
             // Enchantements
             Map<String, Integer> enchantments = data.getEnchantmentLevels();

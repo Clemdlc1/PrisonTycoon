@@ -269,8 +269,7 @@ public class EnchantmentMenu {
         lore.add("§7│ §6Coins: §e" + NumberFormatter.format(playerData.getCoins()));
         lore.add("§7│ §eTokens: §6" + NumberFormatter.format(playerData.getTokens()));
         lore.add("§7│ §aExpérience: §2" + NumberFormatter.format(playerData.getExperience()));
-        lore.add("§7│ §bNiveau vanilla: §3" + player.getLevel());
-        lore.add("§7└ §7Enchantements actifs: §b" + playerData.getEnchantmentLevels().size());
+        lore.add("§7│ §Beacons: §d" + NumberFormatter.format(playerData.getBeacons()));
 
         meta.setLore(lore);
         head.setItemMeta(meta);

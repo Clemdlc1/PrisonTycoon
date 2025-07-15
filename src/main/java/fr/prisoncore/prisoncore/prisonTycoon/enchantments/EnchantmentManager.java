@@ -546,11 +546,13 @@ public class EnchantmentManager {
     }
 
     /**
-     * CORRIGÉ : Active l'effet laser - va dans la direction du joueur jusqu'au bout de la mine
+     * CORRIGÉ : Active l'effet laser. Le message final est envoyé après que tous les échos
+     * se soient déclenchés, et il inclut le total des blocs détruits par le laser initial et les échos.
+     * La fonction retourne le nombre de blocs détruits par CET appel spécifique de laser.
      */
-    private void activateLaser(Player player, Location start, String mineName, boolean isEcho) {
+    private int activateLaser(Player player, Location start, String mineName, boolean isEcho) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
-        if (mineData == null) return;
+        if (mineData == null) return 0;
 
         var direction = player.getLocation().getDirection().normalize();
         int blocksDestroyed = 0;
@@ -604,16 +606,30 @@ public class EnchantmentManager {
                     0.05, 0.05, 0.05, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
         }
 
-        player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne !");
-        player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
+        // Si c'est l'appel initial (pas un écho), on gère les échos et le message final.
+        if (!isEcho) {
+            int totalBlocks = blocksDestroyed;
+            int echoCount = 0;
 
-        // MODIFIÉ: Logique pour les échos
-        if (!isEcho && plugin.getCristalBonusHelper().shouldTriggerEcho(player)) {
-            int echoCount = plugin.getCristalBonusHelper().getEchoCount(player);
-            if (echoCount > 0) {
-                triggerEchos(player, start, echoCount, mineName, "laser");
+            if (plugin.getCristalBonusHelper().shouldTriggerEcho(player)) {
+                int potentialEchos = plugin.getCristalBonusHelper().getEchoCount(player);
+                if (potentialEchos > 0) {
+                    echoCount = potentialEchos;
+                    // Déclenche les échos et ajoute les blocs détruits au total
+                    totalBlocks += triggerEchos(player, start, echoCount, mineName, "laser");
+                }
             }
+
+            // Envoie le message final basé sur la présence d'échos
+            if (echoCount > 0) {
+                player.sendMessage("§c⚡ Laser (+" + echoCount + " échos) activé! §e" + totalBlocks + " blocs détruits au total !");
+            } else {
+                player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne !");
+            }
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
         }
+
+        return blocksDestroyed;
     }
 
     /**
@@ -674,9 +690,11 @@ public class EnchantmentManager {
     }
 
     /**
-     * NOUVEAU : Déclenche les échos pour Laser/Explosion
+     * NOUVEAU & CORRIGÉ : Déclenche les échos pour Laser/Explosion et retourne le nombre total
+     * de blocs détruits par ces échos.
      */
-    private void triggerEchos(Player player, Location origin, int echoCount, String mineName, String enchantmentType) {
+    private int triggerEchos(Player player, Location origin, int echoCount, String mineName, String enchantmentType) {
+        int totalEchoBlocks = 0;
         for (int i = 0; i < echoCount; i++) {
             // Calculer direction aléatoire
             Vector randomDirection = new Vector(
@@ -689,14 +707,15 @@ public class EnchantmentManager {
 
             // Déclencher à nouveau l'enchantement à cette position (en mode écho)
             if ("laser".equalsIgnoreCase(enchantmentType)) {
-                activateLaser(player, echoLocation, mineName, true);
+                // Ajoute le nombre de blocs détruits par l'écho au total
+                totalEchoBlocks += activateLaser(player, echoLocation, mineName, true);
             }
 
             // Effets visuels pour distinguer les échos
             player.getWorld().spawnParticle(Particle.DUST, echoLocation, 20, 0.5, 0.5, 0.5);
         }
+        return totalEchoBlocks;
     }
-
 
     /**
      * Calcule le coût d'amélioration d'un enchantement
@@ -772,7 +791,6 @@ public class EnchantmentManager {
     }
 }
 
-// ... (Le reste du fichier avec les classes d'implémentation des enchantements reste inchangé)
 
 // Implémentations des enchantements avec coûts depuis config
 class TokenGreedEnchantment implements CustomEnchantment {
@@ -865,7 +883,7 @@ class EfficiencyEnchantment implements CustomEnchantment {
     public String getDisplayName() { return "Efficacité"; }
     public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
     public String getDescription() { return "Réduit le temps de minage"; }
-    public int getMaxLevel() { return 100; }
+    public int getMaxLevel() { return 200; }
     public long getUpgradeCost(int level) { return 10000L * level * level; }
     public Material getDisplayMaterial() { return Material.REDSTONE; }
 }
@@ -920,7 +938,7 @@ class HasteEnchantment implements CustomEnchantment {
     public String getDisplayName() { return "Rapidité"; }
     public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
     public String getDescription() { return "Effet Haste permanent"; }
-    public int getMaxLevel() { return 2; }
+    public int getMaxLevel() { return 10; }
     public long getUpgradeCost(int level) {
         return Math.round(500000 * Math.pow(level, 3));
     }

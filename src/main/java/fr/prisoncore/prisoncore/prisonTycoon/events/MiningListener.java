@@ -42,15 +42,12 @@ public class MiningListener implements Listener {
         Location location = event.getBlock().getLocation();
         Material material = event.getBlock().getType();
 
-        // 1. GESTION DURABILITÉ : Traite d'abord la durabilité de TOUTES les pioches
-
-        // 2. LOGIQUE MINAGE : Traite ensuite la logique spécifique aux pioches légendaires
-        ItemStack playerPickaxe = getPlayerLegendaryPickaxe(player);
+        ItemStack playerPickaxe = player.getInventory().getItemInMainHand();
         String mineName = plugin.getConfigManager().getPlayerMine(location);
 
         if (mineName != null) {
             // Dans une mine - pioche légendaire obligatoire
-            if (playerPickaxe == null) {
+            if (!plugin.getPickaxeManager().isLegendaryPickaxe(playerPickaxe)) {
                 event.setCancelled(true);
                 player.sendMessage("§c❌ Seule la pioche légendaire peut miner dans cette zone!");
                 return;
@@ -65,12 +62,6 @@ public class MiningListener implements Listener {
                 return;
             }
 
-            // Vérifie la propriété de la pioche
-            if (!plugin.getPickaxeManager().isOwner(playerPickaxe, player)) {
-                event.setCancelled(true);
-                player.sendMessage("§c❌ Cette pioche ne vous appartient pas!");
-                return;
-            }
             handlePickaxeDurability(player, event);
 
             // Empêche TOUS les drops (items ET exp)
@@ -247,6 +238,16 @@ public class MiningListener implements Listener {
 
         // Met à jour l'activité de minage pour l'ActionBar
         playerData.updateMiningActivity();
+
+        // Si le bloc est un beacon, on le traite spécifiquement
+        if (material == Material.BEACON) {
+            // Incrémente le compteur de beacons minés dans les données du joueur
+            playerData.addBeacons(1);
+
+            // Appelle la méthode spécifique pour la rupture d'un beacon
+            // plugin.getEnchantmentUniqueManager().beaconBreak(player, mineName);
+            return;
+        }
 
         // Ajoute le bloc directement à l'inventaire du joueur
         addBlockToInventory(player, material);

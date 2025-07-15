@@ -17,6 +17,7 @@ public class PlayerData {
     private long coins;
     private long tokens;
     private long experience;
+    private long beacons;
 
     // Gains SPÉCIFIQUES via pioche (pour statistiques pioche)
     private long coinsViaPickaxe;
@@ -83,6 +84,7 @@ public class PlayerData {
         this.coins = 0;
         this.tokens = 0;
         this.experience = 0;
+        this.beacons = 0;
 
         this.coinsViaPickaxe = 0;
         this.tokensViaPickaxe = 0;
@@ -132,6 +134,12 @@ public class PlayerData {
         synchronized (dataLock) {
             this.experience = Math.max(0, this.experience + amount);
             this.lastMinuteExperience += Math.max(0, amount);
+        }
+    }
+
+    public void addBeacons(long amount) {
+        synchronized (dataLock) {
+            this.beacons = Math.max(0, this.beacons + amount);
         }
     }
 
@@ -198,6 +206,13 @@ public class PlayerData {
         }
     }
 
+    public void setBeacons(long beacons) {
+        synchronized (dataLock) {
+            this.beacons = Math.max(0, beacons);
+        }
+    }
+
+
     public void setCoinsViaPickaxe(long coinsViaPickaxe) {
         synchronized (dataLock) {
             this.coinsViaPickaxe = Math.max(0, coinsViaPickaxe);
@@ -262,6 +277,15 @@ public class PlayerData {
         synchronized (dataLock) {
             if (this.experience >= amount) {
                 this.experience -= amount;
+
+            }
+        }
+    }
+
+    public void removeBeacon(long amount) {
+        synchronized (dataLock) {
+            if (this.beacons >= amount) {
+                this.beacons -= amount;
 
             }
         }
@@ -574,6 +598,13 @@ public class PlayerData {
             return experience;
         }
     }
+
+    public long getBeacons() {
+        synchronized (dataLock) {
+            return beacons;
+        }
+    }
+
 
     // NOUVEAUX: Getters spécifiques pioche
     public long getCoinsViaPickaxe() {

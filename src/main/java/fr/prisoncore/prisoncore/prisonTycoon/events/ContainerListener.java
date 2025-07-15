@@ -118,6 +118,9 @@ public class ContainerListener implements Listener {
         }
 
         String title = event.getView().getTitle();
+        if (event.getClickedInventory() == player.getInventory() && !title.contains("Filtres")) {
+            return;
+        }
 
         // GUI principal des conteneurs
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
