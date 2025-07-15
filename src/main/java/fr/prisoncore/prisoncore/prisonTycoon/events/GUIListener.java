@@ -8,7 +8,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -142,21 +141,6 @@ public class GUIListener implements Listener {
             plugin.getCristalGUI().refreshCristalGUI(player);
         }
         // Si l'application échoue, les messages d'erreur sont déjà envoyés par applyCristalToPickaxe.
-    }
-
-    @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) return;
-
-        String title = event.getView().getTitle();
-
-        // NOUVEAU : Ignore complètement les GUIs de conteneur
-        if (isContainerGUI(title)) {
-            return; // Laisse ContainerListener gérer la fermeture
-        }
-
-        // Gestion de la fermeture pour les autres GUIs si nécessaire
-        // (Actuellement aucune action spéciale requise)
     }
 
     /**

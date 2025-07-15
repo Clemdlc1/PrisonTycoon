@@ -378,8 +378,6 @@ public class EnchantmentMenu {
         return item;
     }
 
-// 5. NOUVELLES MÉTHODES UTILITAIRES À AJOUTER :
-
     /**
      * Retourne la couleur selon le pourcentage de durabilité pour les boutons
      */

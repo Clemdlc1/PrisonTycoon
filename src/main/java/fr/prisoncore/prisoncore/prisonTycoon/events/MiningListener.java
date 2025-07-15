@@ -13,7 +13,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.Map;
@@ -97,10 +96,6 @@ public class MiningListener implements Listener {
             incrementBlockCountAndCheckDurabilityNotification(player, playerPickaxe);
         }
     }
-
-    // ================================
-    // SECTION 1: GESTION DURABILITÉ
-    // ================================
 
     /**
      * UNIFIÉ : Gère la durabilité de toutes les pioches (légendaires ET normales)
@@ -242,10 +237,6 @@ public class MiningListener implements Listener {
         plugin.getPluginLogger().debug("Compteur de blocs réinitialisé pour " + player.getName());
     }
 
-    // ================================
-    // SECTION 2: LOGIQUE MINAGE
-    // ================================
-
     /**
      * Traite le minage dans une mine avec pioche légendaire
      */
@@ -294,9 +285,6 @@ public class MiningListener implements Listener {
         plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
     }
 
-    // ================================
-    // SECTION 3: UTILITAIRES
-    // ================================
 
     /**
      * MODIFIÉ : Ajoute un bloc à l'inventaire du joueur ou dans ses conteneurs
@@ -324,37 +312,6 @@ public class MiningListener implements Listener {
                 player.sendMessage("§e💡 Utilisez §a/sell all §epour vider vos conteneurs!");
                 player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, System.currentTimeMillis()));
             }
-        }
-    }
-
-    /**
-     * NOUVEAU : Affiche un résumé des conteneurs du joueur lors du minage
-     */
-    private void showContainerSummary(Player player) {
-        var containers = plugin.getContainerManager().getPlayerContainers(player);
-
-        if (containers.isEmpty()) {
-            player.sendMessage("§e💡 Conseil: Utilisez §a/conteneur 1 §epour obtenir un conteneur et collecter automatiquement vos blocs!");
-            return;
-        }
-
-        int totalItems = 0;
-        int totalCapacity = 0;
-        int activeContainers = 0;
-
-        for (var container : containers) {
-            totalItems += container.getTotalItems();
-            totalCapacity += container.getMaxCapacity();
-            if (!container.isBroken()) activeContainers++;
-        }
-
-        double fillPercentage = totalCapacity > 0 ? (double) totalItems / totalCapacity * 100.0 : 0.0;
-
-        player.sendMessage("§6📦 Conteneurs: §b" + activeContainers + "§7/§b" + containers.size() + " actifs §7- §d" +
-                String.format("%.1f", fillPercentage) + "% §7remplis");
-
-        if (fillPercentage > 90) {
-            player.sendMessage("§c⚠️ Vos conteneurs sont presque pleins! Utilisez §e/sell all §cpour les vider.");
         }
     }
 
@@ -395,20 +352,6 @@ public class MiningListener implements Listener {
      */
     public static double getPickaxePenaltyMultiplier(Player player) {
         return isPlayerPickaxeBroken(player) ? 0.10 : 1.0;
-    }
-
-    /**
-     * Vérifie si la pioche est cassée (legacy pour compatibilité)
-     */
-    private boolean isPickaxeBroken(Player player) {
-        return isPlayerPickaxeBroken(player);
-    }
-
-    /**
-     * Nettoie les données d'un joueur à la déconnexion
-     */
-    public void cleanupPlayerData(UUID playerId) {
-        playerBlocksMinedCount.remove(playerId);
     }
 
     @EventHandler

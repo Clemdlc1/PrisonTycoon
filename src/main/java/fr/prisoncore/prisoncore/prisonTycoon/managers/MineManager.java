@@ -169,13 +169,6 @@ public class MineManager {
     }
 
     /**
-     * Force l'arrêt de la régénération d'une mine
-     */
-    public void stopRegeneration(String mineName) {
-        regeneratingMines.remove(mineName);
-    }
-
-    /**
      * Statistiques des mines
      */
     public Map<String, Object> getMineStats() {
@@ -193,6 +186,7 @@ public class MineManager {
 
         return stats;
     }
+
     /**
      * Vérifie si un joueur peut miner dans une mine (pioche + permissions)
      */

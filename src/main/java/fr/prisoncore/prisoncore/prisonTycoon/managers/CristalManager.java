@@ -323,14 +323,6 @@ public class CristalManager {
     }
 
     /**
-     * Vérifie si une pioche a un cristal d'un type spécifique
-     */
-    public boolean hasPickaxeCristalType(Player player, CristalType type) {
-        List<Cristal> cristals = getPickaxeCristals(player);
-        return cristals.stream().anyMatch(c -> c.getType() == type);
-    }
-
-    /**
      * Récupère le coût d'application pour le prochain cristal
      */
     public long getApplicationCost(Player player) {
@@ -339,32 +331,6 @@ public class CristalManager {
 
         if (count >= 4) return -1; // Maximum atteint
         return APPLICATION_COSTS[count];
-    }
-
-    /**
-     * NOUVEAU : Fusionne 9 cristaux du même niveau en 1 cristal de niveau supérieur
-     */
-    public boolean fuseCristals(List<Cristal> cristals) {
-        if (cristals.size() != 9) return false;
-
-        // Vérification que tous les cristaux sont du même niveau
-        int niveau = cristals.get(0).getNiveau();
-        if (niveau >= 20) return false; // Niveau max
-
-        for (Cristal cristal : cristals) {
-            if (cristal.getNiveau() != niveau || cristal.isVierge()) {
-                return false;
-            }
-        }
-
-        return true; // Fusion valide
-    }
-
-    /**
-     * NOUVEAU : Crée un cristal de fusion
-     */
-    public Cristal createFusedCristal(int nouveauNiveau) {
-        return createCristalVierge(nouveauNiveau);
     }
 
     // Getters pour les clés

@@ -145,24 +145,6 @@ public class CategoryMenuGUI {
         ItemStack item = new ItemStack(enchantment.getDisplayMaterial());
         ItemMeta meta = item.getItemMeta();
 
-        // Détermine le statut et les couleurs
-        String statusColor;
-        String statusText;
-
-        if (currentLevel >= enchantment.getMaxLevel()) {
-            statusColor = "§2"; // Vert foncé - Max
-            statusText = "MAXIMUM";
-        } else {
-            long nextCost = enchantment.getUpgradeCost(currentLevel + 1);
-            if (availableTokens >= nextCost) {
-                statusColor = "§a"; // Vert - Améliorable
-                statusText = "AMÉLIORABLE";
-            } else {
-                statusColor = "§c"; // Rouge - Insuffisant
-                statusText = "BLOQUÉ";
-            }
-        }
-
         // Nom avec statut
         String levelDisplay = currentLevel == 0 ? "§7[Niveau 0]" :
                 (enchantment.getMaxLevel() == Integer.MAX_VALUE ?

@@ -25,13 +25,11 @@ import java.util.List;
 public class CristalGUI {
 
     private final PrisonTycoon plugin;
-    private final NamespacedKey cristalSlotKey;
     private final NamespacedKey actionKey;
     private final NamespacedKey cristalUuidKey;
 
     public CristalGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.cristalSlotKey = new NamespacedKey(plugin, "cristal_slot");
         this.actionKey = new NamespacedKey(plugin, "cristal_action");
         this.cristalUuidKey = new NamespacedKey(plugin, "cristal_uuid_target");
     }
@@ -125,6 +123,10 @@ public class CristalGUI {
         // Slots pour les cristaux appliqués (10-13)
         int[] slots = {11, 12, 14, 15};
 
+        // Coûts d'application pour chaque emplacement
+        long[] applicationCosts = {10000, 50000, 100000, 200000}; // 1er, 2ème, 3ème, 4ème cristal
+        long playerXP = playerData.getExperience();
+
         for (int i = 0; i < 4; i++) {
             if (i < cristals.size()) {
                 // Cristal appliqué
@@ -149,38 +151,43 @@ public class CristalGUI {
 
                 inv.setItem(slots[i], cristalItem);
             } else {
-                // Slot vide avec lore dynamique
-                ItemStack emptySlot = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
-                ItemMeta meta = emptySlot.getItemMeta();
-                meta.setDisplayName("§7⬜ Emplacement libre §8(" + (i + 1) + "/4)");
+                // MODIFIÉ: Slot vide avec prix spécifique et couleur dynamique
+                long slotCost = applicationCosts[i];
+                boolean canAfford = playerXP >= slotCost;
 
-                // NOUVEAU: Lore dynamique avec coût XP
+                // Choix du matériau et couleur selon les moyens du joueur
+                Material slotMaterial = canAfford ? Material.PURPLE_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE;
+                String slotColor = canAfford ? "§7" : "§c";
+
+                ItemStack emptySlot = new ItemStack(slotMaterial);
+                ItemMeta meta = emptySlot.getItemMeta();
+                meta.setDisplayName(slotColor + "⬜ Emplacement libre §8(" + (i + 1) + "/4)");
+
+                // NOUVEAU: Lore dynamique avec prix spécifique pour chaque emplacement
                 List<String> lore = new ArrayList<>();
                 lore.add("§7Cet emplacement est libre.");
                 lore.add("");
 
-                // Calculer le coût pour cet emplacement
-                long applicationCost = plugin.getCristalManager().getApplicationCost(player);
-                long playerXP = playerData.getExperience();
+                // Affichage du coût spécifique à cet emplacement
+                String[] slotNames = {"1er", "2ème", "3ème", "4ème"};
+                lore.add("§6💰 Coût pour le " + slotNames[i] + " cristal:");
+                lore.add("§e  " + NumberFormatter.format(slotCost) + " XP");
+                lore.add("");
 
-                if (applicationCost > 0) {
-                    lore.add("§6💰 Coût d'application:");
-                    lore.add("§e  " + NumberFormatter.format(applicationCost) + " XP");
+                if (canAfford) {
+                    lore.add("§a✅ Vous avez assez d'XP!");
                     lore.add("");
-
-                    if (playerXP >= applicationCost) {
-                        lore.add("§a✅ Vous avez assez d'XP!");
-                    } else {
-                        long missing = applicationCost - playerXP;
-                        lore.add("§c❌ XP insuffisant");
-                        lore.add("§c  Il vous manque: " + NumberFormatter.format(missing) + " XP");
-                    }
+                    lore.add("§e▸ Cliquez sur un cristal révélé");
+                    lore.add("§e  dans votre inventaire pour");
+                    lore.add("§e  l'appliquer ici");
+                } else {
+                    long missing = slotCost - playerXP;
+                    lore.add("§c❌ XP insuffisant");
+                    lore.add("§c  Il vous manque: " + NumberFormatter.format(missing) + " XP");
                     lore.add("");
+                    lore.add("§7Obtenez plus d'XP en minant");
+                    lore.add("§7pour débloquer cet emplacement");
                 }
-
-                lore.add("§e▸ Cliquez sur un cristal révélé");
-                lore.add("§e  dans votre inventaire pour");
-                lore.add("§e  l'appliquer ici");
 
                 meta.setLore(lore);
                 meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "slot");
@@ -259,73 +266,6 @@ public class CristalGUI {
         closeMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         close.setItemMeta(closeMeta);
         inv.setItem(26, close);
-    }
-
-    /**
-     * Informations de fusion
-     */
-    private void fillFusionInfo(Inventory inv) {
-        ItemStack info = new ItemStack(Material.ENCHANTING_TABLE);
-        ItemMeta meta = info.getItemMeta();
-        meta.setDisplayName("§6⚡ Table de Fusion ⚡");
-        meta.setLore(Arrays.asList(
-                "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
-                "§7Placez 9 cristaux du même niveau",
-                "§7dans les emplacements ci-dessous.",
-                "",
-                "§7Lorsque vous fermez le menu avec",
-                "§79 cristaux identiques, vous recevrez",
-                "§7un cristal vierge de niveau supérieur.",
-                "",
-                "§c⚠ Niveaux acceptés: 1 à 19",
-                "§c⚠ Cristaux vierges et révélés acceptés",
-                "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-        ));
-        info.setItemMeta(meta);
-        inv.setItem(4, info);
-    }
-
-    /**
-     * Slots de fusion
-     */
-    private void fillFusionSlots(Inventory inv) {
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 17, 18};
-
-        for (int slot : slots) {
-            ItemStack fusionSlot = new ItemStack(Material.ORANGE_STAINED_GLASS_PANE);
-            ItemMeta meta = fusionSlot.getItemMeta();
-            meta.setDisplayName("§6⬜ Emplacement de fusion");
-            meta.setLore(Arrays.asList(
-                    "§7Placez un cristal ici",
-                    "§7(niveau 1 à 19)"
-            ));
-            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "fusion_slot");
-            fusionSlot.setItemMeta(meta);
-            inv.setItem(slot, fusionSlot);
-        }
-    }
-
-    /**
-     * Boutons de contrôle fusion
-     */
-    private void fillFusionControlButtons(Inventory inv) {
-        // Bouton retour cristaux
-        ItemStack back = new ItemStack(Material.ARROW);
-        ItemMeta backMeta = back.getItemMeta();
-        backMeta.setDisplayName("§e↩ Retour aux cristaux");
-        backMeta.setLore(Arrays.asList("§7Retour au menu des cristaux"));
-        backMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_cristals");
-        back.setItemMeta(backMeta);
-        inv.setItem(0, back);
-
-        // Bouton fermer
-        ItemStack close = new ItemStack(Material.BARRIER);
-        ItemMeta closeMeta = close.getItemMeta();
-        closeMeta.setDisplayName("§c❌ Fermer");
-        closeMeta.setLore(Arrays.asList("§7Ferme ce menu et rend les objets"));
-        closeMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close_fusion");
-        close.setItemMeta(closeMeta);
-        inv.setItem(8, close);
     }
 
     /**
@@ -435,30 +375,6 @@ public class CristalGUI {
     }
 
     /**
-     * Gère les clics dans le menu de fusion
-     */
-    public void handleFusionMenuClick(Player player, int slot, ItemStack clickedItem) {
-        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
-
-        ItemMeta meta = clickedItem.getItemMeta();
-        String action = meta.getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
-
-        if (action == null) return;
-
-        switch (action) {
-            case "back_cristals":
-                openCristalMenu(player);
-                break;
-            case "close_fusion":
-                handleCloseFusion(player);
-                break;
-            case "fusion_slot":
-                // Les slots de fusion sont gérés par l'event principal
-                break;
-        }
-    }
-
-    /**
      * Applique un cristal sur la pioche
      */
     /**
@@ -514,82 +430,6 @@ public class CristalGUI {
 
         // Rafraîchissement du menu
         openCristalMenu(player);
-    }
-
-    /**
-     * Gère la fermeture du menu de fusion
-     */
-    private void handleCloseFusion(Player player) {
-        Inventory fusionInv = player.getOpenInventory().getTopInventory();
-        List<ItemStack> itemsToReturn = new ArrayList<>();
-        List<Cristal> cristalsForFusion = new ArrayList<>();
-
-        // Récupération des items dans les slots de fusion
-        int[] fusionSlots = {10, 11, 12, 13, 14, 15, 16, 17, 18};
-
-        for (int slot : fusionSlots) {
-            ItemStack item = fusionInv.getItem(slot);
-            if (item != null && plugin.getCristalManager().isCristal(item)) {
-                Cristal cristal = plugin.getCristalManager().getCristalFromItem(item);
-                if (cristal != null) {
-                    cristalsForFusion.add(cristal);
-                    itemsToReturn.add(item);
-                }
-            }
-        }
-
-        player.closeInventory();
-
-        // Vérification de la fusion
-        if (cristalsForFusion.size() == 9) {
-            if (plugin.getCristalManager().fuseCristals(cristalsForFusion)) {
-                // Fusion réussie
-                int nouveauNiveau = cristalsForFusion.get(0).getNiveau() + 1;
-                Cristal fusedCristal = plugin.getCristalManager().createFusedCristal(nouveauNiveau);
-                ItemStack fusedItem = fusedCristal.toItemStack(
-                        plugin.getCristalManager().getCristalUuidKey(),
-                        plugin.getCristalManager().getCristalLevelKey(),
-                        plugin.getCristalManager().getCristalTypeKey(),
-                        plugin.getCristalManager().getCristalViergeKey()
-                );
-
-                if (player.getInventory().firstEmpty() != -1) {
-                    player.getInventory().addItem(fusedItem);
-                    player.sendMessage("§a✨ Fusion réussie! Vous avez obtenu un cristal niveau " + nouveauNiveau + "!");
-                    player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
-                } else {
-                    player.sendMessage("§cInventaire plein! Fusion annulée.");
-                    // Rendre les items
-                    for (ItemStack item : itemsToReturn) {
-                        if (player.getInventory().firstEmpty() != -1) {
-                            player.getInventory().addItem(item);
-                        } else {
-                            player.getWorld().dropItem(player.getLocation(), item);
-                        }
-                    }
-                }
-            } else {
-                player.sendMessage("§cFusion impossible: cristaux de niveaux différents ou niveau max atteint!");
-                // Rendre les items
-                for (ItemStack item : itemsToReturn) {
-                    if (player.getInventory().firstEmpty() != -1) {
-                        player.getInventory().addItem(item);
-                    } else {
-                        player.getWorld().dropItem(player.getLocation(), item);
-                    }
-                }
-            }
-        } else if (!itemsToReturn.isEmpty()) {
-            // Rendre les items si fusion incomplète
-            player.sendMessage("§7Items rendus - fusion incomplète.");
-            for (ItemStack item : itemsToReturn) {
-                if (player.getInventory().firstEmpty() != -1) {
-                    player.getInventory().addItem(item);
-                } else {
-                    player.getWorld().dropItem(player.getLocation(), item);
-                }
-            }
-        }
     }
 
     /**

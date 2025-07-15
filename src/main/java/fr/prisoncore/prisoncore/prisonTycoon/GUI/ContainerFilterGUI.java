@@ -9,8 +9,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
@@ -131,10 +129,6 @@ public class ContainerFilterGUI {
         }
         data.setReferenceItems(newReferenceItems);
 
-        // ----- CORRECTION N°2 : MISE À JOUR DE L'ITEM RÉEL DANS L'INVENTAIRE -----
-        // On utilise une méthode dédiée qui trouve l'item dans l'inventaire du joueur,
-        // applique les nouvelles données (qui sont sérialisées à l'intérieur), et force la mise à jour.
-        // C'est l'étape cruciale qui manquait pour rendre la sauvegarde persistante.
         boolean success = plugin.getContainerManager().updateContainerInInventory(player, containerUUID, data);
 
         if (!success) {
@@ -188,13 +182,5 @@ public class ContainerFilterGUI {
      */
     public boolean hasActiveFilterGUI(String containerUUID) {
         return activeFilterGUIs.containsValue(containerUUID);
-    }
-
-    /**
-     * Formate le nom d'un matériau pour un affichage plus lisible.
-     */
-    private String formatMaterialName(Material material) {
-        String name = material.name().toLowerCase().replace("_", " ");
-        return name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 }

@@ -5,6 +5,10 @@ import fr.prisoncore.prisoncore.prisonTycoon.cristaux.Cristal;
 import fr.prisoncore.prisoncore.prisonTycoon.cristaux.CristalType;
 import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -159,7 +163,7 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        // Demander confirmation avec les détails
+        // MODIFIÉ: Demander confirmation avec des boutons cliquables au lieu de texte
         if (args.length < 2 || !args[1].equalsIgnoreCase("confirm")) {
             player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             player.sendMessage("§d✨ §lRégénération de Cristal §d✨");
@@ -170,7 +174,20 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§6💰 Coût: §e" + NumberFormatter.format(regenerationCost) + " coins");
             player.sendMessage("§7Vos coins: §e" + NumberFormatter.format(playerData.getCoins()) + " coins");
             player.sendMessage("");
-            player.sendMessage("§e▸ Tapez §a/cristal reg confirm §epour confirmer");
+
+            // NOUVEAU: Boutons cliquables au lieu de texte
+            TextComponent confirmButton = new TextComponent("§a[✓ CONFIRMER]");
+            confirmButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/cristal reg confirm"));
+            confirmButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aCliquez pour confirmer la régénération")));
+
+            TextComponent separator = new TextComponent("    ");
+
+            TextComponent cancelButton = new TextComponent("§c[✗ ANNULER]");
+            cancelButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/menu"));
+            cancelButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§cCliquez pour annuler l'opération")));
+
+            player.sendMessage("§eChoisissez une option:");
+            player.spigot().sendMessage(confirmButton, separator, cancelButton);
             player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             return true;
         }

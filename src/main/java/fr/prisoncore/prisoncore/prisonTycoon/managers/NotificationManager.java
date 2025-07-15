@@ -152,17 +152,6 @@ public class NotificationManager {
     }
 
     /**
-     * NOUVEAU : Ajoute une notification d'effet spécial (laser, explosion)
-     */
-    public void queueSpecialEffectNotification(Player player, String effectName, int blocksAffected) {
-        queueNotification(player, new GameNotification(
-                NotificationType.SPECIAL_EFFECT,
-                "§d💥 " + effectName + "! §e" + blocksAffected + " blocs détruits!",
-                NotificationPriority.HIGH
-        ));
-    }
-
-    /**
      * Méthode centrale pour ajouter une notification
      */
     private void queueNotification(Player player, GameNotification notification) {
@@ -180,25 +169,6 @@ public class NotificationManager {
         queue.offer(notification);
         plugin.getPluginLogger().debug("Notification ajoutée pour " + player.getName() +
                 ": " + notification.getMessage());
-    }
-
-    /**
-     * Récupère la notification de plus haute priorité
-     */
-    private GameNotification getHighestPriorityNotification(Queue<GameNotification> queue) {
-        if (queue.isEmpty()) return null;
-
-        GameNotification highest = null;
-        for (GameNotification notification : queue) {
-            if (highest == null || notification.getPriority().ordinal() > highest.getPriority().ordinal()) {
-                highest = notification;
-            }
-        }
-
-        if (highest != null) {
-            queue.remove(highest);
-        }
-        return highest;
     }
 
     /**
@@ -224,15 +194,6 @@ public class NotificationManager {
                 message,
                 NotificationPriority.LOW
         );
-    }
-
-    /**
-     * Envoie la notification au joueur
-     */
-    private void sendNotificationToPlayer(Player player, GameNotification notification) {
-        player.sendActionBar(notification.getMessage());
-        plugin.getPluginLogger().debug("Notification envoyée à " + player.getName() +
-                ": " + notification.getMessage());
     }
 
     /**

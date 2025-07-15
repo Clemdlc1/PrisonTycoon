@@ -159,64 +159,6 @@ public class ContainerManager {
         return deserializeContainerData(serializedData);
     }
 
-
-    /**
-     * MODIFIÉ : Génère le lore mis à jour pour un conteneur
-     */
-    private List<String> generateUpdatedLore(ContainerData data) {
-        List<String> lore = new ArrayList<>();
-
-        lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§e📊 Informations du conteneur:");
-        lore.add("§7┃ Tier: §6" + data.getTier() + " §7(" + getTierName(data.getTier()) + "§7)");
-        lore.add("§7┃ Capacité: §a" + NumberFormatter.format(data.getMaxCapacity()) + " items");
-
-        // Durabilité avec couleur
-        String durabilityColor = data.getDurabilityPercentage() > 50 ? "§2" :
-                data.getDurabilityPercentage() > 25 ? "§e" : "§c";
-        lore.add("§7┃ Durabilité: " + durabilityColor + data.getDurability() + "§7/" + durabilityColor + data.getMaxDurability());
-
-        // État
-        if (data.isBroken()) {
-            lore.add("§7┃ État: §c💥 CASSÉ");
-        } else if (data.getDurabilityPercentage() < 25) {
-            lore.add("§7┃ État: §6⚠️ Critique");
-        } else {
-            lore.add("§7┃ État: §aFonctionnel");
-        }
-
-        lore.add("");
-        lore.add("§e📦 Contenu actuel:");
-        lore.add("§7┃ Items stockés: §b" + NumberFormatter.format(data.getTotalItems()) + "§7/§b" + NumberFormatter.format(data.getMaxCapacity()));
-        lore.add("§7┃ Remplissage: §d" + String.format("%.1f", data.getFillPercentage()) + "%");
-        lore.add("§7┃ Espace libre: §a" + NumberFormatter.format(data.getFreeSpace()));
-
-        // Filtres
-        if (data.getWhitelist().isEmpty()) {
-            lore.add("§7┃ Filtres: §7Aucun (accepte tout)");
-        } else {
-            lore.add("§7┃ Filtres: §e" + data.getWhitelist().size() + " matériaux autorisés");
-        }
-
-        // Vente
-        lore.add("§7┃ Vente /sell all: " + (data.isSellEnabled() ? "§aActivée" : "§cDésactivée"));
-
-        lore.add("");
-        lore.add("§e🎮 Utilisation:");
-        lore.add("§7┃ §aShift + Clic droit §7→ Configuration");
-
-        if (data.isBroken()) {
-            lore.add("");
-            lore.add("§c💥 CONTENEUR CASSÉ!");
-            lore.add("§c┃ Ne collecte plus les items");
-            lore.add("§c┃ Contenu encore accessible");
-        }
-
-        lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-        return lore;
-    }
-
     /**
      * Récupère tous les conteneurs d'un joueur
      */
