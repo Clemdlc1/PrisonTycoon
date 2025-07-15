@@ -38,6 +38,10 @@ public class GUIListener implements Listener {
             return; // Laisse ContainerListener gérer ces GUIs
         }
 
+        if (event.getClickedInventory() == player.getInventory()) {
+            return;
+        }
+
         if (!isPluginGUI(title)) return;
 
         // ÉTAPE CRUCIALE : Toujours annuler l'événement pour prendre le contrôle total.

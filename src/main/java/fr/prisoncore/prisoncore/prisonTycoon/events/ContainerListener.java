@@ -169,14 +169,8 @@ public class ContainerListener implements Listener {
                     // Autorise le mouvement vers le GUI
                     return;
                 }
-
-                // Annule tous les autres clics dans l'inventaire du joueur
                 return;
             }
-
-            // Pour les clics dans le GUI de filtres lui-même, permet la manipulation libre
-            // (sauf pour les conteneurs, déjà gérés ci-dessus)
-            return;
         }
     }
 
@@ -227,58 +221,6 @@ public class ContainerListener implements Listener {
         // Nettoie les références pour tous les types de GUIs
         if (title.contains("🎯 Filtres")) {
             plugin.getContainerFilterGUI().cleanupClosedGUI(title);
-        }
-    }
-
-    /**
-     * Empêche de jeter les conteneurs
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        ItemStack item = event.getItemDrop().getItemStack();
-
-        if (plugin.getContainerManager().isContainer(item)) {
-            event.setCancelled(true);
-
-            Player player = event.getPlayer();
-            player.sendMessage("§c❌ Vous ne pouvez pas jeter un conteneur!");
-            player.sendMessage("§7Utilisez §e/conteneur §7pour gérer vos conteneurs.");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-        }
-    }
-
-    /**
-     * NOUVEAU : Empêche de mettre les conteneurs dans les coffres/crafting
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onContainerPlacement(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-
-        // Ignore nos propres GUIs
-        String title = event.getView().getTitle();
-        if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé") ||
-                plugin.getContainerFilterGUI().isFilterGUI(title)) {
-            return;
-        }
-
-        ItemStack clickedItem = event.getCurrentItem();
-        ItemStack cursorItem = event.getCursor();
-
-        // Empêche de placer des conteneurs dans des coffres/crafting/etc
-        if ((clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
-                (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem))) {
-
-            // Autorise seulement dans l'inventaire du joueur
-            if (event.getClickedInventory() != null &&
-                    event.getClickedInventory().getType() != InventoryType.PLAYER) {
-
-                event.setCancelled(true);
-                player.sendMessage("§c❌ Les conteneurs ne peuvent être stockés que dans votre inventaire!");
-                player.sendMessage("§7Ils doivent rester sur vous pour fonctionner.");
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            }
         }
     }
 
