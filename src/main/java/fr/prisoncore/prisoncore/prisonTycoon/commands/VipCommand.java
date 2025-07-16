@@ -93,13 +93,18 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Vérifie si déjà VIP
-        if (plugin.getVipManager().isVip(target.getUniqueId())) {
+        // CORRIGÉ: Vérification VIP renforcée
+        boolean isAlreadyVipData = plugin.getPlayerDataManager().hasPlayerPermission(target.getUniqueId(), "specialmine.vip");
+
+        if (isAlreadyVipData ) {
             sender.sendMessage("§c❌ Ce joueur est déjà VIP!");
+            if (target.isOnline()) {
+                sender.sendMessage("§7Status: §e" + plugin.getVipManager().getVipStatusDetailed(target.getUniqueId()));
+            }
             return;
         }
 
-        // NOUVEAU: Ajoute directement avec permission automatique
+        // Ajoute VIP avec permission automatique
         plugin.getVipManager().addVip(target.getUniqueId(), target.getName(), sender.getName());
 
         // Messages de succès
@@ -115,8 +120,11 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             onlineTarget.sendMessage("§e• Partager votre inventaire avec [inv]");
             onlineTarget.sendMessage("§e• Utiliser /invsee pour voir les inventaires");
 
-            // Force la synchronisation immédiate pour le joueur en ligne
             plugin.getVipManager().forcePlayerSync(onlineTarget);
+            plugin.getPlayerDataManager().savePlayerNow(onlineTarget.getUniqueId());
+        } else {
+            // Pour joueurs hors ligne, force une sauvegarde immédiate
+            plugin.getPlayerDataManager().savePlayerNow(target.getUniqueId());
         }
 
         // Annonce aux admins

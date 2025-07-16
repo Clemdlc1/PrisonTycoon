@@ -263,21 +263,16 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("cristal").setExecutor(new CristalCommand(this));
         getCommand("cristal").setTabCompleter(new CristalCommand(this));
 
-        AdminChatCommand adminChatCommand = new AdminChatCommand(this);
-        getCommand("adminchat").setExecutor(adminChatCommand);
-        getCommand("adminchat").setTabCompleter(adminChatCommand);
+        getCommand("adminchat").setExecutor(new AdminChatCommand(this));
+        getCommand("adminchat").setTabCompleter(new AdminChatCommand(this));
         logger.info("§7- Commande /adminchat enregistrée");
 
-        // Commande VIP
-        VipCommand vipCommand = new VipCommand(this);
         getCommand("vip").setExecutor(new VipCommand(this));
         getCommand("vip").setTabCompleter(new VipCommand(this));
         logger.info("§7- Commande /vip enregistrée");
 
-        // Commande invsee
-        invseeCommand = new InvseeCommand(this);
-        getCommand("invsee").setExecutor(invseeCommand);
-        getCommand("invsee").setTabCompleter(invseeCommand);
+        getCommand("invsee").setExecutor(new InvseeCommand(this));
+        getCommand("invsee").setTabCompleter(new InvseeCommand(this));
         logger.info("§7- Commande /invsee enregistrée");
 
 

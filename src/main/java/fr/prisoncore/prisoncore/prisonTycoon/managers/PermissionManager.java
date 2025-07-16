@@ -86,19 +86,29 @@ public class PermissionManager {
         PermissionAttachment attachment = attachments.remove(uuid);
 
         if (attachment != null) {
-            player.removeAttachment(attachment);
-            plugin.getPluginLogger().debug("Permissions détachées de " + player.getName());
+            try {
+                player.removeAttachment(attachment);
+                plugin.getPluginLogger().debug("Permissions détachées de " + player.getName());
+            } catch (IllegalArgumentException e) {
+                plugin.getPluginLogger().warning("Attachment déjà supprimé pour " + player.getName() + ": " + e.getMessage());
+            }
         }
     }
 
-    /**
-     * Recharge toutes les permissions d'un joueur
-     */
     public void reloadPlayerPermissions(Player player) {
         UUID uuid = player.getUniqueId();
 
-        // Retire l'ancien attachment
-        removeAttachment(player);
+        // Retire l'ancien attachment seulement s'il existe
+        PermissionAttachment oldAttachment = attachments.get(uuid);
+        if (oldAttachment != null) {
+            try {
+                player.removeAttachment(oldAttachment);
+                attachments.remove(uuid);
+            } catch (IllegalArgumentException e) {
+                plugin.getPluginLogger().warning("Attachment déjà supprimé pour " + player.getName());
+                attachments.remove(uuid); // Nettoie le cache même si l'attachment était déjà supprimé
+            }
+        }
 
         // Réapplique toutes les permissions
         applyStoredPermissions(player);

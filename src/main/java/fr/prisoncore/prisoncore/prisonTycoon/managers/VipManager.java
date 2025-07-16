@@ -227,18 +227,30 @@ public class VipManager {
     public void forcePlayerSync(Player player) {
         UUID uuid = player.getUniqueId();
 
-        // Recharge les permissions depuis les données
-        plugin.getPermissionManager().reloadPlayerPermissions(player);
+        boolean shouldBeVip = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
+
+        boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
+
+        if (shouldBeVip != hasPermissionBukkit) {
+            plugin.getPermissionManager().reloadPlayerPermissions(player);
+            plugin.getPluginLogger().info("Permissions rechargées pour " + player.getName() + " (VIP: " + shouldBeVip + ")");
+        }
 
         // Met à jour le cache
-        boolean shouldBeVip = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
         if (shouldBeVip) {
             vipCache.add(uuid);
         } else {
             vipCache.remove(uuid);
         }
 
-        plugin.getPluginLogger().info("Synchronisation forcée pour " + player.getName() + " (VIP: " + shouldBeVip + ")");
+        // Validation finale
+        boolean finalCheck = player.hasPermission("specialmine.vip");
+        if (finalCheck != shouldBeVip) {
+            plugin.getPluginLogger().warning("⚠️ Échec de synchronisation pour " + player.getName() +
+                    " - Attendu: " + shouldBeVip + ", Actuel: " + finalCheck);
+        } else {
+            plugin.getPluginLogger().info("✅ Synchronisation réussie pour " + player.getName() + " (VIP: " + shouldBeVip + ")");
+        }
     }
 
     /**

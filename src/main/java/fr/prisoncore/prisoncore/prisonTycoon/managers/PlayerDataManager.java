@@ -520,12 +520,15 @@ public class PlayerDataManager {
             plugin.getPermissionManager().attachPermission(player, permission);
         }
 
+        // NOUVEAU: Force une sauvegarde immédiate pour les permissions critiques
+        if (permission.equals("specialmine.vip")) {
+            savePlayerNow(playerId);
+            plugin.getPluginLogger().info("Permission VIP sauvegardée immédiatement pour " + data.getPlayerName());
+        }
+
         plugin.getPluginLogger().info("Permission ajoutée à " + data.getPlayerName() + ": " + permission);
     }
 
-    /**
-     * NOUVEAU: Retire une permission à un joueur
-     */
     public void removePermissionFromPlayer(UUID playerId, String permission) {
         PlayerData data = getPlayerData(playerId);
         data.removePermission(permission);
@@ -535,6 +538,12 @@ public class PlayerDataManager {
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null && player.isOnline()) {
             plugin.getPermissionManager().detachPermission(player, permission);
+        }
+
+        // NOUVEAU: Force une sauvegarde immédiate pour les permissions critiques
+        if (permission.equals("specialmine.vip")) {
+            savePlayerNow(playerId);
+            plugin.getPluginLogger().info("Permission VIP retirée et sauvegardée pour " + data.getPlayerName());
         }
 
         plugin.getPluginLogger().info("Permission retirée de " + data.getPlayerName() + ": " + permission);
