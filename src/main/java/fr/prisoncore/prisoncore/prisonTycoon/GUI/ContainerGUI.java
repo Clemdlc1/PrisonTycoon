@@ -364,8 +364,7 @@ public class ContainerGUI {
                 return;
             }
             plugin.getContainerFilterGUI().openFilterMenu(player, containerItem);
-        }
-        else if (slot == 21) { // Vente automatique
+        } else if (slot == 21) { // Vente automatique
             if (data.isBroken()) {
                 player.sendMessage("§c❌ Impossible de configurer la vente d'un conteneur cassé!");
                 return;
@@ -380,8 +379,7 @@ public class ContainerGUI {
 
             // Recharge le menu pour mettre à jour l'affichage
             openContainerMenu(player, containerItem);
-        }
-        else if (slot == 23) { // Récupérer contenu
+        } else if (slot == 23) { // Récupérer contenu
             if (data.getTotalItems() == 0) {
                 player.sendMessage("§c❌ Le conteneur est vide!");
                 return;
@@ -400,8 +398,7 @@ public class ContainerGUI {
             } else {
                 player.sendMessage("§c❌ Votre inventaire est plein!");
             }
-        }
-        else if (slot == 25) { // Effacer filtres
+        } else if (slot == 25) { // Effacer filtres
             if (data.isBroken()) {
                 player.sendMessage("§c❌ Impossible de modifier les filtres d'un conteneur cassé!");
                 return;
@@ -422,8 +419,7 @@ public class ContainerGUI {
 
             // Recharge le menu pour mettre à jour l'affichage
             openContainerMenu(player, containerItem);
-        }
-        else if (slot == 26) { // Fermer
+        } else if (slot == 26) { // Fermer
             player.closeInventory();
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 0.8f);
         }

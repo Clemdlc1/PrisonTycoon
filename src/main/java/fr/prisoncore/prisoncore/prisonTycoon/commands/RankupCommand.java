@@ -82,7 +82,8 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
 
         long price = getRankupPrice(nextRank);
         if (price < 0) {
-            if (!silent) player.sendMessage("§cErreur: Prix de rankup non configuré pour le rang " + nextRank.toUpperCase() + "!");
+            if (!silent)
+                player.sendMessage("§cErreur: Prix de rankup non configuré pour le rang " + nextRank.toUpperCase() + "!");
             return false;
         }
 

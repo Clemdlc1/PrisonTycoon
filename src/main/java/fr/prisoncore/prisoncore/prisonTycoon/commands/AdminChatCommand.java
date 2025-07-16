@@ -289,7 +289,8 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
                 if (args.length > 2) {
                     try {
                         page = Integer.parseInt(args[2]);
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
         }

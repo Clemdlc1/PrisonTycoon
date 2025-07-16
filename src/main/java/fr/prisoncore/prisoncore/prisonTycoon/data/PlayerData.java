@@ -12,22 +12,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerData {
     private final UUID playerId;
     private final String playerName;
-
+    // Enchantements de la pioche (nom -> niveau)
+    private final Map<String, Integer> enchantmentLevels;
+    private final Map<String, String> pickaxeCristals;
+    // Auto-amélioration des enchantements
+    private final Set<String> autoUpgradeEnabled;
+    private final List<AutoUpgradeDetail> lastMinuteAutoUpgradeDetails = new ArrayList<>();
+    // Enchantements mobilité désactivés
+    private final Set<String> mobilityEnchantmentsDisabled;
+    private final Map<Material, Long> blocksMinedByType;
+    private final Set<String> minePermissions;
+    // Données thread-safe
+    private final Object dataLock = new Object();
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
     private long experience;
     private long beacons;
-
     // Gains SPÉCIFIQUES via pioche (pour statistiques pioche)
     private long coinsViaPickaxe;
     private long tokensViaPickaxe;
     private long experienceViaPickaxe;
-
-    // Enchantements de la pioche (nom -> niveau)
-    private final Map<String, Integer> enchantmentLevels;
-    private final Map<String, String> pickaxeCristals;
-
     // États temporaires
     private long combustionLevel;
     private long lastCombustionTime;
@@ -36,25 +41,12 @@ public class PlayerData {
     private long abundanceCooldownEnd;
     private long lastMiningTime;
     private boolean autoRankup = false;
-
-
-    // Auto-amélioration des enchantements
-    private final Set<String> autoUpgradeEnabled;
-    private final List<AutoUpgradeDetail> lastMinuteAutoUpgradeDetails = new ArrayList<>();
-
-
-    // Enchantements mobilité désactivés
-    private final Set<String> mobilityEnchantmentsDisabled;
-
     // CORRIGÉ : Statistiques de minage avec distinction minés/cassés
     private long totalBlocksMined;     // Blocs minés DIRECTEMENT par le joueur
     private long totalBlocksDestroyed; // Blocs minés + cassés (laser/explosion)
-    private final Map<Material, Long> blocksMinedByType;
-
     // Statistiques spécialisées
     private long totalGreedTriggers;
     private long totalKeysObtained;
-
     // NOUVEAU : Gains de la dernière minute SÉPARÉS (toutes sources vs via pioche)
     private long lastMinuteCoins;                    // TOUS les gains coins
     private long lastMinuteTokens;                   // TOUS les gains tokens
@@ -62,21 +54,14 @@ public class PlayerData {
     private long lastMinuteCoinsViaPickaxe;          // SEULEMENT via pioche
     private long lastMinuteTokensViaPickaxe;         // SEULEMENT via pioche
     private long lastMinuteExperienceViaPickaxe;     // SEULEMENT via pioche
-
     private int lastMinuteAutoUpgrades;
     private long lastMinuteBlocksMined;
     private long lastMinuteBlocksDestroyed;
     private long lastMinuteGreedTriggers;
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
-
-    private final Set<String> minePermissions;
     private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
     private List<SanctionData> sanctionHistory;
-
-
-    // Données thread-safe
-    private final Object dataLock = new Object();
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -191,74 +176,6 @@ public class PlayerData {
         }
     }
 
-    // Setters directs pour la sauvegarde/chargement
-    public void setCoins(long coins) {
-        synchronized (dataLock) {
-            this.coins = Math.max(0, coins);
-        }
-    }
-
-    public void setTokens(long tokens) {
-        synchronized (dataLock) {
-            this.tokens = Math.max(0, tokens);
-        }
-    }
-
-    public void setExperience(long experience) {
-        synchronized (dataLock) {
-            this.experience = Math.max(0, experience);
-        }
-    }
-
-    public void setBeacons(long beacons) {
-        synchronized (dataLock) {
-            this.beacons = Math.max(0, beacons);
-        }
-    }
-
-
-    public void setCoinsViaPickaxe(long coinsViaPickaxe) {
-        synchronized (dataLock) {
-            this.coinsViaPickaxe = Math.max(0, coinsViaPickaxe);
-        }
-    }
-
-    public void setTokensViaPickaxe(long tokensViaPickaxe) {
-        synchronized (dataLock) {
-            this.tokensViaPickaxe = Math.max(0, tokensViaPickaxe);
-        }
-    }
-
-    public void setExperienceViaPickaxe(long experienceViaPickaxe) {
-        synchronized (dataLock) {
-            this.experienceViaPickaxe = Math.max(0, experienceViaPickaxe);
-        }
-    }
-
-    public void setTotalBlocksMined(long totalBlocksMined) {
-        synchronized (dataLock) {
-            this.totalBlocksMined = Math.max(0, totalBlocksMined);
-        }
-    }
-
-    public void setTotalBlocksDestroyed(long totalBlocksDestroyed) {
-        synchronized (dataLock) {
-            this.totalBlocksDestroyed = Math.max(0, totalBlocksDestroyed);
-        }
-    }
-
-    public void setTotalGreedTriggers(long totalGreedTriggers) {
-        synchronized (dataLock) {
-            this.totalGreedTriggers = Math.max(0, totalGreedTriggers);
-        }
-    }
-
-    public void setTotalKeysObtained(long totalKeysObtained) {
-        synchronized (dataLock) {
-            this.totalKeysObtained = Math.max(0, totalKeysObtained);
-        }
-    }
-
     public boolean removeTokens(long amount) {
         synchronized (dataLock) {
             if (this.tokens >= amount) {
@@ -295,8 +212,6 @@ public class PlayerData {
         }
     }
 
-    // Méthodes d'enchantements
-
     public int getEnchantmentLevel(String enchantmentName) {
         return enchantmentLevels.getOrDefault(enchantmentName, 0);
     }
@@ -324,8 +239,6 @@ public class PlayerData {
         }
     }
 
-    // Combustion
-
     public void updateCombustion(int gainPerBlock) {
         synchronized (dataLock) {
             this.combustionLevel = Math.min(1000, this.combustionLevel + gainPerBlock);
@@ -336,15 +249,6 @@ public class PlayerData {
     public double getCombustionMultiplier() {
         synchronized (dataLock) {
             return 1.0 + (combustionLevel / 1000.0);
-        }
-    }
-
-    /**
-     * NOUVEAU : Définit directement le niveau de combustion (pour CombustionDecayTask)
-     */
-    public void setCombustionLevel(long combustionLevel) {
-        synchronized (dataLock) {
-            this.combustionLevel = Math.max(0, Math.min(1000, combustionLevel));
         }
     }
 
@@ -415,6 +319,8 @@ public class PlayerData {
         }
     }
 
+    // Méthodes d'enchantements
+
     /**
      * CORRIGÉ : Ajoute un bloc MINÉ directement par le joueur avec la pioche
      * Les blocs minés comptent aussi comme détruits dans le total général
@@ -431,6 +337,7 @@ public class PlayerData {
             }
         }
     }
+
     /**
      * CORRIGÉ : Ajoute des blocs CASSÉS par laser/explosion (pas minés directement)
      * Ces blocs s'ajoutent au total des blocs détruits mais pas au total des blocs minés
@@ -461,23 +368,17 @@ public class PlayerData {
         }
     }
 
-    // Auto-upgrade
-
     public boolean isAutoUpgradeEnabled(String enchantmentName) {
         return autoUpgradeEnabled.contains(enchantmentName);
     }
+
+    // Combustion
 
     public void setAutoUpgrade(String enchantmentName, boolean enabled) {
         if (enabled) {
             autoUpgradeEnabled.add(enchantmentName);
         } else {
             autoUpgradeEnabled.remove(enchantmentName);
-        }
-    }
-
-    public void setLastMinuteAutoUpgrades(int count) {
-        synchronized (dataLock) {
-            this.lastMinuteAutoUpgrades += count;
         }
     }
 
@@ -499,8 +400,6 @@ public class PlayerData {
             return new ArrayList<>(lastMinuteAutoUpgradeDetails);
         }
     }
-
-    // Mine
 
     /**
      * Ajoute une permission de mine au joueur
@@ -586,11 +485,18 @@ public class PlayerData {
         }
     }
 
-    // Getters thread-safe
-
     public long getCoins() {
         synchronized (dataLock) {
             return coins;
+        }
+    }
+
+    // Auto-upgrade
+
+    // Setters directs pour la sauvegarde/chargement
+    public void setCoins(long coins) {
+        synchronized (dataLock) {
+            this.coins = Math.max(0, coins);
         }
     }
 
@@ -600,11 +506,25 @@ public class PlayerData {
         }
     }
 
+    public void setTokens(long tokens) {
+        synchronized (dataLock) {
+            this.tokens = Math.max(0, tokens);
+        }
+    }
+
     public long getExperience() {
         synchronized (dataLock) {
             return experience;
         }
     }
+
+    public void setExperience(long experience) {
+        synchronized (dataLock) {
+            this.experience = Math.max(0, experience);
+        }
+    }
+
+    // Mine
 
     public long getBeacons() {
         synchronized (dataLock) {
@@ -612,11 +532,22 @@ public class PlayerData {
         }
     }
 
+    public void setBeacons(long beacons) {
+        synchronized (dataLock) {
+            this.beacons = Math.max(0, beacons);
+        }
+    }
 
     // NOUVEAUX: Getters spécifiques pioche
     public long getCoinsViaPickaxe() {
         synchronized (dataLock) {
             return coinsViaPickaxe;
+        }
+    }
+
+    public void setCoinsViaPickaxe(long coinsViaPickaxe) {
+        synchronized (dataLock) {
+            this.coinsViaPickaxe = Math.max(0, coinsViaPickaxe);
         }
     }
 
@@ -626,15 +557,38 @@ public class PlayerData {
         }
     }
 
+    public void setTokensViaPickaxe(long tokensViaPickaxe) {
+        synchronized (dataLock) {
+            this.tokensViaPickaxe = Math.max(0, tokensViaPickaxe);
+        }
+    }
+
     public long getExperienceViaPickaxe() {
         synchronized (dataLock) {
             return experienceViaPickaxe;
         }
     }
 
+    // Getters thread-safe
+
+    public void setExperienceViaPickaxe(long experienceViaPickaxe) {
+        synchronized (dataLock) {
+            this.experienceViaPickaxe = Math.max(0, experienceViaPickaxe);
+        }
+    }
+
     public long getCombustionLevel() {
         synchronized (dataLock) {
             return combustionLevel;
+        }
+    }
+
+    /**
+     * NOUVEAU : Définit directement le niveau de combustion (pour CombustionDecayTask)
+     */
+    public void setCombustionLevel(long combustionLevel) {
+        synchronized (dataLock) {
+            this.combustionLevel = Math.max(0, Math.min(1000, combustionLevel));
         }
     }
 
@@ -681,6 +635,12 @@ public class PlayerData {
         }
     }
 
+    public void setLastMinuteAutoUpgrades(int count) {
+        synchronized (dataLock) {
+            this.lastMinuteAutoUpgrades += count;
+        }
+    }
+
     public long getLastMinuteBlocksMined() {
         synchronized (dataLock) {
             return lastMinuteBlocksMined;
@@ -711,9 +671,21 @@ public class PlayerData {
         }
     }
 
+    public void setTotalGreedTriggers(long totalGreedTriggers) {
+        synchronized (dataLock) {
+            this.totalGreedTriggers = Math.max(0, totalGreedTriggers);
+        }
+    }
+
     public long getTotalKeysObtained() {
         synchronized (dataLock) {
             return totalKeysObtained;
+        }
+    }
+
+    public void setTotalKeysObtained(long totalKeysObtained) {
+        synchronized (dataLock) {
+            this.totalKeysObtained = Math.max(0, totalKeysObtained);
         }
     }
 
@@ -744,36 +716,43 @@ public class PlayerData {
         }
     }
 
-    public static class AutoUpgradeDetail {
-        private final String enchantmentName;
-        private final String displayName;
-        private final int levelsGained;
-        private final int newLevel;
-
-        public AutoUpgradeDetail(String enchantmentName, String displayName, int levelsGained, int newLevel) {
-            this.enchantmentName = enchantmentName;
-            this.displayName = displayName;
-            this.levelsGained = levelsGained;
-            this.newLevel = newLevel;
-        }
-
-        public String getEnchantmentName() { return enchantmentName; }
-        public String getDisplayName() { return displayName; }
-        public int getLevelsGained() { return levelsGained; }
-        public int getNewLevel() { return newLevel; }
+    // Autres getters
+    public UUID getPlayerId() {
+        return playerId;
     }
 
-    // Autres getters
-    public UUID getPlayerId() { return playerId; }
-    public String getPlayerName() { return playerName; }
-    public long getTotalBlocksMined() { return totalBlocksMined; }
-    public long getTotalBlocksDestroyed() { return totalBlocksDestroyed; }
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public long getTotalBlocksMined() {
+        return totalBlocksMined;
+    }
+
+    public void setTotalBlocksMined(long totalBlocksMined) {
+        synchronized (dataLock) {
+            this.totalBlocksMined = Math.max(0, totalBlocksMined);
+        }
+    }
+
+    public long getTotalBlocksDestroyed() {
+        return totalBlocksDestroyed;
+    }
+
+    public void setTotalBlocksDestroyed(long totalBlocksDestroyed) {
+        synchronized (dataLock) {
+            this.totalBlocksDestroyed = Math.max(0, totalBlocksDestroyed);
+        }
+    }
+
     public Map<String, Integer> getEnchantmentLevels() {
         return new HashMap<>(enchantmentLevels);
     }
+
     public Set<String> getAutoUpgradeEnabled() {
         return new HashSet<>(autoUpgradeEnabled);
     }
+
     public Set<String> getMobilityEnchantmentsDisabled() {
         return new HashSet<>(mobilityEnchantmentsDisabled);
     }
@@ -910,6 +889,36 @@ public class PlayerData {
         return sanctionHistory.size();
     }
 
+    public static class AutoUpgradeDetail {
+        private final String enchantmentName;
+        private final String displayName;
+        private final int levelsGained;
+        private final int newLevel;
+
+        public AutoUpgradeDetail(String enchantmentName, String displayName, int levelsGained, int newLevel) {
+            this.enchantmentName = enchantmentName;
+            this.displayName = displayName;
+            this.levelsGained = levelsGained;
+            this.newLevel = newLevel;
+        }
+
+        public String getEnchantmentName() {
+            return enchantmentName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public int getLevelsGained() {
+            return levelsGained;
+        }
+
+        public int getNewLevel() {
+            return newLevel;
+        }
+    }
+
     /**
      * Classe interne pour représenter une sanction
      */
@@ -929,11 +938,28 @@ public class PlayerData {
         }
 
         // Getters
-        public String getType() { return type; }
-        public String getReason() { return reason; }
-        public String getModerator() { return moderator; }
-        public long getStartTime() { return startTime; }
-        public long getEndTime() { return endTime; }
-        public boolean isPermanent() { return endTime == 0; }
+        public String getType() {
+            return type;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public String getModerator() {
+            return moderator;
+        }
+
+        public long getStartTime() {
+            return startTime;
+        }
+
+        public long getEndTime() {
+            return endTime;
+        }
+
+        public boolean isPermanent() {
+            return endTime == 0;
+        }
     }
 }

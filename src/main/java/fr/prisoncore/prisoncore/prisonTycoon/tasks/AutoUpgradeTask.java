@@ -18,17 +18,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AutoUpgradeTask extends BukkitRunnable {
 
+    // Configuration
+    private static final long PERMISSION_CACHE_DURATION = 60000; // 1 minute
+    private static final long MIN_UPGRADE_INTERVAL = 10000; // 10 secondes entre upgrades d'un même joueur
     private final PrisonTycoon plugin;
-    private int cycleCount = 0;
-
     // Cache pour éviter les vérifications répétées
     private final Map<UUID, Boolean> playerPermissionCache = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastPermissionCheck = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastUpgradeTime = new ConcurrentHashMap<>();
-
-    // Configuration
-    private static final long PERMISSION_CACHE_DURATION = 60000; // 1 minute
-    private static final long MIN_UPGRADE_INTERVAL = 10000; // 10 secondes entre upgrades d'un même joueur
+    private int cycleCount = 0;
 
     public AutoUpgradeTask(PrisonTycoon plugin) {
         this.plugin = plugin;

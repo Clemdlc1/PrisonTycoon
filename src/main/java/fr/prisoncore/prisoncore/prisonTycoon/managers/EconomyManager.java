@@ -14,14 +14,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EconomyManager {
 
-    private final PrisonTycoon plugin;
-
-    // Cache pour les statistiques économiques
-    private final Map<UUID, EconomicStats> playerStats;
-
     // Limites de sécurité pour éviter les overflows
     private static final long MAX_CURRENCY_VALUE = Long.MAX_VALUE / 2;
     private static final long MIN_CURRENCY_VALUE = 0;
+    private final PrisonTycoon plugin;
+    // Cache pour les statistiques économiques
+    private final Map<UUID, EconomicStats> playerStats;
 
     public EconomyManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -320,6 +318,16 @@ public class EconomyManager {
     // Classes utilitaires
 
     /**
+     * Types de valeurs économiques pour les classements
+     */
+    public enum EconomicType {
+        COINS,
+        TOKENS,
+        EXPERIENCE,
+        TOTAL_BLOCKS
+    }
+
+    /**
      * Solde économique d'un joueur
      */
     public static class EconomicBalance {
@@ -333,9 +341,17 @@ public class EconomyManager {
             this.experience = experience;
         }
 
-        public long getCoins() { return coins; }
-        public long getTokens() { return tokens; }
-        public long getExperience() { return experience; }
+        public long getCoins() {
+            return coins;
+        }
+
+        public long getTokens() {
+            return tokens;
+        }
+
+        public long getExperience() {
+            return experience;
+        }
 
         @Override
         public String toString() {
@@ -367,10 +383,21 @@ public class EconomyManager {
         }
 
         // Getters
-        public long getTotalCoinsEarned() { return totalCoinsEarned; }
-        public long getTotalTokensEarned() { return totalTokensEarned; }
-        public long getTotalExperienceEarned() { return totalExperienceEarned; }
-        public long getLastUpdate() { return lastUpdate; }
+        public long getTotalCoinsEarned() {
+            return totalCoinsEarned;
+        }
+
+        public long getTotalTokensEarned() {
+            return totalTokensEarned;
+        }
+
+        public long getTotalExperienceEarned() {
+            return totalExperienceEarned;
+        }
+
+        public long getLastUpdate() {
+            return lastUpdate;
+        }
     }
 
     /**
@@ -385,17 +412,12 @@ public class EconomyManager {
             this.value = value;
         }
 
-        public String getPlayerName() { return playerName; }
-        public long getValue() { return value; }
-    }
+        public String getPlayerName() {
+            return playerName;
+        }
 
-    /**
-     * Types de valeurs économiques pour les classements
-     */
-    public enum EconomicType {
-        COINS,
-        TOKENS,
-        EXPERIENCE,
-        TOTAL_BLOCKS
+        public long getValue() {
+            return value;
+        }
     }
 }

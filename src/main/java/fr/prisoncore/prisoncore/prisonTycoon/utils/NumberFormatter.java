@@ -5,7 +5,7 @@ import java.util.TreeMap;
 
 /**
  * Utilitaire de formatage des nombres
- *
+ * <p>
  * Formate les grands nombres avec les suffixes appropriés (K, M, B, T).
  * Utilisé pour l'affichage des monnaies et statistiques.
  */
@@ -16,6 +16,7 @@ public class NumberFormatter {
 
     // Map pour la conversion en chiffres romains
     private final static TreeMap<Integer, String> romanMap = new TreeMap<>();
+
     static {
         romanMap.put(1000, "M");
         romanMap.put(900, "CM");
@@ -207,7 +208,7 @@ public class NumberFormatter {
             return String.valueOf(number);
         }
         // Trouve la plus grande clé <= au nombre
-        int key =  romanMap.floorKey(number);
+        int key = romanMap.floorKey(number);
         if (number == key) {
             return romanMap.get(number);
         }

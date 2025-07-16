@@ -9,7 +9,9 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
-import java.util.*; /**
+import java.util.*;
+
+/**
  * Commande /mine - Gérer les mines
  */
 public class MineCommand implements CommandExecutor, TabCompleter {

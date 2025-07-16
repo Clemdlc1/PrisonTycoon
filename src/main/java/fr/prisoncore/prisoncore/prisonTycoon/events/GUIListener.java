@@ -83,24 +83,18 @@ public class GUIListener implements Listener {
     private void handleGUIClick(Player player, String title, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
         if (title.contains("Menu Principal") || title.contains("Menu Enchantement")) {
             plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
-        }
-        else if (title.contains("Économiques") || title.contains("Utilités") ||
+        } else if (title.contains("Économiques") || title.contains("Utilités") ||
                 title.contains("Mobilité") || title.contains("Spéciaux")) {
             plugin.getCategoryMenuGUI().handleCategoryMenuClick(player, slot, item, title, clickType);
-        }
-        else if (title.contains("🔧")) {
+        } else if (title.contains("🔧")) {
             plugin.getEnchantmentUpgradeGUI().handleUpgradeMenuClick(player, slot, item, clickType, title);
-        }
-        else if (title.contains("Gestion des Cristaux")) {
+        } else if (title.contains("Gestion des Cristaux")) {
             plugin.getCristalGUI().handleCristalMenuClick(player, slot, item);
-        }
-        else if (title.contains("Enchantements Uniques")) {
+        } else if (title.contains("Enchantements Uniques")) {
             plugin.getUniqueEnchantsMenuGUI().handleUniqueEnchantsMenuClick(player, slot, item);
-        }
-        else if (title.contains("Compagnons")) {
+        } else if (title.contains("Compagnons")) {
             plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
-        }
-        else if (title.contains("Réparation")) {
+        } else if (title.contains("Réparation")) {
             plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         }
     }

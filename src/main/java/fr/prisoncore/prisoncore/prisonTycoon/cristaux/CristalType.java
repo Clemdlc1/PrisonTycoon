@@ -102,7 +102,7 @@ public enum CristalType {
     public double[] getEchoChances(int level) {
         if (this != ECHO_CRISTAL) return new double[0];
 
-        return new double[] {
+        return new double[]{
                 level * 2.0,    // 1 écho
                 level * 1.0,    // 2 échos
                 level * 0.5,    // 3 échos
@@ -136,8 +136,19 @@ public enum CristalType {
     }
 
     // Getters
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
-    public double getBonusPerLevel() { return bonusPerLevel; }
-    public double getMaxBonus() { return maxBonus; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getBonusPerLevel() {
+        return bonusPerLevel;
+    }
+
+    public double getMaxBonus() {
+        return maxBonus;
+    }
 }

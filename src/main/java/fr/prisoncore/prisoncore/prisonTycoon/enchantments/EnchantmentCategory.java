@@ -17,6 +17,11 @@ public enum EnchantmentCategory {
         this.icon = icon;
     }
 
-    public String getDisplayName() { return displayName; }
-    public String getIcon() { return icon; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
 }

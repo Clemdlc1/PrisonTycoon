@@ -543,10 +543,11 @@ public class EnchantmentUpgradeGUI {
 
     /**
      * Version optimisée d'upgradeEnchantment avec option de silence
-     * @param player Le joueur
+     *
+     * @param player          Le joueur
      * @param enchantmentName Nom de l'enchantement
      * @param requestedLevels Nombre de niveaux demandés
-     * @param silent Si true, n'affiche pas les messages d'erreur ni les sons
+     * @param silent          Si true, n'affiche pas les messages d'erreur ni les sons
      * @return true si l'amélioration a réussi, false sinon
      */
     private boolean upgradeEnchantment(Player player, String enchantmentName, int requestedLevels, boolean silent) {
@@ -590,9 +591,10 @@ public class EnchantmentUpgradeGUI {
 
     /**
      * Version optimisée de upgradeToMax avec option de silence
-     * @param player Le joueur
+     *
+     * @param player          Le joueur
      * @param enchantmentName Nom de l'enchantement
-     * @param silent Si true, n'affiche pas les messages d'erreur ni les sons
+     * @param silent          Si true, n'affiche pas les messages d'erreur ni les sons
      * @return true si au moins une amélioration a été effectuée, false sinon
      */
     public boolean upgradeToMax(Player player, String enchantmentName, boolean silent) {

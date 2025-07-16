@@ -256,6 +256,7 @@ public class MineManager {
 
     /**
      * Détermine le rang et les couleurs du joueur
+     *
      * @param player Le joueur
      * @return [rang, couleur du nom, couleur du rang, rang mine, couleur rang mine]
      */
@@ -272,6 +273,7 @@ public class MineManager {
             return new String[]{"JOUEUR", "§7", "§8", currentRank.toUpperCase(), rankColor};
         }
     }
+
     /**
      * Obtient la couleur progressive pour un rang de mine (a-z)
      */

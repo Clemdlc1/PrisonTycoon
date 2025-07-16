@@ -79,17 +79,28 @@ public class MineData {
      * Calcule le volume total de la mine
      */
     public long getVolume() {
-        long width = Math.abs((long)maxCorner.getX() - (long)minCorner.getX()) + 1;
-        long height = Math.abs((long)maxCorner.getY() - (long)minCorner.getY()) + 1;
-        long length = Math.abs((long)maxCorner.getZ() - (long)minCorner.getZ()) + 1;
+        long width = Math.abs((long) maxCorner.getX() - (long) minCorner.getX()) + 1;
+        long height = Math.abs((long) maxCorner.getY() - (long) minCorner.getY()) + 1;
+        long length = Math.abs((long) maxCorner.getZ() - (long) minCorner.getZ()) + 1;
 
         return width * height * length;
     }
 
     // Getters
-    public String getName() { return name; }
-    public Location getMinCorner() { return minCorner.clone(); }
-    public Location getMaxCorner() { return maxCorner.clone(); }
-    public Map<Material, Double> getBlockComposition() { return new HashMap<>(blockComposition); }
+    public String getName() {
+        return name;
+    }
+
+    public Location getMinCorner() {
+        return minCorner.clone();
+    }
+
+    public Location getMaxCorner() {
+        return maxCorner.clone();
+    }
+
+    public Map<Material, Double> getBlockComposition() {
+        return new HashMap<>(blockComposition);
+    }
 }
 

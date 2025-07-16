@@ -261,11 +261,11 @@ public class ChatTask extends BukkitRunnable {
      * NOUVEAU : Effectue l'auto-rankup VIP si activé et si le joueur a miné
      */
     private void performAutoRankupIfEnabled(Player player) {
-            RankupCommand rankupCommand = plugin.getRankupCommand();
-            if (rankupCommand.canAutoRankup(player)) {
-                plugin.getPluginLogger().debug("Tentative d'auto-rankup pour " + player.getName());
-                rankupCommand.performAutoRankup(player);
-            }
+        RankupCommand rankupCommand = plugin.getRankupCommand();
+        if (rankupCommand.canAutoRankup(player)) {
+            plugin.getPluginLogger().debug("Tentative d'auto-rankup pour " + player.getName());
+            rankupCommand.performAutoRankup(player);
+        }
     }
 
     /**

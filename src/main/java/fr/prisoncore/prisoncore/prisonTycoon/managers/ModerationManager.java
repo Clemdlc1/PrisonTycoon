@@ -20,11 +20,10 @@ public class ModerationManager {
 
     private final PrisonTycoon plugin;
     private final File moderationFile;
-    private FileConfiguration moderationConfig;
-
     // Cache en mémoire pour les performances
     private final Map<UUID, ModerationData> muteCache = new ConcurrentHashMap<>();
     private final Map<UUID, ModerationData> banCache = new ConcurrentHashMap<>();
+    private FileConfiguration moderationConfig;
 
     public ModerationManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -345,14 +344,34 @@ public class ModerationManager {
             this.startTime = startTime;
         }
 
-        public UUID getUuid() { return uuid; }
-        public String getPlayerName() { return playerName; }
-        public long getEndTime() { return endTime; }
-        public String getReason() { return reason; }
-        public String getModerator() { return moderator; }
-        public long getStartTime() { return startTime; }
+        public UUID getUuid() {
+            return uuid;
+        }
 
-        public boolean isPermanent() { return endTime == 0; }
+        public String getPlayerName() {
+            return playerName;
+        }
+
+        public long getEndTime() {
+            return endTime;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public String getModerator() {
+            return moderator;
+        }
+
+        public long getStartTime() {
+            return startTime;
+        }
+
+        public boolean isPermanent() {
+            return endTime == 0;
+        }
+
         public long getRemainingTime() {
             if (isPermanent()) return -1;
             return Math.max(0, endTime - System.currentTimeMillis());

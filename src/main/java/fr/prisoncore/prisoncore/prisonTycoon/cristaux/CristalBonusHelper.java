@@ -56,7 +56,7 @@ public class CristalBonusHelper {
      */
     public int applyMineralGreed(Player player, int baseFortune) {
         double bonus = plugin.getCristalManager().getTotalCristalBonus(player, CristalType.MINERAL_GREED);
-        return Math.round(baseFortune * (1.0f + (float)bonus / 100.0f));
+        return Math.round(baseFortune * (1.0f + (float) bonus / 100.0f));
     }
 
     /**

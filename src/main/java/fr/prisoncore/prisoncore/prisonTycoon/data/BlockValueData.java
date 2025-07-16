@@ -1,6 +1,8 @@
 package fr.prisoncore.prisoncore.prisonTycoon.data;
 
-import org.bukkit.Material; /**
+import org.bukkit.Material;
+
+/**
  * Valeurs économiques d'un bloc
  */
 public class BlockValueData {
@@ -17,10 +19,21 @@ public class BlockValueData {
     }
 
     // Getters
-    public Material getMaterial() { return material; }
-    public long getCoins() { return coins; }
-    public long getTokens() { return tokens; }
-    public long getExperience() { return experience; }
+    public Material getMaterial() {
+        return material;
+    }
+
+    public long getCoins() {
+        return coins;
+    }
+
+    public long getTokens() {
+        return tokens;
+    }
+
+    public long getExperience() {
+        return experience;
+    }
 
     @Override
     public String toString() {

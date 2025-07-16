@@ -14,13 +14,12 @@ import org.bukkit.scoreboard.Team;
  */
 public class TabManager {
 
-    private final PrisonTycoon plugin;
-    private BukkitRunnable tabUpdateTask;
-
     // Noms des équipes pour le tri (préfixe numérique pour l'ordre)
     private static final String ADMIN_TEAM = "01_admin";
     private static final String VIP_TEAM = "02_vip";
     private static final String PLAYER_TEAM = "03_joueur";
+    private final PrisonTycoon plugin;
+    private BukkitRunnable tabUpdateTask;
 
     public TabManager(PrisonTycoon plugin) {
         this.plugin = plugin;

@@ -15,33 +15,14 @@ public class GlobalBonusManager {
 
     private final PrisonTycoon plugin;
 
-    // Types de bonus gérés
-    public enum BonusType {
-        TOKEN_GREED("TokenGreed", CristalType.TOKEN_BOOST),
-        MONEY_GREED("MoneyGreed", CristalType.MONEY_BOOST),
-        EXP_GREED("ExpGreed", CristalType.XP_BOOST),
-        SELL_BONUS("SellBonus", CristalType.SELL_BOOST),
-        MINERAL_GREED("MineralGreed", CristalType.MINERAL_GREED);
-
-        private final String displayName;
-        private final CristalType associatedCristal;
-
-        BonusType(String displayName, CristalType associatedCristal) {
-            this.displayName = displayName;
-            this.associatedCristal = associatedCristal;
-        }
-
-        public String getDisplayName() { return displayName; }
-        public CristalType getAssociatedCristal() { return associatedCristal; }
-    }
-
     public GlobalBonusManager(PrisonTycoon plugin) {
         this.plugin = plugin;
     }
 
     /**
      * Calcule le bonus total pour un type donné
-     * @param player Le joueur
+     *
+     * @param player    Le joueur
      * @param bonusType Le type de bonus
      * @return Le multiplicateur final (1.0 = pas de bonus, 1.5 = +50%)
      */
@@ -107,7 +88,7 @@ public class GlobalBonusManager {
         if (baseFortune <= 0) return baseFortune;
 
         double multiplier = getTotalBonusMultiplier(player, BonusType.MINERAL_GREED);
-        return Math.round(baseFortune * (float)multiplier);
+        return Math.round(baseFortune * (float) multiplier);
     }
 
     /**
@@ -177,6 +158,31 @@ public class GlobalBonusManager {
                         String.format("%.1f", percentage) + "% (x" +
                         String.format("%.3f", entry.getValue()) + ")");
             }
+        }
+    }
+
+    // Types de bonus gérés
+    public enum BonusType {
+        TOKEN_GREED("TokenGreed", CristalType.TOKEN_BOOST),
+        MONEY_GREED("MoneyGreed", CristalType.MONEY_BOOST),
+        EXP_GREED("ExpGreed", CristalType.XP_BOOST),
+        SELL_BONUS("SellBonus", CristalType.SELL_BOOST),
+        MINERAL_GREED("MineralGreed", CristalType.MINERAL_GREED);
+
+        private final String displayName;
+        private final CristalType associatedCristal;
+
+        BonusType(String displayName, CristalType associatedCristal) {
+            this.displayName = displayName;
+            this.associatedCristal = associatedCristal;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public CristalType getAssociatedCristal() {
+            return associatedCristal;
         }
     }
 }

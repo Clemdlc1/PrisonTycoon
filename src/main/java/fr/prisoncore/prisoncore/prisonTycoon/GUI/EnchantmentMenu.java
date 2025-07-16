@@ -26,22 +26,18 @@ import java.util.Set;
  */
 public class EnchantmentMenu {
 
-    private final PrisonTycoon plugin;
-
     // Slots du menu principal
     private static final int PLAYER_HEAD_SLOT = 4;
-
     private static final int CRYSTALS_SLOT = 30;
     private static final int UNIQUE_ENCHANTS_SLOT = 31;
     private static final int PETS_SLOT = 32;
     private static final int MAIN_MENU_SLOT = 27;
     private static final int REPAIR_PICKAXE_SLOT = 35; // En bas à droite du menu
-
-
     private static final int ECONOMIC_SLOT = 10;
     private static final int UTILITY_SLOT = 12;
     private static final int MOBILITY_SLOT = 14;
     private static final int SPECIAL_SLOT = 16;
+    private final PrisonTycoon plugin;
 
     public EnchantmentMenu(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -97,8 +93,7 @@ public class EnchantmentMenu {
 
             // Catégories d'enchantements
             case ECONOMIC_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.ECONOMIC);
-            case UTILITY_SLOT ->
-                    plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.UTILITY);
+            case UTILITY_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.UTILITY);
             case MOBILITY_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.MOBILITY);
             case SPECIAL_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.SPECIAL);
         }
@@ -295,6 +290,7 @@ public class EnchantmentMenu {
             }
         }
     }
+
     /**
      * Crée le bouton de réparation de pioche
      */
@@ -323,7 +319,7 @@ public class EnchantmentMenu {
             double durabilityBonus = durabilityLevel * 10.0;
             int maxDurabilityWithBonus = (int) (maxDurability * (1.0 + durabilityBonus / 100.0));
 
-            double healthPercent = ((double)(maxDurabilityWithBonus - currentDurability) / maxDurabilityWithBonus) * 100;
+            double healthPercent = ((double) (maxDurabilityWithBonus - currentDurability) / maxDurabilityWithBonus) * 100;
 
             lore.add("§e⛏️ §lÉTAT ACTUEL");
             lore.add("§7│ §eDurabilité: " + getDurabilityColorForButton(healthPercent) + String.format("%.1f%%", healthPercent));
@@ -349,9 +345,9 @@ public class EnchantmentMenu {
             long totalInvested = calculateTotalInvestedTokensForButton(playerData);
             lore.add("§6💰 §lCOÛTS DE RÉPARATION");
             lore.add("§7│ §6Base: §e" + NumberFormatter.format(totalInvested) + " tokens investis");
-            lore.add("§7│ §7Réparation 20%: §6" + NumberFormatter.format((long)(totalInvested * 0.01)) + " tokens");
-            lore.add("§7│ §7Réparation 50%: §6" + NumberFormatter.format((long)(totalInvested * 0.035)) + " tokens");
-            lore.add("§7│ §7Réparation 100%: §6" + NumberFormatter.format((long)(totalInvested * 0.10)) + " tokens");
+            lore.add("§7│ §7Réparation 20%: §6" + NumberFormatter.format((long) (totalInvested * 0.01)) + " tokens");
+            lore.add("§7│ §7Réparation 50%: §6" + NumberFormatter.format((long) (totalInvested * 0.035)) + " tokens");
+            lore.add("§7│ §7Réparation 100%: §6" + NumberFormatter.format((long) (totalInvested * 0.10)) + " tokens");
             lore.add("§7└ §7Coûts précis dans le menu de réparation");
 
         } else {

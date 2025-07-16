@@ -36,6 +36,20 @@ public class MiningListener implements Listener {
         this.plugin = plugin;
     }
 
+    /**
+     * Vérifie si la pioche du joueur est cassée
+     */
+    public static boolean isPlayerPickaxeBroken(Player player) {
+        return player.hasMetadata("pickaxe_broken");
+    }
+
+    /**
+     * Retourne le multiplicateur de pénalité (90% de malus = 10% d'efficacité)
+     */
+    public static double getPickaxePenaltyMultiplier(Player player) {
+        return isPlayerPickaxeBroken(player) ? 0.10 : 1.0;
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -135,7 +149,7 @@ public class MiningListener implements Listener {
                 }
 
                 // Vérifier l'état mais ne pas augmenter les dégâts
-                plugin.getPickaxeManager().checkLegendaryPickaxeState(player, tool, (short)(maxDurability - 1), maxDurability);
+                plugin.getPickaxeManager().checkLegendaryPickaxeState(player, tool, (short) (maxDurability - 1), maxDurability);
                 return;
             }
 
@@ -167,7 +181,7 @@ public class MiningListener implements Listener {
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
 
         // Seulement envoyer des notifications quand la durabilité est < 25%
-        if (durabilityPercent > 0.25  || plugin.getPickaxeManager().isPickaxeBroken(player)) {
+        if (durabilityPercent > 0.25 || plugin.getPickaxeManager().isPickaxeBroken(player)) {
             return;
         }
 
@@ -284,7 +298,6 @@ public class MiningListener implements Listener {
         plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
     }
 
-
     /**
      * MODIFIÉ : Ajoute un bloc à l'inventaire du joueur ou dans ses conteneurs
      * Priorité: Conteneurs -> Inventaire normal
@@ -337,20 +350,6 @@ public class MiningListener implements Listener {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
         plugin.getPluginLogger().debug("Post-traitement pioche terminé pour " + player.getName());
-    }
-
-    /**
-     * Vérifie si la pioche du joueur est cassée
-     */
-    public static boolean isPlayerPickaxeBroken(Player player) {
-        return player.hasMetadata("pickaxe_broken");
-    }
-
-    /**
-     * Retourne le multiplicateur de pénalité (90% de malus = 10% d'efficacité)
-     */
-    public static double getPickaxePenaltyMultiplier(Player player) {
-        return isPlayerPickaxeBroken(player) ? 0.10 : 1.0;
     }
 
     @EventHandler

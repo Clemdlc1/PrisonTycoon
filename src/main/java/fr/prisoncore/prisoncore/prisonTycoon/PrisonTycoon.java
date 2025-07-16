@@ -69,7 +69,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
 
-
+    public static PrisonTycoon getInstance() {
+        return instance;
+    }
 
     @Override
     public void onEnable() {
@@ -279,7 +281,6 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§7- Commande /invsee enregistrée");
 
 
-
         logger.info("§aCommandes enregistrées.");
     }
 
@@ -347,6 +348,8 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§aTâches asynchrones démarrées avec succès (nouveau système).");
     }
 
+    // Getters pour accès aux managers
+
     /**
      * Arrête toutes les tâches
      */
@@ -382,12 +385,6 @@ public final class PrisonTycoon extends JavaPlugin {
         if (permissionManager != null) {
             permissionManager.cleanup();
         }
-    }
-
-    // Getters pour accès aux managers
-
-    public static PrisonTycoon getInstance() {
-        return instance;
     }
 
     public ConfigManager getConfigManager() {
@@ -461,6 +458,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public PetsMenuGUI getPetsMenuGUI() {
         return petsMenuGUI;
     }
+
     public PickaxeRepairGUI getPickaxeRepairMenu() {
         return pickaxeRepairGUI;
     }
@@ -487,9 +485,17 @@ public final class PrisonTycoon extends JavaPlugin {
         return this.rankupCommand;
     }
 
-    public CristalManager getCristalManager() { return cristalManager; }
-    public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
-    public CristalGUI getCristalGUI() { return cristalGUI; }
+    public CristalManager getCristalManager() {
+        return cristalManager;
+    }
+
+    public CristalBonusHelper getCristalBonusHelper() {
+        return cristalBonusHelper;
+    }
+
+    public CristalGUI getCristalGUI() {
+        return cristalGUI;
+    }
 
     public GlobalBonusManager getGlobalBonusManager() {
         return globalBonusManager;
@@ -498,6 +504,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public TabManager getTabManager() {
         return tabManager;
     }
+
     /**
      * Obtient le gestionnaire de modération
      */
@@ -518,6 +525,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public VipManager getVipManager() {
         return vipManager;
     }
+
     public PermissionManager getPermissionManager() {
         return permissionManager;
     }

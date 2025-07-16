@@ -16,8 +16,8 @@ public class Cristal {
 
     private final String uuid;
     private final int niveau;
-    private CristalType type;
     private final boolean vierge;
+    private CristalType type;
 
     /**
      * Constructeur pour cristal vierge
@@ -109,10 +109,21 @@ public class Cristal {
     }
 
     // Getters
-    public String getUuid() { return uuid; }
-    public int getNiveau() { return niveau; }
-    public CristalType getType() { return type; }
-    public boolean isVierge() { return vierge; }
+    public String getUuid() {
+        return uuid;
+    }
+
+    public int getNiveau() {
+        return niveau;
+    }
+
+    public CristalType getType() {
+        return type;
+    }
+
+    public boolean isVierge() {
+        return vierge;
+    }
 
     @Override
     public boolean equals(Object obj) {

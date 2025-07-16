@@ -12,7 +12,9 @@ import org.bukkit.util.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List; /**
+import java.util.List;
+
+/**
  * Commande /givetokens - Donner des tokens (admin)
  */
 public class GiveTokensCommand implements CommandExecutor, TabCompleter {

@@ -14,10 +14,9 @@ public class ContainerData {
     private final int maxCapacity;
     private final Map<ItemStack, Integer> contents;
     private final Set<Material> whitelist;
+    private final int maxDurability;
     private boolean sellEnabled;
     private int durability;
-    private final int maxDurability;
-
     private Map<Integer, ItemStack> referenceItems;
 
     public ContainerData(int tier) {
@@ -41,6 +40,21 @@ public class ContainerData {
         this.maxDurability = getDurabilityForTier(tier);
         this.durability = durability;
         this.referenceItems = new HashMap<>(); // Initialisation
+    }
+
+    /**
+     * NOUVEAU : Obtient le nom d'affichage d'un item
+     */
+    public static String getDisplayName(ItemStack item) {
+        if (item == null) return "Item invalide";
+
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            return item.getItemMeta().getDisplayName();
+        } else {
+            // Nom par défaut du matériau
+            String name = item.getType().name().toLowerCase().replace("_", " ");
+            return name.substring(0, 1).toUpperCase() + name.substring(1);
+        }
     }
 
     /**
@@ -308,33 +322,43 @@ public class ContainerData {
         return referenceItems.get(material.name());
     }
 
-    /**
-     * NOUVEAU : Obtient le nom d'affichage d'un item
-     */
-    public static String getDisplayName(ItemStack item) {
-        if (item == null) return "Item invalide";
-
-        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            return item.getItemMeta().getDisplayName();
-        } else {
-            // Nom par défaut du matériau
-            String name = item.getType().name().toLowerCase().replace("_", " ");
-            return name.substring(0, 1).toUpperCase() + name.substring(1);
-        }
+    // Getters
+    public int getTier() {
+        return tier;
     }
 
-    // Getters
-    public int getTier() { return tier; }
-    public int getMaxCapacity() { return maxCapacity; }
-    public Map<ItemStack, Integer> getContents() { return new LinkedHashMap<>(contents); }
-    public Set<Material> getWhitelist() { return new HashSet<>(whitelist); }
-    public boolean isSellEnabled() { return sellEnabled; }
-    public int getDurability() { return durability; }
-    public int getMaxDurability() { return maxDurability; }
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public Map<ItemStack, Integer> getContents() {
+        return new LinkedHashMap<>(contents);
+    }
+
+    public Set<Material> getWhitelist() {
+        return new HashSet<>(whitelist);
+    }
+
+    public boolean isSellEnabled() {
+        return sellEnabled;
+    }
 
     // Setters
-    public void setSellEnabled(boolean sellEnabled) { this.sellEnabled = sellEnabled; }
-    public void setDurability(int durability) { this.durability = Math.max(0, Math.min(maxDurability, durability)); }
+    public void setSellEnabled(boolean sellEnabled) {
+        this.sellEnabled = sellEnabled;
+    }
+
+    public int getDurability() {
+        return durability;
+    }
+
+    public void setDurability(int durability) {
+        this.durability = Math.max(0, Math.min(maxDurability, durability));
+    }
+
+    public int getMaxDurability() {
+        return maxDurability;
+    }
 
     /**
      * Clone pour éviter les modifications non contrôlées

@@ -32,12 +32,11 @@ import java.util.Map;
  */
 public class PickaxeManager {
 
+    // NOUVEAU : Slot fixe pour la pioche
+    private static final int PICKAXE_SLOT = 0;
     private final PrisonTycoon plugin;
     private final NamespacedKey legendaryPickaxeKey;
     private final NamespacedKey pickaxeOwnerKey;
-
-    // NOUVEAU : Slot fixe pour la pioche
-    private static final int PICKAXE_SLOT = 0;
 
     public PickaxeManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -185,7 +184,7 @@ public class PickaxeManager {
         }
 
         // CORRIGÉ : Utilise la durabilité de base (pas augmentée par solidité)
-        double healthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+        double healthPercent = ((double) (maxDurability - currentDurability) / maxDurability) * 100;
         int currentHealth = maxDurability - currentDurability;
 
         if (isBroken) {
@@ -337,6 +336,7 @@ public class PickaxeManager {
             }
         }
     }
+
     /**
      * Vérifie si un item est une pioche légendaire
      */
@@ -413,7 +413,7 @@ public class PickaxeManager {
     public void updateMobilityEffects(Player player) {
 
         ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player) || isPickaxeBroken(player)){
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player) || isPickaxeBroken(player)) {
             removeMobilityEffects(player);
             return;
         }
@@ -473,7 +473,7 @@ public class PickaxeManager {
     public void handleEscalator(Player player) {
 
         ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player)){
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player)) {
             player.sendMessage("§c❌ Vous devez avoir la pioche légendaire en main!");
             return;
         }

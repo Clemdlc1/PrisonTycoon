@@ -10,8 +10,8 @@ api-version: '1.21'
 folia-supported: false
 
 # Dépendances (aucune pour ce plugin)
-softdepend: []
-depend: []
+softdepend: [ ]
+depend: [ ]
 
 # Permissions
 permissions:
@@ -148,40 +148,40 @@ commands:
     usage: /pickaxe
     permission: specialmine.pickaxe
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [pioche]
+    aliases: [ pioche ]
 
   repair:
     description: Ouvre le menu de réparation de la pioche légendaire.
     usage: /repair
     permission: specialmine.repair
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [fix, reparer]
+    aliases: [ fix, reparer ]
 
   sell:
     description: Vendre des items.
     usage: /sell <all|hand>
     permission: specialmine.sell
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [vendre]
+    aliases: [ vendre ]
 
   mine:
     description: Gérer les mines et obtenir des informations.
     usage: /mine <generate|list|info|stats> [nom]
     permission: specialmine.mine
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [mines, prisonmine]
+    aliases: [ mines, prisonmine ]
 
   givetokens:
     description: Donner des tokens à un joueur (ADMIN).
     usage: /givetokens <joueur> <quantité>
     permission: specialmine.admin.givetokens
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [givetoken, addtokens]
+    aliases: [ givetoken, addtokens ]
 
   prisontycoon:
     description: Commande principale du plugin.
     usage: /prisontycoon [reload|stats|economy|top] [args...]
-    aliases: [pt, ptycoon, prison]
+    aliases: [ pt, ptycoon, prison ]
 
   conteneur:
     description: Obtenir et gérer les conteneurs de collecte automatique.

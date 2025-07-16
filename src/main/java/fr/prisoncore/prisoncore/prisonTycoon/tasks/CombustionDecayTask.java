@@ -13,12 +13,11 @@ import org.bukkit.scheduler.BukkitRunnable;
  */
 public class CombustionDecayTask extends BukkitRunnable {
 
+    // Configuration depuis config.yml
+    private static final double DECAY_PER_SECOND = 1.0; // Base de décroissance
     private final PrisonTycoon plugin;
     private long tickCount = 0;
     private int decayProcessed = 0;
-
-    // Configuration depuis config.yml
-    private static final double DECAY_PER_SECOND = 1.0; // Base de décroissance
 
     public CombustionDecayTask(PrisonTycoon plugin) {
         this.plugin = plugin;

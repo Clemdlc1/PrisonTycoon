@@ -19,10 +19,9 @@ public class VipManager {
 
     private final PrisonTycoon plugin;
     private final File vipFile;
-    private FileConfiguration vipConfig;
-
     // Cache des VIP pour les performances
     private final Set<UUID> vipCache = ConcurrentHashMap.newKeySet();
+    private FileConfiguration vipConfig;
 
     public VipManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -296,9 +295,20 @@ public class VipManager {
             this.addedAt = addedAt;
         }
 
-        public UUID getUuid() { return uuid; }
-        public String getPlayerName() { return playerName; }
-        public String getAddedBy() { return addedBy; }
-        public long getAddedAt() { return addedAt; }
+        public UUID getUuid() {
+            return uuid;
+        }
+
+        public String getPlayerName() {
+            return playerName;
+        }
+
+        public String getAddedBy() {
+            return addedBy;
+        }
+
+        public long getAddedAt() {
+            return addedAt;
+        }
     }
 }

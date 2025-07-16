@@ -400,6 +400,7 @@ public class EnchantmentManager {
             }
         }
     }
+
     /**
      * NOUVEAU : Traite Token Greed avec malus de 90% quand la pioche est cassée
      */
@@ -651,7 +652,7 @@ public class EnchantmentManager {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
                     // Vérifie si le bloc est dans le rayon sphérique
-                    if (x*x + y*y + z*z <= radius*radius) {
+                    if (x * x + y * y + z * z <= radius * radius) {
                         Location target = center.clone().add(x, y, z);
 
                         // Vérifie si dans la mine
@@ -792,210 +793,544 @@ public class EnchantmentManager {
 
 // Implémentations des enchantements avec coûts depuis config
 class TokenGreedEnchantment implements CustomEnchantment {
-    public String getName() { return "token_greed"; }
-    public String getDisplayName() { return "Token Greed"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Chance d'obtenir des tokens bonus"; }
-    public int getMaxLevel() { return Integer.MAX_VALUE; }
+    public String getName() {
+        return "token_greed";
+    }
+
+    public String getDisplayName() {
+        return "Token Greed";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Chance d'obtenir des tokens bonus";
+    }
+
+    public int getMaxLevel() {
+        return Integer.MAX_VALUE;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(5000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.GOLD_NUGGET; }
+
+    public Material getDisplayMaterial() {
+        return Material.GOLD_NUGGET;
+    }
 }
 
 class ExpGreedEnchantment implements CustomEnchantment {
-    public String getName() { return "exp_greed"; }
-    public String getDisplayName() { return "Exp Greed"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Chance d'obtenir de l'expérience bonus"; }
-    public int getMaxLevel() { return Integer.MAX_VALUE; }
+    public String getName() {
+        return "exp_greed";
+    }
+
+    public String getDisplayName() {
+        return "Exp Greed";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Chance d'obtenir de l'expérience bonus";
+    }
+
+    public int getMaxLevel() {
+        return Integer.MAX_VALUE;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(3000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.EXPERIENCE_BOTTLE; }
+
+    public Material getDisplayMaterial() {
+        return Material.EXPERIENCE_BOTTLE;
+    }
 }
 
 class MoneyGreedEnchantment implements CustomEnchantment {
-    public String getName() { return "money_greed"; }
-    public String getDisplayName() { return "Money Greed"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Chance d'obtenir des coins bonus"; }
-    public int getMaxLevel() { return Integer.MAX_VALUE; }
+    public String getName() {
+        return "money_greed";
+    }
+
+    public String getDisplayName() {
+        return "Money Greed";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Chance d'obtenir des coins bonus";
+    }
+
+    public int getMaxLevel() {
+        return Integer.MAX_VALUE;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(4000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.GOLD_INGOT; }
+
+    public Material getDisplayMaterial() {
+        return Material.GOLD_INGOT;
+    }
 }
 
 class KeyGreedEnchantment implements CustomEnchantment {
-    public String getName() { return "key_greed"; }
-    public String getDisplayName() { return "Key Greed"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Chance d'obtenir des clés de coffres"; }
-    public int getMaxLevel() { return 10; }
+    public String getName() {
+        return "key_greed";
+    }
+
+    public String getDisplayName() {
+        return "Key Greed";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Chance d'obtenir des clés de coffres";
+    }
+
+    public int getMaxLevel() {
+        return 10;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(500000 * Math.pow(level, 1.8));
     }
-    public Material getDisplayMaterial() { return Material.TRIPWIRE_HOOK; }
+
+    public Material getDisplayMaterial() {
+        return Material.TRIPWIRE_HOOK;
+    }
 }
 
 class AbondanceEnchantment implements CustomEnchantment {
-    public String getName() { return "abundance"; }
-    public String getDisplayName() { return "Abondance"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Chance de doubler tous les gains"; }
-    public int getMaxLevel() { return 100000; }
+    public String getName() {
+        return "abundance";
+    }
+
+    public String getDisplayName() {
+        return "Abondance";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Chance de doubler tous les gains";
+    }
+
+    public int getMaxLevel() {
+        return 100000;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(3000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.NETHER_STAR; }
+
+    public Material getDisplayMaterial() {
+        return Material.NETHER_STAR;
+    }
 }
 
 class CombustionEnchantment implements CustomEnchantment {
-    public String getName() { return "combustion"; }
-    public String getDisplayName() { return "Combustion"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Plus tu mines, plus tes gains augmentent"; }
-    public int getMaxLevel() { return 1000; }
+    public String getName() {
+        return "combustion";
+    }
+
+    public String getDisplayName() {
+        return "Combustion";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Plus tu mines, plus tes gains augmentent";
+    }
+
+    public int getMaxLevel() {
+        return 1000;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(5000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.FIRE_CHARGE; }
+
+    public Material getDisplayMaterial() {
+        return Material.FIRE_CHARGE;
+    }
 }
 
 class PetXpEnchantment implements CustomEnchantment {
-    public String getName() { return "pet_xp"; }
-    public String getDisplayName() { return "Pet XP"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.ECONOMIC; }
-    public String getDescription() { return "Augmente l'expérience des pets"; }
-    public int getMaxLevel() { return Integer.MAX_VALUE; }
+    public String getName() {
+        return "pet_xp";
+    }
+
+    public String getDisplayName() {
+        return "Pet XP";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    public String getDescription() {
+        return "Augmente l'expérience des pets";
+    }
+
+    public int getMaxLevel() {
+        return Integer.MAX_VALUE;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(2000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.BONE; }
+
+    public Material getDisplayMaterial() {
+        return Material.BONE;
+    }
 }
 
 // Enchantements d'efficacité
 class EfficiencyEnchantment implements CustomEnchantment {
-    public String getName() { return "efficiency"; }
-    public String getDisplayName() { return "Efficacité"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
-    public String getDescription() { return "Réduit le temps de minage"; }
-    public int getMaxLevel() { return 200; }
-    public long getUpgradeCost(int level) { return 10000L * level * level; }
-    public Material getDisplayMaterial() { return Material.REDSTONE; }
+    public String getName() {
+        return "efficiency";
+    }
+
+    public String getDisplayName() {
+        return "Efficacité";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.UTILITY;
+    }
+
+    public String getDescription() {
+        return "Réduit le temps de minage";
+    }
+
+    public int getMaxLevel() {
+        return 200;
+    }
+
+    public long getUpgradeCost(int level) {
+        return 10000L * level * level;
+    }
+
+    public Material getDisplayMaterial() {
+        return Material.REDSTONE;
+    }
 }
 
 class FortuneEnchantment implements CustomEnchantment {
-    public String getName() { return "fortune"; }
-    public String getDisplayName() { return "Fortune"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
-    public String getDescription() { return "Multiplie tous les drops"; }
-    public int getMaxLevel() { return Integer.MAX_VALUE; }
+    public String getName() {
+        return "fortune";
+    }
+
+    public String getDisplayName() {
+        return "Fortune";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.UTILITY;
+    }
+
+    public String getDescription() {
+        return "Multiplie tous les drops";
+    }
+
+    public int getMaxLevel() {
+        return Integer.MAX_VALUE;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(2000 * Math.pow(level, 1.6));
     }
-    public Material getDisplayMaterial() { return Material.EMERALD; }
+
+    public Material getDisplayMaterial() {
+        return Material.EMERALD;
+    }
 }
 
 class DurabilityEnchantment implements CustomEnchantment {
-    public String getName() { return "durability"; }
-    public String getDisplayName() { return "Solidité"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
-    public String getDescription() { return "Augmente la durabilité"; }
-    public int getMaxLevel() { return 20; }
+    public String getName() {
+        return "durability";
+    }
+
+    public String getDisplayName() {
+        return "Solidité";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.UTILITY;
+    }
+
+    public String getDescription() {
+        return "Augmente la durabilité";
+    }
+
+    public int getMaxLevel() {
+        return 20;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(10000 * Math.pow(level, 5));
     }
-    public Material getDisplayMaterial() { return Material.DIAMOND; }
+
+    public Material getDisplayMaterial() {
+        return Material.DIAMOND;
+    }
 }
 
 // Enchantements de mobilité
 class NightVisionEnchantment implements CustomEnchantment {
-    public String getName() { return "night_vision"; }
-    public String getDisplayName() { return "Vision Nocturne"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
-    public String getDescription() { return "Vision nocturne permanente"; }
-    public int getMaxLevel() { return 1; }
-    public long getUpgradeCost(int level) { return 150000; }
-    public Material getDisplayMaterial() { return Material.GOLDEN_CARROT; }
+    public String getName() {
+        return "night_vision";
+    }
+
+    public String getDisplayName() {
+        return "Vision Nocturne";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.MOBILITY;
+    }
+
+    public String getDescription() {
+        return "Vision nocturne permanente";
+    }
+
+    public int getMaxLevel() {
+        return 1;
+    }
+
+    public long getUpgradeCost(int level) {
+        return 150000;
+    }
+
+    public Material getDisplayMaterial() {
+        return Material.GOLDEN_CARROT;
+    }
 }
 
 class SpeedEnchantment implements CustomEnchantment {
-    public String getName() { return "speed"; }
-    public String getDisplayName() { return "Vitesse"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
-    public String getDescription() { return "Augmente la vitesse de déplacement"; }
-    public int getMaxLevel() { return 3; }
-    public long getUpgradeCost(int level) { return 100000L * level * level; }
-    public Material getDisplayMaterial() { return Material.SUGAR; }
+    public String getName() {
+        return "speed";
+    }
+
+    public String getDisplayName() {
+        return "Vitesse";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.MOBILITY;
+    }
+
+    public String getDescription() {
+        return "Augmente la vitesse de déplacement";
+    }
+
+    public int getMaxLevel() {
+        return 3;
+    }
+
+    public long getUpgradeCost(int level) {
+        return 100000L * level * level;
+    }
+
+    public Material getDisplayMaterial() {
+        return Material.SUGAR;
+    }
 }
 
 class HasteEnchantment implements CustomEnchantment {
-    public String getName() { return "haste"; }
-    public String getDisplayName() { return "Rapidité"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
-    public String getDescription() { return "Effet Haste permanent"; }
-    public int getMaxLevel() { return 10; }
+    public String getName() {
+        return "haste";
+    }
+
+    public String getDisplayName() {
+        return "Rapidité";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.MOBILITY;
+    }
+
+    public String getDescription() {
+        return "Effet Haste permanent";
+    }
+
+    public int getMaxLevel() {
+        return 10;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(500000 * Math.pow(level, 3));
     }
-    public Material getDisplayMaterial() { return Material.BEACON; }
+
+    public Material getDisplayMaterial() {
+        return Material.BEACON;
+    }
 }
 
 class JumpBoostEnchantment implements CustomEnchantment {
-    public String getName() { return "jump_boost"; }
-    public String getDisplayName() { return "Saut"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
-    public String getDescription() { return "Augmente la hauteur de saut"; }
-    public int getMaxLevel() { return 5; }
+    public String getName() {
+        return "jump_boost";
+    }
+
+    public String getDisplayName() {
+        return "Saut";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.MOBILITY;
+    }
+
+    public String getDescription() {
+        return "Augmente la hauteur de saut";
+    }
+
+    public int getMaxLevel() {
+        return 5;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(75000 * Math.pow(level, 3));
     }
-    public Material getDisplayMaterial() { return Material.RABBIT_FOOT; }
+
+    public Material getDisplayMaterial() {
+        return Material.RABBIT_FOOT;
+    }
 }
 
 class EscalatorEnchantment implements CustomEnchantment {
-    public String getName() { return "escalator"; }
-    public String getDisplayName() { return "Escalateur"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
-    public String getDescription() { return "Téléportation vers la surface"; }
-    public int getMaxLevel() { return 1; }
-    public long getUpgradeCost(int level) { return 200000; }
-    public Material getDisplayMaterial() { return Material.ENDER_PEARL; }
+    public String getName() {
+        return "escalator";
+    }
+
+    public String getDisplayName() {
+        return "Escalateur";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.MOBILITY;
+    }
+
+    public String getDescription() {
+        return "Téléportation vers la surface";
+    }
+
+    public int getMaxLevel() {
+        return 1;
+    }
+
+    public long getUpgradeCost(int level) {
+        return 200000;
+    }
+
+    public Material getDisplayMaterial() {
+        return Material.ENDER_PEARL;
+    }
 }
 
 // Enchantements spéciaux
 class LuckEnchantment implements CustomEnchantment {
-    public String getName() { return "luck"; }
-    public String getDisplayName() { return "Chance"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
-    public String getDescription() { return "Augmente les chances des Greeds"; }
-    public int getMaxLevel() { return 500; }
+    public String getName() {
+        return "luck";
+    }
+
+    public String getDisplayName() {
+        return "Chance";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    public String getDescription() {
+        return "Augmente les chances des Greeds";
+    }
+
+    public int getMaxLevel() {
+        return 500;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(3000 * Math.pow(level, 1.5));
     }
-    public Material getDisplayMaterial() { return Material.RABBIT_FOOT; }
+
+    public Material getDisplayMaterial() {
+        return Material.RABBIT_FOOT;
+    }
 }
 
 class LaserEnchantment implements CustomEnchantment {
-    public String getName() { return "laser"; }
-    public String getDisplayName() { return "Laser"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
-    public String getDescription() { return "Chance de miner en ligne"; }
-    public int getMaxLevel() { return 2000; }
-    public long getUpgradeCost(int level) { return 20000L * level * level; }
-    public Material getDisplayMaterial() { return Material.END_ROD; }
+    public String getName() {
+        return "laser";
+    }
+
+    public String getDisplayName() {
+        return "Laser";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    public String getDescription() {
+        return "Chance de miner en ligne";
+    }
+
+    public int getMaxLevel() {
+        return 2000;
+    }
+
+    public long getUpgradeCost(int level) {
+        return 20000L * level * level;
+    }
+
+    public Material getDisplayMaterial() {
+        return Material.END_ROD;
+    }
 }
 
 class ExplosionEnchantment implements CustomEnchantment {
-    public String getName() { return "explosion"; }
-    public String getDisplayName() { return "Explosion"; }
-    public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
-    public String getDescription() { return "Chance de créer une explosion"; }
-    public int getMaxLevel() { return 100; }
+    public String getName() {
+        return "explosion";
+    }
+
+    public String getDisplayName() {
+        return "Explosion";
+    }
+
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    public String getDescription() {
+        return "Chance de créer une explosion";
+    }
+
+    public int getMaxLevel() {
+        return 100;
+    }
+
     public long getUpgradeCost(int level) {
         return Math.round(25000 * Math.pow(level, 1.05));
     }
-    public Material getDisplayMaterial() { return Material.TNT; }
+
+    public Material getDisplayMaterial() {
+        return Material.TNT;
+    }
 }

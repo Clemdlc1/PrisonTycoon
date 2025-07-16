@@ -336,7 +336,8 @@ public class ContainerManager {
             for (int i = 0; i < whitelistSize; i++) {
                 try {
                     whitelist.add(Material.valueOf(dataInput.readUTF()));
-                } catch (IllegalArgumentException ignored) {}
+                } catch (IllegalArgumentException ignored) {
+                }
             }
 
             // Contents
@@ -379,6 +380,7 @@ public class ContainerManager {
             return null;
         }
     }
+
     /**
      * NOUVEAU : Obtient l'UUID unique d'un conteneur
      */

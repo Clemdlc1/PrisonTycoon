@@ -23,14 +23,13 @@ import java.util.Map;
  */
 public class PickaxeRepairGUI {
 
-    private final PrisonTycoon plugin;
-
     // Slots pour les boutons de réparation (tous identiques maintenant)
     private static final int[] REPAIR_BUTTON_SLOTS = {11, 12, 13, 14, 15};
     private static final int PICKAXE_INFO_SLOT = 4;
     private static final int BACK_BUTTON_SLOT = 18;
     private static final double COST_BASE_FACTOR = 0.0001; // 0.01% de l'investissement total
     private static final double DAMAGE_EXPONENT = 2.5;     // Exposant de la courbe de coût
+    private final PrisonTycoon plugin;
 
     public PickaxeRepairGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -181,35 +180,18 @@ public class PickaxeRepairGUI {
         }
 
         if (bestRepairAmount == 0) {
-            return new MaxRepairResult(0, 0, 0, ((double)(maxDurability - currentDurability) / maxDurability) * 100);
+            return new MaxRepairResult(0, 0, 0, ((double) (maxDurability - currentDurability) / maxDurability) * 100);
         }
 
         long finalCost = calculateCostToRepairRange(totalInvested, maxDurability, currentDurability, currentDurability - bestRepairAmount);
 
         // Calcul des pourcentages pour l'affichage
-        double currentHealthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+        double currentHealthPercent = ((double) (maxDurability - currentDurability) / maxDurability) * 100;
         double newDurability = currentDurability - bestRepairAmount;
-        double newHealthPercent = ((double)(maxDurability - newDurability) / maxDurability) * 100;
+        double newHealthPercent = ((double) (maxDurability - newDurability) / maxDurability) * 100;
         double repairPercent = newHealthPercent - currentHealthPercent;
 
         return new MaxRepairResult(bestRepairAmount, finalCost, repairPercent, newHealthPercent);
-    }
-
-    /**
-     * NOUVEAU : Classe pour stocker le résultat de la réparation maximale
-     */
-    private static class MaxRepairResult {
-        final int repairPoints;
-        final long cost;
-        final double repairPercent;
-        final double finalHealthPercent;
-
-        MaxRepairResult(int repairPoints, long cost, double repairPercent, double finalHealthPercent) {
-            this.repairPoints = repairPoints;
-            this.cost = cost;
-            this.repairPercent = repairPercent;
-            this.finalHealthPercent = finalHealthPercent;
-        }
     }
 
     /**
@@ -448,7 +430,7 @@ public class PickaxeRepairGUI {
             short maxDurability = pickaxe.getType().getMaxDurability();
 
             // CORRIGÉ : Calcul précis du pourcentage de santé
-            double healthPercent = ((double)(maxDurability - currentDurability) / maxDurability) * 100;
+            double healthPercent = ((double) (maxDurability - currentDurability) / maxDurability) * 100;
 
             lore.add("§e⛏️ §lÉTAT ACTUEL");
             lore.add("§7│ §eDurabilité: " + getDurabilityColor(healthPercent) + String.format("%.1f%%", healthPercent));
@@ -489,5 +471,22 @@ public class PickaxeRepairGUI {
         item.setItemMeta(meta);
 
         return item;
+    }
+
+    /**
+     * NOUVEAU : Classe pour stocker le résultat de la réparation maximale
+     */
+    private static class MaxRepairResult {
+        final int repairPoints;
+        final long cost;
+        final double repairPercent;
+        final double finalHealthPercent;
+
+        MaxRepairResult(int repairPoints, long cost, double repairPercent, double finalHealthPercent) {
+            this.repairPoints = repairPoints;
+            this.cost = cost;
+            this.repairPercent = repairPercent;
+            this.finalHealthPercent = finalHealthPercent;
+        }
     }
 }

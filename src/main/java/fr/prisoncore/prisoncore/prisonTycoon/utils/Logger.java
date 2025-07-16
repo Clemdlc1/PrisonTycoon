@@ -3,9 +3,11 @@ package fr.prisoncore.prisoncore.prisonTycoon.utils;
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
 
 import java.text.SimpleDateFormat;
-import java.util.Date; /**
+import java.util.Date;
+
+/**
  * Logger personnalisé pour le plugin
- *
+ * <p>
  * Ajoute des couleurs et du formatage aux messages de log.
  */
 public class Logger {

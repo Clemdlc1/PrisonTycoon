@@ -14,23 +14,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class NotificationManager {
 
-    private final PrisonTycoon plugin;
-
-    // File d'attente des notifications par joueur
-    private final Map<UUID, Queue<GameNotification>> playerNotificationQueues;
-
-    // Accumulateur de gains par joueur (pour regrouper les gains similaires)
-    private final Map<UUID, GainAccumulator> playerGainAccumulators;
-
-    // Dernière notification envoyée par joueur
-    private final Map<UUID, Long> lastNotificationTime;
-
-    // NOUVEAU : Notifications temporaires avec durée (pour les notifications de durabilité)
-    private final Map<UUID, TemporaryNotification> activeTemporaryNotifications;
-
     // Configuration
     private static final long ACCUMULATION_WINDOW = 2500; // 2.5 secondes pour cumuler gains
     private static final int MAX_QUEUE_SIZE = 15; // Maximum 15 notifications en attente
+    private final PrisonTycoon plugin;
+    // File d'attente des notifications par joueur
+    private final Map<UUID, Queue<GameNotification>> playerNotificationQueues;
+    // Accumulateur de gains par joueur (pour regrouper les gains similaires)
+    private final Map<UUID, GainAccumulator> playerGainAccumulators;
+    // Dernière notification envoyée par joueur
+    private final Map<UUID, Long> lastNotificationTime;
+    // NOUVEAU : Notifications temporaires avec durée (pour les notifications de durabilité)
+    private final Map<UUID, TemporaryNotification> activeTemporaryNotifications;
 
     public NotificationManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -237,22 +232,6 @@ public class NotificationManager {
     // Classes internes
 
     /**
-     * NOUVEAU : Classe pour les notifications temporaires avec durée
-     */
-    private static class TemporaryNotification {
-        private final String message;
-        private final long expiryTime;
-
-        public TemporaryNotification(String message, long expiryTime) {
-            this.message = message;
-            this.expiryTime = expiryTime;
-        }
-
-        public String getMessage() { return message; }
-        public long getExpiryTime() { return expiryTime; }
-    }
-
-    /**
      * Types de notifications
      */
     public enum NotificationType {
@@ -264,6 +243,27 @@ public class NotificationManager {
      */
     public enum NotificationPriority {
         LOW, MEDIUM, HIGH, VERY_HIGH
+    }
+
+    /**
+     * NOUVEAU : Classe pour les notifications temporaires avec durée
+     */
+    private static class TemporaryNotification {
+        private final String message;
+        private final long expiryTime;
+
+        public TemporaryNotification(String message, long expiryTime) {
+            this.message = message;
+            this.expiryTime = expiryTime;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public long getExpiryTime() {
+            return expiryTime;
+        }
     }
 
     /**
@@ -280,9 +280,17 @@ public class NotificationManager {
             this.priority = priority;
         }
 
-        public NotificationType getType() { return type; }
-        public String getMessage() { return message; }
-        public NotificationPriority getPriority() { return priority; }
+        public NotificationType getType() {
+            return type;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public NotificationPriority getPriority() {
+            return priority;
+        }
     }
 
     /**
@@ -308,9 +316,20 @@ public class NotificationManager {
             return coins > 0 || tokens > 0 || experience > 0;
         }
 
-        public long getStartTime() { return startTime; }
-        public long getCoins() { return coins; }
-        public long getTokens() { return tokens; }
-        public long getExperience() { return experience; }
+        public long getStartTime() {
+            return startTime;
+        }
+
+        public long getCoins() {
+            return coins;
+        }
+
+        public long getTokens() {
+            return tokens;
+        }
+
+        public long getExperience() {
+            return experience;
+        }
     }
 }

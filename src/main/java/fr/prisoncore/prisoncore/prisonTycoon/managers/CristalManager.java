@@ -21,14 +21,13 @@ import java.util.Map;
  */
 public class CristalManager {
 
+    // Coûts pour appliquer les cristaux (en XP joueur)
+    private static final long[] APPLICATION_COSTS = {1000, 2500, 5000, 5000}; // 1er, 2e, 3e, 4e cristal
     private final PrisonTycoon plugin;
     private final NamespacedKey cristalUuidKey;
     private final NamespacedKey cristalLevelKey;
     private final NamespacedKey cristalTypeKey;
     private final NamespacedKey cristalViergeKey;
-
-    // Coûts pour appliquer les cristaux (en XP joueur)
-    private static final long[] APPLICATION_COSTS = {1000, 2500, 5000, 5000}; // 1er, 2e, 3e, 4e cristal
 
     public CristalManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -336,8 +335,19 @@ public class CristalManager {
     }
 
     // Getters pour les clés
-    public NamespacedKey getCristalUuidKey() { return cristalUuidKey; }
-    public NamespacedKey getCristalLevelKey() { return cristalLevelKey; }
-    public NamespacedKey getCristalTypeKey() { return cristalTypeKey; }
-    public NamespacedKey getCristalViergeKey() { return cristalViergeKey; }
+    public NamespacedKey getCristalUuidKey() {
+        return cristalUuidKey;
+    }
+
+    public NamespacedKey getCristalLevelKey() {
+        return cristalLevelKey;
+    }
+
+    public NamespacedKey getCristalTypeKey() {
+        return cristalTypeKey;
+    }
+
+    public NamespacedKey getCristalViergeKey() {
+        return cristalViergeKey;
+    }
 }

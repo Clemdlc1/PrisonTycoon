@@ -22,16 +22,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ScoreboardTask extends BukkitRunnable {
 
+    // Optimisations
+    private static final int BATCH_SIZE = 10; // Nombre de scoreboards mis à jour par cycle
     private final PrisonTycoon plugin;
-    private long tickCount = 0;
-    private int updateCycles = 0;
-
     // Gestion complète des scoreboards intégrée
     private final Map<Player, Scoreboard> playerScoreboards;
     private final Map<Player, Long> lastScoreboardUpdate;
-
-    // Optimisations
-    private static final int BATCH_SIZE = 10; // Nombre de scoreboards mis à jour par cycle
+    private long tickCount = 0;
+    private int updateCycles = 0;
 
     public ScoreboardTask(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -249,7 +247,7 @@ public class ScoreboardTask extends BukkitRunnable {
     private void setScoreboardLine(Scoreboard scoreboard, Objective objective, int score, String text) {
         // CORRECTION : S'assurer que le score n'est pas négatif
         if (score < 0) {
-         return;
+            return;
         }
 
         // Limite la longueur pour éviter les problèmes d'affichage
