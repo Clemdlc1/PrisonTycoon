@@ -169,7 +169,7 @@ public class MiningListener implements Listener {
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
 
         // Seulement envoyer des notifications quand la durabilité est < 25%
-        if (durabilityPercent > 0.25) {
+        if (durabilityPercent > 0.25  || plugin.getPickaxeManager().isPickaxeBroken(player)) {
             return;
         }
 
@@ -209,7 +209,7 @@ public class MiningListener implements Listener {
     private String createDurabilityNotificationMessage(Player player, double durabilityPercent) {
         String percentageStr = String.format("%.1f%%", durabilityPercent * 100);
 
-        if ((durabilityPercent <= 0.05) && !plugin.getPickaxeManager().isPickaxeBroken(player)) {
+        if (durabilityPercent <= 0.05) {
             return "§c💀 URGENT! Pioche CRITIQUE! Réparez MAINTENANT! (" + percentageStr + ")";
         } else if (durabilityPercent <= 0.10) { // Moins de 10% - critique
             return "§c⚠️ CRITIQUE! Pioche très endommagée! (" + percentageStr + ")";

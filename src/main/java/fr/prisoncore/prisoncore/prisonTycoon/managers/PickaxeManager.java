@@ -324,10 +324,14 @@ public class PickaxeManager {
 
         // Applique Efficacité selon le niveau custom
         int efficiencyLevel = playerData.getEnchantmentLevel("efficiency");
+        Player player = plugin.getServer().getPlayer(playerData.getPlayerId());
         if (efficiencyLevel > 0) {
-            meta.addEnchant(Enchantment.EFFICIENCY, efficiencyLevel, true);
-            plugin.getPluginLogger().debug("Efficacité appliquée niveau " + efficiencyLevel +
-                    " (custom: " + efficiencyLevel + ") pour " + playerData.getPlayerName());
+            if (!isPickaxeBroken(player)) {
+                meta.addEnchant(Enchantment.EFFICIENCY, efficiencyLevel, true);
+            } else {
+                meta.addEnchant(Enchantment.EFFICIENCY, 3, true);
+
+            }
         }
     }
     /**

@@ -517,7 +517,6 @@ public class EnchantmentManager {
         // Désactive l'abondance si elle est active
         if (playerData.isAbundanceActive()) {
             playerData.deactivateAbundance(); // Suppose que cette méthode existe dans PlayerData
-            player.sendActionBar("§c⭐ Abondance désactivée (pioche cassée)");
             changed = true;
 
             plugin.getPluginLogger().info("Abondance forcément désactivée pour " + player.getName() + " (pioche cassée)");
@@ -526,7 +525,6 @@ public class EnchantmentManager {
         // Reset la combustion si elle est active
         if (playerData.getCombustionLevel() > 0) {
             playerData.setCombustionLevel(0);
-            player.sendActionBar("§c🔥 Combustion remise à zéro (pioche cassée)");
             changed = true;
 
             plugin.getPluginLogger().info("Combustion remise à zéro pour " + player.getName() + " (pioche cassée)");
