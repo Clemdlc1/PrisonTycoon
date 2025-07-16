@@ -152,11 +152,7 @@ public class ChatListener implements Listener {
         }
 
         // Vérification du message vide
-        if (message.trim().isEmpty()) {
-            return false;
-        }
-
-        return true;
+        return !message.trim().isEmpty();
     }
 
     /**

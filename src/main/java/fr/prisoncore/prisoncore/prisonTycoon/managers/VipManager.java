@@ -210,7 +210,7 @@ public class VipManager {
         String playerName = player != null ? player.getName() :
                 vipConfig.getString("vips." + uuid + ".playerName", "Inconnu");
 
-        boolean hasPermissionBukkit = player != null ? player.hasPermission("specialmine.vip") : false;
+        boolean hasPermissionBukkit = player != null && player.hasPermission("specialmine.vip");
         boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
         boolean inCache = vipCache.contains(uuid);
 

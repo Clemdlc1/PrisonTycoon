@@ -179,7 +179,6 @@ public class PickaxeProtectionListener implements Listener {
                     event.setCancelled(true);
                     player.sendMessage("§c❌ Vous ne pouvez pas échanger la pioche légendaire!");
                     plugin.getPluginLogger().debug("Échange hotbar avec pioche bloqué");
-                    return;
                 }
             }
         }

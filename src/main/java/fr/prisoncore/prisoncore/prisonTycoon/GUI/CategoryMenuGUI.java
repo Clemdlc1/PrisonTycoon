@@ -259,17 +259,17 @@ public class CategoryMenuGUI {
     private void addEnchantmentEffectPreview(List<String> lore, CustomEnchantment enchantment, int level) {
         switch (enchantment.getName()) {
             case "token_greed" -> {
-                long tokensPerTrigger = level * 5;
+                long tokensPerTrigger = level * 5L;
                 lore.add("§7▸ §6+" + NumberFormatter.format(tokensPerTrigger) + " tokens par déclenchement");
                 lore.add("§7▸ §e5% chance de base par bloc détruit");
             }
             case "exp_greed" -> {
-                long expPerTrigger = level * 50;
+                long expPerTrigger = level * 50L;
                 lore.add("§7▸ §a+" + NumberFormatter.format(expPerTrigger) + " XP par déclenchement");
                 lore.add("§7▸ §e5% chance de base par bloc détruit");
             }
             case "money_greed" -> {
-                long coinsPerTrigger = level * 10;
+                long coinsPerTrigger = level * 10L;
                 lore.add("§7▸ §6+" + NumberFormatter.format(coinsPerTrigger) + " coins par déclenchement");
                 lore.add("§7▸ §e5% chance de base par bloc détruit");
             }

@@ -17,7 +17,7 @@ public class Cristal {
     private final String uuid;
     private final int niveau;
     private final boolean vierge;
-    private CristalType type;
+    private final CristalType type;
 
     /**
      * Constructeur pour cristal vierge

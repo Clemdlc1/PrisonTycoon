@@ -165,12 +165,8 @@ public class ContainerListener implements Listener {
                     if (clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) {
                         event.setCancelled(true);
                         player.sendMessage("§c❌ Vous ne pouvez pas utiliser un conteneur comme filtre!");
-                        return;
                     }
-                    // Autorise le mouvement vers le GUI
-                    return;
                 }
-                return;
             }
         }
     }
@@ -180,7 +176,7 @@ public class ContainerListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
 
@@ -197,7 +193,6 @@ public class ContainerListener implements Listener {
             ItemStack draggedItem = event.getOldCursor();
             if (draggedItem != null && plugin.getContainerManager().isContainer(draggedItem)) {
                 event.setCancelled(true);
-                Player player = (Player) event.getWhoClicked();
                 player.sendMessage("§c❌ Vous ne pouvez pas utiliser un conteneur comme filtre!");
             }
         }

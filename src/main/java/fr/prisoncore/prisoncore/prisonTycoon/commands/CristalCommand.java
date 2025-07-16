@@ -121,12 +121,11 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
      * NOUVEAU: Gère la commande /cristal reg pour régénérer un cristal non vierge en vierge
      */
     private boolean handleRegenerateCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
             return true;
         }
 
-        Player player = (Player) sender;
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
 
         // Vérifier que le joueur a un cristal en main

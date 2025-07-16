@@ -61,7 +61,7 @@ public class PlayerData {
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
     private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
-    private List<SanctionData> sanctionHistory;
+    private final List<SanctionData> sanctionHistory;
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;

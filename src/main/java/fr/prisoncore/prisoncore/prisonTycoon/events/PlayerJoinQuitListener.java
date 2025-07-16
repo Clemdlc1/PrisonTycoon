@@ -73,8 +73,7 @@ public class PlayerJoinQuitListener implements Listener {
 
             // NOUVEAU : Vérifie l'état de la pioche légendaire à la connexion
             ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
-            if (pickaxe != null && pickaxe.getItemMeta() instanceof Damageable) {
-                Damageable meta = (Damageable) pickaxe.getItemMeta();
+            if (pickaxe != null && pickaxe.getItemMeta() instanceof Damageable meta) {
                 short currentDurability = (short) meta.getDamage();
                 short maxDurability = pickaxe.getType().getMaxDurability();
 

@@ -188,7 +188,7 @@ public class PickaxeRepairGUI {
         // Calcul des pourcentages pour l'affichage
         double currentHealthPercent = ((double) (maxDurability - currentDurability) / maxDurability) * 100;
         double newDurability = currentDurability - bestRepairAmount;
-        double newHealthPercent = ((double) (maxDurability - newDurability) / maxDurability) * 100;
+        double newHealthPercent = ((maxDurability - newDurability) / maxDurability) * 100;
         double repairPercent = newHealthPercent - currentHealthPercent;
 
         return new MaxRepairResult(bestRepairAmount, finalCost, repairPercent, newHealthPercent);

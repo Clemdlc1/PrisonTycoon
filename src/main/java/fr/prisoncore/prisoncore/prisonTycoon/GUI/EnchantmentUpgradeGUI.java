@@ -267,20 +267,20 @@ public class EnchantmentUpgradeGUI {
     private void addEffectComparison(List<String> lore, CustomEnchantment enchantment, int fromLevel, int toLevel) {
         switch (enchantment.getName()) {
             case "token_greed" -> {
-                long fromTokens = fromLevel * 5;
-                long toTokens = toLevel * 5;
+                long fromTokens = fromLevel * 5L;
+                long toTokens = toLevel * 5L;
                 lore.add("§7▸ Tokens/Greed: §e" + NumberFormatter.format(fromTokens) +
                         " §7→ §a" + NumberFormatter.format(toTokens));
             }
             case "exp_greed" -> {
-                long fromExp = fromLevel * 50;
-                long toExp = toLevel * 50;
+                long fromExp = fromLevel * 50L;
+                long toExp = toLevel * 50L;
                 lore.add("§7▸ XP/Greed: §e" + NumberFormatter.format(fromExp) +
                         " §7→ §a" + NumberFormatter.format(toExp));
             }
             case "money_greed" -> {
-                long fromCoins = fromLevel * 10;
-                long toCoins = toLevel * 10;
+                long fromCoins = fromLevel * 10L;
+                long toCoins = toLevel * 10L;
                 lore.add("§7▸ Coins/Greed: §e" + NumberFormatter.format(fromCoins) +
                         " §7→ §a" + NumberFormatter.format(toCoins));
             }
@@ -302,8 +302,8 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Gain/bloc: §e+" + fromGain + " §7→ §a+" + toGain + " combustion");
             }
             case "pet_xp" -> {
-                long fromBonus = fromLevel * 10;
-                long toBonus = toLevel * 10;
+                long fromBonus = fromLevel * 10L;
+                long toBonus = toLevel * 10L;
                 lore.add("§7▸ Bonus Pet XP: §e+" + NumberFormatter.format(fromBonus) +
                         " §7→ §a+" + NumberFormatter.format(toBonus));
             }

@@ -133,8 +133,7 @@ public class MiningListener implements Listener {
         }
 
         // APPLIQUER DOMMAGE : Seulement pour les pioches légendaires
-        if (tool.getItemMeta() instanceof Damageable) {
-            Damageable meta = (Damageable) tool.getItemMeta();
+        if (tool.getItemMeta() instanceof Damageable meta) {
             short maxDurability = tool.getType().getMaxDurability();
             short currentDurability = (short) meta.getDamage();
 

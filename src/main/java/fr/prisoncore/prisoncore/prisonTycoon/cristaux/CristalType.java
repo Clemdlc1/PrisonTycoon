@@ -92,8 +92,8 @@ public enum CristalType {
      * Vérifie si ce type peut être appliqué avec un autre type sur la même pioche
      */
     public boolean isCompatibleWith(CristalType other) {
-        if (this == other) return false; // Même type = incompatible
-        return true; // Tous les autres types sont compatibles entre eux
+        return this != other; // Même type = incompatible
+// Tous les autres types sont compatibles entre eux
     }
 
     /**
