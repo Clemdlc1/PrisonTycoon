@@ -1,10 +1,10 @@
 package fr.prisoncore.prisoncore.prisonTycoon;
 
+import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
 import fr.prisoncore.prisoncore.prisonTycoon.commands.*;
 import fr.prisoncore.prisoncore.prisonTycoon.cristaux.CristalBonusHelper;
 import fr.prisoncore.prisoncore.prisonTycoon.enchantments.EnchantmentManager;
 import fr.prisoncore.prisoncore.prisonTycoon.events.*;
-import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
 import fr.prisoncore.prisoncore.prisonTycoon.managers.*;
 import fr.prisoncore.prisoncore.prisonTycoon.tasks.*;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.ChatLogger;

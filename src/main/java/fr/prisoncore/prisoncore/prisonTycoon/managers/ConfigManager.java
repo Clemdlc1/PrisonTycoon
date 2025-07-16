@@ -1,15 +1,17 @@
 package fr.prisoncore.prisoncore.prisonTycoon.managers;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
-import fr.prisoncore.prisoncore.prisonTycoon.data.MineData;
 import fr.prisoncore.prisoncore.prisonTycoon.data.BlockValueData;
+import fr.prisoncore.prisoncore.prisonTycoon.data.MineData;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Gestionnaire de configuration du plugin

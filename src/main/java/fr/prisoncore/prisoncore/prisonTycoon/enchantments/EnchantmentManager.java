@@ -1,8 +1,8 @@
 package fr.prisoncore.prisoncore.prisonTycoon.enchantments;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
-import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.data.BlockValueData;
+import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.NumberFormatter;
 import org.bukkit.Location;
 import org.bukkit.Material;

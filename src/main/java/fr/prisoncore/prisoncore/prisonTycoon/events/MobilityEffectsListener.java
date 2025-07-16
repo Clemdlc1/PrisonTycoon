@@ -1,7 +1,6 @@
 package fr.prisoncore.prisoncore.prisonTycoon.events;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

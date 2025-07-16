@@ -1,10 +1,10 @@
 package fr.prisoncore.prisoncore.prisonTycoon.cristaux;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.NamespacedKey;
 
 import java.util.Arrays;
 import java.util.UUID;
