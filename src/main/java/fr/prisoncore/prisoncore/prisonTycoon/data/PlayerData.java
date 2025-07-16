@@ -71,6 +71,8 @@ public class PlayerData {
     private long lastMinuteBlocksAddedToInventory;
 
     private final Set<String> minePermissions;
+    private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
+    private List<SanctionData> sanctionHistory;
 
 
     // Données thread-safe
@@ -108,6 +110,8 @@ public class PlayerData {
         this.minePermissions = ConcurrentHashMap.newKeySet();
 
         this.pickaxeCristals = new ConcurrentHashMap<>(); // NOUVEAU
+        this.sanctionHistory = new ArrayList<>();
+        this.customPermissions = new HashSet<>(); // NOUVEAU
 
 
         // Reset stats dernière minute
@@ -829,5 +833,107 @@ public class PlayerData {
         synchronized (dataLock) {
             return pickaxeCristals.containsKey(cristalUuid);
         }
+    }
+
+    /**
+     * NOUVEAU: Ajoute une permission custom
+     */
+    public void addPermission(String permission) {
+        customPermissions.add(permission);
+    }
+
+    /**
+     * NOUVEAU: Retire une permission custom
+     */
+    public void removePermission(String permission) {
+        customPermissions.remove(permission);
+    }
+
+    /**
+     * NOUVEAU: Vérifie si a une permission custom
+     */
+    public boolean hasCustomPermission(String permission) {
+        return customPermissions.contains(permission);
+    }
+
+    /**
+     * NOUVEAU: Obtient toutes les permissions custom
+     */
+    public Set<String> getCustomPermissions() {
+        return new HashSet<>(customPermissions);
+    }
+
+    /**
+     * NOUVEAU: Définit toutes les permissions (pour chargement)
+     */
+    public void setCustomPermissions(Set<String> permissions) {
+        this.customPermissions = new HashSet<>(permissions);
+    }
+
+    /**
+     * NOUVEAU: Vérifie si est VIP via permission stockée
+     */
+    public boolean isVip() {
+        return hasCustomPermission("specialmine.vip");
+    }
+
+    /**
+     * NOUVEAU: Définit le statut VIP
+     */
+    public void setVip(boolean vip) {
+        if (vip) {
+            addPermission("specialmine.vip");
+        } else {
+            removePermission("specialmine.vip");
+        }
+    }
+
+    /**
+     * Ajoute une sanction à l'historique
+     */
+    public void addSanction(String type, String reason, String moderator, long startTime, long endTime) {
+        SanctionData sanction = new SanctionData(type, reason, moderator, startTime, endTime);
+        sanctionHistory.add(sanction);
+    }
+
+    /**
+     * Obtient l'historique des sanctions
+     */
+    public List<SanctionData> getSanctionHistory() {
+        return new ArrayList<>(sanctionHistory);
+    }
+
+    /**
+     * Obtient le nombre total de sanctions
+     */
+    public int getTotalSanctions() {
+        return sanctionHistory.size();
+    }
+
+    /**
+     * Classe interne pour représenter une sanction
+     */
+    public static class SanctionData {
+        private final String type; // MUTE, BAN
+        private final String reason;
+        private final String moderator;
+        private final long startTime;
+        private final long endTime;
+
+        public SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+            this.type = type;
+            this.reason = reason;
+            this.moderator = moderator;
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+
+        // Getters
+        public String getType() { return type; }
+        public String getReason() { return reason; }
+        public String getModerator() { return moderator; }
+        public long getStartTime() { return startTime; }
+        public long getEndTime() { return endTime; }
+        public boolean isPermanent() { return endTime == 0; }
     }
 }

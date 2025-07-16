@@ -60,6 +60,8 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             case "remove" -> handleRemoveCommand(sender, args);
             case "list" -> handleListCommand(sender);
             case "check" -> handleCheckCommand(sender, args);
+            case "sync" -> handleSyncCommand(sender);
+            case "syncplayer" -> handleSyncPlayerCommand(sender, args);
             default -> {
                 // Si pas de sous-commande reconnue et qu'il y a un argument, considère comme /vip add <joueur>
                 if (args.length == 1) {
@@ -91,24 +93,30 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
+        // Vérifie si déjà VIP
         if (plugin.getVipManager().isVip(target.getUniqueId())) {
             sender.sendMessage("§c❌ Ce joueur est déjà VIP!");
             return;
         }
 
-        // Ajoute le VIP
+        // NOUVEAU: Ajoute directement avec permission automatique
         plugin.getVipManager().addVip(target.getUniqueId(), target.getName(), sender.getName());
 
-        // Messages
-        sender.sendMessage("§a✅ Joueur " + target.getName() + " ajouté aux VIP avec succès!");
+        // Messages de succès
+        sender.sendMessage("§a✅ Joueur " + target.getName() + " ajouté aux VIP!");
+        sender.sendMessage("§a✅ Permission §especialmine.vip §aaccordée automatiquement!");
 
         if (target.isOnline()) {
-            target.getPlayer().sendMessage("§e🌟 Félicitations ! Vous êtes maintenant VIP!");
-            target.getPlayer().sendMessage("§7Vous pouvez maintenant:");
-            target.getPlayer().sendMessage("§e• Utiliser les couleurs dans le chat (&c, &e, etc.)");
-            target.getPlayer().sendMessage("§e• Afficher vos items avec [hand]");
-            target.getPlayer().sendMessage("§e• Partager votre inventaire avec [inv]");
-            target.getPlayer().sendMessage("§e• Utiliser /invsee pour voir les inventaires");
+            Player onlineTarget = target.getPlayer();
+            onlineTarget.sendMessage("§e🌟 Félicitations ! Vous êtes maintenant VIP!");
+            onlineTarget.sendMessage("§7Vous pouvez maintenant:");
+            onlineTarget.sendMessage("§e• Utiliser les couleurs dans le chat (&c, &e, etc.)");
+            onlineTarget.sendMessage("§e• Afficher vos items avec [hand]");
+            onlineTarget.sendMessage("§e• Partager votre inventaire avec [inv]");
+            onlineTarget.sendMessage("§e• Utiliser /invsee pour voir les inventaires");
+
+            // Force la synchronisation immédiate pour le joueur en ligne
+            plugin.getVipManager().forcePlayerSync(onlineTarget);
         }
 
         // Annonce aux admins
@@ -118,16 +126,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Commande directe /vip <joueur> (équivalent à /vip add <joueur>)
-     */
-    private void handleDirectAddCommand(CommandSender sender, String playerName) {
-        String[] newArgs = {"add", playerName};
-        handleAddCommand(sender, newArgs);
-    }
-
-    /**
-     * Retire un joueur VIP
-     * Usage: /vip remove <joueur>
+     * NOUVEAU: Retire un joueur VIP (permission automatique)
      */
     private void handleRemoveCommand(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -143,25 +142,39 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
+        // Vérifie si est VIP
         if (!plugin.getVipManager().isVip(target.getUniqueId())) {
             sender.sendMessage("§c❌ Ce joueur n'est pas VIP!");
             return;
         }
 
-        // Retire le VIP
+        // NOUVEAU: Retire directement avec permission automatique
         plugin.getVipManager().removeVip(target.getUniqueId(), sender.getName());
 
-        // Messages
-        sender.sendMessage("§a✅ Joueur " + target.getName() + " retiré des VIP avec succès!");
+        // Messages de succès
+        sender.sendMessage("§a✅ Joueur " + target.getName() + " retiré des VIP!");
+        sender.sendMessage("§a✅ Permission §especialmine.vip §cretirée automatiquement!");
 
         if (target.isOnline()) {
-            target.getPlayer().sendMessage("§c❌ Votre grade VIP vous a été retiré.");
+            Player onlineTarget = target.getPlayer();
+            onlineTarget.sendMessage("§c❌ Votre grade VIP vous a été retiré.");
+
+            // Force la synchronisation immédiate pour le joueur en ligne
+            plugin.getVipManager().forcePlayerSync(onlineTarget);
         }
 
         // Annonce aux admins
         broadcastToAdmins("§7[ADMIN] §e" + sender.getName() + " §7a retiré le grade VIP à §c" + target.getName(), sender);
 
         plugin.getPluginLogger().info("VIP retiré: " + target.getName() + " par " + sender.getName());
+    }
+
+    /**
+     * Commande directe /vip <joueur> (équivalent à /vip add <joueur>)
+     */
+    private void handleDirectAddCommand(CommandSender sender, String playerName) {
+        String[] newArgs = {"add", playerName};
+        handleAddCommand(sender, newArgs);
     }
 
     /**
@@ -222,23 +235,36 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        boolean isVip = plugin.getVipManager().isVip(target.getUniqueId());
-
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        sender.sendMessage("§6§l🔍 STATUT VIP - " + target.getName().toUpperCase());
+        sender.sendMessage("§6§l🔍 STATUT VIP DÉTAILLÉ - " + target.getName().toUpperCase());
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        if (isVip) {
-            var vipData = plugin.getVipManager().getVipData(target.getUniqueId());
-            sender.sendMessage("§a✅ Ce joueur est VIP");
+        String statusDetails = plugin.getVipManager().getVipStatusDetailed(target.getUniqueId());
+        sender.sendMessage(statusDetails);
 
-            if (vipData != null) {
-                String timeAgo = formatTimeAgo(System.currentTimeMillis() - vipData.getAddedAt());
-                sender.sendMessage("§7• Ajouté par: §e" + vipData.getAddedBy());
-                sender.sendMessage("§7• Depuis: §e" + timeAgo);
+        if (target.isOnline()) {
+            Player onlineTarget = target.getPlayer();
+            boolean isConsistent = plugin.getVipManager().checkVipConsistency(onlineTarget);
+
+            sender.sendMessage("§7Cohérence: " + (isConsistent ? "§a✅ OK" : "§c❌ PROBLÈME"));
+
+            if (!isConsistent) {
+                sender.sendMessage("§c⚠️ Incohérence détectée!");
+                sender.sendMessage("§7Utilisez §e/vip sync §7pour corriger");
             }
+
+            // Affiche les permissions actives Bukkit
+            boolean hasVipPermission = onlineTarget.hasPermission("specialmine.vip");
+            sender.sendMessage("§7Test hasPermission: " + (hasVipPermission ? "§a✅ VIP" : "§c❌ Pas VIP"));
         } else {
-            sender.sendMessage("§c❌ Ce joueur n'est pas VIP");
+            sender.sendMessage("§7Statut: §7Hors ligne (impossible de vérifier permissions Bukkit)");
+        }
+
+        var vipData = plugin.getVipManager().getVipData(target.getUniqueId());
+        if (vipData != null) {
+            String timeAgo = formatTimeAgo(System.currentTimeMillis() - vipData.getAddedAt());
+            sender.sendMessage("§7Ajouté par: §e" + vipData.getAddedBy());
+            sender.sendMessage("§7Date: §e" + timeAgo + " ago");
         }
 
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -275,19 +301,65 @@ public class VipCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
+     * NOUVEAU: Synchronise le cache avec les permissions
+     */
+    private void handleSyncCommand(CommandSender sender) {
+        sender.sendMessage("§e🔄 Synchronisation complète des données VIP...");
+
+        plugin.getVipManager().syncAllVipData();
+
+        sender.sendMessage("§a✅ Synchronisation terminée!");
+        sender.sendMessage("§7Vérifiez les logs pour les détails des corrections.");
+
+        // Affiche un résumé
+        int onlineVips = 0;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.hasPermission("specialmine.vip")) {
+                onlineVips++;
+            }
+        }
+
+        sender.sendMessage("§7VIP en ligne: §e" + onlineVips + " §7joueurs");
+    }
+
+    /**
+     * NOUVEAU: Force la synchronisation d'un joueur spécifique
+     */
+    private void handleSyncPlayerCommand(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§c❌ Usage: /vip syncplayer <joueur>");
+            return;
+        }
+
+        String playerName = args[1];
+        Player target = Bukkit.getPlayer(playerName);
+
+        if (target == null) {
+            sender.sendMessage("§c❌ Joueur introuvable ou hors ligne: " + playerName);
+            return;
+        }
+
+        sender.sendMessage("§e🔄 Synchronisation de " + target.getName() + "...");
+        plugin.getVipManager().forcePlayerSync(target);
+        sender.sendMessage("§a✅ Synchronisation terminée pour " + target.getName() + "!");
+    }
+
+    /**
      * Affiche l'aide de la commande
      */
     private void sendHelpMessage(CommandSender sender) {
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         sender.sendMessage("§6§l🌟 COMMANDES VIP");
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        sender.sendMessage("§e/vip <joueur> §7- Donne le grade VIP à un joueur");
-        sender.sendMessage("§e/vip add <joueur> §7- Donne le grade VIP à un joueur");
-        sender.sendMessage("§e/vip remove <joueur> §7- Retire le grade VIP à un joueur");
+        sender.sendMessage("§e/vip add <joueur> §7- Ajoute un VIP (permission automatique)");
+        sender.sendMessage("§e/vip remove <joueur> §7- Retire un VIP (permission automatique)");
         sender.sendMessage("§e/vip list §7- Liste tous les VIP");
-        sender.sendMessage("§e/vip check <joueur> §7- Vérifie le statut VIP d'un joueur");
+        sender.sendMessage("§e/vip check <joueur> §7- Statut VIP détaillé + cohérence");
+        sender.sendMessage("§e/vip sync §7- Synchronise toutes les données VIP");
+        sender.sendMessage("§e/vip syncplayer <joueur> §7- Synchronise un joueur spécifique");
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        sender.sendMessage("§7Avantages VIP: couleurs chat, [hand], [inv], /invsee");
+        sender.sendMessage("§a✅ Permissions gérées automatiquement par le plugin!");
+        sender.sendMessage("§7player.hasPermission(\"specialmine.vip\") fonctionne directement");
     }
 
     @Override
@@ -299,7 +371,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("add", "remove", "list", "check");
+            List<String> subCommands = Arrays.asList("add", "remove", "list", "check", "sync", "syncplayer");
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
 
             // Ajoute aussi les noms de joueurs pour la commande directe
@@ -308,7 +380,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("remove") ||
-                    args[0].equalsIgnoreCase("check")) {
+                    args[0].equalsIgnoreCase("check") || args[0].equalsIgnoreCase("syncplayer")) {
                 // Suggestions de noms de joueurs
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     completions.add(player.getName());

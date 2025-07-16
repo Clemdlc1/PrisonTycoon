@@ -35,6 +35,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private ModerationManager moderationManager;
     private VipManager vipManager;
     private InvseeCommand invseeCommand;
+    private PermissionManager permissionManager;
+
 
     private Logger logger;
 
@@ -181,6 +183,8 @@ public final class PrisonTycoon extends JavaPlugin {
         tabManager = new TabManager(this);
         moderationManager = new ModerationManager(this);
         vipManager = new VipManager(this);
+        permissionManager = new PermissionManager(this); // NOUVEAU !
+
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
@@ -375,6 +379,9 @@ public final class PrisonTycoon extends JavaPlugin {
             moderationManager.cleanupExpiredSanctions();
             logger.info("§7ModerationManager nettoyé");
         }
+        if (permissionManager != null) {
+            permissionManager.cleanup();
+        }
     }
 
     // Getters pour accès aux managers
@@ -510,6 +517,9 @@ public final class PrisonTycoon extends JavaPlugin {
      */
     public VipManager getVipManager() {
         return vipManager;
+    }
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
     }
 }
 

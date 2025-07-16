@@ -156,6 +156,26 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("custom-permissions")) {
+                List<String> permissions = config.getStringList("custom-permissions");
+                Set<String> permissionSet = new HashSet<>(permissions);
+                data.setCustomPermissions(permissionSet);
+            }
+
+            // NOUVEAU: Historique des sanctions
+            if (config.contains("sanctions")) {
+                for (String sanctionId : config.getConfigurationSection("sanctions").getKeys(false)) {
+                    String path = "sanctions." + sanctionId + ".";
+                    String type = config.getString(path + "type");
+                    String reason = config.getString(path + "reason");
+                    String moderator = config.getString(path + "moderator");
+                    long startTime = config.getLong(path + "startTime");
+                    long endTime = config.getLong(path + "endTime");
+
+                    data.addSanction(type, reason, moderator, startTime, endTime);
+                }
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -242,6 +262,25 @@ public class PlayerDataManager {
                 for (Map.Entry<String, String> entry : pickaxeCristals.entrySet()) {
                     config.set("pickaxe-cristals." + entry.getKey(), entry.getValue());
                 }
+            }
+
+            // NOUVEAU: Historique des sanctions
+            List<PlayerData.SanctionData> sanctions = data.getSanctionHistory();
+            if (!sanctions.isEmpty()) {
+                for (int i = 0; i < sanctions.size(); i++) {
+                    PlayerData.SanctionData sanction = sanctions.get(i);
+                    String path = "sanctions." + i + ".";
+                    config.set(path + "type", sanction.getType());
+                    config.set(path + "reason", sanction.getReason());
+                    config.set(path + "moderator", sanction.getModerator());
+                    config.set(path + "startTime", sanction.getStartTime());
+                    config.set(path + "endTime", sanction.getEndTime());
+                }
+            }
+
+            Set<String> permissions = data.getCustomPermissions();
+            if (!permissions.isEmpty()) {
+                config.set("custom-permissions", new ArrayList<>(permissions));
             }
 
             // Statistiques complètes
@@ -454,5 +493,58 @@ public class PlayerDataManager {
         if (removedCount > 0) {
             plugin.getPluginLogger().info("§7Cache nettoyé: " + removedCount + " joueurs hors ligne retirés.");
         }
+    }
+
+    /**
+     * Ajoute une sanction à l'historique d'un joueur
+     */
+    public void addSanctionToPlayer(UUID playerId, String type, String reason, String moderator, long startTime, long endTime) {
+        PlayerData data = getPlayerData(playerId);
+        data.addSanction(type, reason, moderator, startTime, endTime);
+        markDirty(playerId);
+
+        plugin.getPluginLogger().info("Sanction ajoutée à " + data.getPlayerName() + ": " + type + " par " + moderator);
+    }
+
+    /**
+     * NOUVEAU: Ajoute une permission à un joueur
+     */
+    public void addPermissionToPlayer(UUID playerId, String permission) {
+        PlayerData data = getPlayerData(playerId);
+        data.addPermission(permission);
+        markDirty(playerId);
+
+        // Applique immédiatement si le joueur est en ligne
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player != null && player.isOnline()) {
+            plugin.getPermissionManager().attachPermission(player, permission);
+        }
+
+        plugin.getPluginLogger().info("Permission ajoutée à " + data.getPlayerName() + ": " + permission);
+    }
+
+    /**
+     * NOUVEAU: Retire une permission à un joueur
+     */
+    public void removePermissionFromPlayer(UUID playerId, String permission) {
+        PlayerData data = getPlayerData(playerId);
+        data.removePermission(permission);
+        markDirty(playerId);
+
+        // Retire immédiatement si le joueur est en ligne
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player != null && player.isOnline()) {
+            plugin.getPermissionManager().detachPermission(player, permission);
+        }
+
+        plugin.getPluginLogger().info("Permission retirée de " + data.getPlayerName() + ": " + permission);
+    }
+
+    /**
+     * NOUVEAU: Vérifie si un joueur a une permission custom
+     */
+    public boolean hasPlayerPermission(UUID playerId, String permission) {
+        PlayerData data = getPlayerData(playerId);
+        return data.hasCustomPermission(permission);
     }
 }

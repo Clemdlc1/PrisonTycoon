@@ -1,8 +1,10 @@
 package fr.prisoncore.prisoncore.prisonTycoon.managers;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.data.PlayerData;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
@@ -115,13 +117,13 @@ public class ModerationManager {
     }
 
     /**
-     * Mute un joueur
+     * CORRIGÉ: Mute un joueur avec enregistrement dans PlayerData
      */
     public void mutePlayer(UUID uuid, String playerName, long endTime, String reason, String moderator) {
         ModerationData muteData = new ModerationData(uuid, playerName, endTime, reason, moderator, System.currentTimeMillis());
         muteCache.put(uuid, muteData);
 
-        // Sauvegarde dans le fichier
+        // Sauvegarde dans le fichier de modération
         String path = "mutes." + uuid + ".";
         moderationConfig.set(path + "playerName", playerName);
         moderationConfig.set(path + "endTime", endTime);
@@ -130,6 +132,13 @@ public class ModerationManager {
         moderationConfig.set(path + "startTime", muteData.getStartTime());
 
         saveModeration();
+
+        // NOUVEAU: Ajoute aussi à l'historique du joueur
+        plugin.getPlayerDataManager().addSanctionToPlayer(
+                uuid, "MUTE", reason, moderator, muteData.getStartTime(), endTime
+        );
+
+        plugin.getPluginLogger().info("Joueur muté: " + playerName + " par " + moderator + " (ajouté à l'historique)");
     }
 
     /**
@@ -144,13 +153,13 @@ public class ModerationManager {
     }
 
     /**
-     * Ban un joueur
+     * CORRIGÉ: Ban un joueur avec enregistrement dans PlayerData
      */
     public void banPlayer(UUID uuid, String playerName, long endTime, String reason, String moderator) {
         ModerationData banData = new ModerationData(uuid, playerName, endTime, reason, moderator, System.currentTimeMillis());
         banCache.put(uuid, banData);
 
-        // Sauvegarde dans le fichier
+        // Sauvegarde dans le fichier de modération
         String path = "bans." + uuid + ".";
         moderationConfig.set(path + "playerName", playerName);
         moderationConfig.set(path + "endTime", endTime);
@@ -159,6 +168,13 @@ public class ModerationManager {
         moderationConfig.set(path + "startTime", banData.getStartTime());
 
         saveModeration();
+
+        // NOUVEAU: Ajoute aussi à l'historique du joueur
+        plugin.getPlayerDataManager().addSanctionToPlayer(
+                uuid, "BAN", reason, moderator, banData.getStartTime(), endTime
+        );
+
+        plugin.getPluginLogger().info("Joueur banni: " + playerName + " par " + moderator + " (ajouté à l'historique)");
     }
 
     /**
@@ -291,6 +307,20 @@ public class ModerationManager {
             saveModeration();
             plugin.getPluginLogger().info("Nettoyage automatique: " + cleanedMutes + " mutes et " + cleanedBans + " bans expirés supprimés");
         }
+    }
+
+    /**
+     * NOUVEAU: Obtient l'historique complet des sanctions d'un joueur
+     */
+    public List<PlayerData.SanctionData> getPlayerSanctionHistory(UUID uuid) {
+        return plugin.getPlayerDataManager().getPlayerData(uuid).getSanctionHistory();
+    }
+
+    /**
+     * NOUVEAU: Obtient le nombre total de sanctions d'un joueur
+     */
+    public int getPlayerTotalSanctions(UUID uuid) {
+        return plugin.getPlayerDataManager().getPlayerData(uuid).getTotalSanctions();
     }
 
     /**

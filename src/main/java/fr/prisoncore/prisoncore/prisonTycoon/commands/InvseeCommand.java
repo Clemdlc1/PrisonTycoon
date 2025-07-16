@@ -48,7 +48,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
 
         // Vérifie les permissions
         boolean isAdmin = player.hasPermission("specialmine.admin");
-        boolean isVip = player.hasPermission("specialmine.vip") || plugin.getVipManager().isVip(player.getUniqueId());
+        boolean isVip = player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
 
         if (!isAdmin && !isVip) {
             player.sendMessage("§c❌ Vous devez être VIP ou Admin pour utiliser cette commande!");

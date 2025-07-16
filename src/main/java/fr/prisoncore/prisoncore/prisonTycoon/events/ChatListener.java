@@ -194,7 +194,7 @@ public class ChatListener implements Listener {
     }
 
     /**
-     * Traite le message (couleurs, [hand], [inv], etc.)
+     * CORRIGÉ: Traite le message (couleurs, [hand], [inv], etc.)
      */
     private String processMessage(Player player, String message) {
         // Vérifie les permissions pour les couleurs
@@ -207,6 +207,27 @@ public class ChatListener implements Listener {
             message = ChatColor.translateAlternateColorCodes('&', message);
         }
 
+        // NOUVEAU: Vérifie si le message ne contient QUE des placeholders
+        String trimmedMessage = message.trim();
+        if (trimmedMessage.equals("[hand]") || trimmedMessage.equals("[inv]") ||
+                (trimmedMessage.contains("[hand]") && trimmedMessage.contains("[inv]") &&
+                        trimmedMessage.replaceAll("\\[hand\\]|\\[inv\\]", "").trim().isEmpty())) {
+
+            // Ajoute un texte par défaut pour éviter un message vide
+            if (trimmedMessage.equals("[hand]")) {
+                message = "Regarde mon objet: [hand]";
+            } else if (trimmedMessage.equals("[inv]")) {
+                message = "Voir mon inventaire: [inv]";
+            } else {
+                message = "Mon stuff: [hand] [inv]";
+            }
+
+            // Applique les couleurs après modification
+            if (canUseColors) {
+                message = ChatColor.translateAlternateColorCodes('&', message);
+            }
+        }
+
         return message;
     }
 
@@ -216,7 +237,7 @@ public class ChatListener implements Listener {
     private String[] getPlayerTypeAndColors(Player player) {
         if (player.hasPermission("specialmine.admin")) {
             return new String[]{"ADMIN", "§4"};
-        } else if (player.hasPermission("specialmine.vip") || plugin.getVipManager().isVip(player.getUniqueId())) {
+        } else if (player.hasPermission("specialmine.vip")) {
             return new String[]{"VIP", "§e"};
         } else {
             return new String[]{"", "§7"};
@@ -224,7 +245,7 @@ public class ChatListener implements Listener {
     }
 
     /**
-     * Crée le message formaté avec support pour [hand] et [inv]
+     * CORRIGÉ: Crée le message formaté avec support amélioré pour [hand] et [inv]
      */
     private TextComponent createFormattedMessage(Player player, String playerTypeColor, String playerType,
                                                  String mineRankColor, String mineRank, String processedMessage) {
@@ -233,36 +254,123 @@ public class ChatListener implements Listener {
 
         // Ajoute le préfixe du joueur
         TextComponent prefix = new TextComponent();
-
         if (!playerType.isEmpty()) {
             prefix.addExtra(new TextComponent(playerTypeColor + "[" + playerType + "] "));
         }
         prefix.addExtra(new TextComponent(mineRankColor + "[" + mineRank + "] "));
         prefix.addExtra(new TextComponent(playerTypeColor + player.getName() + " §f: "));
-
         finalMessage.addExtra(prefix);
 
-        // Traite le message pour [hand] et [inv]
-        String[] parts = processedMessage.split("\\[hand\\]|\\[inv\\]");
-        String[] placeholders = extractPlaceholders(processedMessage);
+        // NOUVEAU: Traitement amélioré des placeholders
+        if (processedMessage.contains("[hand]") || processedMessage.contains("[inv]")) {
+            // Vérifie les permissions pour les placeholders spéciaux
+            boolean canUseSpecialPlaceholders = player.hasPermission("specialmine.chat.hand") ||
+                    player.hasPermission("specialmine.chat.inv") ||
+                    player.hasPermission("specialmine.vip") ||
+                    player.hasPermission("specialmine.admin");
 
-        for (int i = 0; i < parts.length; i++) {
-            // Ajoute la partie de texte normale
-            if (!parts[i].isEmpty()) {
-                finalMessage.addExtra(new TextComponent(parts[i]));
+            if (!canUseSpecialPlaceholders) {
+                // Si pas de permission, retire les placeholders
+                processedMessage = processedMessage.replaceAll("\\[hand\\]", "§c[PERMISSION REQUISE]");
+                processedMessage = processedMessage.replaceAll("\\[inv\\]", "§c[PERMISSION REQUISE]");
+                finalMessage.addExtra(new TextComponent(processedMessage));
+                return finalMessage;
             }
 
-            // Ajoute le placeholder si il existe
-            if (i < placeholders.length) {
-                if (placeholders[i].equals("[hand]")) {
-                    finalMessage.addExtra(createHandComponent(player));
-                } else if (placeholders[i].equals("[inv]")) {
-                    finalMessage.addExtra(createInventoryComponent(player));
+            // Traite le message partie par partie
+            String[] segments = processedMessage.split("(\\[hand\\]|\\[inv\\])");
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[hand\\]|\\[inv\\]");
+            java.util.regex.Matcher matcher = pattern.matcher(processedMessage);
+
+            int segmentIndex = 0;
+            int lastEnd = 0;
+
+            while (matcher.find()) {
+                // Ajoute le texte avant le placeholder
+                String beforePlaceholder = processedMessage.substring(lastEnd, matcher.start());
+                if (!beforePlaceholder.isEmpty()) {
+                    finalMessage.addExtra(new TextComponent(beforePlaceholder));
                 }
+
+                String placeholder = matcher.group();
+
+                if (placeholder.equals("[hand]")) {
+                    // Crée le composant pour [hand]
+                    ItemStack handItem = player.getInventory().getItemInMainHand();
+                    TextComponent handComponent = createHandComponent(handItem);
+                    finalMessage.addExtra(handComponent);
+
+                } else if (placeholder.equals("[inv]")) {
+                    // Crée le composant pour [inv]
+                    TextComponent invComponent = createInventoryComponent(player);
+                    finalMessage.addExtra(invComponent);
+                }
+
+                lastEnd = matcher.end();
             }
+
+            // Ajoute le texte restant après le dernier placeholder
+            String remaining = processedMessage.substring(lastEnd);
+            if (!remaining.isEmpty()) {
+                finalMessage.addExtra(new TextComponent(remaining));
+            }
+
+        } else {
+            // Pas de placeholders spéciaux, ajoute le message tel quel
+            finalMessage.addExtra(new TextComponent(processedMessage));
         }
 
         return finalMessage;
+    }
+
+    /**
+     * NOUVEAU: Crée le composant pour [hand]
+     */
+    private TextComponent createHandComponent(ItemStack item) {
+        TextComponent handComponent = new TextComponent("§e[MAIN]");
+
+        if (item == null || item.getType() == Material.AIR) {
+            handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    new TextComponent[]{new TextComponent("§cAucun objet en main")}));
+            return handComponent;
+        }
+
+        // Construit l'hover text
+        StringBuilder hoverText = new StringBuilder();
+        hoverText.append("§f").append(item.getAmount()).append("x ");
+
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            hoverText.append(item.getItemMeta().getDisplayName());
+        } else {
+            hoverText.append("§f").append(item.getType().name().toLowerCase().replace("_", " "));
+        }
+
+        if (item.hasItemMeta() && item.getItemMeta().hasLore()) {
+            hoverText.append("\n\n");
+            for (String loreLine : item.getItemMeta().getLore()) {
+                hoverText.append(loreLine).append("\n");
+            }
+        }
+
+        handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM,
+                new TextComponent[]{new TextComponent(item.toString())}));
+
+        return handComponent;
+    }
+
+    /**
+     * NOUVEAU: Crée le composant pour [inv]
+     */
+    private TextComponent createInventoryComponent(Player player) {
+        TextComponent invComponent = new TextComponent("§b[INVENTAIRE]");
+
+        invComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                new TextComponent[]{new TextComponent("§7Cliquez pour voir l'inventaire de " + player.getName())}));
+
+        invComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                "/invsee " + player.getName()));
+
+        return invComponent;
     }
 
     /**
@@ -294,61 +402,6 @@ public class ChatListener implements Listener {
         }
 
         return placeholders.toArray(new String[0]);
-    }
-
-    /**
-     * Crée un composant pour afficher l'item en main
-     */
-    private TextComponent createHandComponent(Player player) {
-        ItemStack item = player.getInventory().getItemInMainHand();
-
-        if (item == null || item.getType() == Material.AIR) {
-            TextComponent component = new TextComponent("§7[Aucun item]");
-            component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new TextComponent[]{new TextComponent("§7Le joueur n'a aucun item en main")}));
-            return component;
-        }
-
-        String itemName = getItemDisplayName(item);
-        TextComponent component = new TextComponent("§e[" + itemName + "]");
-
-        // Crée le texte de survol détaillé
-        StringBuilder hoverText = new StringBuilder();
-        hoverText.append("§e").append(itemName);
-
-        if (item.getAmount() > 1) {
-            hoverText.append(" §7x").append(item.getAmount());
-        }
-
-        if (item.hasItemMeta()) {
-            ItemMeta meta = item.getItemMeta();
-            if (meta.hasLore()) {
-                hoverText.append("\n");
-                for (String lore : meta.getLore()) {
-                    hoverText.append("\n§7").append(lore);
-                }
-            }
-        }
-
-        component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                new TextComponent[]{new TextComponent(hoverText.toString())}));
-
-        return component;
-    }
-
-    /**
-     * Crée un composant cliquable pour afficher l'inventaire
-     */
-    private TextComponent createInventoryComponent(Player player) {
-        TextComponent component = new TextComponent("§b[§l⚔ Inventaire§b]");
-
-        component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                new TextComponent[]{new TextComponent("§bCliquez pour voir l'inventaire de " + player.getName())}));
-
-        component.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                "/invsee " + player.getName()));
-
-        return component;
     }
 
     /**
