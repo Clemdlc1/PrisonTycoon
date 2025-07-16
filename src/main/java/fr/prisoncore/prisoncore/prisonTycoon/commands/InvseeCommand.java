@@ -48,7 +48,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
 
         // Vérifie les permissions
         boolean isAdmin = player.hasPermission("specialmine.admin");
-        boolean isVip = player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
+        boolean isVip = player.hasPermission("specialmine.vip");
 
         if (!isAdmin && !isVip) {
             player.sendMessage("§c❌ Vous devez être VIP ou Admin pour utiliser cette commande!");
@@ -82,11 +82,11 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
      * Ouvre une vue de l'inventaire du joueur cible
      */
     private void openInventoryView(Player viewer, Player target, boolean canModify) {
-        // Crée un inventaire personnalisé pour afficher tout l'équipement
-        Inventory inv = Bukkit.createInventory(null, 54,
+        // Crée un inventaire 6 lignes pour afficher TOUT l'équipement
+        Inventory inv = Bukkit.createInventory(null, 45,
                 "§8Inventaire de " + target.getName() + (canModify ? "" : " §c(Lecture seule)"));
 
-        // Copie l'inventaire principal (slots 0-35)
+        // === INVENTAIRE PRINCIPAL (slots 0-35) ===
         ItemStack[] contents = target.getInventory().getContents();
         for (int i = 0; i < Math.min(contents.length, 36); i++) {
             if (i < 36) {
@@ -94,31 +94,32 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
             }
         }
 
-        // Ajoute l'armure dans les slots 36-39
+        // === ÉQUIPEMENT D'ARMURE (slots 36-39) ===
         ItemStack[] armor = target.getInventory().getArmorContents();
-        for (int i = 0; i < armor.length; i++) {
-            inv.setItem(36 + i, armor[i]);
+        // armor[0] = bottes, armor[1] = jambières, armor[2] = plastron, armor[3] = casque
+        if (armor.length >= 4) {
+            inv.setItem(36, armor[3]); // Casque
+            inv.setItem(37, armor[2]); // Plastron
+            inv.setItem(38, armor[1]); // Jambières
+            inv.setItem(39, armor[0]); // Bottes
         }
 
-        // Ajoute l'item de la main secondaire au slot 40
+        // === MAIN SECONDAIRE (slot 40) ===
         ItemStack offHand = target.getInventory().getItemInOffHand();
         if (offHand != null && offHand.getType() != Material.AIR) {
             inv.setItem(40, offHand);
         }
 
-        // Ajoute des séparateurs visuels
+        // === SÉPARATEURS VISUELS ===
         ItemStack separator = createSeparatorItem();
         for (int i = 41; i < 45; i++) {
             inv.setItem(i, separator);
         }
 
-        // Ajoute des items d'information
-        inv.setItem(45, createInfoItem("§6§lInventaire Principal", "§7Slots 0-35"));
-        inv.setItem(46, createInfoItem("§c§lArmure", "§7Casque, Plastron, Jambières, Bottes"));
-        inv.setItem(47, createInfoItem("§e§lMain Secondaire", "§7Item de la main gauche"));
-
-        // Item de fermeture
-        inv.setItem(53, createCloseItem());
+        // === PERMISSIONS ET BOUTONS ===
+        if (canModify) {
+            inv.setItem(45, createAdminActionsItem());
+        }
 
         // Marque la relation viewer -> target
         viewingPlayers.put(viewer.getUniqueId(), target.getUniqueId());
@@ -131,13 +132,15 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
         // Ouvre l'inventaire
         viewer.openInventory(inv);
 
-        // Messages
+        // Messages améliorés
         viewer.sendMessage("§a👁 Vous regardez l'inventaire de §e" + target.getName());
-        if (!canModify) {
-            viewer.sendMessage("§7Mode lecture seule - vous ne pouvez pas modifier le contenu");
+        if (canModify) {
+            viewer.sendMessage("§a⚙ Mode administrateur - vous pouvez modifier le contenu");
+        } else {
+            viewer.sendMessage("§7👀 Mode lecture seule - vous ne pouvez pas modifier le contenu");
         }
 
-        // Log l'action
+        // Log l'action avec plus de détails
         plugin.getChatLogger().logAdminAction(viewer.getName(), "INVSEE", target.getName(),
                 canModify ? "Consultation avec modification" : "Consultation lecture seule");
     }
@@ -153,26 +156,15 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
         return item;
     }
 
-    /**
-     * Crée un item d'information
-     */
-    private ItemStack createInfoItem(String title, String description) {
-        ItemStack item = new ItemStack(Material.BOOK);
+    private ItemStack createAdminActionsItem() {
+        ItemStack item = new ItemStack(Material.COMMAND_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(title);
-        meta.setLore(Arrays.asList("§7" + description));
-        item.setItemMeta(meta);
-        return item;
-    }
-
-    /**
-     * Crée un item de fermeture
-     */
-    private ItemStack createCloseItem() {
-        ItemStack item = new ItemStack(Material.BARRIER);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c§lFermer");
-        meta.setLore(Arrays.asList("§7Cliquez pour fermer cette fenêtre"));
+        meta.setDisplayName("§c§l⚙ Actions Admin");
+        meta.setLore(Arrays.asList(
+                "§7Vous êtes en mode administrateur",
+                "§7Vous pouvez modifier cet inventaire",
+                "§c⚠ Soyez prudent avec les modifications!"
+        ));
         item.setItemMeta(meta);
         return item;
     }
@@ -200,41 +192,35 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
 
         int slot = event.getRawSlot();
 
-        // Bloque les clics sur les items d'interface (41+)
-        if (slot >= 41) {
-            event.setCancelled(true);
-
-            // Gère le clic sur fermer
-            if (slot == 53) {
-                player.closeInventory();
-            }
-            return;
-        }
-
         // Si c'est en lecture seule, bloque toutes les modifications
         if (readOnlyViewers.containsKey(viewerUuid)) {
             event.setCancelled(true);
-            if (slot < 40) { // Seulement pour les slots d'items
+            if (slot < 41) { // Seulement pour les slots d'items
                 player.sendMessage("§c❌ Mode lecture seule - vous ne pouvez pas modifier l'inventaire!");
             }
             return;
         }
 
-        // Pour les admins, permet la modification
+        // Pour les admins, permet la modification avec synchronisation
         if (slot < 36) {
             // Modification de l'inventaire principal
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 syncInventorySlot(target, slot, event.getInventory().getItem(slot));
+                player.sendMessage("§a✅ Slot " + slot + " modifié pour " + target.getName());
             }, 1L);
+
         } else if (slot >= 36 && slot < 40) {
             // Modification de l'armure
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 syncArmorSlot(target, slot - 36, event.getInventory().getItem(slot));
+                player.sendMessage("§a✅ Équipement modifié pour " + target.getName());
             }, 1L);
+
         } else if (slot == 40) {
             // Modification de la main secondaire
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 target.getInventory().setItemInOffHand(event.getInventory().getItem(slot));
+                player.sendMessage("§a✅ Main secondaire modifiée pour " + target.getName());
             }, 1L);
         }
     }
@@ -275,30 +261,6 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
                 target.sendMessage("§7⚠ Votre inventaire a été consulté par un administrateur");
             }
         }
-    }
-
-    /**
-     * Nettoie les données quand un joueur se déconnecte
-     */
-    public void onPlayerQuit(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Si quelqu'un regarde l'inventaire de ce joueur, ferme sa vue
-        viewingPlayers.entrySet().removeIf(entry -> {
-            if (entry.getValue().equals(uuid)) {
-                Player viewer = Bukkit.getPlayer(entry.getKey());
-                if (viewer != null && viewer.isOnline()) {
-                    viewer.closeInventory();
-                    viewer.sendMessage("§c❌ Le joueur dont vous regardiez l'inventaire s'est déconnecté!");
-                }
-                return true;
-            }
-            return false;
-        });
-
-        // Si ce joueur regardait l'inventaire de quelqu'un, nettoie
-        viewingPlayers.remove(uuid);
-        readOnlyViewers.remove(uuid);
     }
 
     @Override

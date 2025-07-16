@@ -14,7 +14,6 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,10 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ChatListener implements Listener {
 
-    private final PrisonTycoon plugin;
-
     // Anti-spam
     private static final long SPAM_DELAY = 2000; // 2 secondes entre les messages
+    private final PrisonTycoon plugin;
     private final Map<UUID, String> lastMessages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastMessageTimes = new ConcurrentHashMap<>();
 
@@ -77,8 +75,8 @@ public class ChatListener implements Listener {
 
         // Récupère le rang de mine et sa couleur
         String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
-        String mineRank = rankInfo[0];
-        String mineRankColor = rankInfo[1];
+        String mineRank = rankInfo[3];
+        String mineRankColor = rankInfo[4];
 
         // Crée le message formaté
         TextComponent formattedMessage = createFormattedMessage(player, playerTypeColor, playerType,
@@ -235,13 +233,10 @@ public class ChatListener implements Listener {
      * Détermine le type de joueur et ses couleurs
      */
     private String[] getPlayerTypeAndColors(Player player) {
-        if (player.hasPermission("specialmine.admin")) {
-            return new String[]{"ADMIN", "§4"};
-        } else if (player.hasPermission("specialmine.vip")) {
-            return new String[]{"VIP", "§e"};
-        } else {
-            return new String[]{"", "§7"};
-        }
+        // Utilise la méthode du MineManager pour avoir la cohérence
+        String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
+
+        return new String[]{rankInfo[0], rankInfo[1]};
     }
 
     /**
@@ -258,7 +253,7 @@ public class ChatListener implements Listener {
             prefix.addExtra(new TextComponent(playerTypeColor + "[" + playerType + "] "));
         }
         prefix.addExtra(new TextComponent(mineRankColor + "[" + mineRank + "] "));
-        prefix.addExtra(new TextComponent(playerTypeColor + player.getName() + " §f: "));
+        prefix.addExtra(new TextComponent(player.getName() + " §f: "));
         finalMessage.addExtra(prefix);
 
         // NOUVEAU: Traitement amélioré des placeholders
@@ -335,25 +330,36 @@ public class ChatListener implements Listener {
             return handComponent;
         }
 
-        // Construit l'hover text
+        // Construit l'hover text détaillé
         StringBuilder hoverText = new StringBuilder();
         hoverText.append("§f").append(item.getAmount()).append("x ");
 
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             hoverText.append(item.getItemMeta().getDisplayName());
         } else {
-            hoverText.append("§f").append(item.getType().name().toLowerCase().replace("_", " "));
+            hoverText.append("§f").append(getItemDisplayName(item));
         }
 
+        // Ajoute les enchantements si présents
+        if (item.hasItemMeta() && item.getItemMeta().hasEnchants()) {
+            hoverText.append("\n§7Enchantements:");
+            item.getEnchantments().forEach((enchant, level) -> {
+                hoverText.append("\n§8- §d").append(enchant.getKey().getKey())
+                        .append(" §eNiv.").append(level);
+            });
+        }
+
+        // Ajoute la lore si présente
         if (item.hasItemMeta() && item.getItemMeta().hasLore()) {
-            hoverText.append("\n\n");
+            hoverText.append("\n");
             for (String loreLine : item.getItemMeta().getLore()) {
-                hoverText.append(loreLine).append("\n");
+                hoverText.append("\n").append(loreLine);
             }
         }
 
-        handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM,
-                new TextComponent[]{new TextComponent(item.toString())}));
+        // CORRECTION : Utilise SHOW_TEXT au lieu de SHOW_ITEM pour éviter les bugs
+        handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                new TextComponent[]{new TextComponent(hoverText.toString())}));
 
         return handComponent;
     }
@@ -366,42 +372,10 @@ public class ChatListener implements Listener {
 
         invComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                 new TextComponent[]{new TextComponent("§7Cliquez pour voir l'inventaire de " + player.getName())}));
-
         invComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                 "/invsee " + player.getName()));
 
         return invComponent;
-    }
-
-    /**
-     * Extrait les placeholders [hand] et [inv] du message
-     */
-    private String[] extractPlaceholders(String message) {
-        java.util.List<String> placeholders = new java.util.ArrayList<>();
-        int index = 0;
-
-        while (index < message.length()) {
-            int handIndex = message.indexOf("[hand]", index);
-            int invIndex = message.indexOf("[inv]", index);
-
-            int nextIndex = -1;
-            String nextPlaceholder = null;
-
-            if (handIndex != -1 && (invIndex == -1 || handIndex < invIndex)) {
-                nextIndex = handIndex;
-                nextPlaceholder = "[hand]";
-            } else if (invIndex != -1) {
-                nextIndex = invIndex;
-                nextPlaceholder = "[inv]";
-            }
-
-            if (nextIndex == -1) break;
-
-            placeholders.add(nextPlaceholder);
-            index = nextIndex + nextPlaceholder.length();
-        }
-
-        return placeholders.toArray(new String[0]);
     }
 
     /**
