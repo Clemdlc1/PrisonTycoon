@@ -112,13 +112,13 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
 
         // === SÉPARATEURS VISUELS ===
         ItemStack separator = createSeparatorItem();
-        for (int i = 41; i < 45; i++) {
+        for (int i = 41; i < 44; i++) {
             inv.setItem(i, separator);
         }
 
         // === PERMISSIONS ET BOUTONS ===
         if (canModify) {
-            inv.setItem(45, createAdminActionsItem());
+            inv.setItem(44, createAdminActionsItem());
         }
 
         // Marque la relation viewer -> target
@@ -268,15 +268,14 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            // Suggestions de noms de joueurs en ligne
+            List<String> allPlayerNames = new ArrayList<>();
             for (Player player : Bukkit.getOnlinePlayers()) {
-                if (!player.equals(sender)) { // Exclut le sender
-                    completions.add(player.getName());
+                if (!player.equals(sender)) {
+                    allPlayerNames.add(player.getName());
                 }
             }
-            StringUtil.copyPartialMatches(args[0], completions, completions);
+            StringUtil.copyPartialMatches(args[0], allPlayerNames, completions);
         }
-
         Collections.sort(completions);
         return completions;
     }
