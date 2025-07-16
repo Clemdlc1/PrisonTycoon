@@ -7,6 +7,7 @@ import fr.prisoncore.prisoncore.prisonTycoon.events.*;
 import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
 import fr.prisoncore.prisoncore.prisonTycoon.managers.*;
 import fr.prisoncore.prisoncore.prisonTycoon.tasks.*;
+import fr.prisoncore.prisoncore.prisonTycoon.utils.ChatLogger;
 import fr.prisoncore.prisoncore.prisonTycoon.utils.Logger;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -18,6 +19,7 @@ public final class PrisonTycoon extends JavaPlugin {
 
     // Instance singleton du plugin
     private static PrisonTycoon instance;
+    private ChatLogger chatLogger;
 
     // Managers principaux
     private ConfigManager configManager;
@@ -30,6 +32,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private ContainerManager containerManager;
     private GlobalBonusManager globalBonusManager;
     private TabManager tabManager;
+    private ModerationManager moderationManager;
+    private VipManager vipManager;
+    private InvseeCommand invseeCommand;
 
     private Logger logger;
 
@@ -89,6 +94,9 @@ public final class PrisonTycoon extends JavaPlugin {
             // Enregistrement des commandes
             registerCommands();
 
+            chatLogger = new ChatLogger(this);
+
+
             // Démarrage des tâches asynchrones
             startTasks();
             tabManager.startTabUpdater();
@@ -125,6 +133,11 @@ public final class PrisonTycoon extends JavaPlugin {
             if (playerDataManager != null) {
                 playerDataManager.saveAllPlayersSync();
                 logger.info("§aDonnées joueurs sauvegardées.");
+            }
+
+            if (chatLogger != null) {
+                chatLogger.shutdown();
+                logger.info("§7ChatLogger arrêté");
             }
 
         } catch (Exception e) {
@@ -166,10 +179,8 @@ public final class PrisonTycoon extends JavaPlugin {
         cristalBonusHelper = new CristalBonusHelper(this);
         globalBonusManager = new GlobalBonusManager(this);
         tabManager = new TabManager(this);
-
-
-
-        // SUPPRIMÉ : scoreboardManager (maintenant dans ScoreboardTask)
+        moderationManager = new ModerationManager(this);
+        vipManager = new VipManager(this);
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
@@ -246,8 +257,22 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("cristal").setExecutor(new CristalCommand(this));
         getCommand("cristal").setTabCompleter(new CristalCommand(this));
 
-        getCommand("chatadmin").setExecutor(new ChatAdminCommand(this));
-        getCommand("chatadmin").setTabCompleter(new ChatAdminCommand(this));
+        AdminChatCommand adminChatCommand = new AdminChatCommand(this);
+        getCommand("adminchat").setExecutor(adminChatCommand);
+        getCommand("adminchat").setTabCompleter(adminChatCommand);
+        logger.info("§7- Commande /adminchat enregistrée");
+
+        // Commande VIP
+        VipCommand vipCommand = new VipCommand(this);
+        getCommand("vip").setExecutor(new VipCommand(this));
+        getCommand("vip").setTabCompleter(new VipCommand(this));
+        logger.info("§7- Commande /vip enregistrée");
+
+        // Commande invsee
+        invseeCommand = new InvseeCommand(this);
+        getCommand("invsee").setExecutor(invseeCommand);
+        getCommand("invsee").setTabCompleter(invseeCommand);
+        logger.info("§7- Commande /invsee enregistrée");
 
 
 
@@ -300,6 +325,21 @@ public final class PrisonTycoon extends JavaPlugin {
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
         logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
 
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            if (moderationManager != null) {
+                moderationManager.cleanupExpiredSanctions();
+            }
+        }, 12000L, 12000L); // Toutes les 10 minutes
+        logger.info("§7- Tâche de nettoyage automatique démarrée");
+
+        // NOUVELLE TÂCHE: Nettoyage des anciens logs (optionnel)
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            if (chatLogger != null) {
+                chatLogger.cleanOldLogs(30); // Garde 30 jours de logs
+            }
+        }, 86400L, 86400L); // Tous les jours
+        logger.info("§7- Tâche de nettoyage des logs démarrée");
+
         logger.info("§aTâches asynchrones démarrées avec succès (nouveau système).");
     }
 
@@ -330,6 +370,10 @@ public final class PrisonTycoon extends JavaPlugin {
         if (autoUpgradeTask != null) {
             autoUpgradeTask.cancel();
             logger.debug("AutoUpgradeTask arrêtée");
+        }
+        if (moderationManager != null) {
+            moderationManager.cleanupExpiredSanctions();
+            logger.info("§7ModerationManager nettoyé");
         }
     }
 
@@ -446,6 +490,26 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public TabManager getTabManager() {
         return tabManager;
+    }
+    /**
+     * Obtient le gestionnaire de modération
+     */
+    public ModerationManager getModerationManager() {
+        return moderationManager;
+    }
+
+    /**
+     * Obtient le gestionnaire de logs du chat
+     */
+    public ChatLogger getChatLogger() {
+        return chatLogger;
+    }
+
+    /**
+     * Obtient le gestionnaire des VIP
+     */
+    public VipManager getVipManager() {
+        return vipManager;
     }
 }
 

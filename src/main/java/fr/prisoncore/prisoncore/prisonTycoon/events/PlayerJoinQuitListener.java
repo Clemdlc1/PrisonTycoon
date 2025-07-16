@@ -1,6 +1,7 @@
 package fr.prisoncore.prisoncore.prisonTycoon.events;
 
 import fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon;
+import fr.prisoncore.prisoncore.prisonTycoon.managers.ModerationManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,13 +25,33 @@ public class PlayerJoinQuitListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
+        event.setJoinMessage(null);
         Player player = event.getPlayer();
+        if (plugin.getModerationManager().isBanned(player.getUniqueId())) {
+            var banData = plugin.getModerationManager().getBanData(player.getUniqueId());
+
+            if (banData != null) {
+                String kickMessage = createBanKickMessage(banData);
+
+                // Kick le joueur avec un délai pour éviter les problèmes de timing
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        player.kickPlayer(kickMessage);
+
+                        // Log l'attempt de connexion
+                        plugin.getPluginLogger().info("Joueur banni refusé: " + player.getName() +
+                                " (Raison: " + banData.getReason() + ")");
+                    }
+                }, 5L);
+
+                return; // Arrête le traitement ici
+            }
+        }
+
         plugin.getTabManager().onPlayerJoin(player);
 
         // Charge les données du joueur
         plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        event.setJoinMessage(null);
 
         // Détermine le message personnalisé selon le rang
         String joinMessage = getJoinMessage(player);
@@ -140,5 +161,56 @@ public class PlayerJoinQuitListener implements Listener {
             // Joueur normal : [+] NOM
             return "§c[-] §7" + player.getName();
         }
+    }
+
+    /**
+     * Crée le message de kick pour un joueur banni
+     */
+    private String createBanKickMessage(ModerationManager.ModerationData banData) {
+        StringBuilder message = new StringBuilder();
+
+        message.append("§c§l=== VOUS ÊTES BANNI ===\n\n");
+        message.append("§cVous avez été banni du serveur\n\n");
+
+        message.append("§7Raison: §e").append(banData.getReason()).append("\n");
+        message.append("§7Banni par: §e").append(banData.getModerator()).append("\n");
+
+        if (banData.isPermanent()) {
+            message.append("§7Durée: §cPermanent\n");
+        } else {
+            long remaining = banData.getRemainingTime();
+            if (remaining > 0) {
+                message.append("§7Temps restant: §e").append(formatDuration(remaining)).append("\n");
+            } else {
+                // Ban expiré, on le retire automatiquement
+                plugin.getModerationManager().unbanPlayer(banData.getUuid(), "SYSTÈME");
+                return null; // Permet la connexion
+            }
+        }
+
+        message.append("\n§7Si vous pensez que c'est une erreur,\n");
+        message.append("§7contactez un administrateur.");
+
+        return message.toString();
+    }
+
+    /**
+     * Formate une durée en millisecondes
+     */
+    private String formatDuration(long milliseconds) {
+        if (milliseconds <= 0) return "0s";
+
+        long days = milliseconds / (24 * 60 * 60 * 1000);
+        long hours = (milliseconds % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000);
+        long minutes = (milliseconds % (60 * 60 * 1000)) / (60 * 1000);
+        long seconds = (milliseconds % (60 * 1000)) / 1000;
+
+        StringBuilder result = new StringBuilder();
+        if (days > 0) result.append(days).append("j ");
+        if (hours > 0) result.append(hours).append("h ");
+        if (minutes > 0) result.append(minutes).append("m ");
+        if (seconds > 0 && days == 0) result.append(seconds).append("s ");
+
+        return result.toString().trim();
     }
 }
