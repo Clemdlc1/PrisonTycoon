@@ -25,9 +25,20 @@ public class PlayerJoinQuitListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        plugin.getTabManager().onPlayerJoin(player);
 
         // Charge les données du joueur
         plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        event.setJoinMessage(null);
+
+        // Détermine le message personnalisé selon le rang
+        String joinMessage = getJoinMessage(player);
+
+        // Diffuse le message personnalisé si applicable
+        if (joinMessage != null && !joinMessage.isEmpty()) {
+            plugin.getServer().broadcastMessage(joinMessage);
+        }
 
         // CORRIGÉ : Initialisation avec délai plus long pour assurer stabilité
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -72,6 +83,17 @@ public class PlayerJoinQuitListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        plugin.getTabManager().onPlayerQuit(player);
+
+        event.quitMessage(null);
+
+        // Détermine le message personnalisé selon le rang
+        String quitMessage = getQuitMessage(player);
+
+        // Diffuse le message personnalisé si applicable
+        if (quitMessage != null && !quitMessage.isEmpty()) {
+            plugin.getServer().broadcastMessage(quitMessage);
+        }
 
         // Retire les effets de mobilité
         plugin.getPickaxeManager().removeMobilityEffects(player);
@@ -88,5 +110,35 @@ public class PlayerJoinQuitListener implements Listener {
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());
 
         plugin.getPluginLogger().info("§7Joueur déconnecté: " + player.getName());
+    }
+
+    /**
+     * Génère le message de connexion selon le rang du joueur
+     */
+    private String getJoinMessage(Player player) {
+        if (player.hasPermission("specialmine.admin")) {
+            return null;
+        } else if (player.hasPermission("specialmine.vip")) {
+            // VIP : [+] [VIP(jaune)] NOM
+            return "§a[+] §e[VIP] §6" + player.getName();
+        } else {
+            // Joueur normal : [+] NOM
+            return "§a[+] §7" + player.getName();
+        }
+    }
+
+    /**
+     * Génère le message de connexion selon le rang du joueur
+     */
+    private String getQuitMessage(Player player) {
+        if (player.hasPermission("specialmine.admin")) {
+            return null;
+        } else if (player.hasPermission("specialmine.vip")) {
+            // VIP : [+] [VIP(jaune)] NOM
+            return "§c[-] §e[VIP] §6" + player.getName();
+        } else {
+            // Joueur normal : [+] NOM
+            return "§c[-] §7" + player.getName();
+        }
     }
 }

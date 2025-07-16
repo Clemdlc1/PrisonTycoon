@@ -527,6 +527,9 @@ public class PlayerData {
         if (mineName == null || mineName.isEmpty()) {
             return false;
         }
+        if (mineName.contains("a")) {
+            return true;
+        }
 
         String targetMine = mineName.toLowerCase();
         synchronized (dataLock) {

@@ -58,7 +58,6 @@ public class MiningListener implements Listener {
             if (!playerData.hasMinePermission(mineName)) {
                 event.setCancelled(true);
                 player.sendMessage("§c❌ Vous n'avez pas la permission de miner dans la mine '" + mineName + "'!");
-                player.sendMessage("§7Utilisez §e/mine permission " + mineName + " §7pour obtenir l'accès.");
                 return;
             }
 
@@ -77,7 +76,6 @@ public class MiningListener implements Listener {
             handlePickaxeDurability(player, event);
 
         }
-        // Sinon : comportement normal de Minecraft (pas de pioche légendaire)
 
         // 3. POST-TRAITEMENT : Mise à jour de la pioche légendaire si utilisée
         if (playerPickaxe != null) {

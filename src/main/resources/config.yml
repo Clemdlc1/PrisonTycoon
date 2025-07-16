@@ -35,7 +35,6 @@ mines:
       cobblestone: 0.3
       coal_ore: 0.15
       iron_ore: 0.05
-    # Pas de prix car c'est le rang de départ
 
   # Mine B - Mine intermédiaire
   mine-b:

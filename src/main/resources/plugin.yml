@@ -71,23 +71,43 @@ permissions:
     description: Utiliser le système de rankup
     default: true
 
-  specialmine.vip:
-    description: Fonctionnalités VIP (auto-rankup, auto-upgrade)
-    default: false
-    children:
-      specialmine.rankup: true
-      specialmine.pickaxe: true
-      specialmine.mine: true
+  specialmine.chat:
+    description: Permet d'envoyer des messages en chat
+    default: true
 
-  # Permission globale pour les administrateurs
-  specialmine.admin:
-    description: Accès complet aux fonctionnalités administrateur.
-    default: op
-    children:
-      - specialmine.admin.givetokens
-      - specialmine.admin.reload
-      - specialmine.admin.economy
-      - specialmine.admin.mine.generate
+    specialmine.chat.colors:
+      description: Permet d'utiliser les codes couleur dans le chat
+      default: false
+
+    specialmine.admin.chat:
+      description: Permet d'utiliser les commandes administratives du chat
+      default: op
+      children:
+        - specialmine.chat
+        - specialmine.chat.colors
+
+    # Mise à jour des permissions existantes pour inclure le chat
+    specialmine.vip:
+      description: Fonctionnalités VIP (auto-rankup, auto-upgrade, couleurs chat)
+      default: false
+      children:
+        specialmine.rankup: true
+        specialmine.pickaxe: true
+        specialmine.mine: true
+        specialmine.chat: true
+        specialmine.chat.colors: true
+
+    specialmine.admin:
+      description: Accès complet aux fonctionnalités administrateur
+      default: op
+      children:
+        - specialmine.admin.givetokens
+        - specialmine.admin.reload
+        - specialmine.admin.economy
+        - specialmine.admin.mine.generate
+        - specialmine.admin.chat
+        - specialmine.chat
+        - specialmine.chat.colors
 
 # Commandes
 commands:
@@ -141,12 +161,16 @@ commands:
   rankup:
     description: Système de montée en rang pour les mines
     usage: /<command> [all|auto|info]
-    aliases: [ rank, rk ]
 
   cristal:
     description: Gère les cristaux.
     usage: /cristal <niveau> [joueur] [type]
     permission: specialmine.admin
+
+  chatadmin:
+    description: Gère les cristaux.
+    usage: /chatadmin
+    permission: specialmine.admin.chat
 
 # Chargement
 load: POSTWORLD

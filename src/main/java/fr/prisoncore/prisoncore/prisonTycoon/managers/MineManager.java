@@ -152,8 +152,6 @@ public class MineManager {
                 plugin.getPickaxeManager().isOwner(handItem, player);
     }
 
-    // SUPPRIMÉ: handleBlockMined() - Plus de régénération automatique
-
     /**
      * Retourne toutes les mines configurées
      */
@@ -254,5 +252,63 @@ public class MineManager {
         }
 
         return null; // Toutes les mines sont débloquées
+    }
+
+    /**
+     * Détermine le rang et les couleurs du joueur
+     * @param player Le joueur
+     * @return [rang, couleur du nom, couleur du rang, rang mine, couleur rang mine]
+     */
+    public String[] getRankAndColor(Player player) {
+
+        String currentRank = getCurrentRank(player);
+        String rankColor = getRankColor(currentRank);
+
+        if (player.hasPermission("specialmine.admin")) {
+            return new String[]{"ADMIN", "§c", "§4", currentRank.toUpperCase(), rankColor};
+        } else if (player.hasPermission("specialmine.vip")) {
+            return new String[]{"VIP", "§6", "§e", currentRank.toUpperCase(), rankColor};
+        } else {
+            return new String[]{"JOUEUR", "§7", "§8", currentRank.toUpperCase(), rankColor};
+        }
+    }
+    /**
+     * Obtient la couleur progressive pour un rang de mine (a-z)
+     */
+    public String getRankColor(String rank) {
+        if (rank == null || rank.isEmpty()) return "§7";
+
+        char rankChar = rank.toLowerCase().charAt(0);
+
+        // Couleurs progressives de a à z
+        return switch (rankChar) {
+            case 'a', 'b' -> "§f";      // Blanc (débutant)
+            case 'c', 'd' -> "§7";      // Gris clair
+            case 'e', 'f' -> "§8";      // Gris foncé
+            case 'g', 'h' -> "§2";      // Vert foncé
+            case 'i', 'j' -> "§a";      // Vert clair
+            case 'k', 'l' -> "§e";      // Jaune
+            case 'm', 'n' -> "§6";      // Orange
+            case 'o', 'p' -> "§c";      // Rouge clair
+            case 'q', 'r' -> "§4";      // Rouge foncé
+            case 's', 't' -> "§d";      // Rose
+            case 'u', 'v' -> "§5";      // Violet
+            case 'w', 'x' -> "§9";      // Bleu
+            case 'y' -> "§b";           // Cyan
+            case 'z' -> "§6§l";         // Or gras (rang maximum)
+            default -> "§7";
+        };
+    }
+
+    /**
+     * Obtient le rang actuel du joueur dans les mines
+     */
+    private String getCurrentRank(Player player) {
+        var playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String highestPermission = playerData.getHighestMinePermission();
+        if (highestPermission != null && highestPermission.startsWith("mine-")) {
+            return highestPermission.substring(5);
+        }
+        return "a"; // Rang par défaut
     }
 }

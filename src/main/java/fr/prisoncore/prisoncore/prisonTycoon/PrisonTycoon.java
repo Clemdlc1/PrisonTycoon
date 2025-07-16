@@ -29,6 +29,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private NotificationManager notificationManager;
     private ContainerManager containerManager;
     private GlobalBonusManager globalBonusManager;
+    private TabManager tabManager;
 
     private Logger logger;
 
@@ -90,6 +91,7 @@ public final class PrisonTycoon extends JavaPlugin {
 
             // Démarrage des tâches asynchrones
             startTasks();
+            tabManager.startTabUpdater();
 
             logger.info("§aPlugin PrisonTycoon activé avec succès!");
             logger.info("§7Fonctionnalités chargées:");
@@ -163,6 +165,8 @@ public final class PrisonTycoon extends JavaPlugin {
         cristalManager = new CristalManager(this);
         cristalBonusHelper = new CristalBonusHelper(this);
         globalBonusManager = new GlobalBonusManager(this);
+        tabManager = new TabManager(this);
+
 
 
         // SUPPRIMÉ : scoreboardManager (maintenant dans ScoreboardTask)
@@ -205,6 +209,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new MobilityEffectsListener(this), this);
         pluginManager.registerEvents(new ContainerListener(this), this);
         pluginManager.registerEvents(new CristalListener(this), this);
+        pluginManager.registerEvents(new ChatListener(this), this);
+
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -239,6 +245,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
         getCommand("cristal").setExecutor(new CristalCommand(this));
         getCommand("cristal").setTabCompleter(new CristalCommand(this));
+
+        getCommand("chatadmin").setExecutor(new ChatAdminCommand(this));
+        getCommand("chatadmin").setTabCompleter(new ChatAdminCommand(this));
+
 
 
         logger.info("§aCommandes enregistrées.");
@@ -433,4 +443,9 @@ public final class PrisonTycoon extends JavaPlugin {
     public GlobalBonusManager getGlobalBonusManager() {
         return globalBonusManager;
     }
+
+    public TabManager getTabManager() {
+        return tabManager;
+    }
 }
+
