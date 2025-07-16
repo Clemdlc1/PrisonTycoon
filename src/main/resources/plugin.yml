@@ -75,76 +75,71 @@ permissions:
     description: Permet d'envoyer des messages en chat
     default: true
 
-    specialmine.chat.colors:
-      description: Permet d'utiliser les codes couleur dans le chat
-      default: false
+  specialmine.chat.colors:
+    description: Permet d'utiliser les codes couleur dans le chat
+    default: false
 
-    specialmine.admin.chat:
-      description: "Permet d'utiliser les commandes admin du chat"
-      default: op
-      children:
-        - specialmine.admin.mute
-        - specialmine.admin.ban
-        - specialmine.admin.logs
+  specialmine.admin.chat:
+    description: "Permet d'utiliser les commandes admin du chat"
+    default: op
+    children:
+      - specialmine.admin.mute
+      - specialmine.admin.ban
+      - specialmine.admin.logs
 
-    specialmine.admin.vip:
-      description: "Permet de gérer les joueurs VIP"
-      default: op
+  specialmine.admin.vip:
+    description: "Permet de gérer les joueurs VIP"
+    default: op
 
-    specialmine.admin.mute:
-      description: "Permet de muter/démuter des joueurs"
-      default: op
+  specialmine.admin.mute:
+    description: "Permet de muter/démuter des joueurs"
+    default: op
 
-    specialmine.admin.ban:
-      description: "Permet de bannir/débannir des joueurs"
-      default: op
+  specialmine.admin.ban:
+    description: "Permet de bannir/débannir des joueurs"
+    default: op
 
-    specialmine.admin.logs:
-      description: "Permet de consulter les logs du chat"
-      default: op
+  specialmine.admin.logs:
+    description: "Permet de consulter les logs du chat"
+    default: op
 
-    # PERMISSIONS VIP
-    specialmine.vip:
-      description: "Permissions de base pour les VIP"
-      default: false
-      children:
-        - specialmine.chat.colors
-        - specialmine.chat.hand
-        - specialmine.chat.inv
-        - specialmine.invsee.use
+  # PERMISSIONS VIP
+  specialmine.vip:
+    description: "Permissions de base pour les VIP"
+    default: false
+    children:
+      - specialmine.chat.colors
+      - specialmine.chat.hand
+      - specialmine.chat.inv
+      - specialmine.invsee.use
 
-    specialmine.chat.hand:
-      description: "Permet d'utiliser [hand] dans le chat"
-      default: false
+  specialmine.chat.hand:
+    description: "Permet d'utiliser [hand] dans le chat"
+    default: false
 
-    specialmine.chat.inv:
-      description: "Permet d'utiliser [inv] dans le chat"
-      default: false
+  specialmine.chat.inv:
+    description: "Permet d'utiliser [inv] dans le chat"
+    default: false
 
-    specialmine.invsee.use:
-      description: "Permet d'utiliser /invsee (lecture seule)"
-      default: false
+  specialmine.invsee.use:
+    description: "Permet d'utiliser /invsee (lecture seule)"
+    default: false
 
-    specialmine.invsee.modify:
-      description: "Permet de modifier les inventaires avec /invsee"
-      default: op
+  specialmine.invsee.modify:
+    description: "Permet de modifier les inventaires avec /invsee"
+    default: op
 
-    # PERMISSIONS DE CHAT
-    specialmine.chat:
-      description: "Permission de base pour parler en chat"
-      default: true
-
-    # PERMISSIONS ADMIN COMPLÈTES
-    specialmine.admin:
-      description: "Toutes les permissions admin"
-      default: op
-      children:
-        - specialmine.admin.chat
-        - specialmine.admin.vip
-        - specialmine.invsee.modify
-        - specialmine.chat.colors
-        - specialmine.chat.hand
-        - specialmine.chat.inv
+  # PERMISSIONS ADMIN COMPLÈTES
+  specialmine.admin:
+    description: "Toutes les permissions admin"
+    default: op
+    children:
+      - specialmine.admin.chat
+      - specialmine.admin.vip
+      - specialmine.invsee.modify
+      - specialmine.chat.colors
+      - specialmine.chat.hand
+      - specialmine.chat.inv
 
 # Commandes
 commands:
@@ -207,20 +202,19 @@ commands:
   adminchat:
     description: "Commandes administratives pour gérer le chat"
     usage: "/adminchat <mute|unmute|ban|unban|logs|reload|stats|test|broadcast|clear> [arguments]"
-    permission: specialmine.admin.chat
-    aliases: [ achat, adminc ]
+    permission: specialmine.admin
 
-    vip:
-      description: "Gère les joueurs VIP"
-      usage: "/vip <add|remove|list|check> [joueur]"
-      permission: specialmine.admin.vip
-      aliases: [ setvip, managevip ]
+  vip:
+    description: "Gère les joueurs VIP"
+    usage: "/vip <add|remove|list|check> [joueur]"
+    permission: specialmine.admin
+    aliases: [ setvip, managevip ]
 
-    invsee:
-      description: "Voir l'inventaire d'un autre joueur"
-      usage: "/invsee <joueur>"
-      permission: specialmine.vip
-      aliases: [ inv, openinv, viewinv ]
+  invsee:
+    description: "Voir l'inventaire d'un autre joueur"
+    usage: "/invsee <joueur>"
+    permission: specialmine.vip
+    aliases: [ inv, openinv, viewinv ]
 
 # Chargement
 load: POSTWORLD
