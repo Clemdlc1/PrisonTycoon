@@ -86,7 +86,7 @@ public class EnchantmentMenu {
         switch (slot) {
             // Features futures
             case CRYSTALS_SLOT -> plugin.getCristalGUI().openCristalMenu(player);
-            case UNIQUE_ENCHANTS_SLOT -> plugin.getUniqueEnchantsMenuGUI().openUniqueEnchantsMenu(player);
+            case UNIQUE_ENCHANTS_SLOT -> plugin.getEnchantmentBookGUI().openEnchantmentBookMenu(player);
             case PETS_SLOT -> plugin.getPetsMenuGUI().openPetsMenu(player);
             case MAIN_MENU_SLOT -> plugin.getMainMenuGUI().openGeneralMainMenu(player);
             case REPAIR_PICKAXE_SLOT -> plugin.getPickaxeRepairMenu().openRepairGUI(player);

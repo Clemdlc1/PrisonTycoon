@@ -3,13 +3,17 @@ package fr.prisontycoon.events;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -19,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * UNIFIÉ : Listener pour le minage ET la gestion de durabilité des pioches légendaires
@@ -104,6 +109,25 @@ public class MiningListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onBlockDamage(BlockDamageEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Location blockLocation = event.getBlock().getLocation();
+        Material material = event.getBlock().getType();
+        if (material == Material.BEACON &&
+                plugin.getEnchantmentBookManager() != null &&
+                plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker")) {
+
+            blockLocation.getBlock().setType(Material.AIR);
+            playerData.addBeacons(1);
+
+            // Effets visuels spéciaux
+            blockLocation.getWorld().spawnParticle(Particle.END_ROD, blockLocation, 20, 0.5, 0.5, 0.5, 0.1);
+            player.playSound(blockLocation, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.5f);
+        }
+    }
+
     /**
      * UNIFIÉ : Gère la durabilité de toutes les pioches (légendaires ET normales)
      */
@@ -127,6 +151,12 @@ public class MiningListener implements Listener {
     private void handleLegendaryPickaxeDurability(Player player, ItemStack tool, BlockBreakEvent event) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int durabilityLevel = playerData.getEnchantmentLevel("durability");
+
+        // Gestion spéciale pour Incassable
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "incassable")) {
+            plugin.getPickaxeManager().deactivateBrokenPickaxeMode(player);
+            return;
+        }
 
         // SOLIDITÉ : Chance d'éviter la perte de durabilité
         if (durabilityLevel > 0) {
@@ -264,9 +294,6 @@ public class MiningListener implements Listener {
             return;
         }
 
-        // Ajoute le bloc directement à l'inventaire du joueur
-        addBlockToInventory(player, material);
-
         // Récupère les gains de base
         BlockValueData baseValue = plugin.getConfigManager().getBlockValue(material);
 
@@ -321,7 +348,7 @@ public class MiningListener implements Listener {
 
             // Message d'avertissement moins fréquent
             if (!player.hasMetadata("inventory_full_warning") ||
-                    System.currentTimeMillis() - player.getMetadata("inventory_full_warning").get(0).asLong() > 30000) {
+                    System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
 
                 player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! Items droppés au sol.");
                 player.sendMessage("§e💡 Utilisez §a/sell all §epour vider vos conteneurs!");

@@ -129,6 +129,10 @@ permissions:
     description: "Permet de modifier les inventaires avec /invsee"
     default: op
 
+  specialmine.enchantbook:
+    description: "Accès au système d'enchantements uniques"
+    default: true
+
   # PERMISSIONS ADMIN COMPLÈTES
   specialmine.admin:
     description: "Toutes les permissions admin"
@@ -141,61 +145,63 @@ permissions:
       - specialmine.chat.colors
       - specialmine.chat.hand
       - specialmine.chat.inv
+      - specialmine.enchantbook
+
 # Commandes
 commands:
   pickaxe:
-    description: Obtenir la pioche légendaire.
+    description: "Obtenir la pioche légendaire."
     usage: /pickaxe
     permission: specialmine.pickaxe
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ pioche ]
 
   repair:
-    description: Ouvre le menu de réparation de la pioche légendaire.
+    description: "Ouvre le menu de réparation de la pioche légendaire."
     usage: /repair
     permission: specialmine.repair
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ fix, reparer ]
 
   sell:
-    description: Vendre des items.
+    description: "Vendre des items."
     usage: /sell <all|hand>
     permission: specialmine.sell
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ vendre ]
 
   mine:
-    description: Gérer les mines et obtenir des informations.
+    description: "Gérer les mines et obtenir des informations."
     usage: /mine <generate|list|info|stats> [nom]
     permission: specialmine.mine
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ mines, prisonmine ]
 
   givetokens:
-    description: Donner des tokens à un joueur (ADMIN).
+    description: "Donner des tokens à un joueur (ADMIN)."
     usage: /givetokens <joueur> <quantité>
     permission: specialmine.admin.givetokens
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ givetoken, addtokens ]
 
   prisontycoon:
-    description: Commande principale du plugin.
+    description: "Commande principale du plugin."
     usage: /prisontycoon [reload|stats|economy|top] [args...]
     aliases: [ pt, ptycoon, prison ]
 
   conteneur:
-    description: Obtenir et gérer les conteneurs de collecte automatique.
+    description: "Obtenir et gérer les conteneurs de collecte automatique."
     usage: /conteneur <1-5|info|list>
     permission: specialmine.container
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ container, coffre, box ]
 
   rankup:
-    description: Système de montée en rang pour les mines
+    description: "Système de montée en rang pour les mines"
     usage: /<command> [all|auto|info]
 
   cristal:
-    description: Gère les cristaux.
+    description: "Gère les cristaux."
     usage: /cristal <niveau> [joueur] [type]
     permission: specialmine.admin
 
@@ -215,6 +221,12 @@ commands:
     usage: "/invsee <joueur>"
     permission: specialmine.invsee.use
     aliases: [ inv, openinv, viewinv ]
+
+  enchantbook:
+    description: "Accès au système d'enchantements uniques"
+    usage: "/enchantbook <joueur>"
+    permission: specialmine.enchantbook
+    aliases: [ livre ]
 
 # Chargement
 load: POSTWORLD

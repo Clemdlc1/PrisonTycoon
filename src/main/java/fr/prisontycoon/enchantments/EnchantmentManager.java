@@ -108,12 +108,14 @@ public class EnchantmentManager {
         int blocksToGive = calculateFortuneBlocks(player, playerData, blockType);
 
         // Ajoute les blocs à l'inventaire (quantité augmentée par Fortune)
-        addBlocksToInventory(player, blockType, blocksToGive);
+        addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
 
         // Applique tous les enchantements actifs dans les mines
         processGreedEnchantments(player, playerData, blockType, blockLocation, true);
         processSpecialEnchantments(player, playerData, blockLocation, mineName);
         updateCombustion(player, playerData); // MODIFIÉ : Passe le joueur en paramètre
+
+        plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -122,9 +124,9 @@ public class EnchantmentManager {
     /**
      * NOUVEAU & MODIFIÉ : Calcule le nombre de blocs à donner avec Fortune (formule rééquilibrée)
      */
-    private int calculateFortuneBlocks(Player player, PlayerData playerData, Material blockType) {
+    public int calculateFortuneBlocks(Player player, PlayerData playerData, Material blockType) {
         if (isPlayerPickaxeBroken(player)) {
-            return 0; // Retourne 0 bloc bonus
+            return 1; // Retourne 0 bloc bonus
         }
 
         int fortuneLevel = playerData.getEnchantmentLevel("fortune");
@@ -149,19 +151,28 @@ public class EnchantmentManager {
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
                 ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
 
-        return finalBonusBlocks;
+        return 1 + finalBonusBlocks;
     }
 
     /**
      * MODIFIÉ : Ajoute plusieurs blocs à l'inventaire avec priorité aux conteneurs
      */
-    private void addBlocksToInventory(Player player, Material material, int quantity) {
+    private void addBlocksToInventory(Player player, Material material, int quantity, Location blockLocation) {
         if (quantity <= 0) return;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int actuallyAdded = 0;
         int remaining = quantity;
 
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell")) {
+            plugin.getEnchantmentBookManager().processAutoSell(player, material, quantity);
+            return;
+        }
+
+        // Gestion spéciale pour PlusValue
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "plusvalue")) {
+            material = plugin.getEnchantmentBookManager().getHighestValueBlockInMine(String.valueOf(blockLocation));
+        }
         plugin.getPluginLogger().debug("Tentative d'ajout de " + quantity + "x " + material.name() + " pour " + player.getName());
 
         // NOUVEAU : Tente d'abord d'ajouter aux conteneurs
@@ -231,7 +242,7 @@ public class EnchantmentManager {
         // NOUVEAU: Applique Fortune sur les blocs cassés
         int blocksfortune = calculateFortuneBlocks(player, playerData, blockType);
         int blocksToGive = blocksfortune + 1;
-        addBlocksToInventory(player, blockType, blocksToGive);
+        addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
 
         // LIMITATION : Seuls Money/Token/Exp Greed s'appliquent sur les gains de base
         processGreedEnchantments(player, playerData, blockType, blockLocation, false);

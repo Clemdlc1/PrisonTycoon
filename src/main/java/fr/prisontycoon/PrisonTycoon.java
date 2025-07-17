@@ -3,6 +3,7 @@ package fr.prisontycoon;
 import fr.prisontycoon.GUI.*;
 import fr.prisontycoon.commands.*;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
+import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentManager;
 import fr.prisontycoon.events.*;
 import fr.prisontycoon.managers.*;
@@ -34,8 +35,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private TabManager tabManager;
     private ModerationManager moderationManager;
     private VipManager vipManager;
-    private InvseeCommand invseeCommand;
     private PermissionManager permissionManager;
+    private EnchantmentBookManager enchantmentBookManager;
+
 
 
     private Logger logger;
@@ -46,7 +48,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
-    private UniqueEnchantsMenuGUI uniqueEnchantsMenuGUI;
+    private EnchantmentBookGUI enchantmentBookGUI;
     private PetsMenuGUI petsMenuGUI;
     private PickaxeRepairGUI pickaxeRepairGUI;
     private ContainerGUI containerGUI;
@@ -186,6 +188,8 @@ public final class PrisonTycoon extends JavaPlugin {
         moderationManager = new ModerationManager(this);
         vipManager = new VipManager(this);
         permissionManager = new PermissionManager(this); // NOUVEAU !
+        enchantmentBookManager = new EnchantmentBookManager(this);
+
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -201,7 +205,7 @@ public final class PrisonTycoon extends JavaPlugin {
         categoryMenuGUI = new CategoryMenuGUI(this);
         enchantmentUpgradeGUI = new EnchantmentUpgradeGUI(this);
         cristalGUI = new CristalGUI(this);
-        uniqueEnchantsMenuGUI = new UniqueEnchantsMenuGUI(this);
+        enchantmentBookGUI = new EnchantmentBookGUI(this);
         petsMenuGUI = new PetsMenuGUI(this);
         pickaxeRepairGUI = new PickaxeRepairGUI(this);
         containerGUI = new ContainerGUI(this);
@@ -274,6 +278,11 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("invsee").setExecutor(new InvseeCommand(this));
         getCommand("invsee").setTabCompleter(new InvseeCommand(this));
         logger.info("§7- Commande /invsee enregistrée");
+
+        getCommand("enchantbook").setExecutor(new EnchantmentBookCommand(this));
+        getCommand("enchantbook").setTabCompleter(new EnchantmentBookCommand(this));
+
+
 
 
         logger.info("§aCommandes enregistrées.");
@@ -446,10 +455,8 @@ public final class PrisonTycoon extends JavaPlugin {
         return enchantmentUpgradeGUI;
     }
 
-    public UniqueEnchantsMenuGUI getUniqueEnchantsMenuGUI() {
-        return uniqueEnchantsMenuGUI;
-    }
-
+    public EnchantmentBookManager getEnchantmentBookManager() { return enchantmentBookManager; }
+    public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
     public PetsMenuGUI getPetsMenuGUI() {
         return petsMenuGUI;
     }

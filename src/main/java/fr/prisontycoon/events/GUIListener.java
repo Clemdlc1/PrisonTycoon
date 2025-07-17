@@ -91,7 +91,9 @@ public class GUIListener implements Listener {
         } else if (title.contains("Gestion des Cristaux")) {
             plugin.getCristalGUI().handleCristalMenuClick(player, slot, item);
         } else if (title.contains("Enchantements Uniques")) {
-            plugin.getUniqueEnchantsMenuGUI().handleUniqueEnchantsMenuClick(player, slot, item);
+            plugin.getEnchantmentBookGUI().handleEnchantmentBookMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Boutique de Livres")) {
+            plugin.getEnchantmentBookGUI().handleBookShopClick(player, slot, item);
         } else if (title.contains("Compagnons")) {
             plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
         } else if (title.contains("Réparation")) {
@@ -160,6 +162,8 @@ public class GUIListener implements Listener {
                 title.contains("Cristaux") ||
                 title.contains("Enchantements Uniques") ||
                 title.contains("Compagnons") ||
+                title.contains("Livres d'Enchantements") ||
+                title.contains("Boutique de Livres") ||
                 title.contains("Réparation");
     }
 }
