@@ -32,6 +32,7 @@ public class PlayerData {
     private long beacons;
     // Gains SPÉCIFIQUES via pioche (pour statistiques pioche)
     private long coinsViaPickaxe;
+    private long coinsViaAutosell;
     private long tokensViaPickaxe;
     private long experienceViaPickaxe;
     // États temporaires
@@ -49,7 +50,8 @@ public class PlayerData {
     private long totalGreedTriggers;
     private long totalKeysObtained;
     // NOUVEAU : Gains de la dernière minute SÉPARÉS (toutes sources vs via pioche)
-    private long lastMinuteCoins;                    // TOUS les gains coins
+    private long lastMinuteCoins;
+    private long lastMinuteAutosell;
     private long lastMinuteTokens;                   // TOUS les gains tokens
     private long lastMinuteExperience;               // TOUS les gains expérience
     private long lastMinuteCoinsViaPickaxe;          // SEULEMENT via pioche
@@ -140,6 +142,14 @@ public class PlayerData {
             this.coinsViaPickaxe = Math.max(0, this.coinsViaPickaxe + amount);
             this.lastMinuteCoins += Math.max(0, amount);
             this.lastMinuteCoinsViaPickaxe += Math.max(0, amount); // NOUVEAU : Track séparé
+        }
+    }
+
+    public void addCoinsViaAutosell(long amount) {
+        synchronized (dataLock) {
+            this.coins = Math.max(0, this.coins + amount);
+            this.coinsViaAutosell = Math.max(0, this.coinsViaAutosell + amount);
+            this.lastMinuteAutosell += Math.max(0, amount);
         }
     }
 
@@ -353,6 +363,7 @@ public class PlayerData {
     public void resetLastMinuteStats() {
         synchronized (dataLock) {
             this.lastMinuteCoins = 0;
+            this.lastMinuteAutosell = 0;
             this.lastMinuteTokens = 0;
             this.lastMinuteExperience = 0;
             this.lastMinuteCoinsViaPickaxe = 0;
@@ -591,6 +602,12 @@ public class PlayerData {
         }
     }
 
+    public long getCoinsViaAutosell() {
+        synchronized (dataLock) {
+            return coinsViaAutosell;
+        }
+    }
+
     public void setCoinsViaPickaxe(long coinsViaPickaxe) {
         synchronized (dataLock) {
             this.coinsViaPickaxe = Math.max(0, coinsViaPickaxe);
@@ -660,6 +677,11 @@ public class PlayerData {
     public long getLastMinuteCoinsViaPickaxe() {
         synchronized (dataLock) {
             return lastMinuteCoinsViaPickaxe;
+        }
+    }
+    public long getLastMinuteCoinsViaAutosell() {
+        synchronized (dataLock) {
+            return lastMinuteAutosell;
         }
     }
 

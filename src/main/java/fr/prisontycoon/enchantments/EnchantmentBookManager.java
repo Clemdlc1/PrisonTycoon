@@ -240,12 +240,10 @@ public class EnchantmentBookManager {
 
         // Ajoute l'argent au joueur
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        playerData.addCoins(sellPrice);
 
-        // Message discret pour éviter le spam
-        if (ThreadLocalRandom.current().nextDouble() < 0.1) { // 10% de chance d'afficher
-            player.sendMessage("§a💰 AutoSell: §e+" + NumberFormatter.format(sellPrice) + " coins §7(-2% pénalité)");
-        }
+        playerData.addCoinsViaAutosell(sellPrice);
+
+
     }
 
     /**

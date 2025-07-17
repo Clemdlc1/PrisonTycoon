@@ -132,6 +132,7 @@ public class ChatTask extends BukkitRunnable {
         long blocksMined = playerData.getLastMinuteBlocksMined();
         long blocksDestroyed = playerData.getLastMinuteBlocksDestroyed();
         long blocksInventory = playerData.getLastMinuteBlocksAddedToInventory();
+        long autosellGained = playerData.getLastMinuteCoinsViaAutosell();
         long coinsGained = playerData.getLastMinuteCoinsViaPickaxe();      // VIA PIOCHE
         long tokensGained = playerData.getLastMinuteTokensViaPickaxe();    // VIA PIOCHE
         long expGained = playerData.getLastMinuteExperienceViaPickaxe();   // VIA PIOCHE
@@ -249,6 +250,11 @@ public class ChatTask extends BukkitRunnable {
                     summary.append("\n§7┃   §8(Voir votre interface pour les détails)");
                 }
             }
+        }
+
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell") && autosellGained > 0 ) {
+            summary.append("\n§7┃ §c§lAutoSell:§r ").append(NumberFormatter.format(autosellGained));
+
         }
 
         // Séparateur de fin
