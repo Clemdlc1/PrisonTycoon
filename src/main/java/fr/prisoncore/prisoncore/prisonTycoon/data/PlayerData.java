@@ -24,6 +24,7 @@ public class PlayerData {
     private final Set<String> minePermissions;
     // Données thread-safe
     private final Object dataLock = new Object();
+    private final List<SanctionData> sanctionHistory;
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -61,7 +62,6 @@ public class PlayerData {
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
     private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
-    private final List<SanctionData> sanctionHistory;
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;

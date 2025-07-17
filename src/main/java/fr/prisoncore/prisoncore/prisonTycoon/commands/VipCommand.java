@@ -96,7 +96,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
         // CORRIGÉ: Vérification VIP renforcée
         boolean isAlreadyVipData = plugin.getPlayerDataManager().hasPlayerPermission(target.getUniqueId(), "specialmine.vip");
 
-        if (isAlreadyVipData ) {
+        if (isAlreadyVipData) {
             sender.sendMessage("§c❌ Ce joueur est déjà VIP!");
             if (target.isOnline()) {
                 sender.sendMessage("§7Status: §e" + plugin.getVipManager().getVipStatusDetailed(target.getUniqueId()));

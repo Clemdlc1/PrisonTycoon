@@ -290,7 +290,7 @@ public final class PrisonTycoon extends JavaPlugin {
         int scoreboardInterval = getConfig().getInt("performance.task-intervals.scoreboard-ticks", 50);
         int chatInterval = getConfig().getInt("performance.task-intervals.chat-ticks", 1200);
         int autoSaveInterval = getConfig().getInt("performance.task-intervals.auto-save-ticks", 6000);
-        int combustionInterval = getConfig().getInt("performance.task-intervals.combustion-ticks", 20);
+        int combustionInterval = getConfig().getInt("performance.task-intervals.combustion-ticks", 200);
         int autoUpgradeInterval = getConfig().getInt("performance.task-intervals.auto-upgrade-ticks", 200);
 
         // 3 tâches séparées avec nouveau système de notifications

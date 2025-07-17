@@ -653,12 +653,12 @@ performance:
 
   # Tâches
   task-intervals:
-    action-bar-ticks: 10      # ActionBar toutes les 10 ticks (0.5s)
+    action-bar-ticks: 20      # ActionBar toutes les 20 ticks (1s)
     scoreboard-ticks: 100     # RÉDUIT : Scoreboard toutes les 100 ticks (5s) au lieu de 400 (20s)
     chat-ticks: 1200          # Chat toutes les 1200 ticks (60s)
     auto-save-ticks: 6000     # Sauvegarde toutes les 6000 ticks (5min)
-    combustion-ticks: 20      # Combustion toutes les 20 ticks (1s)
-    auto-upgrade-ticks: 200   # Auto-upgrade toutes les 200 ticks (10s)
+    combustion-ticks: 200      # Combustion toutes les 200 ticks (10s)
+    auto-upgrade-ticks: 200   # Auto-upgrade tous les 200 ticks (10s)
 
   # Tâches asynchrones
   async-save: true            # Sauvegarde asynchrone
