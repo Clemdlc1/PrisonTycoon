@@ -67,11 +67,15 @@ public class MiningListener implements Listener {
                 return;
             }
 
-            // NOUVEAU : Vérification des permissions de mine
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            if (!playerData.hasMinePermission(mineName)) {
+            if (!plugin.getMineManager().canMineAtLocation(player, location)) {
                 event.setCancelled(true);
-                player.sendMessage("§c❌ Vous n'avez pas la permission de miner dans la mine '" + mineName + "'!");
+                String requiredRank = mineName.replace("mine-", "").toUpperCase();
+                String currentRank = plugin.getMineManager().getPlayerHighestRank(player);
+
+                player.sendMessage("§c❌ Vous n'avez pas accès à cette mine!");
+                player.sendMessage("§7Mine: §e" + requiredRank + " §7- Votre rang: §c" +
+                        (currentRank != null ? currentRank.toUpperCase() : "A"));
+                player.sendMessage("§7Utilisez §e/rankup §7pour monter de rang!");
                 return;
             }
 

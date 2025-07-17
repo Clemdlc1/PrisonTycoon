@@ -402,65 +402,97 @@ public class PlayerData {
     }
 
     /**
-     * Ajoute une permission de mine au joueur
+     * NOUVEAU: Ajoute une permission de mine au joueur (maintenant via bukkit)
      */
     public void addMinePermission(String mineName) {
         synchronized (dataLock) {
+            // Ancienne logique (gardée pour compatibilité)
             minePermissions.add(mineName.toLowerCase());
+
+            // NOUVEAU: Ajoute aussi la permission bukkit
+            String bukkitPermission = "specialmine.mine." + mineName.toLowerCase();
+            addPermission(bukkitPermission);
         }
     }
 
     /**
-     * Supprime une permission de mine du joueur
+     * NOUVEAU: Supprime une permission de mine du joueur (maintenant via bukkit)
      */
     public void removeMinePermission(String mineName) {
         synchronized (dataLock) {
+            // Ancienne logique (gardée pour compatibilité)
             minePermissions.remove(mineName.toLowerCase());
+
+            // NOUVEAU: Retire aussi la permission bukkit
+            String bukkitPermission = "specialmine.mine." + mineName.toLowerCase();
+            removePermission(bukkitPermission);
         }
     }
 
-    /**
-     * Vérifie si le joueur a la permission pour une mine spécifique
-     * Logique cumulative :
-     * - Permission "a" : peut miner dans A seulement
-     * - Permission "b" : peut miner dans A et B
-     * - Permission "c" : peut miner dans A, B et C
-     */
     public boolean hasMinePermission(String mineName) {
         if (mineName == null || mineName.isEmpty()) {
             return false;
         }
-        if (mineName.contains("a")) {
+
+        // Normalise le nom de la mine (retire les préfixes)
+        String targetMine = mineName.toLowerCase();
+        if (targetMine.startsWith("mine-")) {
+            targetMine = targetMine.substring(5);
+        }
+
+        // Rang A par défaut (toujours accessible)
+        if (targetMine.equals("a")) {
             return true;
         }
 
-        String targetMine = mineName.toLowerCase();
+        // Trouve la permission la plus élevée du joueur
+        String highestRank = getHighestMineRank();
+        if (highestRank == null) {
+            return false; // Aucune permission
+        }
+
+        // LOGIQUE HIÉRARCHIQUE: compare les rangs
+        // Si j'ai rang 'c', je peux miner dans 'a', 'b', et 'c'
+        char playerRank = highestRank.charAt(0);
+        char targetRank = targetMine.charAt(0);
+
+        return targetRank <= playerRank;
+    }
+
+    /**
+     * NOUVEAU: Obtient le rang de mine le plus élevé (pas la permission complète)
+     */
+    public String getHighestMineRank() {
         synchronized (dataLock) {
-            // Trouve la permission la plus élevée du joueur
-            String highestPermission = getHighestMinePermission();
-            if (highestPermission == null) {
-                return false; // Aucune permission
+            String highestRank = null;
+
+            // Cherche dans les permissions bukkit
+            for (String permission : customPermissions) {
+                if (permission.startsWith("specialmine.mine.")) {
+                    String rank = permission.substring("specialmine.mine.".length());
+                    if (rank.length() == 1) { // Valide seulement les rangs d'une lettre
+                        if (highestRank == null || rank.compareTo(highestRank) > 0) {
+                            highestRank = rank;
+                        }
+                    }
+                }
             }
 
-            // Vérifie si la mine demandée est accessible avec la permission la plus élevée
-            return targetMine.compareTo(highestPermission) <= 0;
+            return highestRank;
         }
     }
 
     /**
-     * Retourne toutes les permissions de mine du joueur
-     */
-    public Set<String> getMinePermissions() {
-        synchronized (dataLock) {
-            return new HashSet<>(minePermissions);
-        }
-    }
-
-    /**
-     * Retourne la plus haute permission de mine (alphabétiquement)
+     * CORRIGÉ: Retourne la plus haute permission de mine (compatibilité)
      */
     public String getHighestMinePermission() {
         synchronized (dataLock) {
+            String highestRank = getHighestMineRank();
+            if (highestRank != null) {
+                return "specialmine.mine." + highestRank;
+            }
+
+            // Fallback vers l'ancienne logique
             return minePermissions.stream()
                     .max(String::compareTo)
                     .orElse(null);
@@ -468,11 +500,25 @@ public class PlayerData {
     }
 
     /**
-     * Vérifie si le joueur a au moins une permission de mine
+     * NOUVEAU: Liste toutes les mines accessibles avec le rang actuel
      */
-    public boolean hasAnyMinePermission() {
+    public Set<String> getAccessibleMines() {
         synchronized (dataLock) {
-            return !minePermissions.isEmpty();
+            Set<String> accessibleMines = new HashSet<>();
+
+            String highestRank = getHighestMineRank();
+            if (highestRank == null) {
+                accessibleMines.add("a"); // Rang par défaut
+                return accessibleMines;
+            }
+
+            // Ajoute toutes les mines de A jusqu'au rang actuel
+            char maxRank = highestRank.charAt(0);
+            for (char c = 'a'; c <= maxRank; c++) {
+                accessibleMines.add(String.valueOf(c));
+            }
+
+            return accessibleMines;
         }
     }
 

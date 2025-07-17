@@ -140,13 +140,6 @@ public class PlayerDataManager {
                 }
             }
 
-            if (config.contains("mine-permissions")) {
-                List<String> minePermissions = config.getStringList("mine-permissions");
-                for (String mineName : minePermissions) {
-                    data.addMinePermission(mineName);
-                }
-            }
-
             if (config.contains("pickaxe-cristals")) {
                 for (String cristalUuid : config.getConfigurationSection("pickaxe-cristals").getKeys(false)) {
                     String cristalData = config.getString("pickaxe-cristals." + cristalUuid);
@@ -250,11 +243,6 @@ public class PlayerDataManager {
             Set<String> mobilityDisabled = data.getMobilityEnchantmentsDisabled();
             if (!mobilityDisabled.isEmpty()) {
                 config.set("mobility-disabled", new ArrayList<>(mobilityDisabled));
-            }
-
-            Set<String> minePermissions = data.getMinePermissions();
-            if (!minePermissions.isEmpty()) {
-                config.set("mine-permissions", new ArrayList<>(minePermissions));
             }
 
             Map<String, String> pickaxeCristals = data.getPickaxeCristals();
@@ -404,43 +392,146 @@ public class PlayerDataManager {
     }
 
     /**
-     * Ajoute une permission de mine à un joueur
+     * CORRIGÉ: Ajoute une permission de mine (seulement la plus élevée)
      */
     public boolean addMinePermissionToPlayer(UUID playerId, String mineName) {
+        // Normalise le nom de la mine
+        String rankName = mineName.toLowerCase();
+        if (rankName.startsWith("mine-")) {
+            rankName = rankName.substring(5);
+        }
+
+        // Valide le rang
+        if (rankName.length() != 1 || rankName.charAt(0) < 'a' || rankName.charAt(0) > 'z') {
+            plugin.getPluginLogger().warning("Rang de mine invalide: " + mineName);
+            return false;
+        }
+
         PlayerData data = getPlayerData(playerId);
-        data.addMinePermission(mineName);
+
+        // NOUVEAU: Retire l'ancienne permission de mine (pour éviter les doublons)
+        removeAllMinePermissionsFromPlayer(playerId);
+
+        // Ajoute la nouvelle permission bukkit
+        String bukkitPermission = "specialmine.mine." + rankName;
+        addPermissionToPlayer(playerId, bukkitPermission);
+
+        // Garde l'ancienne logique pour compatibilité
+        data.addMinePermission(rankName);
         markDirty(playerId);
 
-        plugin.getPluginLogger().info("§7Permission mine '" + mineName + "' ajoutée à " + data.getPlayerName());
+        plugin.getPluginLogger().info("Permission mine bukkit '" + bukkitPermission + "' ajoutée à " + data.getPlayerName());
         return true;
     }
 
     /**
-     * Supprime une permission de mine à un joueur
+     * NOUVEAU: Retire toutes les permissions de mine d'un joueur
+     */
+    public void removeAllMinePermissionsFromPlayer(UUID playerId) {
+        PlayerData data = getPlayerData(playerId);
+
+        // Retire toutes les permissions bukkit de mine
+        Set<String> permissionsToRemove = new HashSet<>();
+        for (String permission : data.getCustomPermissions()) {
+            if (permission.startsWith("specialmine.mine.")) {
+                permissionsToRemove.add(permission);
+            }
+        }
+
+        for (String permission : permissionsToRemove) {
+            removePermissionFromPlayer(playerId, permission);
+        }
+
+        // Nettoie aussi l'ancienne logique
+        data.clearMinePermissions();
+        markDirty(playerId);
+
+        if (!permissionsToRemove.isEmpty()) {
+            plugin.getPluginLogger().info("Permissions de mine retirées de " + data.getPlayerName() + ": " + permissionsToRemove);
+        }
+    }
+
+    /**
+     * CORRIGÉ: Retire une permission de mine spécifique
      */
     public boolean removeMinePermissionFromPlayer(UUID playerId, String mineName) {
+        // Normalise le nom de la mine
+        String rankName = mineName.toLowerCase();
+        if (rankName.startsWith("mine-")) {
+            rankName = rankName.substring(5);
+        }
+
+        // Convertit en permission bukkit
+        String bukkitPermission = "specialmine.mine." + rankName;
+
+        // Retire de customPermissions
+        removePermissionFromPlayer(playerId, bukkitPermission);
+
+        // Retire de l'ancienne logique
         PlayerData data = getPlayerData(playerId);
-        data.removeMinePermission(mineName);
+        data.removeMinePermission(rankName);
         markDirty(playerId);
 
-        plugin.getPluginLogger().info("§7Permission mine '" + mineName + "' supprimée de " + data.getPlayerName());
+        plugin.getPluginLogger().info("Permission mine bukkit '" + bukkitPermission + "' retirée de " + data.getPlayerName());
         return true;
     }
 
     /**
-     * Vérifie si un joueur a la permission pour une mine
+     * CORRIGÉ: Vérifie si un joueur a la permission pour une mine (logique hiérarchique)
      */
     public boolean hasPlayerMinePermission(UUID playerId, String mineName) {
-        PlayerData data = getPlayerData(playerId);
-        return data.hasMinePermission(mineName);
+        Player player = plugin.getServer().getPlayer(playerId);
+
+        if (player != null && player.isOnline()) {
+            // Pour joueurs en ligne: utilise la logique hiérarchique via PlayerData
+            PlayerData data = getPlayerData(playerId);
+            return data.hasMinePermission(mineName);
+        } else {
+            // Pour joueurs hors ligne: vérifie les données stockées avec logique hiérarchique
+            PlayerData data = getPlayerData(playerId);
+            return data.hasMinePermission(mineName);
+        }
     }
 
     /**
-     * Retourne toutes les permissions de mine d'un joueur
+     * NOUVEAU: Commande admin pour diagnostiquer les permissions
      */
-    public Set<String> getPlayerMinePermissions(UUID playerId) {
+    public void diagnosePlayerPermissions(UUID playerId) {
         PlayerData data = getPlayerData(playerId);
-        return data.getMinePermissions();
+        Player player = plugin.getServer().getPlayer(playerId);
+
+        plugin.getPluginLogger().info("=== DIAGNOSTIC PERMISSIONS - " + data.getPlayerName() + " ===");
+
+        // Permissions dans les données
+        Set<String> storedPermissions = new HashSet<>();
+        for (String permission : data.getCustomPermissions()) {
+            if (permission.startsWith("specialmine.mine.")) {
+                storedPermissions.add(permission);
+            }
+        }
+        plugin.getPluginLogger().info("Permissions stockées: " + storedPermissions);
+
+        // Permissions bukkit (si en ligne)
+        if (player != null && player.isOnline()) {
+            Set<String> bukkitPermissions = new HashSet<>();
+            for (char c = 'a'; c <= 'z'; c++) {
+                String permission = "specialmine.mine." + c;
+                if (player.hasPermission(permission)) {
+                    bukkitPermissions.add(permission);
+                }
+            }
+            plugin.getPluginLogger().info("Permissions bukkit: " + bukkitPermissions);
+        }
+
+        // Rang calculé
+        String calculatedRank = data.getHighestMineRank();
+        plugin.getPluginLogger().info("Rang calculé: " + (calculatedRank != null ? calculatedRank.toUpperCase() : "A (défaut)"));
+
+        // Mines accessibles
+        Set<String> accessibleMines = data.getAccessibleMines();
+        plugin.getPluginLogger().info("Mines accessibles: " + accessibleMines);
+
+        plugin.getPluginLogger().info("=== FIN DIAGNOSTIC ===");
     }
 
     /**
@@ -556,4 +647,6 @@ public class PlayerDataManager {
         PlayerData data = getPlayerData(playerId);
         return data.hasCustomPermission(permission);
     }
+
+
 }

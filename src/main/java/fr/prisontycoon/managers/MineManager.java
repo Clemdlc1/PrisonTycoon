@@ -186,72 +186,69 @@ public class MineManager {
     }
 
     /**
-     * Vérifie si un joueur peut miner dans une mine (pioche + permissions)
+     * NOUVEAU: Vérifie les permissions d'accès hiérarchiques pour une mine
      */
-    public boolean canPlayerMineInMine(Player player, String mineName) {
-        // Vérification existante (pioche légendaire)
-        if (!canMineBlock(player.getLocation(), player)) {
+    public boolean hasAccessToMine(Player player, String mineName) {
+        if (mineName == null || mineName.isEmpty()) {
+            return true;
+        }
+
+        // Normalise le nom de la mine
+        String targetMine = mineName.toLowerCase();
+        if (targetMine.startsWith("mine-")) {
+            targetMine = targetMine.substring(5);
+        }
+
+        // Rang A toujours accessible
+        if (targetMine.equals("a")) {
+            return true;
+        }
+
+        // Trouve le rang le plus élevé du joueur
+        String highestRank = getPlayerHighestRank(player);
+        if (highestRank == null) {
+            return false; // Aucune permission
+        }
+
+        // LOGIQUE HIÉRARCHIQUE: compare les rangs
+        char playerRank = highestRank.charAt(0);
+        char targetRank = targetMine.charAt(0);
+
+        return targetRank <= playerRank;
+    }
+
+    /**
+     * NOUVEAU: Obtient le rang le plus élevé d'un joueur en ligne
+     */
+    public String getPlayerHighestRank(Player player) {
+        // Parcourt les rangs de z à a pour trouver le plus élevé
+        for (char c = 'z'; c >= 'a'; c--) {
+            String rank = String.valueOf(c);
+            if (player.hasPermission("specialmine.mine." + rank)) {
+                return rank;
+            }
+        }
+
+        return null; // Aucune permission trouvée
+    }
+
+    /**
+     * NOUVEAU: Vérifie si un joueur peut miner dans une location spécifique
+     */
+    public boolean canMineAtLocation(Player player, Location location) {
+        // Vérifie si c'est dans une mine
+        String mineName = plugin.getConfigManager().getPlayerMine(location);
+        if (mineName == null) {
+            return true; // Hors mine, peut miner avec n'importe quel outil
+        }
+
+        // Vérifie la pioche légendaire
+        if (!canMineBlock(location, player)) {
             return false;
         }
 
-        // NOUVEAU : Vérification des permissions de mine
-        if (mineName != null) {
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            return playerData.hasMinePermission(mineName);
-        }
-
-        return true; // Hors mine
-    }
-
-    /**
-     * Retourne les mines accessibles par un joueur
-     */
-    public Set<String> getAccessibleMines(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Set<String> accessibleMines = new HashSet<>();
-
-        for (String mineName : getAllMineNames()) {
-            if (playerData.hasMinePermission(mineName)) {
-                accessibleMines.add(mineName);
-            }
-        }
-
-        return accessibleMines;
-    }
-
-    /**
-     * Retourne les mines non accessibles par un joueur
-     */
-    public Set<String> getInaccessibleMines(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Set<String> inaccessibleMines = new HashSet<>();
-
-        for (String mineName : getAllMineNames()) {
-            if (!playerData.hasMinePermission(mineName)) {
-                inaccessibleMines.add(mineName);
-            }
-        }
-
-        return inaccessibleMines;
-    }
-
-    /**
-     * Retourne la prochaine mine dans l'ordre alphabétique qu'un joueur peut débloquer
-     */
-    public String getNextUnlockableMine(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Trie les mines par ordre alphabétique
-        List<String> sortedMines = new ArrayList<>(getAllMineNames());
-        Collections.sort(sortedMines);
-
-        for (String mineName : sortedMines) {
-            if (!playerData.hasMinePermission(mineName)) {
-                return mineName; // Première mine non débloquée
-            }
-        }
-
-        return null; // Toutes les mines sont débloquées
+        // Vérifie les permissions hiérarchiques
+        return hasAccessToMine(player, mineName);
     }
 
     /**
@@ -303,14 +300,19 @@ public class MineManager {
     }
 
     /**
-     * Obtient le rang actuel du joueur dans les mines
+     * CORRIGÉ: Obtient le rang actuel du joueur via les permissions bukkit
      */
-    private String getCurrentRank(Player player) {
+    public String getCurrentRank(Player player) {
         var playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String highestPermission = playerData.getHighestMinePermission();
-        if (highestPermission != null && highestPermission.startsWith("mine-")) {
-            return highestPermission.substring(5);
+        if (highestPermission == null) {
+            return "a"; // Rang par défaut
         }
-        return "a"; // Rang par défaut
+
+        // NOUVEAU: Gère les permissions bukkit
+        if (highestPermission.startsWith("specialmine.mine.")) {
+            return highestPermission.substring("specialmine.mine.".length());
+        }
+        return "a";
     }
 }

@@ -129,6 +129,8 @@ public class PlayerJoinQuitListener implements Listener {
 
         // Décharge les données du joueur (avec sauvegarde)
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());
+        plugin.getPermissionManager().removeAttachment(player);
+
 
         plugin.getPluginLogger().info("§7Joueur déconnecté: " + player.getName());
     }
