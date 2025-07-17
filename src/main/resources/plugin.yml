@@ -1,6 +1,6 @@
 name: PrisonTycoon
 version: 1.0.0
-main: fr.prisoncore.prisoncore.prisonTycoon.PrisonTycoon
+main: fr.prisontycoon.PrisonTycoon
 author: PrisonCore
 description: Plugin de minage avec pioche légendaire et enchantements custom
 website: https://prisoncore.fr
