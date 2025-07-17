@@ -137,10 +137,10 @@ permissions:
       - specialmine.admin.chat
       - specialmine.admin.vip
       - specialmine.invsee.modify
+      - specialmine.invsee.use
       - specialmine.chat.colors
       - specialmine.chat.hand
       - specialmine.chat.inv
-
 # Commandes
 commands:
   pickaxe:
@@ -213,7 +213,7 @@ commands:
   invsee:
     description: "Voir l'inventaire d'un autre joueur"
     usage: "/invsee <joueur>"
-    permission: specialmine.vip
+    permission: specialmine.invsee.use
     aliases: [ inv, openinv, viewinv ]
 
 # Chargement

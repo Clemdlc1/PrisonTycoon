@@ -46,14 +46,14 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
             return true;
         }
 
-        // Vérifie les permissions
-        boolean isAdmin = player.hasPermission("specialmine.admin");
-        boolean isVip = player.hasPermission("specialmine.vip");
-
-        if (!isAdmin && !isVip) {
-            player.sendMessage("§c❌ Vous devez être VIP ou Admin pour utiliser cette commande!");
+        // CORRECTION : Vérifier directement la permission de la commande
+        if (!player.hasPermission("specialmine.invsee.use")) {
+            player.sendMessage("§c❌ Vous n'avez pas la permission d'utiliser cette commande!");
             return true;
         }
+
+        // Vérifie si le joueur peut modifier les inventaires (admin seulement)
+        boolean canModify = player.hasPermission("specialmine.invsee.modify");
 
         if (args.length != 1) {
             player.sendMessage("§c❌ Usage: /invsee <joueur>");
@@ -73,8 +73,8 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
             return true;
         }
 
-        // Ouvre l'inventaire
-        openInventoryView(player, target, isAdmin);
+        // Ouvre l'inventaire avec les bonnes permissions
+        openInventoryView(player, target, canModify);
         return true;
     }
 
@@ -222,6 +222,9 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
                 target.getInventory().setItemInOffHand(event.getInventory().getItem(slot));
                 player.sendMessage("§a✅ Main secondaire modifiée pour " + target.getName());
             }, 1L);
+        }
+        else {
+            event.setCancelled(true);
         }
     }
 

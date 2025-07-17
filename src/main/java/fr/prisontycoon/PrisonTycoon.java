@@ -1,14 +1,9 @@
 package fr.prisontycoon;
 
-import fr.prisoncore.prisoncore.prisonTycoon.GUI.*;
-import fr.prisoncore.prisoncore.prisonTycoon.commands.*;
 import fr.prisontycoon.GUI.*;
 import fr.prisontycoon.commands.*;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
 import fr.prisontycoon.enchantments.EnchantmentManager;
-import fr.prisoncore.prisoncore.prisonTycoon.events.*;
-import fr.prisoncore.prisoncore.prisonTycoon.managers.*;
-import fr.prisoncore.prisoncore.prisonTycoon.tasks.*;
 import fr.prisontycoon.events.*;
 import fr.prisontycoon.managers.*;
 import fr.prisontycoon.tasks.*;
