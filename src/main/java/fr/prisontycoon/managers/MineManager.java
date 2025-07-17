@@ -4,6 +4,7 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -13,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gestionnaire des mines
- * CORRIGÉ : Suppression de la régénération automatique
+ * CORRIGÉ : Utilisation de l'enum ChatColor pour une meilleure lisibilité.
  */
 public class MineManager {
 
@@ -24,7 +25,7 @@ public class MineManager {
         this.plugin = plugin;
         this.regeneratingMines = ConcurrentHashMap.newKeySet();
 
-        plugin.getPluginLogger().info("§aMineManager initialisé.");
+        plugin.getPluginLogger().info(ChatColor.GREEN + "MineManager initialisé.");
     }
 
     /**
@@ -34,14 +35,14 @@ public class MineManager {
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) {
             if (sender != null) {
-                sender.sendMessage("§cMine '" + mineName + "' introuvable dans la configuration!");
+                sender.sendMessage(ChatColor.RED + "Mine '" + mineName + "' introuvable dans la configuration!");
             }
             return false;
         }
 
         if (regeneratingMines.contains(mineName)) {
             if (sender != null) {
-                sender.sendMessage("§cLa mine '" + mineName + "' est déjà en cours de régénération!");
+                sender.sendMessage(ChatColor.RED + "La mine '" + mineName + "' est déjà en cours de régénération!");
             }
             return false;
         }
@@ -49,7 +50,7 @@ public class MineManager {
         regeneratingMines.add(mineName);
 
         if (sender != null) {
-            sender.sendMessage("§7Génération de la mine '" + mineName + "' en cours...");
+            sender.sendMessage(ChatColor.GRAY + "Génération de la mine '" + mineName + "' en cours...");
         }
 
         // Génération asynchrone pour éviter le lag
@@ -61,8 +62,8 @@ public class MineManager {
 
                 // Message de retour sur le thread principal
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    String message = "§aMine '" + mineName + "' générée! " +
-                            "§7(" + NumberFormatter.format(blocksGenerated) + " blocs en " + duration + "ms)";
+                    String message = ChatColor.GREEN + "Mine '" + mineName + "' générée! " +
+                            ChatColor.GRAY + "(" + NumberFormatter.format(blocksGenerated) + " blocs en " + duration + "ms)";
 
                     if (sender != null) {
                         sender.sendMessage(message);
@@ -74,7 +75,7 @@ public class MineManager {
 
             } catch (Exception e) {
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    String errorMessage = "§cErreur lors de la génération de la mine '" + mineName + "'!";
+                    String errorMessage = ChatColor.RED + "Erreur lors de la génération de la mine '" + mineName + "'!";
 
                     if (sender != null) {
                         sender.sendMessage(errorMessage);
@@ -263,11 +264,11 @@ public class MineManager {
         String rankColor = getRankColor(currentRank);
 
         if (player.hasPermission("specialmine.admin")) {
-            return new String[]{"ADMIN", "§c", "§4", currentRank.toUpperCase(), rankColor};
+            return new String[]{"ADMIN", ChatColor.RED.toString(), ChatColor.DARK_RED.toString(), currentRank.toUpperCase(), rankColor};
         } else if (player.hasPermission("specialmine.vip")) {
-            return new String[]{"VIP", "§6", "§e", currentRank.toUpperCase(), rankColor};
+            return new String[]{"VIP", ChatColor.GOLD.toString(), ChatColor.YELLOW.toString(), currentRank.toUpperCase(), rankColor};
         } else {
-            return new String[]{"JOUEUR", "§7", "§8", currentRank.toUpperCase(), rankColor};
+            return new String[]{"JOUEUR", ChatColor.GRAY.toString(), ChatColor.DARK_GRAY.toString(), currentRank.toUpperCase(), rankColor};
         }
     }
 
@@ -275,27 +276,27 @@ public class MineManager {
      * Obtient la couleur progressive pour un rang de mine (a-z)
      */
     public String getRankColor(String rank) {
-        if (rank == null || rank.isEmpty()) return "§7";
+        if (rank == null || rank.isEmpty()) return ChatColor.GRAY.toString();
 
         char rankChar = rank.toLowerCase().charAt(0);
 
         // Couleurs progressives de a à z
         return switch (rankChar) {
-            case 'a', 'b' -> "§f";      // Blanc (débutant)
-            case 'c', 'd' -> "§7";      // Gris clair
-            case 'e', 'f' -> "§8";      // Gris foncé
-            case 'g', 'h' -> "§2";      // Vert foncé
-            case 'i', 'j' -> "§a";      // Vert clair
-            case 'k', 'l' -> "§e";      // Jaune
-            case 'm', 'n' -> "§6";      // Orange
-            case 'o', 'p' -> "§c";      // Rouge clair
-            case 'q', 'r' -> "§4";      // Rouge foncé
-            case 's', 't' -> "§d";      // Rose
-            case 'u', 'v' -> "§5";      // Violet
-            case 'w', 'x' -> "§9";      // Bleu
-            case 'y' -> "§b";           // Cyan
-            case 'z' -> "§6§l";         // Or gras (rang maximum)
-            default -> "§7";
+            case 'a', 'b' -> ChatColor.WHITE.toString();      // Blanc (débutant)
+            case 'c', 'd' -> ChatColor.GRAY.toString();      // Gris clair
+            case 'e', 'f' -> ChatColor.DARK_GRAY.toString();      // Gris foncé
+            case 'g', 'h' -> ChatColor.DARK_GREEN.toString();      // Vert foncé
+            case 'i', 'j' -> ChatColor.GREEN.toString();      // Vert clair
+            case 'k', 'l' -> ChatColor.YELLOW.toString();      // Jaune
+            case 'm', 'n' -> ChatColor.GOLD.toString();      // Orange
+            case 'o', 'p' -> ChatColor.RED.toString();      // Rouge clair
+            case 'q', 'r' -> ChatColor.DARK_RED.toString();      // Rouge foncé
+            case 's', 't' -> ChatColor.LIGHT_PURPLE.toString();      // Rose
+            case 'u', 'v' -> ChatColor.DARK_PURPLE.toString();      // Violet
+            case 'w', 'x' -> ChatColor.BLUE.toString();      // Bleu
+            case 'y' -> ChatColor.AQUA.toString();           // Cyan
+            case 'z' -> ChatColor.GOLD.toString() + ChatColor.BOLD; // Or gras (rang maximum)
+            default -> ChatColor.GRAY.toString();
         };
     }
 

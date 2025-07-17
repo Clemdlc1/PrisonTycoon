@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
@@ -10,7 +11,7 @@ import org.bukkit.scoreboard.Team;
 
 /**
  * Gestionnaire pour le système de tab personnalisé avec teams de scoreboard
- * Version améliorée avec tri automatique par rang
+ * Version améliorée avec tri automatique par rang et correction des couleurs.
  */
 public class TabManager {
 
@@ -43,7 +44,7 @@ public class TabManager {
         // Met à jour toutes les 20 ticks (1 seconde)
         tabUpdateTask.runTaskTimer(plugin, 0L, 20L);
 
-        plugin.getPluginLogger().info("§aTabManager démarré - Mise à jour toutes les secondes");
+        plugin.getPluginLogger().info(ChatColor.GREEN + "TabManager démarré - Mise à jour toutes les secondes");
     }
 
     /**
@@ -53,7 +54,7 @@ public class TabManager {
         if (tabUpdateTask != null) {
             tabUpdateTask.cancel();
             tabUpdateTask = null;
-            plugin.getPluginLogger().info("§cTabManager arrêté");
+            plugin.getPluginLogger().info(ChatColor.RED + "TabManager arrêté");
         }
     }
 
@@ -94,12 +95,13 @@ public class TabManager {
     private String buildTabHeader() {
         int onlinePlayers = plugin.getServer().getOnlinePlayers().size();
         int maxPlayers = plugin.getServer().getMaxPlayers();
+        String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
 
-        return "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n" +
-                "§6§l⛏ PRISON TYCOON ⛏\n" +
-                "§7Serveur de minage et de progression\n" +
-                "§e📊 Joueurs connectés: §a" + onlinePlayers + "§7/§a" + maxPlayers + "\n" +
-                "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
+        return separator + "\n" +
+                ChatColor.GOLD.toString() + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
+                ChatColor.GRAY + "Serveur de minage et de progression\n" +
+                ChatColor.YELLOW + "📊 Joueurs connectés: " + ChatColor.GREEN + onlinePlayers + ChatColor.GRAY + "/" + ChatColor.GREEN + maxPlayers + "\n" +
+                separator;
     }
 
     /**
@@ -107,23 +109,24 @@ public class TabManager {
      */
     private String buildTabFooter(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
 
-        return "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n" +
-                "§7Votre progression:\n" +
-                "§e💰 Coins: §6" + NumberFormatter.format(playerData.getCoins()) + "\n" +
-                "§b🎟 Tokens: §3" + NumberFormatter.format(playerData.getTokens()) + "\n" +
-                "§a⭐ Expérience: §2" + NumberFormatter.format(playerData.getExperience()) + "\n" +
-                "§d🏆 Rang: §f" + getCurrentRankDisplay(playerData) + "\n" +
-                "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
+        return separator + "\n" +
+                ChatColor.GRAY + "Votre progression:\n" +
+                ChatColor.YELLOW + "💰 Coins: " + ChatColor.GOLD + NumberFormatter.format(playerData.getCoins()) + "\n" +
+                ChatColor.AQUA + "🎟 Tokens: " + ChatColor.DARK_AQUA + NumberFormatter.format(playerData.getTokens()) + "\n" +
+                ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
+                ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
+                separator;
     }
 
     /**
      * Obtient l'affichage du rang actuel du joueur dans les mines
      */
-    private String getCurrentRankDisplay(PlayerData playerData) {
-        String highestPermission = playerData.getHighestMinePermission();
-        if (highestPermission != null && highestPermission.startsWith("mine-")) {
-            String rank = highestPermission.substring(5).toUpperCase();
+    private String getCurrentRankDisplay(Player player) {
+        String highestPermission = plugin.getMineManager().getCurrentRank(player);
+        if (highestPermission != null ) {
+            String rank = highestPermission.toUpperCase();
             return "Mine " + rank;
         }
         return "Mine A";
@@ -146,39 +149,27 @@ public class TabManager {
     }
 
     /**
-     * Met à jour l'équipe d'un joueur spécifique pour le tab
+     * CORRIGÉ: Utilise ChatColor.getByChar() pour trouver la couleur à partir du code.
      */
     private void updatePlayerTeam(Scoreboard scoreboard, Player player) {
         String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
         String teamName = getTeamName(player);
 
-        // NOUVEAU FORMAT : Simple avec juste nom et préfixe VIP/ADMIN si applicable
         String prefix = "";
         if ("ADMIN".equals(rankInfo[0])) {
-            prefix = rankInfo[2] + "[ADMIN] "; // Rouge
+            prefix = rankInfo[2] + "[ADMIN] "; // rankInfo[2] est déjà un code couleur (ex: "§4")
         } else if ("VIP".equals(rankInfo[0])) {
-            prefix = rankInfo[2] + "[VIP] "; // Jaune
+            prefix = rankInfo[2] + "[VIP] "; // rankInfo[2] est déjà un code couleur (ex: "§e")
         }
-        // Joueurs normaux : pas de préfixe, juste le nom
 
-        // Retire le joueur de toutes les équipes existantes
         removePlayerFromAllTeams(scoreboard, player);
 
-        // Crée ou récupère l'équipe appropriée
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
             team = scoreboard.registerNewTeam(teamName);
-            team.setPrefix(prefix);
-            if (!prefix.isEmpty()) {
-                team.setColor(org.bukkit.ChatColor.valueOf(rankInfo[1].substring(1).toUpperCase()));
-            } else {
-                team.setColor(org.bukkit.ChatColor.WHITE);
-            }
-        } else {
-            team.setPrefix(prefix);
         }
 
-        // Ajoute le joueur à l'équipe
+        team.setPrefix(prefix);
         team.addEntry(player.getName());
     }
 
@@ -213,13 +204,13 @@ public class TabManager {
         // Délai pour assurer que le joueur est complètement connecté
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             try {
-                updatePlayerTab(player);
                 setupInitialTeams(player);
+                updatePlayerTab(player);
 
                 // Met à jour le tab pour tous les autres joueurs (nouveau joueur visible)
                 updateAllPlayersTab();
 
-                plugin.getPluginLogger().debug("Tab initialisé pour " + player.getName());
+                plugin.getPluginLogger().info("Tab initialisé pour " + player.getName());
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur lors de l'initialisation du tab pour " + player.getName() + ": " + e.getMessage());
             }
@@ -236,9 +227,9 @@ public class TabManager {
         }
 
         // Crée les équipes de base si elles n'existent pas
-        createTeamIfNotExists(scoreboard, ADMIN_TEAM, "§4", "§c");
-        createTeamIfNotExists(scoreboard, VIP_TEAM, "§e", "§6");
-        createTeamIfNotExists(scoreboard, PLAYER_TEAM, "§8", "§7");
+        createTeamIfNotExists(scoreboard, ADMIN_TEAM, "§c");
+        createTeamIfNotExists(scoreboard, VIP_TEAM, "§6");
+        createTeamIfNotExists(scoreboard, PLAYER_TEAM, "§7");
 
         // Met à jour toutes les équipes pour ce joueur
         for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
@@ -247,13 +238,13 @@ public class TabManager {
     }
 
     /**
-     * Crée une équipe si elle n'existe pas
+     * CORRIGÉ: Utilise ChatColor.getByChar() et ne prend que les paramètres nécessaires.
      */
-    private void createTeamIfNotExists(Scoreboard scoreboard, String teamName, String rankColor, String nameColor) {
-        Team team = scoreboard.getTeam(teamName);
-        if (team == null) {
-            team = scoreboard.registerNewTeam(teamName);
-            team.setColor(org.bukkit.ChatColor.valueOf(nameColor.substring(1).toUpperCase()));
+    private void createTeamIfNotExists(Scoreboard scoreboard, String teamName, String nameColorCode) {
+        if (scoreboard.getTeam(teamName) == null) {
+            Team team = scoreboard.registerNewTeam(teamName);
+            char colorChar = nameColorCode.charAt(1);
+            team.setColor(ChatColor.getByChar(colorChar));
         }
     }
 
@@ -265,11 +256,15 @@ public class TabManager {
             // Retire le joueur de toutes les équipes de tous les scoreboards
             for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
                 if (!onlinePlayer.equals(player)) {
-                    removePlayerFromAllTeams(onlinePlayer.getScoreboard(), player);
+                    Scoreboard board = onlinePlayer.getScoreboard();
+                    Team team = board.getEntryTeam(player.getName());
+                    if (team != null) {
+                        team.removeEntry(player.getName());
+                    }
                 }
             }
 
-            plugin.getPluginLogger().debug("Tab nettoyé pour " + player.getName());
+            plugin.getPluginLogger().info("Tab nettoyé pour " + player.getName());
         } catch (Exception e) {
             plugin.getPluginLogger().warning("Erreur lors du nettoyage du tab pour " + player.getName() + ": " + e.getMessage());
         }

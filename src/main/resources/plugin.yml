@@ -201,7 +201,7 @@ commands:
 
   adminchat:
     description: "Commandes administratives pour gérer le chat"
-    usage: "/adminchat <mute|unmute|ban|unban|logs|reload|stats|test|broadcast|clear> [arguments]"
+    usage: "/adminchat <mute|unmute|ban|unban|reload|stats|test|broadcast|clear> [arguments]"
     permission: specialmine.admin
 
   vip:

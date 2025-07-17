@@ -51,16 +51,16 @@ public class ChatListener implements Listener {
         if (plugin.getModerationManager().isMuted(player.getUniqueId())) {
             var muteData = plugin.getModerationManager().getMuteData(player.getUniqueId());
             if (muteData != null) {
-                player.sendMessage("§c🔇 Vous êtes muté!");
-                player.sendMessage("§7Raison: §e" + muteData.getReason());
+                player.sendMessage(ChatColor.RED + "🔇 Vous êtes muté!");
+                player.sendMessage(ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + muteData.getReason());
                 if (!muteData.isPermanent()) {
                     long remaining = muteData.getRemainingTime();
-                    player.sendMessage("§7Temps restant: §e" + formatDuration(remaining));
+                    player.sendMessage(ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining));
                 } else {
-                    player.sendMessage("§7Durée: §cPermanent");
+                    player.sendMessage(ChatColor.GRAY + "Durée: " + ChatColor.RED + "Permanent");
                 }
             } else {
-                player.sendMessage("§c🔇 Vous êtes muté!");
+                player.sendMessage(ChatColor.RED + "🔇 Vous êtes muté!");
             }
             return;
         }
@@ -104,18 +104,18 @@ public class ChatListener implements Listener {
         if (plugin.getModerationManager().isBanned(player.getUniqueId())) {
             var banData = plugin.getModerationManager().getBanData(player.getUniqueId());
             if (banData != null) {
-                String kickMessage = "§c§l=== BANNISSEMENT ===\n\n" +
-                        "§cVous êtes banni du serveur\n" +
-                        "§7Raison: §e" + banData.getReason() + "\n";
+                String kickMessage = ChatColor.RED.toString() + ChatColor.BOLD + "=== BANNISSEMENT ===\n\n" +
+                        ChatColor.RED + "Vous êtes banni du serveur\n" +
+                        ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + banData.getReason() + "\n";
 
                 if (!banData.isPermanent()) {
                     long remaining = banData.getRemainingTime();
-                    kickMessage += "§7Temps restant: §e" + formatDuration(remaining) + "\n";
+                    kickMessage += ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining) + "\n";
                 } else {
-                    kickMessage += "§7Durée: §cPermanent\n";
+                    kickMessage += ChatColor.GRAY + "Durée: " + ChatColor.RED + "Permanent\n";
                 }
 
-                kickMessage += "§7Par: §e" + banData.getModerator();
+                kickMessage += ChatColor.GRAY + "Par: " + ChatColor.YELLOW + banData.getModerator();
 
                 // Kick le joueur après un court délai
                 String finalKickMessage = kickMessage;
@@ -141,13 +141,13 @@ public class ChatListener implements Listener {
     private boolean canPlayerChat(Player player, String message) {
         // Vérification anti-spam
         if (isSpamming(player, message)) {
-            player.sendMessage("§c⚠ Ralentissez ! Attendez avant d'envoyer un autre message.");
+            player.sendMessage(ChatColor.RED + "⚠ Ralentissez ! Attendez avant d'envoyer un autre message.");
             return false;
         }
 
         // Vérification de la longueur du message
         if (message.length() > 256) {
-            player.sendMessage("§c❌ Votre message est trop long (maximum 256 caractères).");
+            player.sendMessage(ChatColor.RED + "❌ Votre message est trop long (maximum 256 caractères).");
             return false;
         }
 
@@ -171,7 +171,7 @@ public class ChatListener implements Listener {
         // Vérification de la répétition du même message
         String lastMessage = lastMessages.get(uuid);
         if (lastMessage != null && lastMessage.equals(message)) {
-            player.sendMessage("§c⚠ Vous ne pouvez pas envoyer le même message deux fois de suite.");
+            player.sendMessage(ChatColor.RED + "⚠ Vous ne pouvez pas envoyer le même message deux fois de suite.");
             return true;
         }
 
@@ -249,7 +249,7 @@ public class ChatListener implements Listener {
             prefix.addExtra(new TextComponent(playerTypeColor + "[" + playerType + "] "));
         }
         prefix.addExtra(new TextComponent(mineRankColor + "[" + mineRank + "] "));
-        prefix.addExtra(new TextComponent(player.getName() + " §f: "));
+        prefix.addExtra(new TextComponent(player.getName() + ChatColor.WHITE + ": "));
         finalMessage.addExtra(prefix);
 
         // NOUVEAU: Traitement amélioré des placeholders
@@ -262,8 +262,8 @@ public class ChatListener implements Listener {
 
             if (!canUseSpecialPlaceholders) {
                 // Si pas de permission, retire les placeholders
-                processedMessage = processedMessage.replaceAll("\\[hand\\]", "§c[PERMISSION REQUISE]");
-                processedMessage = processedMessage.replaceAll("\\[inv\\]", "§c[PERMISSION REQUISE]");
+                processedMessage = processedMessage.replaceAll("\\[hand\\]", ChatColor.RED + "[PERMISSION REQUISE]");
+                processedMessage = processedMessage.replaceAll("\\[inv\\]", ChatColor.RED + "[PERMISSION REQUISE]");
                 finalMessage.addExtra(new TextComponent(processedMessage));
                 return finalMessage;
             }
@@ -273,7 +273,6 @@ public class ChatListener implements Listener {
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[hand\\]|\\[inv\\]");
             java.util.regex.Matcher matcher = pattern.matcher(processedMessage);
 
-            int segmentIndex = 0;
             int lastEnd = 0;
 
             while (matcher.find()) {
@@ -318,30 +317,30 @@ public class ChatListener implements Listener {
      * NOUVEAU: Crée le composant pour [hand]
      */
     private TextComponent createHandComponent(ItemStack item) {
-        TextComponent handComponent = new TextComponent("§e[MAIN]");
+        TextComponent handComponent = new TextComponent(ChatColor.YELLOW + "[MAIN]");
 
         if (item == null || item.getType() == Material.AIR) {
             handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new TextComponent[]{new TextComponent("§cAucun objet en main")}));
+                    new TextComponent[]{new TextComponent(ChatColor.RED + "Aucun objet en main")}));
             return handComponent;
         }
 
         // Construit l'hover text détaillé
         StringBuilder hoverText = new StringBuilder();
-        hoverText.append("§f").append(item.getAmount()).append("x ");
+        hoverText.append(ChatColor.WHITE).append(item.getAmount()).append("x ");
 
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             hoverText.append(item.getItemMeta().getDisplayName());
         } else {
-            hoverText.append("§f").append(getItemDisplayName(item));
+            hoverText.append(ChatColor.WHITE).append(getItemDisplayName(item));
         }
 
         // Ajoute les enchantements si présents
         if (item.hasItemMeta() && item.getItemMeta().hasEnchants()) {
-            hoverText.append("\n§7Enchantements:");
+            hoverText.append("\n").append(ChatColor.GRAY).append("Enchantements:");
             item.getEnchantments().forEach((enchant, level) -> {
-                hoverText.append("\n§8- §d").append(enchant.getKey().getKey())
-                        .append(" §eNiv.").append(level);
+                hoverText.append("\n").append(ChatColor.DARK_GRAY).append("- ").append(ChatColor.LIGHT_PURPLE).append(enchant.getKey().getKey())
+                        .append(" ").append(ChatColor.YELLOW).append("Niv.").append(level);
             });
         }
 
@@ -364,10 +363,10 @@ public class ChatListener implements Listener {
      * NOUVEAU: Crée le composant pour [inv]
      */
     private TextComponent createInventoryComponent(Player player) {
-        TextComponent invComponent = new TextComponent("§b[INVENTAIRE]");
+        TextComponent invComponent = new TextComponent(ChatColor.AQUA + "[INVENTAIRE]");
 
         invComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                new TextComponent[]{new TextComponent("§7Cliquez pour voir l'inventaire de " + player.getName())}));
+                new TextComponent[]{new TextComponent(ChatColor.GRAY + "Cliquez pour voir l'inventaire de " + player.getName())}));
         invComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                 "/invsee " + player.getName()));
 
@@ -441,8 +440,8 @@ public class ChatListener implements Listener {
      * Obtient les statistiques du chat
      */
     public String getChatStats() {
-        return "§7Statistiques du chat:\n" +
-                "§e- Joueurs avec historique: §6" + lastMessages.size() + "\n" +
-                "§e- Messages en cache anti-spam: §6" + lastMessageTimes.size();
+        return ChatColor.GRAY + "Statistiques du chat:\n" +
+                ChatColor.YELLOW + "- Joueurs avec historique: " + ChatColor.GOLD + lastMessages.size() + "\n" +
+                ChatColor.YELLOW + "- Messages en cache anti-spam: " + ChatColor.GOLD + lastMessageTimes.size();
     }
 }

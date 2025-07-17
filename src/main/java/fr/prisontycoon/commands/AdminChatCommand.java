@@ -52,7 +52,6 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
             case "test" -> handleTestCommand(sender, args);
             case "broadcast" -> handleBroadcastCommand(sender, args);
             case "clear" -> handleClearCommand(sender);
-            case "logs" -> handleLogsCommand(sender, args);
             default -> sendHelpMessage(sender);
         }
 
@@ -271,40 +270,11 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Affiche les logs du chat
-     * Usage: /adminchat logs [joueur] [page]
-     */
-    private void handleLogsCommand(CommandSender sender, String[] args) {
-        int page = 1;
-        String playerFilter = null;
-
-        // Parse les arguments
-        if (args.length > 1) {
-            // Si c'est un nombre, c'est la page
-            try {
-                page = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
-                // Sinon c'est un nom de joueur
-                playerFilter = args[1];
-                if (args.length > 2) {
-                    try {
-                        page = Integer.parseInt(args[2]);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-        }
-
-        plugin.getChatLogger().showLogs(sender, playerFilter, page);
-    }
-
-    /**
      * Recharge le système
      */
     private void handleReloadCommand(CommandSender sender) {
         try {
             plugin.getModerationManager().reload();
-            plugin.getChatLogger().reload();
 
             sender.sendMessage("§a✅ Système de chat rechargé avec succès!");
             plugin.getPluginLogger().info("Système rechargé par " + sender.getName());
@@ -471,7 +441,6 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/adminchat unmute <joueur> §7- Démute un joueur");
         sender.sendMessage("§e/adminchat ban <joueur> <temps> [raison] §7- Ban un joueur");
         sender.sendMessage("§e/adminchat unban <joueur> §7- Déban un joueur");
-        sender.sendMessage("§e/adminchat logs [joueur] [page] §7- Voir les logs");
         sender.sendMessage("§e/adminchat reload §7- Recharge le système");
         sender.sendMessage("§e/adminchat stats §7- Affiche les statistiques");
         sender.sendMessage("§e/adminchat test [message] §7- Teste les formats");
@@ -486,12 +455,11 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("mute", "unmute", "ban", "unban", "reload", "stats", "test", "broadcast", "clear", "logs");
+            List<String> subCommands = Arrays.asList("mute", "unmute", "ban", "unban", "reload", "stats", "test", "broadcast", "clear");
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("mute") || args[0].equalsIgnoreCase("unmute") ||
-                    args[0].equalsIgnoreCase("ban") || args[0].equalsIgnoreCase("unban") ||
-                    args[0].equalsIgnoreCase("logs")) {
+                    args[0].equalsIgnoreCase("ban") || args[0].equalsIgnoreCase("unban")) {
                 // Suggestions de noms de joueurs
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     completions.add(player.getName());

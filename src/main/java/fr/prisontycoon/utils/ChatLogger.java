@@ -37,7 +37,6 @@ public class ChatLogger {
 
         // Démarre le processus d'écriture asynchrone
         startLogWriter();
-        loadTotalMessages();
     }
 
     /**
@@ -143,166 +142,6 @@ public class ChatLogger {
     }
 
     /**
-     * Affiche les logs à un administrateur
-     */
-    public void showLogs(CommandSender sender, String playerFilter, int page) {
-        // Cette méthode charge et affiche les logs de manière paginée
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                List<String> logs = loadLogs(playerFilter, 20, page);
-
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-                    sender.sendMessage("§6§l📋 LOGS DU CHAT " + (playerFilter != null ? "- " + playerFilter.toUpperCase() : "") + " (Page " + page + ")");
-                    sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
-                    if (logs.isEmpty()) {
-                        sender.sendMessage("§c❌ Aucun log trouvé.");
-                    } else {
-                        for (String log : logs) {
-                            sender.sendMessage(log);
-                        }
-                    }
-
-                    sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-                    sender.sendMessage("§7Utilisez §e/adminchat logs " + (playerFilter != null ? playerFilter + " " : "") + (page + 1) + " §7pour la page suivante");
-                });
-
-            } catch (Exception e) {
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    sender.sendMessage("§c❌ Erreur lors du chargement des logs: " + e.getMessage());
-                });
-            }
-        });
-    }
-
-    /**
-     * Charge les logs depuis les fichiers
-     */
-    private List<String> loadLogs(String playerFilter, int limit, int page) {
-        List<String> results = new ArrayList<>();
-        int skip = (page - 1) * limit;
-        int found = 0;
-        int skipped = 0;
-
-        // Récupère les fichiers de log triés par date (plus récent en premier)
-        File[] logFiles = logsFolder.listFiles((dir, name) -> name.endsWith(".log"));
-        if (logFiles == null) return results;
-
-        Arrays.sort(logFiles, (f1, f2) -> f2.getName().compareTo(f1.getName()));
-
-        for (File logFile : logFiles) {
-            if (found >= limit) break;
-
-            try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
-                List<String> fileLines = new ArrayList<>();
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("#") || line.trim().isEmpty()) continue;
-                    fileLines.add(line);
-                }
-
-                // Inverse l'ordre pour avoir les plus récents en premier
-                Collections.reverse(fileLines);
-
-                for (String logLine : fileLines) {
-                    if (found >= limit) break;
-
-                    // Filtre par joueur si nécessaire
-                    if (playerFilter != null && !logLine.toLowerCase().contains(playerFilter.toLowerCase())) {
-                        continue;
-                    }
-
-                    if (skipped < skip) {
-                        skipped++;
-                        continue;
-                    }
-
-                    // Formate la ligne pour l'affichage
-                    String formattedLine = formatLogLineForDisplay(logLine);
-                    if (formattedLine != null) {
-                        results.add(formattedLine);
-                        found++;
-                    }
-                }
-
-            } catch (IOException e) {
-                plugin.getPluginLogger().warning("Erreur lors de la lecture du fichier de log " + logFile.getName() + ": " + e.getMessage());
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Formate une ligne de log pour l'affichage
-     */
-    private String formatLogLineForDisplay(String logLine) {
-        try {
-            // Parse le format: [TIME] [TYPE] [PLAYER] [UUID] MESSAGE
-            if (!logLine.startsWith("[")) return null;
-
-            int firstClose = logLine.indexOf("]");
-            int secondOpen = logLine.indexOf("[", firstClose);
-            int secondClose = logLine.indexOf("]", secondOpen);
-            int thirdOpen = logLine.indexOf("[", secondClose);
-            int thirdClose = logLine.indexOf("]", thirdOpen);
-            int fourthOpen = logLine.indexOf("[", thirdClose);
-            int fourthClose = logLine.indexOf("]", fourthOpen);
-
-            if (firstClose == -1 || secondClose == -1 || thirdClose == -1 || fourthClose == -1) {
-                return "§7" + logLine; // Retourne la ligne brute si le parsing échoue
-            }
-
-            String time = logLine.substring(1, firstClose);
-            String type = logLine.substring(secondOpen + 1, secondClose);
-            String player = logLine.substring(thirdOpen + 1, thirdClose);
-            String message = logLine.substring(fourthClose + 2);
-
-            // Colore selon le type
-            String typeColor = switch (type.toUpperCase()) {
-                case "CHAT" -> "§f";
-                case "ADMIN" -> "§c";
-                case "COMMAND" -> "§e";
-                default -> "§7";
-            };
-
-            return "§8[§7" + time + "§8] " + typeColor + "[" + type + "] §b" + player + " §7: " + message;
-
-        } catch (Exception e) {
-            return "§7" + logLine; // Retourne la ligne brute en cas d'erreur
-        }
-    }
-
-    /**
-     * Charge le nombre total de messages loggés
-     */
-    private void loadTotalMessages() {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            int count = 0;
-            File[] logFiles = logsFolder.listFiles((dir, name) -> name.endsWith(".log"));
-
-            if (logFiles != null) {
-                for (File logFile : logFiles) {
-                    try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
-                        while (reader.readLine() != null) {
-                            if (!reader.readLine().startsWith("#")) {
-                                count++;
-                            }
-                        }
-                    } catch (IOException e) {
-                        // Ignore les erreurs de lecture
-                    }
-                }
-            }
-
-            totalMessagesLogged = count;
-            plugin.getPluginLogger().info("Messages de chat chargés: " + totalMessagesLogged);
-        });
-    }
-
-    /**
      * Obtient le nombre total de messages loggés
      */
     public int getTotalMessagesLogged() {
@@ -332,14 +171,6 @@ public class ChatLogger {
                 plugin.getPluginLogger().info("Nettoyage des logs: " + deletedCount + " fichiers supprimés (+ de " + daysToKeep + " jours)");
             }
         });
-    }
-
-    /**
-     * Recharge le système de logs
-     */
-    public void reload() {
-        loadTotalMessages();
-        plugin.getPluginLogger().info("Système de logs rechargé");
     }
 
     /**
