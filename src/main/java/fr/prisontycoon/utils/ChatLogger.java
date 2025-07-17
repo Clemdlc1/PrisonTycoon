@@ -1,12 +1,15 @@
 package fr.prisontycoon.utils;
 
 import fr.prisontycoon.PrisonTycoon;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**

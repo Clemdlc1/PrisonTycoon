@@ -3,8 +3,8 @@ package fr.prisontycoon.enchantments;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.managers.PickaxeManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import fr.prisontycoon.events.MiningListener;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -110,12 +110,15 @@ public class EnchantmentManager {
         // Ajoute les blocs à l'inventaire (quantité augmentée par Fortune)
         addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
 
-        // Applique tous les enchantements actifs dans les mines
-        processGreedEnchantments(player, playerData, blockType, blockLocation, true);
-        processSpecialEnchantments(player, playerData, blockLocation, mineName);
-        updateCombustion(player, playerData); // MODIFIÉ : Passe le joueur en paramètre
+        boolean pickaxeBroken = PickaxeManager.isPickaxeBroken(player);
+        if (!pickaxeBroken) {
+            processGreedEnchantments(player, playerData, blockType, true);
+            processSpecialEnchantments(player, playerData, blockLocation, mineName);
+            updateCombustion(player, playerData);
+            plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
+        }
 
-        plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
+        processTokenGreedWithPenalty(player, blockType, playerData);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -247,7 +250,7 @@ public class EnchantmentManager {
         addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
 
         // LIMITATION : Seuls Money/Token/Exp Greed s'appliquent sur les gains de base
-        processGreedEnchantments(player, playerData, blockType, blockLocation, false);
+        processGreedEnchantments(player, playerData, blockType, false);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -264,17 +267,9 @@ public class EnchantmentManager {
     /**
      * MODIFIÉ : Traite les enchantements Greed avec le nouveau GlobalBonusManager
      */
-    private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType,
-                                          Location blockLocation, boolean isMinedBlock) {
-        boolean pickaxeBroken = MiningListener.isPlayerPickaxeBroken(player);
-        double penaltyMultiplier = MiningListener.getPickaxePenaltyMultiplier(player);
-        int luckLevel = playerData.getEnchantmentLevel("luck");
+    private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType, boolean isMinedBlock) {
 
-        if (pickaxeBroken) {
-            // SEUL Token Greed fonctionne avec 90% de malus
-            processTokenGreedWithPenalty(player, blockType, playerData, luckLevel, penaltyMultiplier);
-            return; // Arrête ici, aucun autre enchantement ne fonctionne
-        }
+        int luckLevel = playerData.getEnchantmentLevel("luck");
 
         // MODIFIÉ: Utilise le GlobalBonusManager pour l'efficacité de combustion
         double baseCombustionMultiplier = playerData.getCombustionMultiplier();
@@ -306,29 +301,27 @@ public class EnchantmentManager {
         }
 
         // Exp Greed - Seulement sur blocs MINÉS
-        if (isMinedBlock) {
-            int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
-            if (expGreedLevel > 0) {
-                double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-                double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-                double totalChance = baseChance + luckBonus;
+        int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
+        if (expGreedLevel > 0) {
+            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+            double totalChance = baseChance + luckBonus;
 
-                if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                    long blockExp = blockValue.getExperience();
-                    long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
+            if (ThreadLocalRandom.current().nextDouble() < totalChance) {
+                long blockExp = blockValue.getExperience();
+                long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
 
-                    // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                    long finalGains = plugin.getGlobalBonusManager().applyExpGreedBonus(player, baseGains);
+                // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
+                long finalGains = plugin.getGlobalBonusManager().applyExpGreedBonus(player, baseGains);
 
-                    playerData.addExperienceViaPickaxe(finalGains);
-                    playerData.addGreedTrigger();
+                playerData.addExperienceViaPickaxe(finalGains);
+                playerData.addGreedTrigger();
 
-                    // Met à jour l'expérience vanilla
-                    plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
+                // Met à jour l'expérience vanilla
+                plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
 
-                    // Notification via nouveau système
-                    plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", finalGains, "XP");
-                }
+                // Notification via nouveau système
+                plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", finalGains, "XP");
             }
         }
 
@@ -390,10 +383,6 @@ public class EnchantmentManager {
      */
     private void processSpecialEnchantments(Player player, PlayerData playerData,
                                             Location blockLocation, String mineName) {
-        boolean pickaxeBroken = MiningListener.isPlayerPickaxeBroken(player);
-        if (pickaxeBroken) {
-            return; // Arrête ici, aucun autre enchantement ne fonctionne
-        }
 
         int laserLevel = playerData.getEnchantmentLevel("laser");
         int explosionLevel = playerData.getEnchantmentLevel("explosion");
@@ -418,15 +407,14 @@ public class EnchantmentManager {
     /**
      * NOUVEAU : Traite Token Greed avec malus de 90% quand la pioche est cassée
      */
-    private void processTokenGreedWithPenalty(Player player, Material blockType, PlayerData playerData, int luckLevel, double penaltyMultiplier) {
+    private void processTokenGreedWithPenalty(Player player, Material blockType, PlayerData playerData) {
         int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
         if (tokenGreedLevel <= 0) return;
 
-        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-        double totalChance = baseChance + luckBonus;
+        double chance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        double penaltyMultiplier = PickaxeManager.getPickaxePenaltyMultiplier(player);
 
-        if (ThreadLocalRandom.current().nextDouble() < totalChance) {
+        if (ThreadLocalRandom.current().nextDouble() < chance) {
             BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
             long blockTokens = blockValue.getTokens();
             long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * penaltyMultiplier);

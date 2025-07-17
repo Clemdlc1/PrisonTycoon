@@ -56,6 +56,28 @@ public class EnchantmentBookManager {
         enchantmentBooks.put(book.getId(), book);
     }
 
+    public void loadActiveEnchantments(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Set<String> activeEnchants = playerData.getActiveEnchantmentBooks();
+
+        if (activeEnchants != null && !activeEnchants.isEmpty()) {
+            activeEnchantments.put(player.getUniqueId(), new HashSet<>(activeEnchants));
+            plugin.getPluginLogger().debug("Enchantements actifs chargés pour " + player.getName() + ": " + activeEnchants.size());
+        }
+    }
+
+    /**
+     * NOUVEAU : Sauvegarde les enchantements actifs dans la data persistante
+     */
+    public void saveActiveEnchantments(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Set<String> activeEnchants = activeEnchantments.getOrDefault(player.getUniqueId(), new HashSet<>());
+
+        playerData.setActiveEnchantmentBooks(activeEnchants);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        plugin.getPluginLogger().debug("Enchantements actifs sauvegardés pour " + player.getName() + ": " + activeEnchants.size());
+    }
+
     /**
      * Active/Désactive un enchantement (coût en XP)
      */
@@ -72,6 +94,8 @@ public class EnchantmentBookManager {
             playerActiveEnchants.remove(bookId);
             player.sendMessage("§c⭕ Enchantement §e" + enchantmentBooks.get(bookId).getName() + " §cdésactivé!");
             player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.8f, 1.2f);
+            saveActiveEnchantments(player);
+            plugin.getPickaxeManager().updatePlayerPickaxe(player);
             return true;
         } else {
             // Vérification de la limite (4 max)
@@ -89,6 +113,8 @@ public class EnchantmentBookManager {
             // Déduction de l'XP et activation
             player.setTotalExperience(player.getTotalExperience() - xpCost);
             playerActiveEnchants.add(bookId);
+            plugin.getPickaxeManager().updatePlayerPickaxe(player);
+            saveActiveEnchantments(player);
 
             player.sendMessage("§a✅ Enchantement §e" + enchantmentBooks.get(bookId).getName() + " §aactivé pour §b" + xpCost + " XP§a!");
             player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
@@ -141,14 +167,22 @@ public class EnchantmentBookManager {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§5⚡ " + book.getName());
+        meta.setDisplayName("§5⚡ §l" + book.getName() + " §r§7(Niveau " + level + ")");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§7" + book.getDescription());
-        lore.add("§e⚡ Actions:");
-        lore.add("§7▸ §6Clic dans le menu enchantements");
+        lore.add("§e✨ §lEnchantement Unique Légendaire");
+        lore.add("");
+        lore.add("§6📖 Description:");
+        lore.add("§7▸ " + book.getDescription());
+        lore.add("");
+        lore.add("§a🎯 Utilisation:");
+        lore.add("§7▸ §6Cliquez dans le menu enchantements");
         lore.add("§7  pour appliquer à votre pioche");
+        lore.add("§7▸ §aPeut être activé/désactivé");
+        lore.add("§7▸ §cCoût d'activation en XP");
+        lore.add("");
+        lore.add("§e⚡ Pouvoir: §d" + getEnchantmentPowerDescription(book.getId()));
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
@@ -167,6 +201,36 @@ public class EnchantmentBookManager {
 
         item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+     * NOUVEAU : Retourne une description du pouvoir de l'enchantement
+     */
+    private String getEnchantmentPowerDescription(String bookId) {
+        switch (bookId) {
+            case "bomber":
+                return "Explosion destructrice";
+            case "autosell":
+                return "Vente automatique";
+            case "beaconbreaker":
+                return "Briseur de beacons";
+            case "excavation":
+                return "Minage en zone 3x3";
+            case "incassable":
+                return "Durabilité infinie";
+            case "tunnel":
+                return "Perceur de tunnels";
+            case "plusvalue":
+                return "Gains financiers améliorés";
+            case "tonnerre":
+                return "Foudre dévastatrice";
+            case "veinminer":
+                return "Extraction de veines";
+            case "chaos":
+                return "Effet chaotique aléatoire";
+            default:
+                return "Pouvoir mystérieux";
+        }
     }
 
     /**
@@ -196,36 +260,6 @@ public class EnchantmentBookManager {
     }
 
     /**
-     * Vérifie si le joueur possède un livre
-     */
-    public boolean hasEnchantmentBook(Player player, String bookId) {
-        return getEnchantmentBookLevel(player, bookId) > 0;
-    }
-
-    /**
-     * Obtient le niveau d'un livre chez le joueur
-     */
-    public int getEnchantmentBookLevel(Player player, String bookId) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.getEnchantmentLevel("unique_" + bookId);
-    }
-
-    /**
-     * Vérifie si un enchantement est actif
-     */
-    public boolean isEnchantmentActive(Player player, String bookId) {
-        Set<String> playerActiveEnchants = activeEnchantments.get(player.getUniqueId());
-        return playerActiveEnchants != null && playerActiveEnchants.contains(bookId);
-    }
-
-    /**
-     * Obtient tous les enchantements actifs d'un joueur
-     */
-    public Set<String> getActiveEnchantments(Player player) {
-        return activeEnchantments.getOrDefault(player.getUniqueId(), new HashSet<>());
-    }
-
-    /**
      * Traitement des enchantements lors du minage
      */
     public void processMiningEnchantments(Player player, Location location) {
@@ -240,9 +274,24 @@ public class EnchantmentBookManager {
         }
     }
 
-    /**
-     * Obtient tous les livres d'enchantement
-     */
+    public boolean hasEnchantmentBook(Player player, String bookId) {
+        return getEnchantmentBookLevel(player, bookId) > 0;
+    }
+
+    public int getEnchantmentBookLevel(Player player, String bookId) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        return playerData.getEnchantmentLevel("unique_" + bookId);
+    }
+
+    public boolean isEnchantmentActive(Player player, String bookId) {
+        Set<String> playerActiveEnchants = activeEnchantments.get(player.getUniqueId());
+        return playerActiveEnchants != null && playerActiveEnchants.contains(bookId);
+    }
+
+    public Set<String> getActiveEnchantments(Player player) {
+        return activeEnchantments.getOrDefault(player.getUniqueId(), new HashSet<>());
+    }
+
     public Collection<EnchantmentBook> getAllEnchantmentBooks() {
         return enchantmentBooks.values();
     }
@@ -312,10 +361,15 @@ public class EnchantmentBookManager {
 
     public abstract static class EnchantmentBook {
         public abstract String getId();
+
         public abstract String getName();
+
         public abstract String getDescription();
+
         public abstract int getMaxLevel();
+
         public abstract Material getDisplayMaterial();
+
         // MODIFIÉ : Remplacé getCostForLevel par getCost
         public abstract long getCost();
 
@@ -325,16 +379,34 @@ public class EnchantmentBookManager {
         public abstract void onMining(Player player, Location location, int level, PrisonTycoon plugin);
     }
 
-    // ===== Implémentation des enchantements =====
+// ===== Implémentation des enchantements =====
 
     public static class BomberEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "bomber"; }
-        @Override public String getName() { return "Bomber"; }
-        @Override public String getDescription() { return "Explosion rayon 6 blocs autour du joueur"; }
-        @Override public int getMaxLevel() { return 20; }
-        @Override public Material getDisplayMaterial() { return Material.TNT; }
+        @Override
+        public String getId() {
+            return "bomber";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "Bomber";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Explosion rayon 6 blocs autour du joueur";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 20;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.TNT;
+        }
+
         @Override
         public long getCost() {
             return 15000;
@@ -352,6 +424,7 @@ public class EnchantmentBookManager {
             // Animation d'explosion
             new BukkitRunnable() {
                 int ticks = 0;
+
                 @Override
                 public void run() {
                     if (ticks > 20) {
@@ -372,6 +445,10 @@ public class EnchantmentBookManager {
                                 for (int z = -6; z <= 6; z++) {
                                     Location blockLoc = center.clone().add(x, y, z);
                                     if (blockLoc.distance(center) <= 6) {
+                                        // NOUVEAU : Protection Beacon
+                                        if (blockLoc.getBlock().getType() == Material.BEACON) {
+                                            continue;
+                                        }
                                         // Simuler le minage du bloc
                                         if (blockLoc.getBlock().getType() != Material.AIR) {
                                             plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "explosion");
@@ -391,13 +468,31 @@ public class EnchantmentBookManager {
     }
 
     public static class AutoSellEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "autosell"; }
-        @Override public String getName() { return "AutoSell"; }
-        @Override public String getDescription() { return "Vente automatique des minerais (-2% pénalité)"; }
-        @Override public int getMaxLevel() { return 1; }
-        @Override public Material getDisplayMaterial() { return Material.EMERALD; }
+        @Override
+        public String getId() {
+            return "autosell";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "AutoSell";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Vente automatique des minerais (-2% pénalité)";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 1;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.EMERALD;
+        }
+
         @Override
         public long getCost() {
             return 25000;
@@ -405,19 +500,36 @@ public class EnchantmentBookManager {
 
         @Override
         public void onMining(Player player, Location location, int level, PrisonTycoon plugin) {
-            // Logique AutoSell sera intégrée dans le système de minage principal
-            // avec pénalité de 2% sur les prix
+            // La logique est gérée ailleurs
         }
     }
 
     public static class BeaconBreakerEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "beaconbreaker"; }
-        @Override public String getName() { return "BeaconBreaker"; }
-        @Override public String getDescription() { return "Minage instantané des beacons"; }
-        @Override public int getMaxLevel() { return 1; }
-        @Override public Material getDisplayMaterial() { return Material.BEACON; }
+        @Override
+        public String getId() {
+            return "beaconbreaker";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "BeaconBreaker";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Minage instantané des beacons";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 1;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.BEACON;
+        }
+
         @Override
         public long getCost() {
             return 50000;
@@ -425,48 +537,118 @@ public class EnchantmentBookManager {
 
         @Override
         public void onMining(Player player, Location location, int level, PrisonTycoon plugin) {
-            // Logique de minage instantané beacon intégrée au système principal
+            // La logique est gérée ailleurs
         }
     }
 
     public static class ExcavationEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "excavation"; }
-        @Override public String getName() { return "Excavation"; }
-        @Override public String getDescription() { return "Minage 3x3"; }
-        @Override public int getMaxLevel() { return 1; }
-        @Override public Material getDisplayMaterial() { return Material.IRON_PICKAXE; }
+        @Override
+        public String getId() {
+            return "excavation";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "Excavation";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Minage 3x3x1 dans la direction du regard";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 1;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.IRON_PICKAXE;
+        }
+
         @Override
         public long getCost() {
             return 30000;
         }
 
+        /**
+         * CORRIGÉ : Mine un mur de 3x3x1 face au joueur, avec protection des beacons.
+         */
         @Override
         public void onMining(Player player, Location location, int level, PrisonTycoon plugin) {
-            // Mine dans un carré 3x3 autour du bloc miné
-            for (int x = -1; x <= 1; x++) {
-                for (int y = -1; y <= 1; y++) {
+            // 1. Calculer le vecteur entre les yeux du joueur et le centre du bloc
+            Location blockCenter = location.clone().add(0.5, 0.5, 0.5);
+            Vector vector = blockCenter.subtract(player.getEyeLocation()).toVector();
+
+            // 2. Déterminer l'axe dominant du vecteur pour trouver la face touchée
+            double absX = Math.abs(vector.getX());
+            double absY = Math.abs(vector.getY());
+            double absZ = Math.abs(vector.getZ());
+
+            // 3. Miner la zone 3x3 correspondante
+            if (absY > absX && absY > absZ) {
+                // Face du HAUT ou du BAS (plan X-Z)
+                for (int x = -1; x <= 1; x++) {
                     for (int z = -1; z <= 1; z++) {
-                        Location blockLoc = location.clone().add(x, y, z);
-                        if (blockLoc.getBlock().getType() != Material.AIR) {
-                            plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "excavation");
-                            blockLoc.getBlock().setType(Material.AIR);
-                        }
+                        destroyBlock(player, location.clone().add(x, 0, z), plugin);
                     }
                 }
+            } else if (absX > absY && absX > absZ) {
+                // Face EST ou OUEST (plan Y-Z)
+                for (int y = -1; y <= 1; y++) {
+                    for (int z = -1; z <= 1; z++) {
+                        destroyBlock(player, location.clone().add(0, y, z), plugin);
+                    }
+                }
+            } else {
+                // Face NORD ou SUD (plan X-Y)
+                for (int x = -1; x <= 1; x++) {
+                    for (int y = -1; y <= 1; y++) {
+                        destroyBlock(player, location.clone().add(x, y, 0), plugin);
+                    }
+                }
+            }
+        }
+
+        private void destroyBlock(Player player, Location blockLoc, PrisonTycoon plugin) {
+            // NOUVEAU : Protection Beacon
+            if (blockLoc.getBlock().getType() == Material.BEACON) {
+                return;
+            }
+            if (blockLoc.getBlock().getType() != Material.AIR) {
+                plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "excavation");
+                blockLoc.getBlock().setType(Material.AIR);
             }
         }
     }
 
     public static class IncassableEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "incassable"; }
-        @Override public String getName() { return "Incassable"; }
-        @Override public String getDescription() { return "Durabilité infinie"; }
-        @Override public int getMaxLevel() { return 1; }
-        @Override public Material getDisplayMaterial() { return Material.DIAMOND; }
+        @Override
+        public String getId() {
+            return "incassable";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "Incassable";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Durabilité infinie";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 1;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.DIAMOND;
+        }
+
         @Override
         public long getCost() {
             return 100000;
@@ -474,18 +656,36 @@ public class EnchantmentBookManager {
 
         @Override
         public void onMining(Player player, Location location, int level, PrisonTycoon plugin) {
-            // Logique de durabilité infinie intégrée au système principal
+            // La logique est gérée ailleurs
         }
     }
 
     public static class TunnelEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "tunnel"; }
-        @Override public String getName() { return "Tunnel"; }
-        @Override public String getDescription() { return "Chance de miner 3x3 jusqu'au bout de la mine"; }
-        @Override public int getMaxLevel() { return 20; }
-        @Override public Material getDisplayMaterial() { return Material.MINECART; }
+        @Override
+        public String getId() {
+            return "tunnel";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "Tunnel";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Chance de miner 3x3 jusqu'au bout de la mine";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 20;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.MINECART;
+        }
+
         @Override
         public long getCost() {
             return 10000;
@@ -502,6 +702,7 @@ public class EnchantmentBookManager {
         private void triggerTunnel(Player player, Location start, PrisonTycoon plugin) {
             new BukkitRunnable() {
                 int distance = 0;
+
                 @Override
                 public void run() {
                     if (distance > 50) { // Limite de la mine
@@ -517,17 +718,18 @@ public class EnchantmentBookManager {
                         for (int y = -1; y <= 1; y++) {
                             for (int z = -1; z <= 1; z++) {
                                 Location blockLoc = center.clone().add(x, y, z);
+                                // NOUVEAU : Protection Beacon
+                                if (blockLoc.getBlock().getType() == Material.BEACON) {
+                                    continue;
+                                }
                                 if (blockLoc.getBlock().getType() != Material.AIR) {
                                     plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "tunnel");
                                     blockLoc.getBlock().setType(Material.AIR);
-
-                                    // Effets visuels
                                     blockLoc.getWorld().spawnParticle(Particle.BLOCK, blockLoc, 5, blockLoc.getBlock().getBlockData());
                                 }
                             }
                         }
                     }
-
                     distance++;
                 }
             }.runTaskTimer(plugin, 0, 2); // Toutes les 2 ticks
@@ -538,13 +740,31 @@ public class EnchantmentBookManager {
     }
 
     public static class PlusValueEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "plusvalue"; }
-        @Override public String getName() { return "PlusValue"; }
-        @Override public String getDescription() { return "Transforme tous les blocs en bloc de plus haute valeur"; }
-        @Override public int getMaxLevel() { return 1; }
-        @Override public Material getDisplayMaterial() { return Material.GOLD_BLOCK; }
+        @Override
+        public String getId() {
+            return "plusvalue";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "PlusValue";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Transforme tous les blocs en bloc de plus haute valeur";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 1;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.GOLD_BLOCK;
+        }
+
         @Override
         public long getCost() {
             return 100000;
@@ -552,18 +772,36 @@ public class EnchantmentBookManager {
 
         @Override
         public void onMining(Player player, Location location, int level, PrisonTycoon plugin) {
-            // Logique de transformation intégrée au système de valeur des blocs
+            // La logique est gérée ailleurs
         }
     }
 
     public static class TonnerreEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "tonnerre"; }
-        @Override public String getName() { return "Tonnerre"; }
-        @Override public String getDescription() { return "Tous les blocs au-dessus cassés dans un rayon de 5"; }
-        @Override public int getMaxLevel() { return 20; }
-        @Override public Material getDisplayMaterial() { return Material.LIGHTNING_ROD; }
+        @Override
+        public String getId() {
+            return "tonnerre";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "Tonnerre";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Tous les blocs au-dessus cassés dans un rayon de 5";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 20;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.LIGHTNING_ROD;
+        }
+
         @Override
         public long getCost() {
             return 100000;
@@ -580,6 +818,7 @@ public class EnchantmentBookManager {
         private void triggerThunder(Player player, Location center, PrisonTycoon plugin) {
             new BukkitRunnable() {
                 int phase = 0;
+
                 @Override
                 public void run() {
                     if (phase > 30) {
@@ -588,22 +827,22 @@ public class EnchantmentBookManager {
                     }
 
                     if (phase == 0) {
-                        // Effets de préparation
                         center.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, center, 50, 5, 10, 5, 0.3);
                         player.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 1.2f);
                     } else if (phase == 15) {
-                        // Destruction chaotique des blocs au-dessus
                         for (int y = 1; y <= 50; y++) {
                             for (int x = -5; x <= 5; x++) {
                                 for (int z = -5; z <= 5; z++) {
-                                    if (ThreadLocalRandom.current().nextDouble() < 0.7) { // Aspect chaotique
+                                    if (ThreadLocalRandom.current().nextDouble() < 0.7) {
                                         Location blockLoc = center.clone().add(x, y, z);
                                         if (blockLoc.distance(center.clone().add(0, y, 0)) <= 5) {
+                                            // NOUVEAU : Protection Beacon
+                                            if (blockLoc.getBlock().getType() == Material.BEACON) {
+                                                continue;
+                                            }
                                             if (blockLoc.getBlock().getType() != Material.AIR) {
                                                 plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "tonnerre");
                                                 blockLoc.getBlock().setType(Material.AIR);
-
-                                                // Effets visuels
                                                 blockLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, blockLoc, 3);
                                             }
                                         }
@@ -611,10 +850,8 @@ public class EnchantmentBookManager {
                                 }
                             }
                         }
-
                         player.sendMessage("§e⚡ §bTonnerre déclenché! Destruction divine!");
                     }
-
                     phase++;
                 }
             }.runTaskTimer(plugin, 0, 1);
@@ -622,13 +859,31 @@ public class EnchantmentBookManager {
     }
 
     public static class VeinMinerEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "veinminer"; }
-        @Override public String getName() { return "VeinMiner"; }
-        @Override public String getDescription() { return "Chance de miner tout le filon connecté (max 100 blocs)"; }
-        @Override public int getMaxLevel() { return 20; }
-        @Override public Material getDisplayMaterial() { return Material.DIAMOND_ORE; }
+        @Override
+        public String getId() {
+            return "veinminer";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "VeinMiner";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Chance de miner tout le filon connecté (max 100 blocs)";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 20;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.DIAMOND_ORE;
+        }
+
         @Override
         public long getCost() {
             return 100000;
@@ -636,6 +891,11 @@ public class EnchantmentBookManager {
 
         @Override
         public void onMining(Player player, Location location, int level, PrisonTycoon plugin) {
+            // NOUVEAU : Ne pas activer sur un beacon
+            if (location.getBlock().getType() == Material.BEACON) {
+                return;
+            }
+
             double chance = level * 0.04; // 4% par niveau
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 triggerVeinMining(player, location, plugin);
@@ -657,8 +917,6 @@ public class EnchantmentBookManager {
                         if (loc.getBlock().getType() == targetMaterial) {
                             plugin.getEnchantmentManager().processBlockDestroyed(player, loc, targetMaterial, "veinminer");
                             loc.getBlock().setType(Material.AIR);
-
-                            // Effets visuels
                             loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 3);
                             count++;
                         }
@@ -702,19 +960,36 @@ public class EnchantmentBookManager {
                     if (found.size() >= maxBlocks) break;
                 }
             }
-
             return found;
         }
     }
 
     public static class ChaosEnchantmentBook extends EnchantmentBook {
-        @Override public String getId() { return "chaos"; }
-        @Override public String getName() { return "Chaos"; }
-        @Override public String getDescription() { return "Mine 30s aléatoirement dans un rayon de 50 blocs"; }
-        @Override public int getMaxLevel() { return 5; }
-        @Override public Material getDisplayMaterial() { return Material.NETHER_STAR; }
+        @Override
+        public String getId() {
+            return "chaos";
+        }
 
-        // MODIFIÉ : Le coût est maintenant fixe.
+        @Override
+        public String getName() {
+            return "Chaos";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Mine 30s aléatoirement dans un rayon de 50 blocs";
+        }
+
+        @Override
+        public int getMaxLevel() {
+            return 5;
+        }
+
+        @Override
+        public Material getDisplayMaterial() {
+            return Material.NETHER_STAR;
+        }
+
         @Override
         public long getCost() {
             return 100000;
@@ -750,15 +1025,14 @@ public class EnchantmentBookManager {
                         double z = (ThreadLocalRandom.current().nextDouble() - 0.5) * 100;
 
                         Location randomLoc = center.clone().add(x, y, z);
-                        if (randomLoc.getBlock().getType() != Material.AIR) {
+
+                        // NOUVEAU : Protection Beacon
+                        if (randomLoc.getBlock().getType() != Material.AIR && randomLoc.getBlock().getType() != Material.BEACON) {
                             plugin.getEnchantmentManager().processBlockDestroyed(player, randomLoc, randomLoc.getBlock().getType(), "chaos");
                             randomLoc.getBlock().setType(Material.AIR);
-
-                            // Effets visuels chaotiques
                             randomLoc.getWorld().spawnParticle(Particle.PORTAL, randomLoc, 5, 0.5, 0.5, 0.5, 0.1);
                         }
                     }
-
                     ticks++;
                 }
             }.runTaskTimer(plugin, 0, 1);

@@ -4,7 +4,10 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
@@ -21,18 +24,14 @@ import java.util.Set;
  */
 public class EnchantmentBookGUI {
 
-    private final PrisonTycoon plugin;
-
-    // Slots pour les 7 livres principaux (centre)
-    private static final int[] MAIN_BOOK_SLOTS = {11, 12, 13, 14, 15, 20, 21};
-    // Slots pour les 3 livres supplémentaires (dessous)
-    private static final int[] EXTRA_BOOK_SLOTS = {22, 23, 24};
+    private static final int[] MAIN_BOOK_SLOTS = {11, 12, 13, 14, 15};
+    private static final int[] EXTRA_BOOK_SLOTS = {20, 21, 22, 23, 24};
     private static final int SUMMARY_SLOT = 4;
-
     // Slots des boutons de contrôle
     private static final int BACK_BUTTON_SLOT = 27;
     private static final int INFO_SLOT = 31;
     private static final int SHOP_SLOT = 35;
+    private final PrisonTycoon plugin;
 
     public EnchantmentBookGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -44,13 +43,8 @@ public class EnchantmentBookGUI {
     public void openEnchantmentBookMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 36, "§5⚡ §lEnchantements Uniques §5⚡");
 
-        // Remplissage décoratif
         fillWithGlass(gui);
-
-        // Affichage des livres d'enchantement
         displayEnchantmentBooks(gui, player);
-
-        // Boutons de contrôle
         setupControlButtons(gui);
 
         player.openInventory(gui);
@@ -63,106 +57,88 @@ public class EnchantmentBookGUI {
     private void displayEnchantmentBooks(Inventory gui, Player player) {
         List<EnchantmentBookManager.EnchantmentBook> allBooks = new ArrayList<>(plugin.getEnchantmentBookManager().getAllEnchantmentBooks());
 
-        // Affichage des 7 livres principaux
-        for (int i = 0; i < Math.min(7, allBooks.size()); i++) {
+        for (int i = 0; i < Math.min(5, allBooks.size()); i++) {
             EnchantmentBookManager.EnchantmentBook book = allBooks.get(i);
             ItemStack bookItem = createBookItem(player, book);
             gui.setItem(MAIN_BOOK_SLOTS[i], bookItem);
         }
 
-        // Affichage des 3 livres supplémentaires
-        for (int i = 7; i < Math.min(10, allBooks.size()); i++) {
+        for (int i = 5; i < Math.min(10, allBooks.size()); i++) {
             EnchantmentBookManager.EnchantmentBook book = allBooks.get(i);
             ItemStack bookItem = createBookItem(player, book);
-            gui.setItem(EXTRA_BOOK_SLOTS[i - 7], bookItem);
+            gui.setItem(EXTRA_BOOK_SLOTS[i - 5], bookItem);
         }
     }
 
     /**
-     * Crée l'item représentant un livre d'enchantement
+     * AMÉLIORÉ : Crée l'item représentant un livre d'enchantement avec lore détaillé
      */
     private ItemStack createBookItem(Player player, EnchantmentBookManager.EnchantmentBook book) {
-        ItemStack item = new ItemStack(book.getDisplayMaterial());
-        ItemMeta meta = item.getItemMeta();
-
+        boolean owned = plugin.getEnchantmentBookManager().hasEnchantmentBook(player, book.getId());
         int level = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, book.getId());
         boolean isActive = plugin.getEnchantmentBookManager().isEnchantmentActive(player, book.getId());
 
-        // Nom avec statut amélioré
-        String status;
-        if (isActive) {
-            status = "§a✅ ACTIF";
-        } else if (level > 0) {
-            status = "§c⭕ INACTIF";
-        } else {
-            status = "§7❌ NON POSSÉDÉ";
-        }
+        // Matériau selon l'état
+        Material material = owned ? (isActive ? book.getDisplayMaterial() : Material.ENCHANTED_BOOK) : Material.BOOK;
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§e" + book.getName() + " §7(" + status + "§7)");
+        // Titre avec état
+        String statusIcon = owned ? (isActive ? "§a✅" : "§c⭕") : "§8❌";
+        meta.setDisplayName(statusIcon + " §e§l" + book.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§7" + book.getDescription());
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        // Description avec emojis
+        lore.add("§6📖 Description:");
+        lore.add("§7▸ " + book.getDescription());
         lore.add("");
 
-        if (level > 0) {
-            lore.add("§aNiveau actuel: §b" + level + "§7/§b" + book.getMaxLevel());
-            lore.add("");
+        // Informations détaillées
+        lore.add("§b⭐ Informations:");
+        lore.add("§7▸ Niveau max: §e" + book.getMaxLevel());
 
-            // NOUVEAU : Affichage des conditions d'activation
-            String errorMsg = checkActivationError(player, book.getId());
-            if (errorMsg != null && !isActive) {
-                lore.add("§c⚠️ " + errorMsg);
-                lore.add("");
+        if (owned) {
+            lore.add("§7▸ Votre niveau: §a" + level + "§7/§e" + book.getMaxLevel());
+            lore.add("§7▸ État: " + (isActive ? "§a✅ Actif" : "§c⭕ Inactif"));
+        } else {
+            lore.add("§7▸ Statut: §c❌ Non possédé");
+        }
+        lore.add("");
+
+        // Actions possibles
+        lore.add("§e⚡ Actions:");
+        if (owned) {
+            if (isActive) {
+                lore.add("§7▸ §c⇧ + Clic §7pour désactiver");
+                lore.add("§7  §7(Gratuit)");
             } else {
-                lore.add("§e⚡ Actions:");
-                lore.add("§7▸ §6Shift+Clic §7pour " + (isActive ? "§cdésactiver" : "§aactiver"));
-
-                if (!isActive && errorMsg == null) {
-                    Set<String> activeEnchants = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
-                    int cost = calculateActivationCost(activeEnchants.size());
-                    lore.add("§7▸ Coût activation: §b" + cost + " XP");
+                Set<String> activeEnchants = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
+                if (activeEnchants.size() >= 4) {
+                    lore.add("§7▸ §c❌ Limite atteinte (4 max)");
+                } else {
+                    int xpCost = calculateActivationCost(activeEnchants.size());
+                    if (player.getTotalExperience() >= xpCost) {
+                        lore.add("§7▸ §a⇧ + Clic §7pour activer");
+                        lore.add("§7  §b(" + xpCost + " XP requis)");
+                    } else {
+                        lore.add("§7▸ §c⇧ + Clic §7pour activer");
+                        lore.add("§7  §c(" + xpCost + " XP requis)");
+                    }
                 }
             }
+            lore.add("§7▸ §eClic normal §7pour voir détails");
         } else {
-            lore.add("§cVous ne possédez pas ce livre!");
-            lore.add("");
-            lore.add("§7▸ Achetez-le dans la boutique");
-            lore.add("§7  pour pouvoir l'utiliser");
+            lore.add("§7▸ §6Achetez d'abord ce livre");
+            lore.add("§7  §7dans la boutique!");
         }
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
         item.setItemMeta(meta);
-
         return item;
-    }
-
-    /**
-     * NOUVEAU : Vérifie les conditions d'activation d'un enchantement
-     */
-    private String checkActivationError(Player player, String bookId) {
-        if (!plugin.getEnchantmentBookManager().hasEnchantmentBook(player, bookId)) {
-            return "§cVous ne possédez pas ce livre!";
-        }
-
-        Set<String> activeEnchants = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
-        boolean isActive = activeEnchants.contains(bookId);
-
-        if (!isActive) {
-            if (activeEnchants.size() >= 4) {
-                return "§cMaximum 4 enchantements actifs!";
-            }
-
-            int xpCost = calculateActivationCost(activeEnchants.size());
-            if (player.getTotalExperience() < xpCost) {
-                return "§cPas assez d'XP! (" + xpCost + " requis)";
-            }
-        }
-
-        return null; // Pas d'erreur
     }
 
     /**
@@ -177,25 +153,6 @@ public class EnchantmentBookGUI {
         backButton.setItemMeta(backMeta);
         gui.setItem(BACK_BUTTON_SLOT, backButton);
 
-        // Item d'information
-        ItemStack infoItem = new ItemStack(Material.BOOK);
-        ItemMeta infoMeta = infoItem.getItemMeta();
-        infoMeta.setDisplayName("§b📖 §lInformations");
-        infoMeta.setLore(List.of(
-                "§7§lSystème d'Enchantements Uniques",
-                "",
-                "§e⚡ Fonctionnement:",
-                "§7▸ Achetez des livres avec des beacons",
-                "§7▸ Ajoutez les livres pour augmenter le niveau",
-                "§7▸ Activez/désactivez avec Shift+Clic",
-                "§7▸ Maximum 4 enchantements actifs",
-                "§7▸ Coût d'activation en XP",
-                "",
-                "§c⚠ §7Ajouter un livre désactive l'enchant!"
-        ));
-        infoItem.setItemMeta(infoMeta);
-        gui.setItem(INFO_SLOT, infoItem);
-
         // Bouton boutique
         ItemStack shopButton = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shopButton.getItemMeta();
@@ -207,6 +164,7 @@ public class EnchantmentBookGUI {
         shopButton.setItemMeta(shopMeta);
         gui.setItem(SHOP_SLOT, shopButton);
 
+        // Item de résumé
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
@@ -223,9 +181,7 @@ public class EnchantmentBookGUI {
 
         meta.setLore(lore);
         item.setItemMeta(meta);
-
         gui.setItem(SUMMARY_SLOT, item);
-
     }
 
     /**
@@ -248,7 +204,7 @@ public class EnchantmentBookGUI {
      * Ouvre la boutique des livres d'enchantement
      */
     public void openBookShop(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§a💰 §lBoutique de Livres §a💰");
+        Inventory gui = Bukkit.createInventory(null, 36, "§a💰 §lBoutique de Livres §a💰");
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -265,8 +221,8 @@ public class EnchantmentBookGUI {
 
         List<EnchantmentBookManager.EnchantmentBook> allBooks = new ArrayList<>(plugin.getEnchantmentBookManager().getAllEnchantmentBooks());
 
-        // Slots pour les livres (3 lignes centrales)
-        int[] bookSlots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
+        // Slots pour les livres
+        int[] bookSlots = {11, 12, 13, 14, 15, 20, 21, 22, 23, 24};
 
         for (int i = 0; i < Math.min(allBooks.size(), bookSlots.length); i++) {
             EnchantmentBookManager.EnchantmentBook book = allBooks.get(i);
@@ -279,7 +235,7 @@ public class EnchantmentBookGUI {
         ItemMeta backMeta = backButton.getItemMeta();
         backMeta.setDisplayName("§c⬅ §lRetour");
         backButton.setItemMeta(backMeta);
-        gui.setItem(49, backButton);
+        gui.setItem(27, backButton);
 
         // Remplissage décoratif
         ItemStack glass = new ItemStack(Material.GREEN_STAINED_GLASS_PANE);
@@ -298,7 +254,7 @@ public class EnchantmentBookGUI {
     }
 
     /**
-     * MODIFIÉ : Crée l'item pour la boutique avec nouvelles instructions
+     * AMÉLIORÉ : Crée l'item pour la boutique avec lore détaillé
      */
     private ItemStack createShopBookItem(Player player, EnchantmentBookManager.EnchantmentBook book) {
         ItemStack item = new ItemStack(book.getDisplayMaterial());
@@ -306,10 +262,14 @@ public class EnchantmentBookGUI {
 
         int currentLevel = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, book.getId());
         long cost = book.getCost();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        boolean canAfford = playerData.getBeacons() >= cost;
 
-        meta.setDisplayName("§e" + book.getName());
+        // Titre avec indicateur de disponibilité
+        String affordIcon = canAfford ? "§a💰" : "§c💸";
+        meta.setDisplayName(affordIcon + " §e§l" + book.getName());
 
-        // NOUVEAU : Ajout de l'ID du livre dans les métadonnées pour identification
+        // ID du livre pour identification
         meta.getPersistentDataContainer().set(
                 new NamespacedKey(plugin, "shop_book_id"),
                 PersistentDataType.STRING,
@@ -317,79 +277,92 @@ public class EnchantmentBookGUI {
         );
 
         List<String> lore = new ArrayList<>();
-        lore.add("§7" + book.getDescription());
-        lore.add("");
-        lore.add("§bNiveau max: §e" + book.getMaxLevel());
-        lore.add("§bNiveau actuel: §e" + currentLevel);
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§6📖 Description:");
+        lore.add("§7▸ " + book.getDescription());
         lore.add("");
 
-        if (cost > 0) {
-            lore.add("§aCoût " + ": §6" + NumberFormatter.format(cost) + " beacons");
-            lore.add("");
-            lore.add("§e⚡ Achat intelligent:");
+        lore.add("§b⭐ Informations:");
+        lore.add("§7▸ Niveau max: §e" + book.getMaxLevel());
+        lore.add("§7▸ Votre niveau: §a" + currentLevel + "§7/§e" + book.getMaxLevel());
+        lore.add("");
 
-            // Vérifier si l'inventaire a de la place
-            if (player.getInventory().firstEmpty() != -1) {
-                lore.add("§7▸ §aLivre physique §7(inventaire libre)");
-                lore.add("§7  Peut être appliqué plus tard");
-            } else {
-                lore.add("§7▸ §6Achat direct §7(inventaire plein)");
-                lore.add("§7  Appliqué immédiatement");
-            }
-            lore.add("");
-            lore.add("§e➤ Cliquez pour acheter!");
+        // Coût et affordabilité
+        lore.add("§e💰 Prix:");
+        if (canAfford) {
+            lore.add("§7▸ §a" + NumberFormatter.format(cost) + " beacons");
+            lore.add("§7▸ §aVous pouvez acheter!");
         } else {
-            lore.add("§c✘ Niveau maximum atteint!");
+            lore.add("§7▸ §c" + NumberFormatter.format(cost) + " beacons");
+            lore.add("§7▸ §c" + NumberFormatter.format(cost - playerData.getBeacons()) + " beacons manquants");
         }
+        lore.add("");
+
+        // Type d'achat intelligent
+        lore.add("§e⚡ Achat intelligent:");
+        if (player.getInventory().firstEmpty() != -1) {
+            lore.add("§7▸ §a📚 Livre physique §7(inventaire libre)");
+            lore.add("§7  Peut être appliqué plus tard");
+        } else {
+            lore.add("§7▸ §6⚡ Application directe §7(inventaire plein)");
+            lore.add("§7  Ajouté immédiatement à la pioche");
+        }
+        lore.add("");
+
+        if (canAfford && currentLevel < book.getMaxLevel()) {
+            lore.add("§a➤ Cliquez pour acheter!");
+        } else if (!canAfford) {
+            lore.add("§c❌ Pas assez de beacons!");
+        } else {
+            lore.add("§c❌ Niveau maximum atteint!");
+        }
+
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
         item.setItemMeta(meta);
-
         return item;
     }
 
     /**
-     * MODIFIÉ : Gère les clics dans la boutique avec choix livre physique/direct
+     * AMÉLIORÉ : Gère les clics dans la boutique avec effet rouge d'erreur
      */
     public void handleBookShopClick(Player player, int slot, ItemStack clickedItem) {
         // Bouton retour
-        if (slot == 49) {
+        if (slot == 27) {
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
             openEnchantmentBookMenu(player);
             return;
         }
 
-        // NOUVEAU : Récupération de l'ID du livre depuis les métadonnées de l'item
         if (clickedItem == null || !clickedItem.hasItemMeta()) {
             return;
         }
 
         ItemMeta meta = clickedItem.getItemMeta();
-
         String bookId = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "shop_book_id"), PersistentDataType.STRING);
+
+        if (bookId == null) return;
+
         EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
         if (book == null) return;
 
-        // Vérifications préliminaires
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         long cost = book.getCost();
 
-
         if (playerData.getBeacons() < cost) {
-            player.sendMessage("§cPas assez de beacons! (" + NumberFormatter.format(cost) + " requis)");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
+            long missing = cost - playerData.getBeacons();
+            // MODIFIÉ : On passe l'item cliqué à la fonction d'erreur
+            showErrorFeedback(player, slot, "§c💸 Pas assez de beacons!\n§c(" + NumberFormatter.format(missing) + " manquants)", clickedItem);
             return;
         }
 
-        if (player.getInventory().firstEmpty() != -1) {
-            boolean success = plugin.getEnchantmentBookManager().purchasePhysicalEnchantmentBook(player, bookId);
-            if (success) {
-                openBookShop(player); // Refresh
-            }
+        // Achat réussi
+        boolean success = plugin.getEnchantmentBookManager().purchasePhysicalEnchantmentBook(player, bookId);
+        if (success) {
+            openBookShop(player); // Refresh
         }
     }
-
-
 
     /**
      * MODIFIÉ : Gère les clics dans le menu des livres d'enchantement + détection livres physiques
@@ -435,13 +408,14 @@ public class EnchantmentBookGUI {
                 if (plugin.getEnchantmentBookManager().hasEnchantmentBook(player, bookId)) {
                     boolean success = plugin.getEnchantmentBookManager().toggleEnchantment(player, bookId);
                     if (!success) {
-                        // NOUVEAU : Affichage d'erreur visuelle
-                        showErrorFeedback(player, slot, "§cPas assez d'XP ou limite atteinte!");
+                        // MODIFIÉ : On passe l'item cliqué à la fonction d'erreur
+                        showErrorFeedback(player, slot, "§cPas assez d'XP ou limite atteinte!", clickedItem);
                         return;
                     }
                     openEnchantmentBookMenu(player); // Refresh GUI
                 } else {
-                    showErrorFeedback(player, slot, "§cVous ne possédez pas ce livre!");
+                    // MODIFIÉ : On passe l'item cliqué à la fonction d'erreur
+                    showErrorFeedback(player, slot, "§cVous ne possédez pas ce livre!", clickedItem);
                 }
             }
         }
@@ -464,11 +438,8 @@ public class EnchantmentBookGUI {
         }
 
         EnchantmentBookManager enchantmentManager = plugin.getEnchantmentBookManager();
-
-        int playerLevel = enchantmentManager.getEnchantmentBookLevel(player, bookId);
-
         EnchantmentBookManager.EnchantmentBook book = enchantmentManager.getEnchantmentBook(bookId);
-
+        int playerLevel = enchantmentManager.getEnchantmentBookLevel(player, bookId);
         int maxLevel = book.getMaxLevel();
 
         if (playerLevel == maxLevel)
@@ -480,8 +451,8 @@ public class EnchantmentBookGUI {
         // Enregistrer sur la pioche
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         playerData.addPickaxeEnchantmentBook(bookId);
-        // Retirer le livre physique
 
+        // Retirer le livre physique
         physicalBook.setAmount(physicalBook.getAmount() - 1);
 
         // Mettre à jour le lore de la pioche
@@ -520,20 +491,25 @@ public class EnchantmentBookGUI {
     }
 
     /**
-     * AMÉLIORÉ : Affiche un feedback d'erreur visuel temporaire avec plus d'options
+     * NOUVEAU : Affiche un feedback d'erreur visuel temporaire (comme CategoryMenuGUI)
+     * MODIFIÉ : La méthode accepte maintenant l'item original en paramètre pour éviter les bugs.
      */
-    private void showErrorFeedback(Player player, int slot, String errorMessage) {
+    private void showErrorFeedback(Player player, int slot, String errorMessage, ItemStack originalItem) {
         Inventory gui = player.getOpenInventory().getTopInventory();
-        ItemStack originalItem = gui.getItem(slot);
-
-        // Créer l'item d'erreur avec animation
+        // Créer l'item d'erreur rouge
         ItemStack errorItem = new ItemStack(Material.RED_CONCRETE);
         ItemMeta meta = errorItem.getItemMeta();
         meta.setDisplayName("§c⚠️ §lERREUR");
 
         List<String> errorLore = new ArrayList<>();
         errorLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        errorLore.add(errorMessage);
+
+        // Split le message d'erreur sur plusieurs lignes
+        String[] lines = errorMessage.split("\n");
+        for (String line : lines) {
+            errorLore.add(line);
+        }
+
         errorLore.add("");
         errorLore.add("§7L'action n'a pas pu être effectuée.");
         errorLore.add("§7Vérifiez vos ressources et réessayez.");
@@ -542,20 +518,19 @@ public class EnchantmentBookGUI {
         meta.setLore(errorLore);
         errorItem.setItemMeta(meta);
 
-        // Animation d'erreur
+        // Afficher l'erreur temporairement
         gui.setItem(slot, errorItem);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
 
-        // Effet de particules d'erreur au joueur
-        player.spawnParticle(Particle.SMOKE, player.getLocation().add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
-
-        // Restaurer l'item original après 1.5 secondes
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.getOpenInventory().getTopInventory().equals(gui) &&
-                    gui.getItem(slot) != null && gui.getItem(slot).getType() == Material.RED_CONCRETE) {
-                gui.setItem(slot, originalItem);
+        // Restaurer l'item original après 0,5 seconde
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.getOpenInventory().getTopInventory().equals(gui)) {
+                ItemStack currentItem = gui.getItem(slot);
+                if (currentItem != null && currentItem.getType() == Material.RED_CONCRETE) {
+                    gui.setItem(slot, originalItem);
+                }
             }
-        }, 30L); // 1.5 secondes
+        }, 10L);
     }
 
     /**
@@ -572,9 +547,9 @@ public class EnchantmentBookGUI {
         }
 
         // Vérification des slots supplémentaires
-        for (int i = 0; i < EXTRA_BOOK_SLOTS.length && (i + 7) < allBooks.size(); i++) {
+        for (int i = 0; i < EXTRA_BOOK_SLOTS.length && (i + 5) < allBooks.size(); i++) {
             if (EXTRA_BOOK_SLOTS[i] == slot) {
-                return allBooks.get(i + 7).getId();
+                return allBooks.get(i + 5).getId();
             }
         }
 

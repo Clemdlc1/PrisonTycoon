@@ -302,8 +302,8 @@ public class PickaxeProtectionListener implements Listener {
 
         // Affiche le message de pénalité
         double percentageLost = (durabilityPenalty / (double) maxDurability) * 100;
-        player.sendMessage("§c⚠️ Votre pioche a perdu " + String.format("%.1f%%", percentageLost) +
-                " de durabilité due à votre mort (" + durabilityPenalty + " points)");
+        player.sendMessage("§c⚠ Votre pioche a perdu " + String.format("%.1f%%", percentageLost) +
+                " de durabilité due à votre mort (");
 
         plugin.getPluginLogger().debug("Pénalité de mort appliquée à la pioche de " + player.getName() +
                 ": -" + durabilityPenalty + " durabilité (" + String.format("%.1f%%", percentageLost) + ")");

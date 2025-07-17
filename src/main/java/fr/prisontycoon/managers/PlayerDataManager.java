@@ -169,6 +169,11 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("active-enchantments")) {
+                List<String> activeEnchants = config.getStringList("active-enchantments");
+                data.setActiveEnchantmentBooks(new HashSet<>(activeEnchants));
+            }
+
             if (config.contains("pickaxe-enchantment-books")) {
                 List<String> books = config.getStringList("pickaxe-enchantment-books");
                 Set<String> booksSet = new HashSet<>(books);
@@ -264,11 +269,11 @@ public class PlayerDataManager {
                 for (int i = 0; i < sanctions.size(); i++) {
                     PlayerData.SanctionData sanction = sanctions.get(i);
                     String path = "sanctions." + i + ".";
-                    config.set(path + "type", sanction.getType());
-                    config.set(path + "reason", sanction.getReason());
-                    config.set(path + "moderator", sanction.getModerator());
-                    config.set(path + "startTime", sanction.getStartTime());
-                    config.set(path + "endTime", sanction.getEndTime());
+                    config.set(path + "type", sanction.type());
+                    config.set(path + "reason", sanction.reason());
+                    config.set(path + "moderator", sanction.moderator());
+                    config.set(path + "startTime", sanction.startTime());
+                    config.set(path + "endTime", sanction.endTime());
                 }
             }
 
@@ -277,9 +282,14 @@ public class PlayerDataManager {
                 config.set("custom-permissions", new ArrayList<>(permissions));
             }
 
-            List<String> pickaxeEnchantmentBooks = config.getStringList("pickaxe-enchantment-books");
+            Set<String> pickaxeEnchantmentBooks = data.getPLayerEnchantmentBooks();
             if (!pickaxeEnchantmentBooks.isEmpty()) {
                 config.set("pickaxe-enchantment-books", new ArrayList<>(pickaxeEnchantmentBooks));
+            }
+
+            Set<String> activeEnchants = data.getActiveEnchantmentBooks();
+            if (!activeEnchants.isEmpty()) {
+                config.set("active-enchantments", new ArrayList<>(activeEnchants));
             }
 
             // Statistiques complètes

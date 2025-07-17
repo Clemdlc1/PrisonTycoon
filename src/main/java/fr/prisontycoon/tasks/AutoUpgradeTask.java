@@ -195,7 +195,6 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 // NOUVEAU : Ajouter les détails de l'upgrade pour le récapitulatif
                 playerData.addAutoUpgradeDetail(
                         enchantmentName,
-                        enchantment.getDisplayName(),
                         levelsGained,
                         newLevel
                 );

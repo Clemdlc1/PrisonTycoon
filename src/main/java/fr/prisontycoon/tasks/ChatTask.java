@@ -221,13 +221,13 @@ public class ChatTask extends BukkitRunnable {
             if (upgradeDetails.size() == 1) {
                 // Un seul enchantement amélioré - Affichage compact sur une ligne
                 PlayerData.AutoUpgradeDetail detail = upgradeDetails.get(0);
-                summary.append("§d").append(detail.getDisplayName())
-                        .append(" §7(§a+").append(detail.getLevelsGained()).append("§7) ")
-                        .append("§8→ §eNiv. ").append(detail.getNewLevel());
+                summary.append("§d").append(detail.displayName())
+                        .append(" §7(§a+").append(detail.levelsGained()).append("§7) ")
+                        .append("§8→ §eNiv. ").append(detail.newLevel());
             } else {
                 // Plusieurs enchantements améliorés
                 int totalUpgrades = upgradeDetails.stream()
-                        .mapToInt(PlayerData.AutoUpgradeDetail::getLevelsGained)
+                        .mapToInt(PlayerData.AutoUpgradeDetail::levelsGained)
                         .sum();
                 summary.append("§d").append(totalUpgrades).append(" améliorations effectuées");
 
@@ -239,11 +239,11 @@ public class ChatTask extends BukkitRunnable {
                         if (i > 0) summary.append(" §8• ");
 
                         // Format compact : Nom Niv.X
-                        String shortName = detail.getDisplayName().length() > 12 ?
-                                detail.getDisplayName().substring(0, 12) + "..." :
-                                detail.getDisplayName();
+                        String shortName = detail.displayName().length() > 12 ?
+                                detail.displayName().substring(0, 12) + "..." :
+                                detail.displayName();
                         summary.append("§d").append(shortName)
-                                .append(" §eNiv.").append(detail.getNewLevel());
+                                .append(" §eNiv.").append(detail.newLevel());
                     }
                 } else {
                     // Trop d'enchantements, affichage condensé
@@ -252,7 +252,7 @@ public class ChatTask extends BukkitRunnable {
             }
         }
 
-        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell") && autosellGained > 0 ) {
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell") && autosellGained > 0) {
             summary.append("\n§7┃ §c§lAutoSell:§r ").append(NumberFormatter.format(autosellGained));
 
         }

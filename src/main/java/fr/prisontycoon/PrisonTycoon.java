@@ -39,7 +39,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private EnchantmentBookManager enchantmentBookManager;
 
 
-
     private Logger logger;
 
     // SUPPRIMÉ : ScoreboardManager (maintenant intégré dans ScoreboardTask)
@@ -189,7 +188,6 @@ public final class PrisonTycoon extends JavaPlugin {
         vipManager = new VipManager(this);
         permissionManager = new PermissionManager(this); // NOUVEAU !
         enchantmentBookManager = new EnchantmentBookManager(this);
-
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -451,8 +449,14 @@ public final class PrisonTycoon extends JavaPlugin {
         return enchantmentUpgradeGUI;
     }
 
-    public EnchantmentBookManager getEnchantmentBookManager() { return enchantmentBookManager; }
-    public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
+    public EnchantmentBookManager getEnchantmentBookManager() {
+        return enchantmentBookManager;
+    }
+
+    public EnchantmentBookGUI getEnchantmentBookGUI() {
+        return enchantmentBookGUI;
+    }
+
     public PetsMenuGUI getPetsMenuGUI() {
         return petsMenuGUI;
     }

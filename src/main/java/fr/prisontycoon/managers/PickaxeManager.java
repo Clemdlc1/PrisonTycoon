@@ -6,7 +6,6 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentCategory;
 import fr.prisontycoon.utils.NumberFormatter;
-import fr.prisontycoon.events.MiningListener;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -43,6 +42,20 @@ public class PickaxeManager {
         this.pickaxeOwnerKey = new NamespacedKey(plugin, "pickaxe_owner");
 
         plugin.getPluginLogger().info("§aPickaxeManager initialisé.");
+    }
+
+    /**
+     * Vérifie si la pioche du joueur est cassée
+     */
+    public static boolean isPickaxeBroken(Player player) {
+        return player.hasMetadata("pickaxe_broken");
+    }
+
+    /**
+     * Retourne le multiplicateur de pénalité (90% de malus = 10% d'efficacité)
+     */
+    public static double getPickaxePenaltyMultiplier(Player player) {
+        return isPickaxeBroken(player) ? 0.10 : 1.0;
     }
 
     /**
@@ -250,11 +263,8 @@ public class PickaxeManager {
                     EnchantmentCategory category = enchant.getCategory();
                     enchantsByCategory.computeIfAbsent(category, k -> new ArrayList<>());
 
-                    String levelStr = entry.getValue() == Integer.MAX_VALUE ? "∞" :
-                            NumberFormatter.format(entry.getValue());
-
                     // CORRIGÉ : Indication si enchantement désactivé (pioche cassée ou mobilité désactivée)
-                    String statusIndicator = "";
+                    String statusIndicator;
                     String statusColor = "§a"; // Vert par défaut
 
                     if (isBroken) {
@@ -263,7 +273,7 @@ public class PickaxeManager {
                             statusIndicator = " §c(90% malus)";
                             statusColor = "§6"; // Orange pour indiquer le malus
                         } else {
-                            statusIndicator = " §8(désactivé)";
+                            statusIndicator = "";
                             statusColor = "§8"; // Gris pour désactivé
                         }
                     } else if (category == EnchantmentCategory.MOBILITY) {
@@ -291,24 +301,23 @@ public class PickaxeManager {
                     }
                 }
             }
-
-            lore.add("§7└ §7Clic droit pour gérer vos enchantements");
         }
 
-        Set<String> activeBooks = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
-        if (!activeBooks.isEmpty()) {
-            lore.add("§5⚡ §lENCHANTEMENTS UNIQUES ACTIFS");
-            for (String bookId : activeBooks) {
-                EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
-                if (book != null) {
-                    int level = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, bookId);
-                    lore.add("§7│ §d" + book.getName() + " §7(Niv." + level + ")");
+        if (!isBroken) {
+            Set<String> activeBooks = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
+            if (!activeBooks.isEmpty()) {
+                lore.add("§7│ §lUNIQUES ACTIFS §5⚡ §l:");
+                for (String bookId : activeBooks) {
+                    EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
+                    if (book != null) {
+                        int level = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, bookId);
+                        lore.add("§7│ §d" + book.getName() + " §7(Niv." + level + ")");
+                    }
                 }
+                lore.add("");
             }
-            lore.add("§7└");
-            lore.add("");
         }
-
+        lore.add("§7└ §7Clic droit pour gérer vos enchantements");
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         if (!cristals.isEmpty()) {
             lore.add("§d✨ Cristaux Appliqués §8(" + cristals.size() + "/4)§d:");
@@ -411,14 +420,6 @@ public class PickaxeManager {
         // Vérifie que la pioche est toujours au bon endroit
         enforcePickaxeSlot(player);
     }
-
-    /**
-     * NOUVEAU : Vérifie si la pioche d'un joueur est en mode "cassée"
-     */
-    public boolean isPickaxeBroken(Player player) {
-        return MiningListener.isPlayerPickaxeBroken(player);
-    }
-
 
     /**
      * NOUVEAU : Met à jour les effets de mobilité selon les enchantements activés/désactivés
@@ -555,7 +556,9 @@ public class PickaxeManager {
      */
     public void checkLegendaryPickaxeState(Player player, ItemStack pickaxe, short currentDurability, short maxDurability) {
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
-
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "incassable")) {
+            deactivateBrokenPickaxeMode(player);
+        }
         // PIOCHE CASSÉE (100% utilisée)
         if (currentDurability >= maxDurability - 1) {
             if (!isPickaxeBroken(player)) {

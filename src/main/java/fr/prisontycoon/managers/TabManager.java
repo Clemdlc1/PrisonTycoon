@@ -125,7 +125,7 @@ public class TabManager {
      */
     private String getCurrentRankDisplay(Player player) {
         String highestPermission = plugin.getMineManager().getCurrentRank(player);
-        if (highestPermission != null ) {
+        if (highestPermission != null) {
             String rank = highestPermission.toUpperCase();
             return "Mine " + rank;
         }

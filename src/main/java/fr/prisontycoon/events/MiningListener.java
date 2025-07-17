@@ -3,7 +3,7 @@ package fr.prisontycoon.events;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.utils.NumberFormatter;
+import fr.prisontycoon.managers.PickaxeManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * UNIFIÉ : Listener pour le minage ET la gestion de durabilité des pioches légendaires
@@ -41,19 +40,6 @@ public class MiningListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Vérifie si la pioche du joueur est cassée
-     */
-    public static boolean isPlayerPickaxeBroken(Player player) {
-        return player.hasMetadata("pickaxe_broken");
-    }
-
-    /**
-     * Retourne le multiplicateur de pénalité (90% de malus = 10% d'efficacité)
-     */
-    public static double getPickaxePenaltyMultiplier(Player player) {
-        return isPlayerPickaxeBroken(player) ? 0.10 : 1.0;
-    }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
@@ -110,14 +96,14 @@ public class MiningListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onBlockDamage(BlockDamageEvent event){
+    public void onBlockDamage(BlockDamageEvent event) {
         Player player = event.getPlayer();
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Location blockLocation = event.getBlock().getLocation();
         Material material = event.getBlock().getType();
         if (material == Material.BEACON &&
                 plugin.getEnchantmentBookManager() != null &&
-                plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !isPlayerPickaxeBroken(player)) {
+                plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !PickaxeManager.isPickaxeBroken(player)) {
 
             blockLocation.getBlock().setType(Material.AIR);
             playerData.addBeacons(1);
@@ -214,7 +200,7 @@ public class MiningListener implements Listener {
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
 
         // Seulement envoyer des notifications quand la durabilité est < 25%
-        if (durabilityPercent > 0.25 || plugin.getPickaxeManager().isPickaxeBroken(player)) {
+        if (durabilityPercent > 0.25 || PickaxeManager.isPickaxeBroken(player)) {
             return;
         }
 
@@ -288,9 +274,6 @@ public class MiningListener implements Listener {
         if (material == Material.BEACON) {
             // Incrémente le compteur de beacons minés dans les données du joueur
             playerData.addBeacons(1);
-
-            // Appelle la méthode spécifique pour la rupture d'un beacon
-            // plugin.getEnchantmentUniqueManager().beaconBreak(player, mineName);
             return;
         }
 

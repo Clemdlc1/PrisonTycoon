@@ -65,6 +65,7 @@ public class PlayerData {
     private long lastMinuteBlocksAddedToInventory;
     private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
     private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
+    private Set<String> activeEnchantmentBooks = new HashSet<>();
 
 
     public PlayerData(UUID playerId, String playerName) {
@@ -358,7 +359,6 @@ public class PlayerData {
         synchronized (dataLock) {
             totalBlocksDestroyed += count;       // S'ajoute au total général
             lastMinuteBlocksDestroyed += count;  // S'ajoute au total minute
-            // NE PAS ajouter à totalBlocksMined car ce ne sont pas des blocs minés directement
         }
     }
 
@@ -398,10 +398,10 @@ public class PlayerData {
     /**
      * Ajoute un détail d'auto-upgrade
      */
-    public void addAutoUpgradeDetail(String enchantmentName, String displayName, int levelsGained, int newLevel) {
+    public void addAutoUpgradeDetail(String enchantmentName, int levelsGained, int newLevel) {
         synchronized (dataLock) {
             this.lastMinuteAutoUpgrades += levelsGained;
-            this.lastMinuteAutoUpgradeDetails.add(new AutoUpgradeDetail(enchantmentName, displayName, levelsGained, newLevel));
+            this.lastMinuteAutoUpgradeDetails.add(new AutoUpgradeDetail(enchantmentName, levelsGained, newLevel));
         }
     }
 
@@ -604,15 +604,15 @@ public class PlayerData {
         }
     }
 
-    public long getCoinsViaAutosell() {
-        synchronized (dataLock) {
-            return coinsViaAutosell;
-        }
-    }
-
     public void setCoinsViaPickaxe(long coinsViaPickaxe) {
         synchronized (dataLock) {
             this.coinsViaPickaxe = Math.max(0, coinsViaPickaxe);
+        }
+    }
+
+    public long getCoinsViaAutosell() {
+        synchronized (dataLock) {
+            return coinsViaAutosell;
         }
     }
 
@@ -648,9 +648,6 @@ public class PlayerData {
         }
     }
 
-    /**
-     * NOUVEAU : Définit directement le niveau de combustion (pour CombustionDecayTask)
-     */
     public void setCombustionLevel(long combustionLevel) {
         synchronized (dataLock) {
             this.combustionLevel = Math.max(0, Math.min(1000, combustionLevel));
@@ -681,6 +678,7 @@ public class PlayerData {
             return lastMinuteCoinsViaPickaxe;
         }
     }
+
     public long getLastMinuteCoinsViaAutosell() {
         synchronized (dataLock) {
             return lastMinuteAutosell;
@@ -828,15 +826,6 @@ public class PlayerData {
     }
 
     /**
-     * CORRIGÉ : Vérifie si le joueur a miné cette minute (pas seulement cassé)
-     */
-    public boolean hasMinedThisMinute() {
-        synchronized (dataLock) {
-            return lastMinuteBlocksMined > 0; // Seulement les blocs MINÉS comptent pour le récapitulatif
-        }
-    }
-
-    /**
      * Obtient l'état de l'auto-rankup
      */
     public boolean hasAutoRankup() {
@@ -869,18 +858,6 @@ public class PlayerData {
     public void removePickaxeCristal(String cristalUuid) {
         synchronized (dataLock) {
             pickaxeCristals.remove(cristalUuid);
-        }
-    }
-
-    public void clearPickaxeCristals() {
-        synchronized (dataLock) {
-            pickaxeCristals.clear();
-        }
-    }
-
-    public boolean hasPickaxeCristal(String cristalUuid) {
-        synchronized (dataLock) {
-            return pickaxeCristals.containsKey(cristalUuid);
         }
     }
 
@@ -937,24 +914,26 @@ public class PlayerData {
         }
     }
 
-    public Set<String> getPickaxeEnchantmentBooks() {
-        return new HashSet<>(pickaxeEnchantmentBooks);
-    }
-
     public void addPickaxeEnchantmentBook(String bookId) {
         pickaxeEnchantmentBooks.add(bookId);
     }
 
-    public void removePickaxeEnchantmentBook(String bookId) {
-        pickaxeEnchantmentBooks.remove(bookId);
-    }
-
-    public boolean hasPickaxeEnchantmentBook(String bookId) {
-        return pickaxeEnchantmentBooks.contains(bookId);
-    }
-
     public void setPickaxeEnchantmentBook(Set<String> bookId) {
         this.pickaxeEnchantmentBooks = new HashSet<>(bookId);
+    }
+
+    public Set<String> getPLayerEnchantmentBooks() {
+        return new HashSet<>(pickaxeEnchantmentBooks);
+    }
+
+    public Set<String> getActiveEnchantmentBooks() {
+        return new HashSet<>(activeEnchantmentBooks);
+    }
+
+    public void setActiveEnchantmentBooks(Set<String> activeEnchantmentBooks) {
+        synchronized (dataLock) {
+            this.activeEnchantmentBooks = activeEnchantmentBooks != null ? new HashSet<>(activeEnchantmentBooks) : new HashSet<>();
+        }
     }
 
     /**
@@ -979,77 +958,14 @@ public class PlayerData {
         return sanctionHistory.size();
     }
 
-    public static class AutoUpgradeDetail {
-        private final String enchantmentName;
-        private final String displayName;
-        private final int levelsGained;
-        private final int newLevel;
-
-        public AutoUpgradeDetail(String enchantmentName, String displayName, int levelsGained, int newLevel) {
-            this.enchantmentName = enchantmentName;
-            this.displayName = displayName;
-            this.levelsGained = levelsGained;
-            this.newLevel = newLevel;
-        }
-
-        public String getEnchantmentName() {
-            return enchantmentName;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-
-        public int getLevelsGained() {
-            return levelsGained;
-        }
-
-        public int getNewLevel() {
-            return newLevel;
-        }
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
     }
 
     /**
      * Classe interne pour représenter une sanction
+     *
+     * @param type MUTE, BAN
      */
-    public static class SanctionData {
-        private final String type; // MUTE, BAN
-        private final String reason;
-        private final String moderator;
-        private final long startTime;
-        private final long endTime;
-
-        public SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-            this.type = type;
-            this.reason = reason;
-            this.moderator = moderator;
-            this.startTime = startTime;
-            this.endTime = endTime;
-        }
-
-        // Getters
-        public String getType() {
-            return type;
-        }
-
-        public String getReason() {
-            return reason;
-        }
-
-        public String getModerator() {
-            return moderator;
-        }
-
-        public long getStartTime() {
-            return startTime;
-        }
-
-        public long getEndTime() {
-            return endTime;
-        }
-
-        public boolean isPermanent() {
-            return endTime == 0;
-        }
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

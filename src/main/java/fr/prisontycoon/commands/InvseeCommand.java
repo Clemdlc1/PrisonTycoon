@@ -222,8 +222,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
                 target.getInventory().setItemInOffHand(event.getInventory().getItem(slot));
                 player.sendMessage("§a✅ Main secondaire modifiée pour " + target.getName());
             }, 1L);
-        }
-        else {
+        } else {
             event.setCancelled(true);
         }
     }
