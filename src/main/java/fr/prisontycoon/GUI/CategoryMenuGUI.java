@@ -311,7 +311,7 @@ public class CategoryMenuGUI {
                 lore.add("§7▸ §7Mouvement plus rapide");
             }
             case "haste" -> {
-                lore.add("§7▸ §eRapidité +" + level);
+                lore.add("§7▸ §eCélérité +" + level);
                 lore.add("§7▸ §7Minage et attaque plus rapides");
             }
             case "jump_boost" -> {

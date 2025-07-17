@@ -88,7 +88,7 @@ public class EnchantmentUpgradeGUI {
 
         if (slot == 22) { // MAX possible
             String enchantmentName = extractEnchantmentNameFromTitle(title);
-            upgradeToMax(player, enchantmentName);
+            upgradeToMax(player, enchantmentName, false);
             return;
         }
 
@@ -97,13 +97,14 @@ public class EnchantmentUpgradeGUI {
             String displayName = item.getItemMeta().getDisplayName();
             String enchantmentName = extractEnchantmentNameFromTitle(title);
 
-            if (displayName.contains("+1")) upgradeEnchantment(player, enchantmentName, 1);
-            else if (displayName.contains("+5")) upgradeEnchantment(player, enchantmentName, 5);
-            else if (displayName.contains("+10")) upgradeEnchantment(player, enchantmentName, 10);
-            else if (displayName.contains("+25")) upgradeEnchantment(player, enchantmentName, 25);
-            else if (displayName.contains("+100")) upgradeEnchantment(player, enchantmentName, 100);
+            // On teste les plus grands nombres en premier.
+            if (displayName.contains("+500")) upgradeEnchantment(player, enchantmentName, 500);
             else if (displayName.contains("+250")) upgradeEnchantment(player, enchantmentName, 250);
-            else if (displayName.contains("+500")) upgradeEnchantment(player, enchantmentName, 500);
+            else if (displayName.contains("+100")) upgradeEnchantment(player, enchantmentName, 100);
+            else if (displayName.contains("+25")) upgradeEnchantment(player, enchantmentName, 25);
+            else if (displayName.contains("+10")) upgradeEnchantment(player, enchantmentName, 10);
+            else if (displayName.contains("+5")) upgradeEnchantment(player, enchantmentName, 5);
+            else if (displayName.contains("+1")) upgradeEnchantment(player, enchantmentName, 1);
         }
     }
 
@@ -124,7 +125,7 @@ public class EnchantmentUpgradeGUI {
             gui.setItem(slots[i], createFixedUpgradeButton(enchantment, player, amount));
         }
 
-        // MAX au milieu dernière ligne (slot 23)
+        // MAX au milieu dernière ligne (slot 22 et non 23)
         if (currentLevel < enchantment.getMaxLevel()) {
             gui.setItem(22, createMaxUpgradeButton(enchantment, player));
         }
@@ -256,7 +257,7 @@ public class EnchantmentUpgradeGUI {
     private long calculateExactCost(CustomEnchantment enchantment, int currentLevel, int requestedLevels) {
         long totalCost = 0;
         for (int i = 1; i <= requestedLevels; i++) {
-            totalCost += enchantment.getUpgradeCost(currentLevel + i);
+            totalCost += enchantment.getUpgradeCost(currentLevel + i -1); // Cost is for the target level
         }
         return totalCost;
     }
@@ -333,7 +334,7 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Vitesse: §eSpeed " + fromLevel + " §7→ §aSpeed " + toLevel);
             }
             case "haste" -> {
-                lore.add("§7▸ Rapidité: §eHaste " + fromLevel + " §7→ §aHaste " + toLevel);
+                lore.add("§7▸ Célérité: §eHaste " + fromLevel + " §7→ §aHaste " + toLevel);
             }
             case "jump_boost" -> {
                 lore.add("§7▸ Saut: §eJump " + fromLevel + " §7→ §aJump " + toLevel);
@@ -630,13 +631,6 @@ public class EnchantmentUpgradeGUI {
     }
 
     /**
-     * Version publique originale (pour compatibilité)
-     */
-    public void upgradeToMax(Player player, String enchantmentName) {
-        upgradeToMax(player, enchantmentName, false);
-    }
-
-    /**
      * Toggle auto-upgrade avec mise à jour GUI fonctionnelle
      */
     private void toggleAutoUpgrade(Player player, String title) {
@@ -734,7 +728,7 @@ public class EnchantmentUpgradeGUI {
             case "solidité" -> "durability";
             case "vision nocturne" -> "night_vision";
             case "vitesse" -> "speed";
-            case "rapidité" -> "haste";
+            case "célérité" -> "haste";
             case "saut" -> "jump_boost";
             case "escalateur" -> "escalator";
             case "chance" -> "luck";
@@ -750,10 +744,13 @@ public class EnchantmentUpgradeGUI {
         meta.setDisplayName("§7");
         filler.setItemMeta(meta);
 
-        // CORRIGÉ: Bordures pour 27 slots
-        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 19, 20, 21, 23, 24, 25, 26};
+        // Slots à remplir pour décorer (en évitant les emplacements des items)
+        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 23, 24, 25};
         for (int slot : borderSlots) {
-            gui.setItem(slot, filler);
+            // Vérifie que l'on ne remplace pas un item déjà placé
+            if (gui.getItem(slot) == null) {
+                gui.setItem(slot, filler);
+            }
         }
     }
 }

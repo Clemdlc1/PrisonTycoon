@@ -306,7 +306,7 @@ public class PickaxeManager {
         if (!isBroken) {
             Set<String> activeBooks = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
             if (!activeBooks.isEmpty()) {
-                lore.add("§7│ §lUNIQUES ACTIFS §5⚡ §l:");
+                lore.add("§7│ §5UNIQUES ACTIFS §l⚡ §l:");
                 for (String bookId : activeBooks) {
                     EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
                     if (book != null) {
@@ -453,7 +453,7 @@ public class PickaxeManager {
                     Integer.MAX_VALUE, speedLevel - 1, true, false));
         }
 
-        // Rapidité (Haste)
+        // Célérité (Haste)
         int hasteLevel = playerData.getEnchantmentLevel("haste");
         if (hasteLevel > 0 && playerData.isMobilityEnchantmentEnabled("haste")) {
             player.addPotionEffect(new org.bukkit.potion.PotionEffect(

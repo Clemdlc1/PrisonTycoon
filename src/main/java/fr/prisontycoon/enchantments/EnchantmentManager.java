@@ -1162,7 +1162,7 @@ class HasteEnchantment implements CustomEnchantment {
     }
 
     public String getDisplayName() {
-        return "Rapidité";
+        return "Célérité";
     }
 
     public EnchantmentCategory getCategory() {
@@ -1170,7 +1170,7 @@ class HasteEnchantment implements CustomEnchantment {
     }
 
     public String getDescription() {
-        return "Effet Haste permanent";
+        return "Effet Célérité permanent";
     }
 
     public int getMaxLevel() {
