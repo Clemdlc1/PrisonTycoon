@@ -170,9 +170,11 @@ public class EnchantmentManager {
         }
 
         // Gestion spéciale pour PlusValue
-        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "plusvalue")) {
-            material = plugin.getEnchantmentBookManager().getHighestValueBlockInMine(String.valueOf(blockLocation));
+        String mineName = plugin.getConfigManager().getPlayerMine(blockLocation);
+        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "plusvalue") && !isPlayerPickaxeBroken(player)) {
+            material = plugin.getEnchantmentBookManager().getHighestValueBlockInMine(mineName);
         }
+
         plugin.getPluginLogger().debug("Tentative d'ajout de " + quantity + "x " + material.name() + " pour " + player.getName());
 
         // NOUVEAU : Tente d'abord d'ajouter aux conteneurs

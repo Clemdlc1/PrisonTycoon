@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.cristaux.Cristal;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentCategory;
 import fr.prisontycoon.utils.NumberFormatter;
 import fr.prisontycoon.events.MiningListener;
@@ -22,10 +23,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Gestionnaire de la pioche légendaire
@@ -295,6 +293,20 @@ public class PickaxeManager {
             }
 
             lore.add("§7└ §7Clic droit pour gérer vos enchantements");
+        }
+
+        Set<String> activeBooks = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
+        if (!activeBooks.isEmpty()) {
+            lore.add("§5⚡ §lENCHANTEMENTS UNIQUES ACTIFS");
+            for (String bookId : activeBooks) {
+                EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
+                if (book != null) {
+                    int level = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, bookId);
+                    lore.add("§7│ §d" + book.getName() + " §7(Niv." + level + ")");
+                }
+            }
+            lore.add("§7└");
+            lore.add("");
         }
 
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);

@@ -6,14 +6,11 @@ import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.ConfigManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -75,11 +72,6 @@ public class EnchantmentBookManager {
         int currentLevel = getEnchantmentBookLevel(player, bookId);
         long cost = book.getCostForLevel(currentLevel + 1);
 
-        if (cost <= 0) {
-            player.sendMessage("§cNiveau maximum atteint pour cet enchantement!");
-            return false;
-        }
-
         if (playerData.getBeacons() < cost) {
             player.sendMessage("§cVous n'avez pas assez de beacons! Coût: §6" + NumberFormatter.format(cost) + " beacons");
             return false;
@@ -102,8 +94,7 @@ public class EnchantmentBookManager {
      */
     public boolean toggleEnchantment(Player player, String bookId) {
         if (!hasEnchantmentBook(player, bookId) || getEnchantmentBookLevel(player, bookId) <= 0) {
-            player.sendMessage("§cVous ne possédez pas ce livre d'enchantement!");
-            return false;
+            return false; // Ne pas envoyer de message ici, géré par le GUI
         }
 
         Set<String> playerActiveEnchants = activeEnchantments.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>());
@@ -114,19 +105,18 @@ public class EnchantmentBookManager {
             playerActiveEnchants.remove(bookId);
             player.sendMessage("§c⭕ Enchantement §e" + enchantmentBooks.get(bookId).getName() + " §cdésactivé!");
             player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.8f, 1.2f);
+            return true;
         } else {
             // Vérification de la limite (4 max)
             if (playerActiveEnchants.size() >= 4) {
-                player.sendMessage("§cVous ne pouvez avoir que 4 enchantements actifs maximum!");
-                return false;
+                return false; // Erreur gérée par le GUI
             }
 
             // Calcul du coût XP (augmente selon le nombre d'enchants actifs)
             int xpCost = calculateActivationCost(playerActiveEnchants.size());
 
             if (player.getTotalExperience() < xpCost) {
-                player.sendMessage("§cVous n'avez pas assez d'XP! Coût: §b" + xpCost + " XP");
-                return false;
+                return false; // Erreur gérée par le GUI
             }
 
             // Déduction de l'XP et activation
@@ -135,9 +125,93 @@ public class EnchantmentBookManager {
 
             player.sendMessage("§a✅ Enchantement §e" + enchantmentBooks.get(bookId).getName() + " §aactivé pour §b" + xpCost + " XP§a!");
             player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
+            return true;
+        }
+    }
+
+    /**
+     * NOUVEAU : Achète un livre physique et le donne au joueur
+     */
+    public boolean purchasePhysicalEnchantmentBook(Player player, String bookId) {
+        EnchantmentBook book = enchantmentBooks.get(bookId);
+        if (book == null) {
+            player.sendMessage("§cLivre d'enchantement introuvable!");
+            return false;
         }
 
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Calcul du coût pour le niveau suivant
+        int currentLevel = getEnchantmentBookLevel(player, bookId);
+        long cost = book.getCostForLevel(currentLevel + 1);
+
+        if (cost <= 0) {
+            player.sendMessage("§cNiveau maximum atteint pour cet enchantement!");
+            return false;
+        }
+
+        if (playerData.getBeacons() < cost) {
+            player.sendMessage("§cVous n'avez pas assez de beacons! Coût: §6" + NumberFormatter.format(cost) + " beacons");
+            return false;
+        }
+
+        // Déduction des beacons
+        playerData.removeBeacon(cost);
+
+        // NOUVEAU : Création d'un item livre physique au lieu d'ajouter directement
+        ItemStack physicalBook = createPhysicalEnchantmentBook(book, currentLevel + 1);
+
+        // Tentative d'ajout à l'inventaire
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(physicalBook);
+            player.sendMessage("§a✅ Livre physique §e" + book.getName() + " §aacheté pour §6" + NumberFormatter.format(cost) + " beacons§a!");
+            player.sendMessage("§7Cliquez sur le livre dans votre inventaire pour l'appliquer à votre pioche!");
+        } else {
+            // Inventaire plein, donner directement
+            addEnchantmentBook(player, bookId, 1);
+            player.sendMessage("§a✅ Livre §e" + book.getName() + " §aacheté et appliqué directement (inventaire plein)!");
+        }
+
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
         return true;
+    }
+
+    /**
+     * NOUVEAU : Crée un item livre physique
+     */
+    private ItemStack createPhysicalEnchantmentBook(EnchantmentBook book, int level) {
+        ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName("§5⚡ " + book.getName() + " §7(Niveau " + level + ")");
+
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§7" + book.getDescription());
+        lore.add("");
+        lore.add("§aNiveau: §b" + level + "§7/§b" + book.getMaxLevel());
+        lore.add("");
+        lore.add("§e⚡ Actions:");
+        lore.add("§7▸ §6Clic dans le menu enchantements");
+        lore.add("§7  pour appliquer à votre pioche");
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+
+        // Marquer l'item comme livre d'enchantement physique
+        meta.getPersistentDataContainer().set(
+                new NamespacedKey(plugin, "enchant_book_id"),
+                PersistentDataType.STRING,
+                book.getId()
+        );
+        meta.getPersistentDataContainer().set(
+                new NamespacedKey(plugin, "enchant_book_level"),
+                PersistentDataType.INTEGER,
+                level
+        );
+
+        item.setItemMeta(meta);
+        return item;
     }
 
     /**

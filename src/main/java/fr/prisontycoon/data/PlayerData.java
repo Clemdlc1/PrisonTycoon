@@ -64,6 +64,8 @@ public class PlayerData {
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
     private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
+    private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
+
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -933,6 +935,26 @@ public class PlayerData {
         } else {
             removePermission("specialmine.vip");
         }
+    }
+
+    public Set<String> getPickaxeEnchantmentBooks() {
+        return new HashSet<>(pickaxeEnchantmentBooks);
+    }
+
+    public void addPickaxeEnchantmentBook(String bookId) {
+        pickaxeEnchantmentBooks.add(bookId);
+    }
+
+    public void removePickaxeEnchantmentBook(String bookId) {
+        pickaxeEnchantmentBooks.remove(bookId);
+    }
+
+    public boolean hasPickaxeEnchantmentBook(String bookId) {
+        return pickaxeEnchantmentBooks.contains(bookId);
+    }
+
+    public void setPickaxeEnchantmentBook(Set<String> bookId) {
+        this.pickaxeEnchantmentBooks = new HashSet<>(bookId);
     }
 
     /**

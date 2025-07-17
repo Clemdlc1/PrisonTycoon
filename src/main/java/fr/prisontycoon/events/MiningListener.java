@@ -117,7 +117,7 @@ public class MiningListener implements Listener {
         Material material = event.getBlock().getType();
         if (material == Material.BEACON &&
                 plugin.getEnchantmentBookManager() != null &&
-                plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker")) {
+                plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !isPlayerPickaxeBroken(player)) {
 
             blockLocation.getBlock().setType(Material.AIR);
             playerData.addBeacons(1);

@@ -169,6 +169,12 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("pickaxe-enchantment-books")) {
+                List<String> books = config.getStringList("pickaxe-enchantment-books");
+                Set<String> booksSet = new HashSet<>(books);
+                data.setPickaxeEnchantmentBook(booksSet);
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -269,6 +275,11 @@ public class PlayerDataManager {
             Set<String> permissions = data.getCustomPermissions();
             if (!permissions.isEmpty()) {
                 config.set("custom-permissions", new ArrayList<>(permissions));
+            }
+
+            List<String> pickaxeEnchantmentBooks = config.getStringList("pickaxe-enchantment-books");
+            if (!pickaxeEnchantmentBooks.isEmpty()) {
+                config.set("pickaxe-enchantment-books", new ArrayList<>(pickaxeEnchantmentBooks));
             }
 
             // Statistiques complètes

@@ -3,6 +3,7 @@ package fr.prisontycoon.events;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.cristaux.Cristal;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -10,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Listener pour les interfaces graphiques générales
@@ -42,6 +44,14 @@ public class GUIListener implements Listener {
             // On agit uniquement si le GUI des cristaux est ouvert
             if (title.contains("Gestion des Cristaux")) {
                 handleCristalApplicationClick(player, event);
+            }
+
+            ItemStack clickedItem = event.getCurrentItem();
+            if (clickedItem != null && clickedItem.getType() == Material.ENCHANTED_BOOK &&
+                    clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
+                    new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING)) {
+                event.setCancelled(true);
+                plugin.getEnchantmentBookGUI().handlePhysicalBookApplication(player, clickedItem);
             }
             // Pour tous les autres GUIs, on n'interfère pas avec l'inventaire du joueur.
             return;
