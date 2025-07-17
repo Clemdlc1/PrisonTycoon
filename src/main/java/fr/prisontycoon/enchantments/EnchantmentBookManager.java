@@ -57,39 +57,6 @@ public class EnchantmentBookManager {
     }
 
     /**
-     * Achète un livre d'enchantement avec des beacons
-     */
-    public boolean purchaseEnchantmentBook(Player player, String bookId) {
-        EnchantmentBook book = enchantmentBooks.get(bookId);
-        if (book == null) {
-            player.sendMessage("§cLivre d'enchantement introuvable!");
-            return false;
-        }
-
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Calcul du coût pour le niveau suivant
-        int currentLevel = getEnchantmentBookLevel(player, bookId);
-        long cost = book.getCostForLevel(currentLevel + 1);
-
-        if (playerData.getBeacons() < cost) {
-            player.sendMessage("§cVous n'avez pas assez de beacons! Coût: §6" + NumberFormatter.format(cost) + " beacons");
-            return false;
-        }
-
-        // Déduction des beacons
-        playerData.removeBeacon(cost);
-
-        // Ajout du livre au joueur
-        addEnchantmentBook(player, bookId, 1);
-
-        player.sendMessage("§a✅ Livre §e" + book.getName() + " §aacheté pour §6" + NumberFormatter.format(cost) + " beacons§a!");
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
-
-        return true;
-    }
-
-    /**
      * Active/Désactive un enchantement (coût en XP)
      */
     public boolean toggleEnchantment(Player player, String bookId) {
@@ -140,15 +107,10 @@ public class EnchantmentBookManager {
         }
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Calcul du coût pour le niveau suivant
         int currentLevel = getEnchantmentBookLevel(player, bookId);
-        long cost = book.getCostForLevel(currentLevel + 1);
 
-        if (cost <= 0) {
-            player.sendMessage("§cNiveau maximum atteint pour cet enchantement!");
-            return false;
-        }
+        // MODIFIÉ : Le coût est maintenant fixe et récupéré via getCost()
+        long cost = book.getCost();
 
         if (playerData.getBeacons() < cost) {
             player.sendMessage("§cVous n'avez pas assez de beacons! Coût: §6" + NumberFormatter.format(cost) + " beacons");
@@ -166,10 +128,6 @@ public class EnchantmentBookManager {
             player.getInventory().addItem(physicalBook);
             player.sendMessage("§a✅ Livre physique §e" + book.getName() + " §aacheté pour §6" + NumberFormatter.format(cost) + " beacons§a!");
             player.sendMessage("§7Cliquez sur le livre dans votre inventaire pour l'appliquer à votre pioche!");
-        } else {
-            // Inventaire plein, donner directement
-            addEnchantmentBook(player, bookId, 1);
-            player.sendMessage("§a✅ Livre §e" + book.getName() + " §aacheté et appliqué directement (inventaire plein)!");
         }
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
@@ -183,14 +141,11 @@ public class EnchantmentBookManager {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§5⚡ " + book.getName() + " §7(Niveau " + level + ")");
+        meta.setDisplayName("§5⚡ " + book.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§7" + book.getDescription());
-        lore.add("");
-        lore.add("§aNiveau: §b" + level + "§7/§b" + book.getMaxLevel());
-        lore.add("");
         lore.add("§e⚡ Actions:");
         lore.add("§7▸ §6Clic dans le menu enchantements");
         lore.add("§7  pour appliquer à votre pioche");
@@ -224,7 +179,7 @@ public class EnchantmentBookManager {
     /**
      * Ajoute des livres d'enchantement au joueur
      */
-    public void addEnchantmentBook(Player player, String bookId, int amount) {
+    public void addEnchantmentBook(Player player, String bookId) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int currentLevel = getEnchantmentBookLevel(player, bookId);
 
@@ -234,7 +189,7 @@ public class EnchantmentBookManager {
             playerData.setEnchantmentLevel("unique_" + bookId, 1);
         } else {
             // Pour les enchants à plusieurs niveaux, on augmente
-            playerData.setEnchantmentLevel("unique_" + bookId, currentLevel + amount);
+            playerData.setEnchantmentLevel("unique_" + bookId, currentLevel + 1);
         }
 
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -361,7 +316,8 @@ public class EnchantmentBookManager {
         public abstract String getDescription();
         public abstract int getMaxLevel();
         public abstract Material getDisplayMaterial();
-        public abstract long getCostForLevel(int level);
+        // MODIFIÉ : Remplacé getCostForLevel par getCost
+        public abstract long getCost();
 
         /**
          * Méthode appelée lors du minage si l'enchantement est actif
@@ -378,12 +334,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 20; }
         @Override public Material getDisplayMaterial() { return Material.TNT; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            if (level <= 0 || level > getMaxLevel()) return -1;
-            if (level <= 1) return 5000;
-            if (level <= 10) return 15000;
-            return 50000;
+        public long getCost() {
+            return 15000;
         }
 
         @Override
@@ -443,9 +397,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 1; }
         @Override public Material getDisplayMaterial() { return Material.EMERALD; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level == 1 ? 25000 : -1;
+        public long getCost() {
+            return 25000;
         }
 
         @Override
@@ -462,9 +417,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 1; }
         @Override public Material getDisplayMaterial() { return Material.BEACON; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level == 1 ? 50000 : -1;
+        public long getCost() {
+            return 50000;
         }
 
         @Override
@@ -480,9 +436,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 1; }
         @Override public Material getDisplayMaterial() { return Material.IRON_PICKAXE; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level == 1 ? 30000 : -1;
+        public long getCost() {
+            return 30000;
         }
 
         @Override
@@ -509,9 +466,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 1; }
         @Override public Material getDisplayMaterial() { return Material.DIAMOND; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level == 1 ? 100000 : -1;
+        public long getCost() {
+            return 100000;
         }
 
         @Override
@@ -527,10 +485,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 20; }
         @Override public Material getDisplayMaterial() { return Material.MINECART; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            if (level <= 0 || level > getMaxLevel()) return -1;
-            return 10000 + (level - 1) * 10000; // 10k, 20k, 30k, etc.
+        public long getCost() {
+            return 10000;
         }
 
         @Override
@@ -586,9 +544,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 1; }
         @Override public Material getDisplayMaterial() { return Material.GOLD_BLOCK; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level == 1 ? 100000 : -1;
+        public long getCost() {
+            return 100000;
         }
 
         @Override
@@ -604,9 +563,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 20; }
         @Override public Material getDisplayMaterial() { return Material.LIGHTNING_ROD; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level <= getMaxLevel() ? 100000 : -1;
+        public long getCost() {
+            return 100000;
         }
 
         @Override
@@ -668,9 +628,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 20; }
         @Override public Material getDisplayMaterial() { return Material.DIAMOND_ORE; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level <= getMaxLevel() ? 100000 : -1;
+        public long getCost() {
+            return 100000;
         }
 
         @Override
@@ -753,9 +714,10 @@ public class EnchantmentBookManager {
         @Override public int getMaxLevel() { return 5; }
         @Override public Material getDisplayMaterial() { return Material.NETHER_STAR; }
 
+        // MODIFIÉ : Le coût est maintenant fixe.
         @Override
-        public long getCostForLevel(int level) {
-            return level <= getMaxLevel() ? 100000 : -1;
+        public long getCost() {
+            return 100000;
         }
 
         @Override

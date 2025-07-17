@@ -305,7 +305,7 @@ public class EnchantmentBookGUI {
         ItemMeta meta = item.getItemMeta();
 
         int currentLevel = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, book.getId());
-        long cost = book.getCostForLevel(currentLevel + 1);
+        long cost = book.getCost();
 
         meta.setDisplayName("§e" + book.getName());
 
@@ -324,7 +324,7 @@ public class EnchantmentBookGUI {
         lore.add("");
 
         if (cost > 0) {
-            lore.add("§aCoût niveau " + (currentLevel + 1) + ": §6" + NumberFormatter.format(cost) + " beacons");
+            lore.add("§aCoût " + ": §6" + NumberFormatter.format(cost) + " beacons");
             lore.add("");
             lore.add("§e⚡ Achat intelligent:");
 
@@ -365,20 +365,6 @@ public class EnchantmentBookGUI {
         }
 
         ItemMeta meta = clickedItem.getItemMeta();
-        if (!meta.getPersistentDataContainer().has(new NamespacedKey(plugin, "shop_book_id"), PersistentDataType.STRING)) {
-            // FALLBACK : Utilise l'ancienne méthode de détection par nom si pas de métadonnées
-            String displayName = clickedItem.getItemMeta().getDisplayName();
-            for (EnchantmentBookManager.EnchantmentBook book : plugin.getEnchantmentBookManager().getAllEnchantmentBooks()) {
-                if (displayName.contains(book.getName())) {
-                    boolean success = plugin.getEnchantmentBookManager().purchaseEnchantmentBook(player, book.getId());
-                    if (success) {
-                        openBookShop(player); // Refresh
-                    }
-                    return;
-                }
-            }
-            return;
-        }
 
         String bookId = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "shop_book_id"), PersistentDataType.STRING);
         EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
@@ -386,14 +372,8 @@ public class EnchantmentBookGUI {
 
         // Vérifications préliminaires
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int currentLevel = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, bookId);
-        long cost = book.getCostForLevel(currentLevel + 1);
+        long cost = book.getCost();
 
-        if (cost <= 0) {
-            player.sendMessage("§cNiveau maximum atteint!");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
-            return;
-        }
 
         if (playerData.getBeacons() < cost) {
             player.sendMessage("§cPas assez de beacons! (" + NumberFormatter.format(cost) + " requis)");
@@ -401,11 +381,7 @@ public class EnchantmentBookGUI {
             return;
         }
 
-        // NOUVEAU : Détection du type de clic pour choisir l'achat
-        // NOTE: Comme on n'a pas le ClickType ici, on utilise un message pour expliquer
-        // L'achat par défaut sera un livre physique si l'inventaire a de la place
         if (player.getInventory().firstEmpty() != -1) {
-            // Inventaire a de la place -> livre physique
             boolean success = plugin.getEnchantmentBookManager().purchasePhysicalEnchantmentBook(player, bookId);
             if (success) {
                 openBookShop(player); // Refresh
@@ -477,8 +453,6 @@ public class EnchantmentBookGUI {
     public void handlePhysicalBookApplication(Player player, ItemStack physicalBook) {
         String bookId = physicalBook.getItemMeta().getPersistentDataContainer().get(
                 new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING);
-        int level = physicalBook.getItemMeta().getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "enchant_book_level"), PersistentDataType.INTEGER);
 
         if (bookId == null) return;
 
@@ -489,8 +463,19 @@ public class EnchantmentBookGUI {
             return;
         }
 
+        EnchantmentBookManager enchantmentManager = plugin.getEnchantmentBookManager();
+
+        int playerLevel = enchantmentManager.getEnchantmentBookLevel(player, bookId);
+
+        EnchantmentBookManager.EnchantmentBook book = enchantmentManager.getEnchantmentBook(bookId);
+
+        int maxLevel = book.getMaxLevel();
+
+        if (playerLevel == maxLevel)
+            return;
+
         // Appliquer le livre
-        plugin.getEnchantmentBookManager().addEnchantmentBook(player, bookId, level);
+        plugin.getEnchantmentBookManager().addEnchantmentBook(player, bookId);
 
         // Enregistrer sur la pioche
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -502,7 +487,6 @@ public class EnchantmentBookGUI {
         // Mettre à jour le lore de la pioche
         plugin.getPickaxeManager().updatePickaxeLore(pickaxe.getItemMeta(), player);
 
-        EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
         player.sendMessage("§a✅ Livre §e" + book.getName() + " §aappliqué à votre pioche!");
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
 

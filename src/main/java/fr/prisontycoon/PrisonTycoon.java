@@ -280,10 +280,6 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§7- Commande /invsee enregistrée");
 
         getCommand("enchantbook").setExecutor(new EnchantmentBookCommand(this));
-        getCommand("enchantbook").setTabCompleter(new EnchantmentBookCommand(this));
-
-
-
 
         logger.info("§aCommandes enregistrées.");
     }
