@@ -128,7 +128,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
         if (!canModify) {
             readOnlyViewers.put(viewer.getUniqueId(), target.getName());
         }
-
+        plugin.getPickaxeManager().updatePlayerPickaxe(target);
         // Ouvre l'inventaire
         viewer.openInventory(inv);
 

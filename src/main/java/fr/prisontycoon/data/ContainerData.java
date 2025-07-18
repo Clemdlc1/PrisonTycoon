@@ -60,14 +60,14 @@ public class ContainerData {
     /**
      * Capacité selon le tier
      */
-    private int getCapacityForTier(int tier) {
+    public int getCapacityForTier(int tier) {
         return switch (tier) {
-            case 1 -> 2304; // 36 stacks
-            case 2 -> 4608; // 72 stacks
-            case 3 -> 9216; // 144 stacks
-            case 4 -> 18432; // 288 stacks
-            case 5 -> 36864; // 576 stacks
-            default -> 1152; // 18 stacks pour tier invalide
+            case 1 -> 6400;
+            case 2 -> 9600;
+            case 3 -> 16000;
+            case 4 -> 32000;
+            case 5 -> 64000;
+            default -> 1000;
         };
     }
 

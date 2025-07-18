@@ -1,7 +1,6 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.PickaxeManager;
 import org.bukkit.Location;
@@ -15,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -88,7 +88,7 @@ public class MiningListener implements Listener {
 
         // 3. POST-TRAITEMENT : Mise à jour de la pioche légendaire si utilisée
         if (playerPickaxe != null) {
-            postProcessLegendaryPickaxe(player, playerPickaxe);
+            postProcessLegendaryPickaxe(player);
 
             // NOUVEAU : Incrémente le compteur de blocs et vérifie les notifications de durabilité
             incrementBlockCountAndCheckDurabilityNotification(player, playerPickaxe);
@@ -252,14 +252,6 @@ public class MiningListener implements Listener {
     }
 
     /**
-     * NOUVEAU : Réinitialise le compteur de blocs pour un joueur (utilisé lors de la réparation)
-     */
-    public void resetBlockCountForPlayer(Player player) {
-        playerBlocksMinedCount.remove(player.getUniqueId());
-        plugin.getPluginLogger().debug("Compteur de blocs réinitialisé pour " + player.getName());
-    }
-
-    /**
      * Traite le minage dans une mine avec pioche légendaire
      */
     private void processMiningInMine(Player player, Location location, Material material, String mineName) {
@@ -276,16 +268,6 @@ public class MiningListener implements Listener {
             playerData.addBeacons(1);
             return;
         }
-
-        // Récupère les gains de base
-        BlockValueData baseValue = plugin.getConfigManager().getBlockValue(material);
-
-        // Notifie les gains de base via le nouveau système
-        if (baseValue.getCoins() > 0 || baseValue.getTokens() > 0 || baseValue.getExperience() > 0) {
-            plugin.getNotificationManager().queueRegularGains(player,
-                    baseValue.getCoins(), baseValue.getTokens(), baseValue.getExperience());
-        }
-
         // Traite ce bloc MINÉ directement par le joueur (avec Greeds, enchants spéciaux, etc.)
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
     }
@@ -312,49 +294,10 @@ public class MiningListener implements Listener {
     }
 
     /**
-     * MODIFIÉ : Ajoute un bloc à l'inventaire du joueur ou dans ses conteneurs
-     * Priorité: Conteneurs -> Inventaire normal
-     */
-    private void addBlockToInventory(Player player, Material material) {
-        ItemStack itemToAdd = new ItemStack(material, 1);
-
-        // NOUVEAU: Tente d'abord d'ajouter aux conteneurs
-        if (plugin.getContainerManager().addItemToContainers(player, itemToAdd)) {
-            plugin.getPluginLogger().debug("Bloc " + material.name() + " ajouté au conteneur de " + player.getName());
-            return;
-        }
-
-        // Si aucun conteneur disponible, ajoute à l'inventaire normal
-        var remaining = player.getInventory().addItem(itemToAdd);
-
-        if (!remaining.isEmpty()) {
-
-            // Message d'avertissement moins fréquent
-            if (!player.hasMetadata("inventory_full_warning") ||
-                    System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
-
-                player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! Items droppés au sol.");
-                player.sendMessage("§e💡 Utilisez §a/sell all §epour vider vos conteneurs!");
-                player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-            }
-        }
-    }
-
-    /**
-     * Trouve la pioche légendaire du joueur
-     */
-    private ItemStack getPlayerLegendaryPickaxe(Player player) {
-        return plugin.getPickaxeManager().findPlayerPickaxe(player);
-    }
-
-    /**
      * Post-traitement après utilisation de la pioche légendaire
      */
-    private void postProcessLegendaryPickaxe(Player player, ItemStack pickaxe) {
+    private void postProcessLegendaryPickaxe(Player player) {
         plugin.getPluginLogger().debug("Post-traitement pioche légendaire pour " + player.getName());
-
-        // 1. Met à jour la pioche avec ses enchantements
-        plugin.getPickaxeManager().updatePlayerPickaxe(player);
 
         // 2. S'assure que la pioche reste au bon slot
         plugin.getPickaxeManager().enforcePickaxeSlot(player);
@@ -373,5 +316,12 @@ public class MiningListener implements Listener {
             event.setCancelled(true);
             event.getPlayer().sendMessage("§c❌ Impossible de placer des blocs dans une mine!");
         }
+    }
+
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        Player player = (Player) event.getPlayer();
+
+        plugin.getPickaxeManager().updatePlayerPickaxe(player);
     }
 }

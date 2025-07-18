@@ -15,8 +15,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class NotificationManager {
 
     // Configuration
-    private static final long ACCUMULATION_WINDOW = 2500; // 2.5 secondes pour cumuler gains
-    private static final int MAX_QUEUE_SIZE = 15; // Maximum 15 notifications en attente
     private final PrisonTycoon plugin;
     // File d'attente des notifications par joueur
     private final Map<UUID, Queue<GameNotification>> playerNotificationQueues;
@@ -104,108 +102,6 @@ public class NotificationManager {
         long now = System.currentTimeMillis();
         activeTemporaryNotifications.entrySet().removeIf(entry ->
                 now > entry.getValue().getExpiryTime());
-    }
-
-    /**
-     * NOUVEAU : Ajoute une notification de gains réguliers (mining de base)
-     */
-    public void queueRegularGains(Player player, long coins, long tokens, long experience) {
-        if (coins <= 0 && tokens <= 0 && experience <= 0) return;
-
-        UUID playerId = player.getUniqueId();
-        long now = System.currentTimeMillis();
-
-        // Récupère ou crée l'accumulateur de gains
-        GainAccumulator accumulator = playerGainAccumulators.computeIfAbsent(playerId,
-                k -> new GainAccumulator(now));
-
-        // Si la fenêtre d'accumulation est expirée, crée un nouveau
-        if (now - accumulator.getStartTime() > ACCUMULATION_WINDOW) {
-            // Envoie l'ancien accumulateur s'il a des gains
-            if (accumulator.hasGains()) {
-                queueNotification(player, createGainNotification(accumulator));
-            }
-            // Crée un nouvel accumulateur
-            accumulator = new GainAccumulator(now);
-            playerGainAccumulators.put(playerId, accumulator);
-        }
-
-        // Ajoute les gains à l'accumulateur
-        accumulator.addGains(coins, tokens, experience);
-    }
-
-    /**
-     * LEGACY : Ajoute une notification Greed (compatibilité)
-     */
-    public void queueGreedNotification(Player player, String greedType, long amount, String currency) {
-        queueNotification(player, new GameNotification(
-                NotificationType.GREED,
-                "§l" + greedType + "! " + getColorForCurrency(currency) + "+" +
-                        NumberFormatter.format(amount) + " " + currency,
-                NotificationPriority.HIGH
-        ));
-    }
-
-    /**
-     * Méthode centrale pour ajouter une notification
-     */
-    private void queueNotification(Player player, GameNotification notification) {
-        UUID playerId = player.getUniqueId();
-
-        Queue<GameNotification> queue = playerNotificationQueues.computeIfAbsent(playerId,
-                k -> new ConcurrentLinkedQueue<>());
-
-        // Vérifie la taille de la file
-        if (queue.size() >= MAX_QUEUE_SIZE) {
-            // Retire la plus ancienne notification de priorité normale/basse
-            queue.removeIf(notif -> notif.getPriority().ordinal() <= NotificationPriority.MEDIUM.ordinal());
-        }
-
-        queue.offer(notification);
-        plugin.getPluginLogger().debug("Notification ajoutée pour " + player.getName() +
-                ": " + notification.getMessage());
-    }
-
-    /**
-     * Crée une notification de gains accumulés
-     */
-    private GameNotification createGainNotification(GainAccumulator accumulator) {
-        List<String> parts = new ArrayList<>();
-
-        if (accumulator.getCoins() > 0) {
-            parts.add("§6+" + NumberFormatter.format(accumulator.getCoins()) + " coins");
-        }
-        if (accumulator.getTokens() > 0) {
-            parts.add("§e+" + NumberFormatter.format(accumulator.getTokens()) + " tokens");
-        }
-        if (accumulator.getExperience() > 0) {
-            parts.add("§a+" + NumberFormatter.format(accumulator.getExperience()) + " XP");
-        }
-
-        String message = "§b⛏ Gains: " + String.join("§7, ", parts);
-
-        return new GameNotification(
-                NotificationType.REGULAR_GAINS,
-                message,
-                NotificationPriority.LOW
-        );
-    }
-
-    /**
-     * Obtient la couleur pour un type de monnaie
-     */
-    private String getColorForCurrency(String currency) {
-        return switch (currency.toLowerCase()) {
-            case "tokens" -> "§e";
-            case "coins" -> "§6";
-            case "xp", "experience" -> "§a";
-            default -> {
-                if (currency.startsWith("clé")) {
-                    yield "§e";
-                }
-                yield "§f";
-            }
-        };
     }
 
     /**

@@ -416,9 +416,6 @@ public class PickaxeManager {
 
         updatePickaxeLore(meta, player);
         pickaxe.setItemMeta(meta);
-
-        // Vérifie que la pioche est toujours au bon endroit
-        enforcePickaxeSlot(player);
     }
 
     /**

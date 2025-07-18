@@ -292,11 +292,9 @@ public class EnchantmentManager {
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
                 long finalGains = plugin.getGlobalBonusManager().applyTokenGreedBonus(player, baseGains);
 
-                plugin.getEconomyManager().addTokens(player, finalGains);
+                playerData.addTokensViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
 
-                // Notification via nouveau système
-                plugin.getNotificationManager().queueGreedNotification(player, "Token Greed", finalGains, "tokens");
             }
         }
 
@@ -319,9 +317,6 @@ public class EnchantmentManager {
 
                 // Met à jour l'expérience vanilla
                 plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
-
-                // Notification via nouveau système
-                plugin.getNotificationManager().queueGreedNotification(player, "Exp Greed", finalGains, "XP");
             }
         }
 
@@ -341,9 +336,6 @@ public class EnchantmentManager {
 
                 playerData.addCoinsViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
-
-                // Notification via nouveau système
-                plugin.getNotificationManager().queueGreedNotification(player, "Money Greed", finalGains, "coins");
             }
         }
 
@@ -424,10 +416,6 @@ public class EnchantmentManager {
 
             plugin.getEconomyManager().addTokens(player, finalGains);
             playerData.addGreedTrigger();
-
-            // Notification spéciale pour indiquer le malus
-            plugin.getNotificationManager().queueGreedNotification(player, "Token Greed §c(Malus)", finalGains, "tokens");
-
         }
     }
 
