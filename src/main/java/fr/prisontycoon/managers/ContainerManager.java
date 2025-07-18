@@ -351,59 +351,162 @@ public class ContainerManager {
     }
 
     private String serializeContainerData(ContainerData data) {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos)) {
-            dataOutput.writeInt(DATA_VERSION);
-            dataOutput.writeInt(data.getTier());
-            dataOutput.writeInt(data.getDurability());
-            dataOutput.writeBoolean(data.isSellEnabled());
-            Set<Material> whitelist = data.getWhitelist();
-            dataOutput.writeInt(whitelist.size());
-            for (Material material : whitelist) dataOutput.writeUTF(material.name());
-            Map<ItemStack, Integer> contents = data.getContents();
-            dataOutput.writeInt(contents.size());
-            for (Map.Entry<ItemStack, Integer> entry : contents.entrySet()) {
-                dataOutput.writeObject(entry.getKey());
-                dataOutput.writeInt(entry.getValue());
+        try {
+            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                 BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos)) {
+                // Écriture de la version
+                dataOutput.writeInt(DATA_VERSION);
+                // Écriture du tier
+                dataOutput.writeInt(data.getTier());
+                // Écriture de la durabilité
+                dataOutput.writeInt(data.getDurability());
+                // Écriture du flag de vente
+                dataOutput.writeBoolean(data.isSellEnabled());
+                // Écriture de la whitelist
+                Set<Material> whitelist = data.getWhitelist();
+                dataOutput.writeInt(whitelist.size());
+                for (Material material : whitelist) {
+                    dataOutput.writeUTF(material.name());
+                }
+                // Écriture du contenu
+                Map<ItemStack, Integer> contents = data.getContents();
+                dataOutput.writeInt(contents.size());
+                for (Map.Entry<ItemStack, Integer> entry : contents.entrySet()) {
+                    ItemStack item = entry.getKey();
+                    Integer amount = entry.getValue();
+                    try {
+                        dataOutput.writeObject(item);
+
+                        dataOutput.writeInt(amount);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw e;
+                    }
+                }
+                // Écriture des items de référence
+                Map<Integer, ItemStack> refItems = data.getReferenceItems();
+                dataOutput.writeInt(refItems.size());
+                for (Map.Entry<Integer, ItemStack> entry : refItems.entrySet()) {
+                    Integer key = entry.getKey();
+                    ItemStack item = entry.getValue();
+                    try {
+                        dataOutput.writeInt(key);
+
+                        dataOutput.writeObject(item);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw e;
+                    }
+                }
+                // Finalisation
+                dataOutput.flush();
+                byte[] rawData = bos.toByteArray();
+                String base64Result = Base64.getEncoder().encodeToString(rawData);
+                return base64Result;
+            } catch (Exception streamException) {
+                streamException.printStackTrace();
+                throw streamException;
             }
-            Map<Integer, ItemStack> refItems = data.getReferenceItems();
-            dataOutput.writeInt(refItems.size());
-            for (Map.Entry<Integer, ItemStack> entry : refItems.entrySet()) {
-                dataOutput.writeInt(entry.getKey());
-                dataOutput.writeObject(entry.getValue());
-            }
-            return Base64.getEncoder().encodeToString(bos.toByteArray());
         } catch (Exception e) {
-            plugin.getPluginLogger().severe("ERREUR CRITIQUE DE SÉRIALISATION !");
             e.printStackTrace();
             return null;
         }
     }
 
+    /**
+     * DÉSÉRIALISATION AVEC DEBUG INTENSIF
+     * Remplace la méthode deserializeContainerData existante
+     */
     private ContainerData deserializeContainerData(String serializedData) {
-        if (serializedData == null || serializedData.isEmpty()) return null;
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getDecoder().decode(serializedData)); BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis)) {
+        if (serializedData == null || serializedData.isEmpty()) {
+            return null;
+        }
+        byte[] rawData;
+        try {
+            rawData = Base64.getDecoder().decode(serializedData);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(rawData);
+             BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis)) {
+            // Lecture de la version
             int version = dataInput.readInt();
             if (version != DATA_VERSION) {
-                plugin.getPluginLogger().warning("Format de données de conteneur obsolète (v" + version + "). Le conteneur sera réinitialisé.");
                 return null;
             }
+            // Lecture du tier
             int tier = dataInput.readInt();
+            // Lecture de la durabilité
             int durability = dataInput.readInt();
+            // Lecture du flag de vente
             boolean sellEnabled = dataInput.readBoolean();
+            // Lecture de la whitelist
             int whitelistSize = dataInput.readInt();
+
+            if (whitelistSize < 0 || whitelistSize > 10000) {
+                return null;
+            }
             Set<Material> whitelist = new HashSet<>(whitelistSize);
-            for (int i = 0; i < whitelistSize; i++) whitelist.add(Material.valueOf(dataInput.readUTF()));
+            for (int i = 0; i < whitelistSize; i++) {
+                try {
+                    String materialName = dataInput.readUTF();
+
+                    Material material = Material.valueOf(materialName);
+                    whitelist.add(material);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw e;
+                }
+            }
+            // Lecture du contenu
             int contentsSize = dataInput.readInt();
+            if (contentsSize < 0 || contentsSize > 100000) {
+                return null;
+            }
+
             Map<ItemStack, Integer> contents = new LinkedHashMap<>(contentsSize);
-            for (int i = 0; i < contentsSize; i++) contents.put((ItemStack) dataInput.readObject(), dataInput.readInt());
+            for (int i = 0; i < contentsSize; i++) {
+                try {
+                    // Lecture de l'ItemStack
+                    Object itemObj = dataInput.readObject();
+                    ItemStack item = (ItemStack) itemObj;
+                    // Lecture de la quantité
+                    int amount = dataInput.readInt();
+                    contents.put(item, amount);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw e;
+                }
+            }
+            // Création de l'objet avec les données lues jusqu'à présent
             ContainerData data = new ContainerData(tier, contents, whitelist, sellEnabled, durability);
+            // Lecture des items de référence
             int refItemsSize = dataInput.readInt();
+            if (refItemsSize < 0 || refItemsSize > 1000) {
+                return null;
+            }
             Map<Integer, ItemStack> refItems = new HashMap<>(refItemsSize);
-            for (int i = 0; i < refItemsSize; i++) refItems.put(dataInput.readInt(), (ItemStack) dataInput.readObject());
+            for (int i = 0; i < refItemsSize; i++) {
+                try {
+                    // Lecture de la clé
+                    int key = dataInput.readInt();
+                    // Lecture de l'ItemStack
+                    Object itemObj = dataInput.readObject();
+                    ItemStack item = (ItemStack) itemObj;
+                    refItems.put(key, item);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw e;
+                }
+            }
+            // Finalisation
             data.setReferenceItems(refItems);
             return data;
         } catch (Exception e) {
-            plugin.getPluginLogger().warning("Une erreur est survenue lors de la DÉSÉRIALISATION. Le conteneur sera réinitialisé. Erreur: " + e.getClass().getSimpleName());
+            e.printStackTrace();
             return null;
         }
     }
