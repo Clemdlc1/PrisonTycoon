@@ -230,7 +230,6 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new CristalListener(this), this);
         pluginManager.registerEvents(new ChatListener(this), this);
 
-
         logger.info("§aÉvénements enregistrés.");
     }
 

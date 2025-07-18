@@ -77,7 +77,6 @@ public class ContainerCommand implements CommandExecutor, TabCompleter {
         // Crée et donne le conteneur
         ItemStack container = plugin.getContainerManager().createContainer(tier);
         player.getInventory().addItem(container);
-        plugin.getContainerManager().updateContainerItem(container, null);
 
         // Messages de succès
         String tierName = getTierName(tier);

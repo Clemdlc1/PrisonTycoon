@@ -30,10 +30,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ULTRA-OPTIMISÉ : Gestionnaire des conteneurs avec cache réactif et sérialisation robuste.
- * Version complète et fonctionnelle.
+ * ULTRA-OPTIMISÉ : Gestionnaire des conteneurs avec cache réactif, sérialisation robuste et cycle de vie complet.
+ * CORRIGÉ : Préserve l'identité des conteneurs lors de chaque sauvegarde.
  */
-public class ContainerManager implements Listener {
+public class ContainerManager {
 
     private final PrisonTycoon plugin;
 
@@ -44,9 +44,7 @@ public class ContainerManager implements Listener {
 
     private final Map<String, ContainerData> containerCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<String>> playerContainers = new ConcurrentHashMap<>();
-    private final Map<String, Long> lastVisualUpdate = new ConcurrentHashMap<>();
 
-    private static final long VISUAL_UPDATE_INTERVAL = 30 * 1000;
     private static final int DATA_VERSION = 3;
 
     public ContainerManager(PrisonTycoon plugin) {
@@ -55,29 +53,50 @@ public class ContainerManager implements Listener {
         this.containerTierKey = new NamespacedKey(plugin, "container_tier");
         this.containerDataKey = new NamespacedKey(plugin, "container_data");
         this.containerUUIDKey = new NamespacedKey(plugin, "container_uuid");
-
-        Bukkit.getPluginManager().registerEvents(this, plugin);
-        startMaintenanceTasks();
     }
 
-    public void rescanAndCachePlayerInventory(Player player) {
-        if (player == null || !player.isOnline()) return;
-        Set<String> currentUUIDs = playerContainers.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet());
-        Set<String> foundUUIDs = new HashSet<>();
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item)) {
-                String uuid = getContainerUUID(item);
-                if (uuid != null) {
-                    foundUUIDs.add(uuid);
-                    getContainerData(item);
-                }
-            }
+    // === METHODES COEUR : SAVE & LOAD ===
+
+    /**
+     * Méthode centrale qui écrit les données du cache vers un ItemStack physique.
+     * C'est la seule source de vérité pour la persistance et l'affichage.
+     *
+     * @param containerItem L'item à mettre à jour.
+     * @param data          Les données à sauvegarder sur l'item.
+     * @return true si la sauvegarde a réussi.
+     */
+    private boolean saveDataToItem(ItemStack containerItem, ContainerData data) {
+        if (containerItem == null || data == null) return false;
+
+        // On lit l'UUID de l'item AVANT de modifier ses métadonnées.
+        String uuid = getContainerUUID(containerItem);
+        if (uuid == null) {
+            plugin.getPluginLogger().severe("Tentative de sauvegarde d'un conteneur sans UUID ! L'item pourrait être corrompu.");
+            return false;
         }
-        currentUUIDs.clear();
-        currentUUIDs.addAll(foundUUIDs);
+
+        ItemMeta meta = containerItem.getItemMeta();
+        if (meta == null) return false;
+
+
+        meta.getPersistentDataContainer().set(containerKey, PersistentDataType.BOOLEAN, true);
+        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uuid);
+        meta.getPersistentDataContainer().set(containerTierKey, PersistentDataType.INTEGER, data.getTier());
+
+        String serialized = serializeContainerData(data);
+        if (serialized == null) {
+            plugin.getPluginLogger().severe("Échec critique de la sérialisation pour le conteneur UUID: " + uuid);
+            return false;
+        }
+        meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serialized);
+
+        updateLoreAndName(meta, data);
+
+        containerItem.setItemMeta(meta);
+        return true;
     }
 
-    public ContainerData getContainerData(ItemStack item) {
+    public ContainerData loadDataFromItem(ItemStack item) {
         if (!isContainer(item)) return null;
         String uuid = getContainerUUID(item);
         if (uuid == null) return null;
@@ -85,6 +104,7 @@ public class ContainerManager implements Listener {
 
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
+
         String serializedData = meta.getPersistentDataContainer().get(containerDataKey, PersistentDataType.STRING);
         ContainerData data = deserializeContainerData(serializedData);
 
@@ -96,9 +116,23 @@ public class ContainerManager implements Listener {
             ContainerData freshData = new ContainerData(tier);
             containerCache.put(uuid, freshData);
             plugin.getPluginLogger().warning("Un conteneur (UUID: " + uuid.substring(0, 8) + ") avait des données invalides et a été réinitialisé.");
-            findPlayerAndForceVisualUpdate(uuid, freshData);
+            saveDataToItem(item, freshData);
             return freshData;
         }
+    }
+
+    // === MÉTHODES PUBLIQUES (API) ===
+
+    public void saveContainerItem(ItemStack containerItem, ContainerData data) {
+        if (!isContainer(containerItem) || data == null) return;
+        String uuid = getContainerUUID(containerItem);
+        if (uuid == null) return;
+        containerCache.put(uuid, data);
+        saveDataToItem(containerItem, data);
+    }
+
+    public ContainerData getContainerData(ItemStack item) {
+        return loadDataFromItem(item);
     }
 
     public boolean addItemToContainers(Player player, ItemStack itemToAdd) {
@@ -109,7 +143,9 @@ public class ContainerManager implements Listener {
             ContainerData data = containerCache.get(uuid);
             if (data != null && !data.isBroken() && !data.isFull()) {
                 if (data.addItem(itemToAdd)) {
-                    if (data.isFull()) updateContainerVisual(player, uuid, data);
+                    if (data.isFull()) {
+                        updateContainerInInventory(player, uuid, data);
+                    }
                     return true;
                 }
             }
@@ -117,13 +153,114 @@ public class ContainerManager implements Listener {
         return false;
     }
 
-    private void updateContainerVisual(Player player, String uuid, ContainerData data) {
-        if (player == null || !player.isOnline() || uuid == null || data == null) return;
-        ItemStack containerItem = findContainerByUUID(player, uuid);
-        if (containerItem == null) return;
-        ItemMeta meta = containerItem.getItemMeta();
-        if (meta == null) return;
+    public boolean updateContainerInInventory(Player player, String uuid, ContainerData newData) {
+        if (uuid == null || player == null || newData == null) return false;
+        containerCache.put(uuid, newData);
+        ItemStack item = findContainerByUUID(player, uuid);
+        if (item != null) {
+            return saveDataToItem(item, newData);
+        }
+        return false;
+    }
 
+    public List<ContainerData> getPlayerContainers(Player player) {
+        List<ContainerData> containers = new ArrayList<>();
+        Set<String> uuids = playerContainers.get(player.getUniqueId());
+        if (uuids != null) {
+            for (String uuid : uuids) {
+                ContainerData data = containerCache.get(uuid);
+                if (data != null) containers.add(data);
+            }
+        }
+        return containers;
+    }
+
+    public long sellAllContainerContents(Player player) {
+        long totalValue = 0;
+        Set<String> uuids = playerContainers.get(player.getUniqueId());
+        if (uuids == null) return 0L;
+        List<String> brokenMessages = new ArrayList<>();
+        for (String uuid : uuids) {
+            ContainerData data = containerCache.get(uuid);
+            if (data != null && data.isSellEnabled() && !data.isBroken()) {
+                Map<ItemStack, Integer> vendableItems = data.getVendableContents(plugin.getConfigManager()::getSellPrice);
+                long containerValue = 0;
+                for (Map.Entry<ItemStack, Integer> entry : vendableItems.entrySet()) {
+                    long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType());
+                    containerValue += price * entry.getValue();
+                }
+                if (containerValue > 0) {
+                    totalValue += containerValue;
+                    data.clearVendableContents(plugin.getConfigManager()::getSellPrice);
+                    if (!data.useDurability(1)) {
+                        brokenMessages.add(getTierName(data.getTier()));
+                    }
+                    updateContainerInInventory(player, uuid, data);
+                }
+            }
+        }
+        if (!brokenMessages.isEmpty()) {
+            player.sendMessage("§c💥 Un conteneur " + String.join("§c, ", brokenMessages) + " §cs'est cassé lors de la vente!");
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
+        }
+        return totalValue;
+    }
+
+    public int transferContainerToPlayer(Player player, ContainerData data) {
+        if (player == null || data == null) return 0;
+        int totalTransferred = 0;
+        var contentsCopy = new LinkedHashMap<>(data.getContents());
+        for (var entry : contentsCopy.entrySet()) {
+            ItemStack itemKey = entry.getKey();
+            int amountAvailable = entry.getValue();
+            int amountToRemoveFromContainer = 0;
+            while (amountAvailable > 0) {
+                if (player.getInventory().firstEmpty() == -1) {
+                    if (amountToRemoveFromContainer > 0) data.removeItem(itemKey, amountToRemoveFromContainer);
+                    return totalTransferred;
+                }
+                int stackSize = Math.min(amountAvailable, itemKey.getType().getMaxStackSize());
+                ItemStack toAdd = itemKey.clone();
+                toAdd.setAmount(stackSize);
+                HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(toAdd);
+                int actuallyAdded = stackSize - leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
+                if (actuallyAdded > 0) {
+                    totalTransferred += actuallyAdded;
+                    amountToRemoveFromContainer += actuallyAdded;
+                }
+                amountAvailable -= stackSize;
+                if (!leftover.isEmpty()) {
+                    if (amountToRemoveFromContainer > 0) data.removeItem(itemKey, amountToRemoveFromContainer);
+                    return totalTransferred;
+                }
+            }
+            if (amountToRemoveFromContainer > 0) {
+                data.removeItem(itemKey, amountToRemoveFromContainer);
+            }
+        }
+        return totalTransferred;
+    }
+
+    // === UTILS, SÉRIALISATION ET CRÉATION ===
+
+    public void rescanAndCachePlayerInventory(Player player) {
+        if (player == null || !player.isOnline()) return;
+        Set<String> currentUUIDs = playerContainers.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet());
+        Set<String> foundUUIDs = new HashSet<>();
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isContainer(item)) {
+                String uuid = getContainerUUID(item);
+                if (uuid != null) {
+                    foundUUIDs.add(uuid);
+                    loadDataFromItem(item);
+                }
+            }
+        }
+        currentUUIDs.clear();
+        currentUUIDs.addAll(foundUUIDs);
+    }
+
+    private void updateLoreAndName(ItemMeta meta, ContainerData data) {
         List<String> lore = new ArrayList<>();
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§e📊 Informations du conteneur:");
@@ -155,165 +292,51 @@ public class ContainerManager implements Listener {
         lore.add("§e⚙️ §aShift + Clic droit §7pour configurer");
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         meta.setLore(lore);
-
-        String serialized = serializeContainerData(data);
-        if (serialized != null) meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serialized);
-        containerItem.setItemMeta(meta);
-        lastVisualUpdate.put(uuid, System.currentTimeMillis());
     }
 
-    // === GESTION DES ÉVÉNEMENTS ===
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!event.getPlayer().isOnline()) return;
-            rescanAndCachePlayerInventory(event.getPlayer());
-            Set<String> uuids = playerContainers.get(event.getPlayer().getUniqueId());
-            if (uuids != null) {
-                for (String uuid : uuids) updateContainerVisual(event.getPlayer(), uuid, containerCache.get(uuid));
-            }
-        }, 2L);
+    public ItemStack createContainer(int tier) {
+        ItemStack container = new ItemStack(Material.CHEST);
+        // Important: Obtenez la meta une seule fois.
+        ItemMeta meta = container.getItemMeta();
+        if (meta == null) return null;
+
+        // Étape 1: Définir l'identité
+        String uniqueId = UUID.randomUUID().toString();
+        meta.getPersistentDataContainer().set(containerKey, PersistentDataType.BOOLEAN, true);
+        meta.getPersistentDataContainer().set(containerTierKey, PersistentDataType.INTEGER, tier);
+        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uniqueId);
+
+        // Appliquer la meta avec l'identité à l'item
+        container.setItemMeta(meta);
+
+        // Étape 2: Créer les données et les mettre en cache
+        ContainerData data = new ContainerData(tier);
+        containerCache.put(uniqueId, data);
+
+        // Étape 3: Sauvegarder l'état initial complet (données + lore) sur l'item
+        saveDataToItem(container, data);
+
+        return container;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerQuit(PlayerQuitEvent event) { playerContainers.remove(event.getPlayer().getUniqueId()); }
+    public boolean isContainer(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) return false;
+        ItemMeta meta = item.getItemMeta();
+        // Le check crucial : l'item doit avoir la clé de base ET la clé UUID.
+        return meta.getPersistentDataContainer().has(containerKey, PersistentDataType.BOOLEAN) && meta.getPersistentDataContainer().has(containerUUIDKey, PersistentDataType.STRING);
+    }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryOpen(InventoryOpenEvent event) {
-        if (event.getPlayer() instanceof Player player) {
-            Set<String> uuids = playerContainers.get(player.getUniqueId());
-            if (uuids != null) {
-                for (String uuid : uuids) updateContainerVisual(player, uuid, containerCache.get(uuid));
-            }
+    public String getContainerUUID(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return null;
+        return item.getItemMeta().getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
+    }
+
+    public ItemStack findContainerByUUID(Player player, String uuid) {
+        if (uuid == null || player == null) return null;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isContainer(item) && uuid.equals(getContainerUUID(item))) return item;
         }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
-        if (isContainer(event.getItem().getItemStack())) {
-            Bukkit.getScheduler().runTask(plugin, () -> rescanAndCachePlayerInventory(event.getPlayer()));
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        if (isContainer(event.getItemDrop().getItemStack())) rescanAndCachePlayerInventory(event.getPlayer());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getWhoClicked() instanceof Player player) {
-            if (isContainer(event.getCurrentItem()) || isContainer(event.getCursor())) {
-                Bukkit.getScheduler().runTask(plugin, () -> rescanAndCachePlayerInventory(player));
-            }
-        }
-    }
-
-    // === SÉRIALISATION ===
-    private String serializeContainerData(ContainerData data) { /* ... implementation from previous response ... */ return ""; }
-    private ContainerData deserializeContainerData(String serializedData) { /* ... implementation from previous response ... */ return null; }
-
-    // === MÉTHODES PUBLIQUES RESTAURÉES ===
-
-    public boolean updateContainerInInventory(Player player, String uuid, ContainerData newData) {
-        if (uuid == null || player == null || newData == null) return false;
-        containerCache.put(uuid, newData);
-        updateContainerVisual(player, uuid, newData);
-        return true;
-    }
-
-    public List<ContainerData> getPlayerContainers(Player player) {
-        List<ContainerData> containers = new ArrayList<>();
-        Set<String> uuids = playerContainers.get(player.getUniqueId());
-        if (uuids != null) {
-            for(String uuid : uuids) {
-                ContainerData data = containerCache.get(uuid);
-                if(data != null) containers.add(data);
-            }
-        }
-        return containers;
-    }
-
-    public long sellAllContainerContents(Player player) {
-        long totalValue = 0;
-        Set<String> uuids = playerContainers.get(player.getUniqueId());
-        if(uuids == null) return 0L;
-
-        List<String> brokenMessages = new ArrayList<>();
-
-        for (String uuid : uuids) {
-            ContainerData data = containerCache.get(uuid);
-            if(data != null && data.isSellEnabled() && !data.isBroken()) {
-                Map<ItemStack, Integer> vendableItems = data.getVendableContents(plugin.getConfigManager()::getSellPrice);
-                long containerValue = 0;
-                for (Map.Entry<ItemStack, Integer> entry : vendableItems.entrySet()) {
-                    long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType());
-                    containerValue += price * entry.getValue();
-                }
-                if (containerValue > 0) {
-                    totalValue += containerValue;
-                    data.clearVendableContents(plugin.getConfigManager()::getSellPrice);
-                    if (!data.useDurability(1)) {
-                        brokenMessages.add(getTierName(data.getTier()));
-                    }
-                    updateContainerVisual(player, uuid, data);
-                }
-            }
-        }
-        if(!brokenMessages.isEmpty()){
-            player.sendMessage("§c💥 Un conteneur " + String.join(", ", brokenMessages) + " §cs'est cassé lors de la vente!");
-            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
-        }
-        return totalValue;
-    }
-
-    public int transferContainerToPlayer(Player player, ContainerData data) {
-        if (player == null || data == null) return 0;
-
-        int totalTransferred = 0;
-        var contentsCopy = new LinkedHashMap<>(data.getContents()); // Use LinkedHashMap to respect order
-
-        for (var entry : contentsCopy.entrySet()) {
-            ItemStack itemKey = entry.getKey();
-            int amountAvailable = entry.getValue();
-            int amountTransferredInLoop = 0;
-
-            while(amountAvailable > 0) {
-                if (player.getInventory().firstEmpty() == -1) {
-                    // Stop if inventory is full
-                    if(amountTransferredInLoop > 0) data.removeItem(itemKey, amountTransferredInLoop);
-                    return totalTransferred;
-                }
-                int stackSize = Math.min(amountAvailable, itemKey.getType().getMaxStackSize());
-                ItemStack toAdd = itemKey.clone();
-                toAdd.setAmount(stackSize);
-
-                HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(toAdd);
-
-                int actuallyAdded = stackSize;
-                if(!leftover.isEmpty()){
-                    actuallyAdded -= leftover.values().stream().findFirst().get().getAmount();
-                }
-
-                if(actuallyAdded > 0) {
-                    totalTransferred += actuallyAdded;
-                    amountTransferredInLoop += actuallyAdded;
-                }
-
-                amountAvailable -= stackSize; // We attempted to add this much
-
-                if(!leftover.isEmpty()){
-                    // Inventory got full during the process
-                    if(amountTransferredInLoop > 0) data.removeItem(itemKey, amountTransferredInLoop);
-                    return totalTransferred;
-                }
-            }
-
-            if(amountTransferredInLoop > 0) {
-                data.removeItem(itemKey, amountTransferredInLoop);
-            }
-        }
-        return totalTransferred;
+        return null;
     }
 
     private String getTierName(int tier) {
@@ -327,80 +350,113 @@ public class ContainerManager implements Listener {
         };
     }
 
-    // --- AUTRES MÉTHODES UTILITAIRES ---
-    private void startMaintenanceTasks() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                long now = System.currentTimeMillis();
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    Set<String> uuids = playerContainers.get(player.getUniqueId());
-                    if (uuids != null) {
-                        for (String uuid : uuids) {
-                            if (now - lastVisualUpdate.getOrDefault(uuid, 0L) > VISUAL_UPDATE_INTERVAL) {
-                                updateContainerVisual(player, uuid, containerCache.get(uuid));
-                            }
-                        }
-                    }
-                }
-                Set<String> allActiveUUIDs = new HashSet<>();
-                playerContainers.values().forEach(allActiveUUIDs::addAll);
-                containerCache.keySet().retainAll(allActiveUUIDs);
-                lastVisualUpdate.keySet().retainAll(allActiveUUIDs);
+    private String serializeContainerData(ContainerData data) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos)) {
+            dataOutput.writeInt(DATA_VERSION);
+            dataOutput.writeInt(data.getTier());
+            dataOutput.writeInt(data.getDurability());
+            dataOutput.writeBoolean(data.isSellEnabled());
+            Set<Material> whitelist = data.getWhitelist();
+            dataOutput.writeInt(whitelist.size());
+            for (Material material : whitelist) dataOutput.writeUTF(material.name());
+            Map<ItemStack, Integer> contents = data.getContents();
+            dataOutput.writeInt(contents.size());
+            for (Map.Entry<ItemStack, Integer> entry : contents.entrySet()) {
+                dataOutput.writeObject(entry.getKey());
+                dataOutput.writeInt(entry.getValue());
             }
-        }.runTaskTimerAsynchronously(plugin, 600L, 600L);
+            Map<Integer, ItemStack> refItems = data.getReferenceItems();
+            dataOutput.writeInt(refItems.size());
+            for (Map.Entry<Integer, ItemStack> entry : refItems.entrySet()) {
+                dataOutput.writeInt(entry.getKey());
+                dataOutput.writeObject(entry.getValue());
+            }
+            return Base64.getEncoder().encodeToString(bos.toByteArray());
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("ERREUR CRITIQUE DE SÉRIALISATION !");
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public boolean isContainer(ItemStack item) {
-        if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) return false;
-        return item.getItemMeta().getPersistentDataContainer().has(containerKey, PersistentDataType.BOOLEAN);
+    private ContainerData deserializeContainerData(String serializedData) {
+        if (serializedData == null || serializedData.isEmpty()) return null;
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getDecoder().decode(serializedData)); BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis)) {
+            int version = dataInput.readInt();
+            if (version != DATA_VERSION) {
+                plugin.getPluginLogger().warning("Format de données de conteneur obsolète (v" + version + "). Le conteneur sera réinitialisé.");
+                return null;
+            }
+            int tier = dataInput.readInt();
+            int durability = dataInput.readInt();
+            boolean sellEnabled = dataInput.readBoolean();
+            int whitelistSize = dataInput.readInt();
+            Set<Material> whitelist = new HashSet<>(whitelistSize);
+            for (int i = 0; i < whitelistSize; i++) whitelist.add(Material.valueOf(dataInput.readUTF()));
+            int contentsSize = dataInput.readInt();
+            Map<ItemStack, Integer> contents = new LinkedHashMap<>(contentsSize);
+            for (int i = 0; i < contentsSize; i++) contents.put((ItemStack) dataInput.readObject(), dataInput.readInt());
+            ContainerData data = new ContainerData(tier, contents, whitelist, sellEnabled, durability);
+            int refItemsSize = dataInput.readInt();
+            Map<Integer, ItemStack> refItems = new HashMap<>(refItemsSize);
+            for (int i = 0; i < refItemsSize; i++) refItems.put(dataInput.readInt(), (ItemStack) dataInput.readObject());
+            data.setReferenceItems(refItems);
+            return data;
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Une erreur est survenue lors de la DÉSÉRIALISATION. Le conteneur sera réinitialisé. Erreur: " + e.getClass().getSimpleName());
+            return null;
+        }
     }
 
-    public String getContainerUUID(ItemStack item) {
-        if (!isContainer(item)) return null;
-        return item.getItemMeta().getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
-    }
-
-    public ItemStack findContainerByUUID(Player player, String uuid) {
-        if (uuid == null || player == null) return null;
+    public void handlePlayerJoin(Player player) {
         for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item) && uuid.equals(getContainerUUID(item))) return item;
+            if (isContainer(item)) {
+                containerCache.remove(getContainerUUID(item));
+            }
         }
-        return null;
+        rescanAndCachePlayerInventory(player);
     }
 
-    public ItemStack createContainer(int tier) {
-        ItemStack container = new ItemStack(Material.CHEST);
-        ItemMeta meta = container.getItemMeta();
-        if (meta == null) return null;
-        String uniqueId = UUID.randomUUID().toString();
-        ContainerData data = new ContainerData(tier);
-        meta.getPersistentDataContainer().set(containerKey, PersistentDataType.BOOLEAN, true);
-        meta.getPersistentDataContainer().set(containerTierKey, PersistentDataType.INTEGER, tier);
-        meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uniqueId);
-        containerCache.put(uniqueId, data);
-        String serialized = serializeContainerData(data);
-        if (serialized != null) meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serialized);
-        meta.setDisplayName("§6📦 Conteneur " + getTierName(tier));
-        meta.setLore(Collections.singletonList("§7Nouveau conteneur..."));
-        container.setItemMeta(meta);
-        return container;
+    public void handlePlayerQuit(Player player) {
+        Set<String> uuids = playerContainers.get(player.getUniqueId());
+
+        if (uuids != null && !uuids.isEmpty()) {
+            for (String uuid : uuids) {
+                ContainerData dataFromCache = containerCache.get(uuid);
+                ItemStack itemInInventory = findContainerByUUID(player, uuid);
+                if (dataFromCache != null && itemInInventory != null) {
+                    saveDataToItem(itemInInventory, dataFromCache);
+                }
+            }
+            for (String uuid : uuids) {
+                containerCache.remove(uuid);
+            }
+        }
+        playerContainers.remove(player.getUniqueId());
     }
 
-    public void updateContainerItem(ItemStack container, ContainerData data) {
-        if (!isContainer(container) || data == null) return;
-        String uuid = getContainerUUID(container);
+    public void handleContainerDrop(Player player, ItemStack droppedItem) {
+        String uuid = getContainerUUID(droppedItem);
         if (uuid == null) return;
-        containerCache.put(uuid, data);
-        findPlayerAndForceVisualUpdate(uuid, data);
+        ContainerData data = containerCache.get(uuid);
+        if (data != null) {
+            saveDataToItem(droppedItem, data);
+            playerContainers.getOrDefault(player.getUniqueId(), new HashSet<>()).remove(uuid);
+            containerCache.remove(uuid);
+        }
     }
 
-    private void findPlayerAndForceVisualUpdate(String uuid, ContainerData data) {
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (playerContainers.getOrDefault(p.getUniqueId(), Collections.emptySet()).contains(uuid)) {
-                updateContainerVisual(p, uuid, data);
-                return;
+    public void handleInventoryUpdate(Player player) {
+        Set<String> uuids = playerContainers.get(player.getUniqueId());
+        if (uuids != null) {
+            for (String uuid : uuids) {
+                ContainerData data = containerCache.get(uuid);
+                ItemStack item = findContainerByUUID(player, uuid);
+                if (data != null && item != null) {
+                    saveDataToItem(item, data);
+                }
             }
         }
     }
+
 }

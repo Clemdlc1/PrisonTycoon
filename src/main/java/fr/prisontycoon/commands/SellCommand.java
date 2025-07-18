@@ -182,7 +182,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
                             String.format("%.1f%%", durabilityPercent));
                 }
             }
-            plugin.getContainerManager().updateContainerItem(containerItem, containerData);
+            plugin.getContainerManager().saveContainerItem(containerItem, containerData);
         }
     }
 

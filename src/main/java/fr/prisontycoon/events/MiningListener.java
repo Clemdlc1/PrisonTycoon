@@ -3,10 +3,9 @@ package fr.prisontycoon.events;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.PickaxeManager;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,10 +14,13 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -187,7 +189,24 @@ public class MiningListener implements Listener {
     /**
      * NOUVEAU : Incrémente le compteur de blocs et vérifie s'il faut envoyer une notification de durabilité
      */
+
     private void incrementBlockCountAndCheckDurabilityNotification(Player player, ItemStack pickaxe) {
+        // Vérifie d'abord si l'item ou son ItemMeta est non-existant
+        if (pickaxe == null || !pickaxe.hasItemMeta()) {
+            return;
+        }
+
+        ItemMeta meta = pickaxe.getItemMeta();
+
+        // Vérifie si l'item peut prendre des dégâts en testant si son meta est une instance de Damageable
+        if (!(meta instanceof Damageable)) {
+            // L'item ne peut pas subir de dégâts, on arrête donc la fonction ici.
+            return;
+        }
+
+        // À ce stade, on sait que le cast est sûr
+        Damageable damageableMeta = (Damageable) meta;
+
         UUID playerId = player.getUniqueId();
 
         // Incrémente le compteur de blocs cassés
@@ -195,8 +214,14 @@ public class MiningListener implements Listener {
         playerBlocksMinedCount.put(playerId, currentCount);
 
         // Vérifie la durabilité de la pioche
-        short currentDurability = (short) ((Damageable) pickaxe.getItemMeta()).getDamage();
+        short currentDurability = (short) damageableMeta.getDamage();
         short maxDurability = pickaxe.getType().getMaxDurability();
+
+        // Si la durabilité max est 0 ou moins, l'item est incassable
+        if (maxDurability <= 0) {
+            return;
+        }
+
         double durabilityPercent = 1.0 - ((double) currentDurability / maxDurability);
 
         // Seulement envoyer des notifications quand la durabilité est < 25%
@@ -320,6 +345,8 @@ public class MiningListener implements Listener {
 
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
+        event.getPlayer().sendMessage("1");
+
         Player player = (Player) event.getPlayer();
 
         plugin.getPickaxeManager().updatePlayerPickaxe(player);

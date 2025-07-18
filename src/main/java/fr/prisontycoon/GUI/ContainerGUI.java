@@ -371,7 +371,7 @@ public class ContainerGUI {
             }
 
             data.setSellEnabled(!data.isSellEnabled());
-            plugin.getContainerManager().updateContainerItem(containerItem, data);
+            plugin.getContainerManager().saveContainerItem(containerItem, data);
 
             String status = data.isSellEnabled() ? "§a✅ activée" : "§c❌ désactivée";
             player.sendMessage("§e💰 Vente automatique " + status + "!");
@@ -388,7 +388,7 @@ public class ContainerGUI {
             int itemsTransferred = plugin.getContainerManager().transferContainerToPlayer(player, data);
 
             if (itemsTransferred > 0) {
-                plugin.getContainerManager().updateContainerItem(containerItem, data);
+                plugin.getContainerManager().saveContainerItem(containerItem, data);
                 player.sendMessage("§a✅ " + NumberFormatter.format(itemsTransferred) +
                         " items récupérés dans votre inventaire!");
                 player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.2f);
@@ -411,7 +411,7 @@ public class ContainerGUI {
 
             data.clearFilters();
             data.getReferenceItems().clear();
-            plugin.getContainerManager().updateContainerItem(containerItem, data);
+            plugin.getContainerManager().saveContainerItem(containerItem, data);
 
             player.sendMessage("§a✅ Tous les filtres ont été effacés!");
             player.sendMessage("§7Le conteneur accepte maintenant tous les items.");

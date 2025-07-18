@@ -1,6 +1,7 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -11,14 +12,13 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 /**
- * Listener pour les événements liés aux conteneurs - CORRIGÉ
- * Gestion complète des GUIs sans déplacement d'items
+ * Listener central pour tous les événements liés aux conteneurs.
+ * Gère les GUIs, le cycle de vie des items et la synchronisation du cache.
  */
 public class ContainerListener implements Listener {
 
@@ -27,6 +27,40 @@ public class ContainerListener implements Listener {
     public ContainerListener(PrisonTycoon plugin) {
         this.plugin = plugin;
     }
+
+    // === ÉVÉNEMENTS DU CYCLE DE VIE DU CACHE ET DE LA PERSISTANCE ===
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // Délai pour s'assurer que le joueur est bien chargé
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (event.getPlayer().isOnline()) {
+                plugin.getContainerManager().handlePlayerJoin(event.getPlayer());
+            }
+        }, 2L);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        plugin.getContainerManager().handlePlayerQuit(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        if (plugin.getContainerManager().isContainer(event.getItemDrop().getItemStack())) {
+            plugin.getContainerManager().handleContainerDrop(event.getPlayer(), event.getItemDrop().getItemStack());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+        if (plugin.getContainerManager().isContainer(event.getItem().getItemStack())) {
+            // Re-scanner l'inventaire après le ramassage pour mettre à jour le cache
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getContainerManager().rescanAndCachePlayerInventory(event.getPlayer()));
+        }
+    }
+
+    // === ÉVÉNEMENTS D'INTERACTION GUI & LOGIQUE DE JEU ===
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -40,14 +74,11 @@ public class ContainerListener implements Listener {
         if (player.isSneaking() &&
                 (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
                         event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK)) {
-
             event.setCancelled(true);
-
             var data = plugin.getContainerManager().getContainerData(item);
             if (data != null && data.isBroken()) {
                 player.sendMessage("§c💥 Conteneur cassé! Ouverture en mode récupération...");
             }
-
             plugin.getContainerGUI().openContainerMenu(player, item);
         }
     }
@@ -65,31 +96,25 @@ public class ContainerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        if (plugin.getContainerManager().isContainer(event.getCurrentItem()) || plugin.getContainerManager().isContainer(event.getCursor())) {
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getContainerManager().rescanAndCachePlayerInventory(player));
         }
 
+        // --- Logique de gestion des GUIs ---
         String title = event.getView().getTitle();
-
-        // GUI principal des conteneurs (menu de configuration)
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
-            event.setCancelled(true); // Empêche tout déplacement
+            event.setCancelled(true);
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem != null && clickedItem.getType() != Material.AIR) {
                 plugin.getContainerGUI().handleContainerMenuClick(player, event.getSlot(), clickedItem, title);
             }
-            return;
-        }
-
-        // GUI des filtres
-        if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
+        } else if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
             ItemStack cursorItem = event.getCursor();
             ItemStack currentItem = event.getCurrentItem();
-
-            // Empêche de mettre un conteneur DANS un filtre
             if ((cursorItem != null && plugin.getContainerManager().isContainer(cursorItem)) ||
                     (currentItem != null && event.getAction().toString().contains("MOVE_TO_OTHER_INVENTORY") && plugin.getContainerManager().isContainer(currentItem))) {
-
                 event.setCancelled(true);
                 player.sendMessage("§c❌ Vous ne pouvez pas mettre un conteneur comme filtre!");
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -100,14 +125,10 @@ public class ContainerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
         String title = event.getView().getTitle();
-
-        // Empêche complètement le drag dans le GUI de configuration
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
             event.setCancelled(true);
             return;
         }
-
-        // Empêche de drag un conteneur dans le GUI des filtres
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
             if (plugin.getContainerManager().isContainer(event.getOldCursor())) {
                 event.setCancelled(true);
@@ -117,10 +138,7 @@ public class ContainerListener implements Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) {
-            return;
-        }
-
+        if (!(event.getPlayer() instanceof Player player)) return;
         String title = event.getView().getTitle();
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
             plugin.getContainerFilterGUI().saveFiltersFromInventory(player, event.getInventory(), title);
