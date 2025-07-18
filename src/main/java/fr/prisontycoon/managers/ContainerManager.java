@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -27,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ULTRA-OPTIMISÉ : Gestionnaire des conteneurs avec cache ultra-agressif
- * Mise à jour visuelle SEULEMENT si absolument nécessaire
+ * Mise à jour visuelle SEULEMENT si absolument nécessaire pour des performances maximales.
  */
 public class ContainerManager implements Listener {
 
@@ -44,18 +45,15 @@ public class ContainerManager implements Listener {
     // Cache principal : UUID -> ContainerData (données en mémoire SEULEMENT)
     private final Map<String, ContainerData> containerCache = new ConcurrentHashMap<>();
 
-    // Tracking des conteneurs PLEINS uniquement (nécessitent mise à jour immédiate)
-    private final Set<String> fullContainers = ConcurrentHashMap.newKeySet();
-
-    // Mapping Player -> Set<UUID> pour optimisation
+    // Mapping Player -> Set<UUID> pour optimisation (la clé de la performance)
     private final Map<UUID, Set<String>> playerContainers = new ConcurrentHashMap<>();
 
-    // Timestamp de la dernière mise à jour forcée par conteneur
-    private final Map<String, Long> lastForcedUpdate = new ConcurrentHashMap<>();
+    // Timestamp de la dernière mise à jour visuelle par conteneur
+    private final Map<String, Long> lastVisualUpdate = new ConcurrentHashMap<>();
 
-    // Configuration ultra-conservative
-    private static final long FORCED_UPDATE_INTERVAL = 30_000; // 30 secondes (très long)
-    private static final long CACHE_CLEANUP_INTERVAL = 120_000; // 2 minutes
+    // Configuration des tâches de maintenance
+    private static final long VISUAL_UPDATE_INTERVAL = 30_000; // 30 secondes
+    private static final long CACHE_CLEANUP_INTERVAL = 5 * 60 * 20; // 5 minutes (en ticks)
 
     public ContainerManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -64,15 +62,13 @@ public class ContainerManager implements Listener {
         this.containerDataKey = new NamespacedKey(plugin, "container_data");
         this.containerUUIDKey = new NamespacedKey(plugin, "container_uuid");
 
-        // Enregistre les listeners
         Bukkit.getPluginManager().registerEvents(this, plugin);
-
-        // Démarre SEULEMENT la tâche de nettoyage (pas de mise à jour forcée)
-        startMinimalMaintenanceTasks();
+        startMaintenanceTasks();
     }
 
     /**
-     * ULTRA-OPTIMISÉ : Récupère les données SEULEMENT depuis le cache
+     * ULTRA-OPTIMISÉ : Récupère les données d'un conteneur, en privilégiant le cache.
+     * Ne lit les données de l'item que si celui-ci n'est pas déjà dans le cache.
      */
     public ContainerData getContainerData(ItemStack item) {
         if (!isContainer(item)) return null;
@@ -80,16 +76,17 @@ public class ContainerManager implements Listener {
         String uuid = getContainerUUID(item);
         if (uuid == null) return null;
 
-        // Vérifie le cache AVANT tout
-        ContainerData cached = containerCache.get(uuid);
-        if (cached != null) {
-            return cached; // Retourne DIRECTEMENT le cache (aucune sérialisation)
+        // Étape 1 : Vérifie le cache (accès quasi-instantané)
+        ContainerData cachedData = containerCache.get(uuid);
+        if (cachedData != null) {
+            return cachedData;
         }
 
-        // SEULEMENT si pas en cache, désérialise UNE SEULE FOIS
+        // Étape 2 (Cache Miss) : Lit les données de l'item, le met en cache, puis le retourne.
         ItemMeta meta = item.getItemMeta();
-        String serializedData = meta.getPersistentDataContainer().get(containerDataKey, PersistentDataType.STRING);
+        if (meta == null) return null;
 
+        String serializedData = meta.getPersistentDataContainer().get(containerDataKey, PersistentDataType.STRING);
         ContainerData data;
         if (serializedData == null) {
             int tier = meta.getPersistentDataContainer().getOrDefault(containerTierKey, PersistentDataType.INTEGER, 1);
@@ -99,108 +96,64 @@ public class ContainerManager implements Listener {
         }
 
         if (data != null) {
-            // Ajoute au cache IMMÉDIATEMENT
-            containerCache.put(uuid, data);
-
-            // Track pour le joueur
-            Player player = findPlayerWithContainer(uuid);
-            if (player != null) {
-                playerContainers.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet()).add(uuid);
-            }
+            containerCache.put(uuid, data); // Ajout au cache pour les futurs appels
         }
 
         return data;
     }
 
     /**
-     * ULTRA-OPTIMISÉ : Ajoute item SANS mise à jour visuelle (sauf si plein)
+     * ULTRA-OPTIMISÉ : Ajoute un item aux conteneurs d'un joueur.
+     * Utilise le cache 'playerContainers' pour une identification immédiate des conteneurs.
+     * Aucune mise à jour visuelle n'est effectuée sauf si le conteneur devient plein.
      */
     public boolean addItemToContainers(Player player, ItemStack itemToAdd) {
         if (itemToAdd == null || itemToAdd.getAmount() <= 0) return false;
 
-        Set<String> playerUUIDs = playerContainers.getOrDefault(player.getUniqueId(), Collections.emptySet());
+        // Utilise la map trackée pour trouver les conteneurs du joueur instantanément.
+        Set<String> playerUUIDs = playerContainers.get(player.getUniqueId());
+        if (playerUUIDs == null || playerUUIDs.isEmpty()) {
+            return false; // Le joueur n'a aucun conteneur connu, on ne fait rien.
+        }
 
-        // Optimisation : vérifie SEULEMENT les conteneurs en cache
         for (String uuid : playerUUIDs) {
-            ContainerData data = containerCache.get(uuid);
-            if (data != null && !data.isBroken()) {
-
-                // Calcule si sera plein AVANT d'ajouter
-                boolean willBeFull = (data.getTotalItems() + itemToAdd.getAmount()) >= data.getMaxCapacity();
+            ContainerData data = containerCache.get(uuid); // Accès direct au cache
+            if (data != null && !data.isBroken() && !data.isFull()) {
 
                 if (data.addItem(itemToAdd)) {
-                    // PAS de mise à jour visuelle par défaut !
+                    // L'item a été ajouté aux données en mémoire (cache).
+                    // AUCUNE mise à jour visuelle ici pour maximiser les performances.
 
-                    // SEULEMENT si le conteneur devient plein
-                    if (willBeFull) {
-                        fullContainers.add(uuid);
+                    // CAS EXCEPTIONNEL : Le conteneur est maintenant plein, on force une mise à jour visuelle.
+                    if (data.isFull()) {
                         updateContainerItemImmediate(player, uuid, data);
-                        plugin.getPluginLogger().debug("Conteneur " + uuid + " plein - mise à jour forcée");
                     }
-                    // SINON : AUCUNE mise à jour ! (données restent en cache uniquement)
-
                     return true;
                 }
             }
         }
 
-        // Fallback SEULEMENT si aucun conteneur en cache trouvé
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item)) {
-                ContainerData data = getContainerData(item);
-                if (data != null && !data.isBroken()) {
-
-                    boolean willBeFull = (data.getTotalItems() + itemToAdd.getAmount()) >= data.getMaxCapacity();
-
-                    if (data.addItem(itemToAdd)) {
-                        String uuid = getContainerUUID(item);
-
-                        if (willBeFull) {
-                            fullContainers.add(uuid);
-                            updateContainerItemImmediate(player, uuid, data);
-                        }
-
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        return false; // Aucun conteneur n'a pu accepter l'item.
     }
 
     /**
-     * NOUVEAU : Met à jour IMMÉDIATEMENT un conteneur spécifique
+     * Met à jour IMMÉDIATEMENT un conteneur spécifique dans l'inventaire d'un joueur.
+     * Trouve l'item par UUID et applique la mise à jour visuelle.
      */
     private void updateContainerItemImmediate(Player player, String uuid, ContainerData data) {
+        if (player == null || uuid == null || data == null) return;
+
         ItemStack containerItem = findContainerByUUID(player, uuid);
         if (containerItem != null) {
             updateContainerVisual(containerItem, data);
-            plugin.getPluginLogger().debug("Mise à jour immédiate conteneur: " + uuid);
+            lastVisualUpdate.put(uuid, System.currentTimeMillis());
+            // plugin.getPluginLogger().debug("Mise à jour immédiate conteneur: " + uuid.substring(0, 8));
         }
     }
 
     /**
-     * SIMPLIFIÉ : Met à jour seulement l'affichage visuel (pas de cache)
-     */
-    public void updateContainerItem(ItemStack container, ContainerData data) {
-        if (!isContainer(container) || data == null) return;
-
-        String uuid = getContainerUUID(container);
-        if (uuid == null) return;
-
-        // Met à jour le cache EN PREMIER
-        containerCache.put(uuid, data);
-
-        // Met à jour l'affichage visuel IMMÉDIATEMENT
-        updateContainerVisual(container, data);
-
-        // Marque comme mis à jour
-        lastForcedUpdate.put(uuid, System.currentTimeMillis());
-    }
-
-    /**
-     * OPTIMISÉ : Met à jour SEULEMENT l'affichage visuel (lore + sérialisation)
+     * Met à jour l'affichage visuel (lore) et les données persistantes d'un item.
+     * C'est une opération coûteuse qui doit être appelée le moins possible.
      */
     private void updateContainerVisual(ItemStack container, ContainerData data) {
         ItemMeta meta = container.getItemMeta();
@@ -219,7 +172,7 @@ public class ContainerManager implements Listener {
             meta.setDisplayName("§c💥 Conteneur Cassé - " + getTierName(data.getTier()));
         } else {
             lore.add("§7┃ Durabilité: §2" + data.getDurability() + "§7/§2" + data.getMaxDurability());
-            double percentage = (double) data.getDurability() / data.getMaxDurability() * 100;
+            double percentage = data.getDurabilityPercentage();
             lore.add("§7┃ État: §a" + String.format("%.1f", percentage) + "%");
             meta.setDisplayName("§6📦 Conteneur " + getTierName(data.getTier()));
         }
@@ -232,13 +185,12 @@ public class ContainerManager implements Listener {
         } else {
             lore.add("§7┃ Items: §a" + NumberFormatter.format(data.getTotalItems()) +
                     "§7/§a" + NumberFormatter.format(data.getMaxCapacity()));
-            double fillPercentage = (double) data.getTotalItems() / data.getMaxCapacity() * 100;
+            double fillPercentage = data.getFillPercentage();
             lore.add("§7┃ Remplissage: §d" + String.format("%.1f", fillPercentage) + "%");
         }
 
         lore.add("");
         lore.add("§e🎯 Filtres:");
-
         if (data.getWhitelist().isEmpty()) {
             lore.add("§7┃ Accepte tous les items");
         } else {
@@ -247,7 +199,6 @@ public class ContainerManager implements Listener {
 
         lore.add("");
         lore.add("§e💰 Vente automatique:");
-
         if (data.isBroken()) {
             lore.add("§7┃ §8Indisponible");
         } else {
@@ -257,10 +208,9 @@ public class ContainerManager implements Listener {
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§e⚙️ §aShift + Clic droit §7pour configurer");
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
         meta.setLore(lore);
 
-        // Sérialise SEULEMENT si mise à jour visuelle
+        // Sérialise les données à chaque mise à jour visuelle pour la persistance
         String serializedData = serializeContainerData(data);
         meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
 
@@ -268,176 +218,158 @@ public class ContainerManager implements Listener {
     }
 
     /**
-     * SIMPLIFIÉ : Tâches de maintenance minimales
+     * Tâches de maintenance pour la santé du cache.
      */
-    private void startMinimalMaintenanceTasks() {
-        // SEULEMENT nettoyage du cache (pas de mise à jour forcée)
+    private void startMaintenanceTasks() {
         new BukkitRunnable() {
             @Override
             public void run() {
-                cleanupCache();
+                // Tâche de mise à jour visuelle périodique pour tous les joueurs en ligne
+                long now = System.currentTimeMillis();
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    Set<String> uuids = playerContainers.get(player.getUniqueId());
+                    if (uuids != null) {
+                        for (String uuid : uuids) {
+                            // Si la dernière mise à jour est trop ancienne, on force la synchro
+                            if (now - lastVisualUpdate.getOrDefault(uuid, 0L) > VISUAL_UPDATE_INTERVAL) {
+                                ContainerData data = containerCache.get(uuid);
+                                if (data != null) {
+                                    updateContainerItemImmediate(player, uuid, data);
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }.runTaskTimer(plugin, CACHE_CLEANUP_INTERVAL / 50, CACHE_CLEANUP_INTERVAL / 50);
+        }.runTaskTimerAsynchronously(plugin, 200L, VISUAL_UPDATE_INTERVAL / 50); // Toutes les 30 sec
 
-        // Tâche de mise à jour forcée TRÈS RARE (30 secondes)
         new BukkitRunnable() {
             @Override
             public void run() {
-                performRareUpdates();
+                // Nettoie le cache des conteneurs qui ne sont plus dans l'inventaire de personne
+                Set<String> activeContainers = new HashSet<>();
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    for (ItemStack item : player.getInventory().getContents()) {
+                        if (isContainer(item)) {
+                            activeContainers.add(getContainerUUID(item));
+                        }
+                    }
+                }
+                containerCache.keySet().retainAll(activeContainers);
+                lastVisualUpdate.keySet().retainAll(activeContainers);
             }
-        }.runTaskTimer(plugin, FORCED_UPDATE_INTERVAL / 50, FORCED_UPDATE_INTERVAL / 50);
+        }.runTaskTimerAsynchronously(plugin, CACHE_CLEANUP_INTERVAL, CACHE_CLEANUP_INTERVAL);
     }
 
     /**
-     * NOUVEAU : Mises à jour rares (toutes les 30 secondes)
+     * Scanne l'inventaire d'un joueur pour peupler/mettre à jour les caches.
      */
-    private void performRareUpdates() {
-        long now = System.currentTimeMillis();
-        int updatedCount = 0;
+    private void scanAndCachePlayerInventory(Player player) {
+        Set<String> uuids = playerContainers.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet());
+        uuids.clear(); // On reconstruit la liste
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Set<String> playerUUIDs = playerContainers.get(player.getUniqueId());
-            if (playerUUIDs != null) {
-                for (String uuid : playerUUIDs) {
-                    ContainerData data = containerCache.get(uuid);
-                    Long lastUpdate = lastForcedUpdate.get(uuid);
-
-                    // Met à jour SEULEMENT si jamais mis à jour OU très ancien
-                    if (data != null && (lastUpdate == null || (now - lastUpdate) >= FORCED_UPDATE_INTERVAL)) {
-                        updateContainerItemImmediate(player, uuid, data);
-                        lastForcedUpdate.put(uuid, now);
-                        updatedCount++;
-                    }
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isContainer(item)) {
+                String uuid = getContainerUUID(item);
+                if (uuid != null) {
+                    uuids.add(uuid);
+                    // On s'assure que le conteneur est dans le cache (le charge si besoin)
+                    getContainerData(item);
                 }
             }
         }
-
-        if (updatedCount > 0) {
-            plugin.getPluginLogger().debug("Mise à jour forcée rare: " + updatedCount + " conteneurs");
-        }
+        // plugin.getPluginLogger().debug("Scan terminé pour " + player.getName() + ": " + uuids.size() + " conteneurs.");
     }
 
-    /**
-     * OPTIMISÉ : Nettoie le cache des conteneurs non utilisés
-     */
-    private void cleanupCache() {
-        Set<String> activeContainers = new HashSet<>();
+    // === GESTION DES ÉVÉNEMENTS POUR LE CACHE ===
 
-        // Collecte tous les conteneurs actifs
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            for (ItemStack item : player.getInventory().getContents()) {
-                if (isContainer(item)) {
-                    String uuid = getContainerUUID(item);
-                    if (uuid != null) {
-                        activeContainers.add(uuid);
-                    }
-                }
-            }
-        }
-
-        // Supprime les conteneurs inactifs
-        containerCache.keySet().retainAll(activeContainers);
-        fullContainers.retainAll(activeContainers);
-        lastForcedUpdate.keySet().retainAll(activeContainers);
-
-        // Met à jour le mapping joueur -> conteneurs
-        playerContainers.clear();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Set<String> playerUUIDs = new HashSet<>();
-            for (ItemStack item : player.getInventory().getContents()) {
-                if (isContainer(item)) {
-                    String uuid = getContainerUUID(item);
-                    if (uuid != null) {
-                        playerUUIDs.add(uuid);
-                    }
-                }
-            }
-            if (!playerUUIDs.isEmpty()) {
-                playerContainers.put(player.getUniqueId(), playerUUIDs);
-            }
-        }
-
-        plugin.getPluginLogger().debug("Cache nettoyé: " + containerCache.size() + " conteneurs actifs");
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // Scanne l'inventaire du joueur à la connexion pour initialiser le cache
+        scanAndCachePlayerInventory(event.getPlayer());
     }
 
-    /**
-     * EVENT : Force la mise à jour SEULEMENT quand joueur ouvre inventaire
-     */
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
         if (event.getPlayer() instanceof Player player) {
-            // Met à jour TOUS les conteneurs du joueur à l'ouverture d'inventaire
+            // Un joueur qui ouvre son inventaire est un excellent moment pour tout synchroniser.
+            // 1. Re-scanne l'inventaire au cas où il aurait reçu un conteneur
+            scanAndCachePlayerInventory(player);
+            // 2. Met à jour l'affichage de tous ses conteneurs
             Set<String> playerUUIDs = playerContainers.get(player.getUniqueId());
             if (playerUUIDs != null) {
-                int updatedCount = 0;
                 for (String uuid : playerUUIDs) {
                     ContainerData data = containerCache.get(uuid);
                     if (data != null) {
                         updateContainerItemImmediate(player, uuid, data);
-                        lastForcedUpdate.put(uuid, System.currentTimeMillis());
-                        updatedCount++;
                     }
                 }
-                plugin.getPluginLogger().debug("Inventaire ouvert - mise à jour de " + updatedCount + " conteneurs");
             }
         }
     }
 
-    /**
-     * EVENT : Nettoie le cache quand un joueur se déconnecte
-     */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        Set<String> playerUUIDs = playerContainers.remove(player.getUniqueId());
-
-        if (playerUUIDs != null) {
-            for (String uuid : playerUUIDs) {
-                boolean stillUsed = false;
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    if (!onlinePlayer.equals(player) && findContainerByUUID(onlinePlayer, uuid) != null) {
-                        stillUsed = true;
-                        break;
-                    }
-                }
-
-                if (!stillUsed) {
-                    containerCache.remove(uuid);
-                    fullContainers.remove(uuid);
-                    lastForcedUpdate.remove(uuid);
-                }
-            }
-        }
+        // Nettoie les données du joueur qui se déconnecte pour libérer la mémoire
+        playerContainers.remove(event.getPlayer().getUniqueId());
     }
 
-    /**
-     * NOUVEAU : Trouve le joueur qui possède un conteneur
-     */
-    private Player findPlayerWithContainer(String uuid) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (findContainerByUUID(player, uuid) != null) {
-                return player;
+    // === MÉTHODES UTILITAIRES ET DE COMPATIBILITÉ ===
+
+    public void updateContainerItem(ItemStack container, ContainerData data) {
+        if (!isContainer(container) || data == null) return;
+        String uuid = getContainerUUID(container);
+        if (uuid == null) return;
+
+        containerCache.put(uuid, data);
+        updateContainerVisual(container, data);
+        lastVisualUpdate.put(uuid, System.currentTimeMillis());
+    }
+
+    public boolean isContainer(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(containerKey, PersistentDataType.BOOLEAN);
+    }
+
+    public String getContainerUUID(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return null;
+        return item.getItemMeta().getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
+    }
+
+    public ItemStack findContainerByUUID(Player player, String uuid) {
+        if (uuid == null || player == null) return null;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isContainer(item) && uuid.equals(getContainerUUID(item))) {
+                return item;
             }
         }
         return null;
     }
 
-    // === MÉTHODES UTILITAIRES CONSERVÉES ===
+    public List<ContainerData> getPlayerContainers(Player player) {
+        List<ContainerData> containers = new ArrayList<>();
+        Set<String> uuids = playerContainers.get(player.getUniqueId());
+        if (uuids != null) {
+            for(String uuid : uuids) {
+                ContainerData data = containerCache.get(uuid);
+                if(data != null) {
+                    containers.add(data);
+                }
+            }
+        }
+        return containers;
+    }
 
-    /**
-     * Crée un nouveau conteneur
-     */
     public ItemStack createContainer(int tier) {
         ItemStack container = new ItemStack(Material.CHEST);
         ItemMeta meta = container.getItemMeta();
-
         if (meta == null) return null;
 
         String uniqueId = UUID.randomUUID().toString();
         ContainerData data = new ContainerData(tier);
 
+        // ... (le reste de la méthode de création est principalement visuel et reste inchangé)
         meta.setDisplayName("§6📦 Conteneur " + getTierName(tier));
-
         List<String> lore = new ArrayList<>();
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§e🚀 §aNouveau conteneur automatique!");
@@ -445,99 +377,26 @@ public class ContainerManager implements Listener {
         lore.add("");
         lore.add("§e📈 Avantages du Tier " + tier + ":");
         switch (tier) {
-            case 1 -> {
-                lore.add("§7┃ Capacité de base (36 stacks)");
-                lore.add("§7┃ Durabilité standard (50 utilisations)");
-            }
-            case 2 -> {
-                lore.add("§7┃ Capacité doublée (72 stacks)");
-                lore.add("§7┃ Durabilité améliorée (100 utilisations)");
-            }
-            case 3 -> {
-                lore.add("§7┃ Grande capacité (144 stacks)");
-                lore.add("§7┃ Bonne durabilité (200 utilisations)");
-            }
-            case 4 -> {
-                lore.add("§7┃ Très grande capacité (288 stacks)");
-                lore.add("§7┃ Haute durabilité (400 utilisations)");
-            }
-            case 5 -> {
-                lore.add("§7┃ Capacité maximale (576 stacks)");
-                lore.add("§7┃ Durabilité maximale (800 utilisations)");
-            }
+            case 1 -> lore.add("§7┃ Capacité de base, durabilité standard");
+            case 2 -> lore.add("§7┃ Capacité doublée, durabilité améliorée");
+            case 3 -> lore.add("§7┃ Grande capacité, bonne durabilité");
+            case 4 -> lore.add("§7┃ Très grande capacité, haute durabilité");
+            case 5 -> lore.add("§7┃ Capacité maximale, durabilité maximale");
         }
         lore.add("");
         lore.add("§c⚠️ §7Se dégrade à chaque vente avec §c/sell all");
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-
         meta.setLore(lore);
-
         meta.getPersistentDataContainer().set(containerKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(containerTierKey, PersistentDataType.INTEGER, tier);
         meta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, uniqueId);
-
         String serializedData = serializeContainerData(data);
         meta.getPersistentDataContainer().set(containerDataKey, PersistentDataType.STRING, serializedData);
-
         container.setItemMeta(meta);
 
-        // Ajoute au cache
+        // Ajoute directement au cache
         containerCache.put(uniqueId, data);
-
         return container;
-    }
-
-    /**
-     * Vérifie si un item est un conteneur
-     */
-    public boolean isContainer(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        return item.getItemMeta().getPersistentDataContainer().has(containerKey, PersistentDataType.BOOLEAN);
-    }
-
-    /**
-     * Obtient l'UUID unique d'un conteneur
-     */
-    public String getContainerUUID(ItemStack item) {
-        if (!isContainer(item)) return null;
-
-        ItemMeta meta = item.getItemMeta();
-        return meta.getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
-    }
-
-    /**
-     * Trouve un conteneur spécifique par UUID dans l'inventaire
-     */
-    public ItemStack findContainerByUUID(Player player, String uuid) {
-        if (uuid == null || player == null) return null;
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && isContainer(item)) {
-                String containerUUID = getContainerUUID(item);
-                if (uuid.equals(containerUUID)) {
-                    return item;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Récupère tous les conteneurs d'un joueur
-     */
-    public List<ContainerData> getPlayerContainers(Player player) {
-        List<ContainerData> containers = new ArrayList<>();
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item)) {
-                ContainerData data = getContainerData(item);
-                if (data != null) {
-                    containers.add(data);
-                }
-            }
-        }
-
-        return containers;
     }
 
     private String getTierName(int tier) {
@@ -552,11 +411,10 @@ public class ContainerManager implements Listener {
     }
 
     private String serializeContainerData(ContainerData data) {
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos);
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(bos)) {
 
-            dataOutput.writeInt(2);
+            dataOutput.writeInt(2); // Version
             dataOutput.writeInt(data.getTier());
             dataOutput.writeInt(data.getDurability());
             dataOutput.writeBoolean(data.isSellEnabled());
@@ -579,9 +437,7 @@ public class ContainerManager implements Listener {
                 dataOutput.writeObject(entry.getValue());
             }
 
-            dataOutput.close();
             return Base64.getEncoder().encodeToString(bos.toByteArray());
-
         } catch (IOException e) {
             plugin.getPluginLogger().warning("Erreur sérialisation conteneur: " + e.getMessage());
             return "";
@@ -589,10 +445,8 @@ public class ContainerManager implements Listener {
     }
 
     private ContainerData deserializeContainerData(String serializedData) {
-        try {
-            byte[] data = Base64.getDecoder().decode(serializedData);
-            ByteArrayInputStream bis = new ByteArrayInputStream(data);
-            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getDecoder().decode(serializedData));
+             BukkitObjectInputStream dataInput = new BukkitObjectInputStream(bis)) {
 
             int version = dataInput.readInt();
             int tier = dataInput.readInt();
@@ -604,17 +458,14 @@ public class ContainerManager implements Listener {
             for (int i = 0; i < whitelistSize; i++) {
                 try {
                     whitelist.add(Material.valueOf(dataInput.readUTF()));
-                } catch (IllegalArgumentException ignored) {
-                }
+                } catch (IllegalArgumentException ignored) {}
             }
 
             Map<ItemStack, Integer> contents = new LinkedHashMap<>();
             int contentsSize = dataInput.readInt();
             for (int i = 0; i < contentsSize; i++) {
                 try {
-                    ItemStack item = (ItemStack) dataInput.readObject();
-                    int quantity = dataInput.readInt();
-                    contents.put(item, quantity);
+                    contents.put((ItemStack) dataInput.readObject(), dataInput.readInt());
                 } catch (Exception e) {
                     plugin.getPluginLogger().warning("Erreur lecture item conteneur: " + e.getMessage());
                 }
@@ -625,36 +476,26 @@ public class ContainerManager implements Listener {
                 int refItemsSize = dataInput.readInt();
                 for (int i = 0; i < refItemsSize; i++) {
                     try {
-                        int slot = dataInput.readInt();
-                        ItemStack refItem = (ItemStack) dataInput.readObject();
-                        referenceItems.put(slot, refItem);
+                        referenceItems.put(dataInput.readInt(), (ItemStack) dataInput.readObject());
                     } catch (Exception e) {
                         plugin.getPluginLogger().warning("Erreur lecture item référence: " + e.getMessage());
                     }
                 }
             }
 
-            dataInput.close();
-
             ContainerData containerData = new ContainerData(tier, contents, whitelist, sellEnabled, durability);
             containerData.setReferenceItems(referenceItems);
-
             return containerData;
-
         } catch (Exception e) {
             plugin.getPluginLogger().warning("Erreur désérialisation conteneur: " + e.getMessage());
             return null;
         }
     }
 
-    // === MÉTHODES POUR LA COMPATIBILITÉ ===
-
     public boolean updateContainerInInventory(Player player, String uuid, ContainerData newData) {
         if (uuid == null || player == null || newData == null) return false;
-
         containerCache.put(uuid, newData);
         updateContainerItemImmediate(player, uuid, newData);
-
         return true;
     }
 
@@ -663,38 +504,29 @@ public class ContainerManager implements Listener {
         int totalItems = 0;
         List<ContainerData> brokenContainers = new ArrayList<>();
 
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item)) {
-                ContainerData data = getContainerData(item);
-                if (data != null && data.isSellEnabled() && !data.isBroken()) {
+        Set<String> uuids = playerContainers.get(player.getUniqueId());
+        if(uuids == null) return 0;
 
-                    Map<ItemStack, Integer> vendableItems = data.getVendableContents(
-                            material -> plugin.getConfigManager().getSellPrice(material)
-                    );
+        for (String uuid : uuids) {
+            ContainerData data = containerCache.get(uuid);
+            if(data == null) continue;
 
-                    long containerValue = 0;
-                    for (Map.Entry<ItemStack, Integer> entry : vendableItems.entrySet()) {
-                        long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType());
-                        containerValue += price * entry.getValue();
-                        totalItems += entry.getValue();
+            if (data.isSellEnabled() && !data.isBroken()) {
+                Map<ItemStack, Integer> vendableItems = data.getVendableContents(plugin.getConfigManager()::getSellPrice);
+                long containerValue = 0;
+                for (Map.Entry<ItemStack, Integer> entry : vendableItems.entrySet()) {
+                    long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType());
+                    containerValue += price * entry.getValue();
+                    totalItems += entry.getValue();
+                }
+
+                if (containerValue > 0) {
+                    totalValue += containerValue;
+                    data.clearVendableContents(plugin.getConfigManager()::getSellPrice);
+                    if (!data.useDurability(1)) {
+                        brokenContainers.add(data);
                     }
-
-                    if (containerValue > 0) {
-                        totalValue += containerValue;
-
-                        data.clearVendableContents(material -> plugin.getConfigManager().getSellPrice(material));
-
-                        if (!data.useDurability(1)) {
-                            brokenContainers.add(data);
-                        }
-
-                        // Force la mise à jour après vente
-                        String uuid = getContainerUUID(item);
-                        if (uuid != null) {
-                            containerCache.put(uuid, data);
-                            updateContainerItemImmediate(player, uuid, data);
-                        }
-                    }
+                    updateContainerItemImmediate(player, uuid, data);
                 }
             }
         }
@@ -705,9 +537,8 @@ public class ContainerManager implements Listener {
         }
 
         if (totalItems > 0) {
-            player.sendMessage("§a✅ Contenu des conteneurs vendu: §e" + NumberFormatter.format(totalItems) + " items §7pour §6" + NumberFormatter.format(totalValue) + " coins");
+            player.sendMessage("§a✅ Contenu des conteneurs vendu: §e" + NumberFormatter.format(totalItems) + " items §7pour §6" + NumberFormatter.format(totalValue) + " coins (valeur brute)");
         }
-
         return totalValue;
     }
 
@@ -719,12 +550,11 @@ public class ContainerManager implements Listener {
 
         for (var entry : contents.entrySet()) {
             ItemStack itemKey = entry.getKey();
-            Material material = itemKey.getType();
             int amount = entry.getValue();
             int amountToRemoveFromContainer = 0;
 
             while (amount > 0) {
-                int stackSize = Math.min(amount, material.getMaxStackSize());
+                int stackSize = Math.min(amount, itemKey.getType().getMaxStackSize());
                 ItemStack itemToAdd = itemKey.clone();
                 itemToAdd.setAmount(stackSize);
 
@@ -743,16 +573,11 @@ public class ContainerManager implements Listener {
                     break;
                 }
             }
-
             if (amountToRemoveFromContainer > 0) {
                 data.removeItem(itemKey, amountToRemoveFromContainer);
             }
-
-            if (player.getInventory().firstEmpty() == -1) {
-                break;
-            }
+            if (player.getInventory().firstEmpty() == -1) break;
         }
-
         return totalTransferred;
     }
 }

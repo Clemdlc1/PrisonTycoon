@@ -28,9 +28,6 @@ public class ContainerListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Gère les interactions avec les conteneurs (Shift + Clic droit pour ouvrir la config)
-     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -40,77 +37,32 @@ public class ContainerListener implements Listener {
             return;
         }
 
-        // Shift + Clic droit pour ouvrir la configuration
         if (player.isSneaking() &&
                 (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
                         event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK)) {
 
             event.setCancelled(true);
 
-            // Permet d'ouvrir même si cassé (pour récupérer le contenu)
             var data = plugin.getContainerManager().getContainerData(item);
             if (data != null && data.isBroken()) {
                 player.sendMessage("§c💥 Conteneur cassé! Ouverture en mode récupération...");
             }
 
-            // Ouvre l'interface de configuration
             plugin.getContainerGUI().openContainerMenu(player, item);
         }
     }
 
-    /**
-     * Empêche de placer les conteneurs au sol
-     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockPlaceEvent event) {
-        ItemStack item = event.getItemInHand();
-
-        if (plugin.getContainerManager().isContainer(item)) {
+        if (plugin.getContainerManager().isContainer(event.getItemInHand())) {
             event.setCancelled(true);
-
             Player player = event.getPlayer();
             player.sendMessage("§c❌ Les conteneurs ne peuvent pas être posés au sol!");
             player.sendMessage("§7Gardez-les dans votre inventaire pour qu'ils collectent automatiquement les blocs minés.");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         }
-
-        if (isKey(item)) {
-            event.setCancelled(true);
-            Player player = event.getPlayer();
-            player.sendMessage("§c❌ Les clés ne peuvent pas être posées au sol!");
-            player.sendMessage("§7Gardez-les dans votre inventaire ou utilisez-les pour ouvrir des coffres.");
-            plugin.getPluginLogger().debug("Tentative de placement de clé bloquée: " + player.getName());
-        }
     }
 
-    /**
-     * Vérifie si un item est une clé
-     */
-    private boolean isKey(ItemStack item) {
-        if (item == null || item.getType() != Material.TRIPWIRE_HOOK) {
-            return false;
-        }
-
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null || meta.getDisplayName() == null) {
-            return false;
-        }
-
-        String displayName = meta.getDisplayName().toLowerCase();
-
-        // Vérifie si le nom contient "clé" et l'un des types de clés
-        return displayName.contains("clé") && (
-                displayName.contains("cristal") ||
-                        displayName.contains("légendaire") ||
-                        displayName.contains("rare") ||
-                        displayName.contains("peu commune") ||
-                        displayName.contains("commune")
-        );
-    }
-
-    /**
-     * CORRIGÉ : Gère les clics dans tous les GUIs de conteneur
-     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) {
@@ -118,89 +70,51 @@ public class ContainerListener implements Listener {
         }
 
         String title = event.getView().getTitle();
-        if (event.getClickedInventory() == player.getInventory() && !title.contains("Filtres")) {
-            return;
-        }
 
-        // GUI principal des conteneurs
+        // GUI principal des conteneurs (menu de configuration)
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
-            // CRITIQUE : Annule TOUJOURS l'événement pour empêcher le déplacement d'items
-            event.setCancelled(true);
-
+            event.setCancelled(true); // Empêche tout déplacement
             ItemStack clickedItem = event.getCurrentItem();
-            int slot = event.getSlot();
-
-            // Ne traite que les clics sur des items avec métadonnées
-            if (clickedItem != null && clickedItem.getType() != Material.AIR &&
-                    clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()) {
-
-                plugin.getContainerGUI().handleContainerMenuClick(player, slot, clickedItem, title);
+            if (clickedItem != null && clickedItem.getType() != Material.AIR) {
+                plugin.getContainerGUI().handleContainerMenuClick(player, event.getSlot(), clickedItem, title);
             }
             return;
         }
 
         // GUI des filtres
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
-            ItemStack clickedItem = event.getCurrentItem();
             ItemStack cursorItem = event.getCursor();
+            ItemStack currentItem = event.getCurrentItem();
 
-            // Empêche de mettre des conteneurs dans les filtres
-            if ((clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) ||
-                    (cursorItem != null && plugin.getContainerManager().isContainer(cursorItem))) {
+            // Empêche de mettre un conteneur DANS un filtre
+            if ((cursorItem != null && plugin.getContainerManager().isContainer(cursorItem)) ||
+                    (currentItem != null && event.getAction().toString().contains("MOVE_TO_OTHER_INVENTORY") && plugin.getContainerManager().isContainer(currentItem))) {
 
                 event.setCancelled(true);
                 player.sendMessage("§c❌ Vous ne pouvez pas mettre un conteneur comme filtre!");
-                player.sendMessage("§7Les conteneurs ne peuvent pas filtrer d'autres conteneurs.");
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                return;
-            }
-
-            // NOUVEAU : Empêche les clics dans l'inventaire du joueur depuis le GUI de filtres
-            if (event.getClickedInventory() != null &&
-                    event.getClickedInventory().getType() == InventoryType.PLAYER) {
-
-                // Autorise seulement si c'est pour déplacer un item VERS le GUI de filtres
-                if (event.getAction().toString().contains("MOVE_TO_OTHER_INVENTORY")) {
-                    // Vérifie que l'item n'est pas un conteneur
-                    if (clickedItem != null && plugin.getContainerManager().isContainer(clickedItem)) {
-                        event.setCancelled(true);
-                        player.sendMessage("§c❌ Vous ne pouvez pas utiliser un conteneur comme filtre!");
-                    }
-                }
             }
         }
     }
 
-    /**
-     * CORRIGÉ : Empêche le drag and drop dans les GUIs de conteneur
-     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-
         String title = event.getView().getTitle();
 
-        // Empêche complètement le drag dans les GUIs principaux
+        // Empêche complètement le drag dans le GUI de configuration
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
             event.setCancelled(true);
             return;
         }
 
-        // Pour les GUIs de filtres, empêche le drag de conteneurs
+        // Empêche de drag un conteneur dans le GUI des filtres
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
-            ItemStack draggedItem = event.getOldCursor();
-            if (draggedItem != null && plugin.getContainerManager().isContainer(draggedItem)) {
+            if (plugin.getContainerManager().isContainer(event.getOldCursor())) {
                 event.setCancelled(true);
-                player.sendMessage("§c❌ Vous ne pouvez pas utiliser un conteneur comme filtre!");
             }
         }
     }
 
-    /**
-     * CORRIGÉ : Gère la fermeture des inventaires (sauvegarde automatique des filtres)
-     */
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) {
@@ -208,15 +122,8 @@ public class ContainerListener implements Listener {
         }
 
         String title = event.getView().getTitle();
-
-        // Sauvegarde automatique des filtres à la fermeture
         if (plugin.getContainerFilterGUI().isFilterGUI(title)) {
             plugin.getContainerFilterGUI().saveFiltersFromInventory(player, event.getInventory(), title);
-        }
-
-        // Nettoie les références pour tous les types de GUIs
-        if (title.contains("🎯 Filtres")) {
-            plugin.getContainerFilterGUI().cleanupClosedGUI(title);
         }
     }
 }
