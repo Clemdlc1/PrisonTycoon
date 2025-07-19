@@ -56,10 +56,19 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         int totalItems = 0;
         Map<Material, Integer> soldItems = new HashMap<>();
 
-        // Vend le contenu des conteneurs et récupère la valeur (on suppose que cette méthode ne donne pas l'argent)
-        long containerValue = plugin.getContainerManager().sellAllContainerContents(player);
+        // MODIFIÉ: Passer la map pour récupérer les détails des conteneurs
+        Map<Material, Integer> containerSoldItems = new HashMap<>();
+        long containerValue = plugin.getContainerManager().sellAllContainerContents(player, containerSoldItems);
         totalValue += containerValue;
-        // Note: Nous ne pouvons pas détailler les items des conteneurs ici sans modifier sellAllContainerContents.
+
+        // AJOUT: Compter les items des conteneurs
+        int containerItems = containerSoldItems.values().stream().mapToInt(Integer::intValue).sum();
+        totalItems += containerItems;
+
+        // AJOUT: Fusionner les items des conteneurs avec les items de l'inventaire
+        for (Map.Entry<Material, Integer> entry : containerSoldItems.entrySet()) {
+            soldItems.merge(entry.getKey(), entry.getValue(), Integer::sum);
+        }
 
         // Parcourt l'inventaire du joueur
         for (int i = 0; i < player.getInventory().getSize(); i++) {
@@ -197,14 +206,15 @@ public class SellCommand implements CommandExecutor, TabCompleter {
      * @param logContext     Une chaîne décrivant le contexte de la vente pour les logs.
      */
     private void processSale(Player player, long totalValue, int totalItems, Map<Material, Integer> soldItems, long containerValue, String logContext) {
-        if (totalValue <= 0) {
+        if (totalValue + containerValue <= 0) {
             player.sendMessage("§c❌ Aucun item vendable trouvé!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        // Applique les bonus globaux
-        double finalPrice = plugin.getGlobalBonusManager().applySellBonus(player, totalValue);
+        // CORRIGÉ: Inclure la valeur des conteneurs dans le calcul total
+        long combinedValue = totalValue + containerValue;
+        double finalPrice = plugin.getGlobalBonusManager().applySellBonus(player, combinedValue);
         plugin.getEconomyManager().addCoins(player, (long) finalPrice);
 
         // Envoi des messages de succès
@@ -213,7 +223,9 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7▸ Valeur totale: §6" + NumberFormatter.format((long) finalPrice) + " coins");
 
         if (containerValue > 0) {
-            player.sendMessage("§7▸ Dont conteneurs: §6" + NumberFormatter.format(plugin.getGlobalBonusManager().applySellBonus(player, containerValue)) + " coins");
+            // CORRIGÉ: Afficher la valeur des conteneurs dans le total, pas séparément
+            double containerPriceWithBonus = plugin.getGlobalBonusManager().applySellBonus(player, containerValue);
+            player.sendMessage("§7▸ Dont conteneurs: §6" + NumberFormatter.format((long) containerPriceWithBonus) + " coins");
         }
 
         if (!soldItems.isEmpty()) {

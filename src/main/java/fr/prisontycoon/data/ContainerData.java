@@ -12,37 +12,50 @@ public class ContainerData {
 
     private final int tier;
     private final int maxCapacity;
+    private final int maxDurability;
     private final Map<ItemStack, Integer> contents;
     private final Set<Material> whitelist;
-    private final int maxDurability;
+    private Map<Integer, ItemStack> referenceItems = new HashMap<>();
     private boolean sellEnabled;
     private int durability;
-    private Map<Integer, ItemStack> referenceItems;
 
+    // NOUVEAU: Cache pour éviter les recalculs
+    private int totalItemsCache = 0;
+    private boolean totalItemsCacheValid = false;
+
+    // Constructeurs existants restent identiques...
     public ContainerData(int tier) {
-        this.tier = tier;
-        this.maxCapacity = getCapacityForTier(tier);
-        this.contents = new LinkedHashMap<>();
-        this.whitelist = new HashSet<>();
-        this.sellEnabled = true;
-        this.maxDurability = getDurabilityForTier(tier);
-        this.durability = maxDurability;
-        this.referenceItems = new HashMap<>();
+        this(tier, new LinkedHashMap<>(), new HashSet<>(), false, getMaxDurabilityForTier(tier));
     }
 
-    public ContainerData(int tier, Map<ItemStack, Integer> contents, Set<Material> whitelist,
-                         boolean sellEnabled, int durability) {
+    public ContainerData(int tier, Map<ItemStack, Integer> contents, Set<Material> whitelist, boolean sellEnabled, int durability) {
         this.tier = tier;
-        this.maxCapacity = getCapacityForTier(tier);
+        this.maxCapacity = getMaxCapacityForTier(tier);
+        this.maxDurability = getMaxDurabilityForTier(tier);
         this.contents = new LinkedHashMap<>(contents);
         this.whitelist = new HashSet<>(whitelist);
         this.sellEnabled = sellEnabled;
-        this.maxDurability = getDurabilityForTier(tier);
-        this.durability = durability;
-        this.referenceItems = new HashMap<>();
+        this.durability = Math.max(0, Math.min(maxDurability, durability));
+        invalidateTotalItemsCache();
     }
 
-    public int getCapacityForTier(int tier) {
+    private void invalidateTotalItemsCache() {
+        this.totalItemsCacheValid = false;
+    }
+
+    private void updateTotalItemsCache() {
+        if (!totalItemsCacheValid) {
+            // Utilisation d'une boucle simple au lieu d'un stream
+            int total = 0;
+            for (Integer value : contents.values()) {
+                total += value;
+            }
+            this.totalItemsCache = total;
+            this.totalItemsCacheValid = true;
+        }
+    }
+
+    public int getMaxCapacityForTier(int tier) {
         return switch (tier) {
             case 1 -> 6400;
             case 2 -> 9600;
@@ -53,33 +66,21 @@ public class ContainerData {
         };
     }
 
-    private int getDurabilityForTier(int tier) {
-        return switch (tier) {
-            case 1 -> 50;
-            case 2 -> 100;
-            case 3 -> 200;
-            case 4 -> 400;
-            case 5 -> 800;
-            default -> 25;
-        };
-    }
-
     public boolean addItem(ItemStack itemStack) {
         if (itemStack == null || itemStack.getType() == Material.AIR) return false;
         if (!whitelist.isEmpty() && !whitelist.contains(itemStack.getType())) return false;
-        if (isFull()) return false;
 
-        // On ne peut pas ajouter plus que l'espace libre
-        int amountToAdd = Math.min(itemStack.getAmount(), getFreeSpace());
+        // Vérification rapide de l'espace disponible
+        updateTotalItemsCache();
+        if (totalItemsCache >= maxCapacity) return false;
+
+        // Calculer l'espace libre directement du cache
+        int freeSpace = maxCapacity - totalItemsCache;
+        int amountToAdd = Math.min(itemStack.getAmount(), freeSpace);
         if (amountToAdd <= 0) return false;
 
-        ItemStack keyToUpdate = null;
-        for (ItemStack key : contents.keySet()) {
-            if (key.isSimilar(itemStack)) {
-                keyToUpdate = key;
-                break;
-            }
-        }
+        // OPTIMISATION: Recherche optimisée de clé existante
+        ItemStack keyToUpdate = findSimilarKey(itemStack);
 
         if (keyToUpdate != null) {
             contents.merge(keyToUpdate, amountToAdd, Integer::sum);
@@ -88,17 +89,26 @@ public class ContainerData {
             keyItem.setAmount(1); // La clé n'a pas de quantité
             contents.put(keyItem, amountToAdd);
         }
+
+        // Mettre à jour le cache directement au lieu de l'invalider
+        totalItemsCache += amountToAdd;
+        // Le cache reste valide car on vient de le mettre à jour
+
         return true;
     }
 
-    public boolean removeItem(ItemStack itemStack, int amount) {
-        ItemStack existingKey = null;
+    private ItemStack findSimilarKey(ItemStack itemStack) {
+        // Pour de petites collections, une boucle simple est plus rapide qu'un stream
         for (ItemStack key : contents.keySet()) {
             if (key.isSimilar(itemStack)) {
-                existingKey = key;
-                break;
+                return key;
             }
         }
+        return null;
+    }
+
+    public boolean removeItem(ItemStack itemStack, int amount) {
+        ItemStack existingKey = findSimilarKey(itemStack);
         if (existingKey == null) return false;
 
         int current = contents.getOrDefault(existingKey, 0);
@@ -109,12 +119,17 @@ public class ContainerData {
         } else {
             contents.put(existingKey, current - amount);
         }
+
+        // Invalider le cache après modification
+        invalidateTotalItemsCache();
         return true;
     }
 
     public Map<ItemStack, Integer> clearContents() {
         Map<ItemStack, Integer> removed = new LinkedHashMap<>(contents);
         contents.clear();
+        // Invalider le cache après modification
+        invalidateTotalItemsCache();
         return removed;
     }
 
@@ -129,24 +144,33 @@ public class ContainerData {
     }
 
     public void clearVendableContents(java.util.function.Function<Material, Long> priceFunction) {
-        contents.entrySet().removeIf(entry -> priceFunction.apply(entry.getKey().getType()) > 0);
+        boolean modified = contents.entrySet().removeIf(entry -> priceFunction.apply(entry.getKey().getType()) > 0);
+        if (modified) {
+            invalidateTotalItemsCache();
+        }
     }
 
     public int getTotalItems() {
-        return contents.values().stream().mapToInt(Integer::intValue).sum();
+        updateTotalItemsCache();
+        return totalItemsCache;
     }
 
+    // OPTIMISATION: getFreeSpace() avec cache direct
     public int getFreeSpace() {
-        return maxCapacity - getTotalItems();
+        updateTotalItemsCache();
+        return maxCapacity - totalItemsCache;
     }
 
+    // OPTIMISATION: isFull() avec cache direct
     public boolean isFull() {
-        return getTotalItems() >= maxCapacity;
+        updateTotalItemsCache();
+        return totalItemsCache >= maxCapacity;
     }
 
     public double getFillPercentage() {
         if (maxCapacity == 0) return 0.0;
-        return (double) getTotalItems() / maxCapacity * 100.0;
+        updateTotalItemsCache();
+        return (double) totalItemsCache / maxCapacity * 100.0;
     }
 
     public double getDurabilityPercentage() {
@@ -174,14 +198,6 @@ public class ContainerData {
         referenceItems.clear();
     }
 
-    public Map<Integer, ItemStack> getReferenceItems() {
-        return this.referenceItems;
-    }
-
-    public void setReferenceItems(Map<Integer, ItemStack> referenceItems) {
-        this.referenceItems = new HashMap<>(referenceItems);
-    }
-
     // Getters
     public int getTier() { return tier; }
     public int getMaxCapacity() { return maxCapacity; }
@@ -190,15 +206,28 @@ public class ContainerData {
     public boolean isSellEnabled() { return sellEnabled; }
     public int getDurability() { return durability; }
     public int getMaxDurability() { return maxDurability; }
+    public Map<Integer, ItemStack> getReferenceItems() { return this.referenceItems; }
 
     // Setters
     public void setSellEnabled(boolean sellEnabled) { this.sellEnabled = sellEnabled; }
     public void setDurability(int durability) { this.durability = Math.max(0, Math.min(maxDurability, durability)); }
+    public void setReferenceItems(Map<Integer, ItemStack> referenceItems) { this.referenceItems = new HashMap<>(referenceItems); }
 
     @Override
     public ContainerData clone() {
         ContainerData cloned = new ContainerData(tier, contents, whitelist, sellEnabled, durability);
         cloned.setReferenceItems(this.referenceItems);
         return cloned;
+    }
+
+    public static int getMaxDurabilityForTier(int tier) {
+        return switch (tier) {
+            case 1 -> 50;
+            case 2 -> 100;
+            case 3 -> 200;
+            case 4 -> 400;
+            case 5 -> 800;
+            default -> 25;
+        };
     }
 }

@@ -175,20 +175,27 @@ public class ContainerManager {
         return containers;
     }
 
-    public long sellAllContainerContents(Player player) {
+    public long sellAllContainerContents(Player player, Map<Material, Integer> containerSoldItems) {
         long totalValue = 0;
         Set<String> uuids = playerContainers.get(player.getUniqueId());
         if (uuids == null) return 0L;
         List<String> brokenMessages = new ArrayList<>();
+
         for (String uuid : uuids) {
             ContainerData data = containerCache.get(uuid);
             if (data != null && data.isSellEnabled() && !data.isBroken()) {
                 Map<ItemStack, Integer> vendableItems = data.getVendableContents(plugin.getConfigManager()::getSellPrice);
                 long containerValue = 0;
+
                 for (Map.Entry<ItemStack, Integer> entry : vendableItems.entrySet()) {
                     long price = plugin.getConfigManager().getSellPrice(entry.getKey().getType());
-                    containerValue += price * entry.getValue();
+                    if (price > 0) {
+                        containerValue += price * entry.getValue();
+                        // AJOUT: Ajouter les items vendus aux détails
+                        containerSoldItems.merge(entry.getKey().getType(), entry.getValue(), Integer::sum);
+                    }
                 }
+
                 if (containerValue > 0) {
                     totalValue += containerValue;
                     data.clearVendableContents(plugin.getConfigManager()::getSellPrice);
@@ -199,6 +206,7 @@ public class ContainerManager {
                 }
             }
         }
+
         if (!brokenMessages.isEmpty()) {
             player.sendMessage("§c💥 Un conteneur " + String.join("§c, ", brokenMessages) + " §cs'est cassé lors de la vente!");
             player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
