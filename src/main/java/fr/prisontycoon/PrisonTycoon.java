@@ -284,12 +284,6 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("metier").setExecutor(new MetierCommand(this));
         getCommand("metier").setTabCompleter(new MetierCommand(this));
 
-        getCommand("changemetier").setExecutor(new ChangeMetierCommand(this));
-        getCommand("changemetier").setTabCompleter(new ChangeMetierCommand(this));
-
-        getCommand("metierxp").setExecutor(new MetierXPCommand(this));
-        getCommand("metierxp").setTabCompleter(new MetierXPCommand(this));
-
         getCommand("enchantbook").setExecutor(new EnchantmentBookCommand(this));
 
         logger.info("§aCommandes enregistrées.");
