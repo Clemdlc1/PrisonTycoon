@@ -217,6 +217,14 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("profession-rewards")) {
+                for (String profession : config.getConfigurationSection("profession-rewards").getKeys(false)) {
+                    List<Integer> claimedLevels = config.getIntegerList("profession-rewards." + profession);
+                    for (int level : claimedLevels) {
+                        data.claimProfessionReward(profession, level);
+                    }
+                }
+            }
 
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
@@ -366,6 +374,16 @@ public class PlayerDataManager {
             if (!kitLevels.isEmpty()) {
                 for (Map.Entry<String, Integer> entry : kitLevels.entrySet()) {
                     config.set("kit-levels." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            if (!data.getAllClaimedProfessionRewards().isEmpty()) {
+                for (Map.Entry<String, Set<Integer>> entry : data.getAllClaimedProfessionRewards().entrySet()) {
+                    String profession = entry.getKey();
+                    Set<Integer> claimedLevels = entry.getValue();
+                    if (!claimedLevels.isEmpty()) {
+                        config.set("profession-rewards." + profession, new ArrayList<>(claimedLevels));
+                    }
                 }
             }
 

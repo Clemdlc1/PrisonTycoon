@@ -54,6 +54,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private PickaxeRepairGUI pickaxeRepairGUI;
     private ContainerGUI containerGUI;
     private ContainerFilterGUI containerFilterGUI;
+    private ProfessionRewardsGUI professionRewardsGUI;
 
     private RankupCommand rankupCommand;
 
@@ -215,6 +216,7 @@ public final class PrisonTycoon extends JavaPlugin {
         containerGUI = new ContainerGUI(this);
         containerFilterGUI = new ContainerFilterGUI(this);
         professionGUI = new ProfessionGUI(this);
+        professionRewardsGUI = new ProfessionRewardsGUI(this);
 
 
         logger.info("§aInterfaces graphiques initialisées.");
@@ -551,6 +553,13 @@ public final class PrisonTycoon extends JavaPlugin {
      */
     public ProfessionGUI getProfessionGUI() {
         return professionGUI;
+    }
+
+    /**
+     * Obtient l'interface graphique des métiers
+     */
+    public ProfessionRewardsGUI getProfessionRewardsGUI() {
+        return professionRewardsGUI;
     }
 }
 

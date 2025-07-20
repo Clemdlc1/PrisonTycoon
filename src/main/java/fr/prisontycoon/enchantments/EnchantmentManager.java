@@ -116,6 +116,13 @@ public class EnchantmentManager {
             processSpecialEnchantments(player, playerData, blockLocation, mineName);
             updateCombustion(player, playerData);
             plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
+            String activeProfession = playerData.getActiveProfession();
+            if (activeProfession.equals("mineur")) {
+                Random rand = new Random();
+                if (rand.nextInt(100) == 0) {
+                    plugin.getProfessionManager().addProfessionXP(player, "mineur", 1);
+                }
+            }
         }
 
         processTokenGreedWithPenalty(player, blockType, playerData);
@@ -169,6 +176,13 @@ public class EnchantmentManager {
 
         if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell")) {
             plugin.getEnchantmentBookManager().processAutoSell(player, material, quantity);
+            String activeProfession = playerData.getActiveProfession();
+            if (activeProfession.equals("commercant")) {
+                Random rand = new Random();
+                if (rand.nextInt(1000) == 0) {
+                    plugin.getProfessionManager().addProfessionXP(player, "commercant", 1);
+                }
+            }
             return;
         }
 

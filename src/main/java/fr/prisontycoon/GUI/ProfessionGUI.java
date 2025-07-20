@@ -120,9 +120,6 @@ public class ProfessionGUI {
     /**
      * NOUVEAU: Configure le menu talents & kits avec pagination par niveaux
      */
-    /**
-     * NOUVEAU: Configure le menu talents & kits avec pagination par niveaux
-     */
     private void setupTalentsKitsMenu(Inventory gui, Player player, ProfessionManager.Profession profession, int page) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         List<ProfessionManager.ProfessionTalent> talents = profession.getTalents();
@@ -164,7 +161,7 @@ public class ProfessionGUI {
     }
 
     /**
-     * NOUVEAU: Crée un item talent pour un niveau spécifique
+     * Crée un item talent pour un niveau spécifique - CORRIGÉ
      */
     private ItemStack createLeveledTalentItem(Player player, String professionId, ProfessionManager.ProfessionTalent talent, int targetLevel) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -177,7 +174,8 @@ public class ProfessionGUI {
 
         // Détermine l'état du niveau
         boolean isActive = currentTalentLevel >= targetLevel;
-        boolean canUpgrade = professionLevel >= targetLevel && currentTalentLevel < targetLevel;
+        boolean hasPrerequisite = targetLevel == 1 || currentTalentLevel >= targetLevel - 1; // NOUVEAU
+        boolean canUpgrade = professionLevel >= targetLevel && currentTalentLevel < targetLevel && hasPrerequisite; // MODIFIÉ
         boolean isMaxed = currentTalentLevel >= 10;
 
         // Nom avec couleur selon l'état
@@ -205,6 +203,8 @@ public class ProfessionGUI {
             lore.add("§e▶ Cliquez pour activer !");
         } else if (professionLevel < targetLevel) {
             lore.add("§cNiveau métier requis: " + targetLevel);
+        } else if (!hasPrerequisite) { // NOUVEAU
+            lore.add("§cNiveau " + (targetLevel - 1) + " requis d'abord");
         } else if (isMaxed) {
             lore.add("§cTalent déjà au maximum");
         }
@@ -223,7 +223,7 @@ public class ProfessionGUI {
     }
 
     /**
-     * NOUVEAU: Crée un item kit pour un niveau spécifique
+     * Crée un item kit pour un niveau spécifique - CORRIGÉ
      */
     private ItemStack createLeveledKitItem(Player player, String professionId, int targetLevel) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -235,7 +235,8 @@ public class ProfessionGUI {
 
         // Détermine l'état du niveau
         boolean isActive = currentKitLevel >= targetLevel;
-        boolean canUpgrade = professionLevel >= targetLevel && currentKitLevel < targetLevel;
+        boolean hasPrerequisite = targetLevel == 1 || currentKitLevel >= targetLevel - 1; // NOUVEAU
+        boolean canUpgrade = professionLevel >= targetLevel && currentKitLevel < targetLevel && hasPrerequisite; // MODIFIÉ
         boolean isMaxed = currentKitLevel >= 10;
 
         // Nom avec couleur selon l'état
@@ -259,6 +260,8 @@ public class ProfessionGUI {
             lore.add("§6▶ Cliquez pour activer !");
         } else if (professionLevel < targetLevel) {
             lore.add("§cNiveau métier requis: " + targetLevel);
+        } else if (!hasPrerequisite) { // NOUVEAU
+            lore.add("§cKit niveau " + (targetLevel - 1) + " requis d'abord");
         } else if (isMaxed) {
             lore.add("§cKit déjà au maximum");
         }
@@ -427,6 +430,12 @@ public class ProfessionGUI {
                 }
             }
             case "back_to_main" -> openProfessionMenu(player);
+            case "open_rewards" -> {
+                String professionId = meta.getPersistentDataContainer().get(professionKey, PersistentDataType.STRING);
+                if (professionId != null) {
+                    plugin.getProfessionRewardsGUI().openRewardsMenu(player, professionId);
+                }
+            }
             case "close" -> {
                 player.closeInventory();
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.8f);
@@ -533,21 +542,54 @@ public class ProfessionGUI {
         return item;
     }
 
+    /**
+     * Crée le bouton d'accès aux récompenses
+     */
     private ItemStack createRewardsButton(Player player, String professionId) {
-        ItemStack item = new ItemStack(Material.GOLD_INGOT);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        int availableRewards = getAvailableRewardsCount(player, professionId);
+
+        ItemStack item = new ItemStack(Material.CHEST);
         ItemMeta meta = item.getItemMeta();
 
         meta.setDisplayName("§6🎁 §lRécompenses");
 
         List<String> lore = new ArrayList<>();
-        lore.add("§7Consultez vos récompenses de métier");
+        lore.add("§7Réclamez vos récompenses de niveau");
         lore.add("");
-        lore.add("§7À venir plus tard");
+        lore.add("§7Récompenses disponibles: §e" + availableRewards);
+        lore.add("");
+        lore.add("§e▶ Cliquez pour ouvrir !");
 
         meta.setLore(lore);
-        item.setItemMeta(meta);
+        meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_rewards");
+        meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, professionId);
 
+        // Enchantement si des récompenses sont disponibles
+        if (availableRewards > 0) {
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+        }
+
+        item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+    * Compte les récompenses disponibles
+    */
+    private int getAvailableRewardsCount(Player player, String professionId) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        int professionLevel = playerData.getProfessionLevel(professionId);
+        int available = 0;
+
+        for (int level = 1; level <= professionLevel; level++) {
+            if (!playerData.hasProfessionRewardClaimed(professionId, level)) {
+                available++;
+            }
+        }
+
+        return available;
     }
 
     private ItemStack createHelpItem() {

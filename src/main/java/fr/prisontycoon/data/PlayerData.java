@@ -74,6 +74,7 @@ public class PlayerData {
     private final Map<String, Integer> professionXP; // profession -> XP métier
     private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
     private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
+    private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
 
 
 
@@ -119,6 +120,8 @@ public class PlayerData {
         this.professionXP = new ConcurrentHashMap<>();
         this.talentLevels = new ConcurrentHashMap<>();
         this.kitLevels = new ConcurrentHashMap<>();
+        this.claimedProfessionRewards = new ConcurrentHashMap<>();
+
 
 
         // Reset stats dernière minute
@@ -1102,5 +1105,37 @@ public class PlayerData {
      */
     public void setKitLevel(String profession, int level) {
         kitLevels.put(profession, Math.max(0, Math.min(10, level)));
+    }
+
+    /**
+     * Vérifie si une récompense de métier a été réclamée
+     */
+    public boolean hasProfessionRewardClaimed(String profession, int level) {
+        return claimedProfessionRewards.getOrDefault(profession, new HashSet<>()).contains(level);
+    }
+
+    /**
+     * Marque une récompense de métier comme réclamée
+     */
+    public void claimProfessionReward(String profession, int level) {
+        claimedProfessionRewards.computeIfAbsent(profession, k -> ConcurrentHashMap.newKeySet()).add(level);
+    }
+
+    /**
+     * Obtient toutes les récompenses réclamées pour un métier
+     */
+    public Set<Integer> getClaimedProfessionRewards(String profession) {
+        return new HashSet<>(claimedProfessionRewards.getOrDefault(profession, new HashSet<>()));
+    }
+
+    /**
+     * Obtient toutes les récompenses réclamées (pour la sauvegarde)
+     */
+    public Map<String, Set<Integer>> getAllClaimedProfessionRewards() {
+        Map<String, Set<Integer>> result = new HashMap<>();
+        for (Map.Entry<String, Set<Integer>> entry : claimedProfessionRewards.entrySet()) {
+            result.put(entry.getKey(), new HashSet<>(entry.getValue()));
+        }
+        return result;
     }
 }

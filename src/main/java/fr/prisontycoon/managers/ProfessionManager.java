@@ -257,7 +257,7 @@ public class ProfessionManager {
     }
 
     /**
-     * Active un talent (dépense d'XP joueur)
+     * Active un talent (dépense d'XP joueur) - CORRIGÉ
      */
     public boolean activateTalent(Player player, String talentId, int level) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -292,6 +292,13 @@ public class ProfessionManager {
             return false;
         }
 
+        // NOUVELLE VÉRIFICATION: Doit avoir le niveau précédent (sauf pour le niveau 1)
+        if (level > 1 && currentTalentLevel < level - 1) {
+            player.sendMessage("§cVous devez d'abord activer le niveau " + (level - 1) + " !");
+            player.sendMessage("§7Niveau actuel: §e" + currentTalentLevel);
+            return false;
+        }
+
         // Calcul du coût (exponentiel)
         long cost = calculateTalentCost(level);
         if (playerData.getExperience() < cost) {
@@ -312,7 +319,7 @@ public class ProfessionManager {
     }
 
     /**
-     * NOUVEAU: Active un niveau de kit (dépense d'XP joueur)
+     * Active un niveau de kit (dépense d'XP joueur) - CORRIGÉ
      */
     public boolean activateKit(Player player, int level) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -335,6 +342,13 @@ public class ProfessionManager {
         int currentKitLevel = playerData.getKitLevel(activeProfession);
         if (currentKitLevel >= level) {
             player.sendMessage("§cVous avez déjà ce niveau de kit ou supérieur !");
+            return false;
+        }
+
+        // NOUVELLE VÉRIFICATION: Doit avoir le niveau précédent (sauf pour le niveau 1)
+        if (level > 1 && currentKitLevel < level - 1) {
+            player.sendMessage("§cVous devez d'abord activer le kit niveau " + (level - 1) + " !");
+            player.sendMessage("§7Niveau actuel: §e" + currentKitLevel);
             return false;
         }
 
