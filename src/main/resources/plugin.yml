@@ -228,6 +228,22 @@ commands:
     permission: specialmine.enchantbook
     aliases: [ livre ]
 
+  metier:
+    description: Ouvre le menu des métiers
+    usage: /metier [info|choisir <métier>|help]
+    aliases: [ profession, job ]
+
+  changemetier:
+    description: Change de métier (payant, cooldown)
+    usage: /changemetier <mineur|commercant|guerrier>
+    aliases: [ changeprofession, changejob ]
+
+  metierxp:
+    description: Donne de l'XP métier (admin)
+    usage: /metierxp <nombre>
+    permission: specialmine.admin
+    aliases: [ professionxp, jobxp ]
+
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

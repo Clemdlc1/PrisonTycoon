@@ -108,6 +108,8 @@ public class GUIListener implements Listener {
             plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
         } else if (title.contains("Réparation")) {
             plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
+        } else if (title.contains("Métiers") || title.contains("Choisir un Métier") || title.contains("Talents")) {
+            plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
         }
     }
 
@@ -174,6 +176,6 @@ public class GUIListener implements Listener {
                 title.contains("Compagnons") ||
                 title.contains("Livres d'Enchantements") ||
                 title.contains("Boutique de Livres") ||
-                title.contains("Réparation");
+                title.contains("Réparation") || title.contains("Métiers") || title.contains("Choisir un Métier") || title.contains("Talents") ;
     }
 }

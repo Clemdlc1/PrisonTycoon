@@ -1,0 +1,445 @@
+package fr.prisontycoon.managers;
+
+import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.utils.NumberFormatter;
+import org.bukkit.entity.Player;
+
+import java.util.*;
+
+/**
+ * Gestionnaire du système de métiers
+ * Gère les métiers, leurs niveaux, XP et talents
+ */
+public class ProfessionManager {
+
+    private final PrisonTycoon plugin;
+    private final Map<String, Profession> professions;
+
+    public ProfessionManager(PrisonTycoon plugin) {
+        this.plugin = plugin;
+        this.professions = new HashMap<>();
+        initializeProfessions();
+        plugin.getPluginLogger().info("§aProfessionManager initialisé avec " + professions.size() + " métiers.");
+    }
+
+    /**
+     * Initialise les 3 métiers selon la documentation
+     */
+    private void initializeProfessions() {
+        // Métier Mineur
+        professions.put("mineur", new Profession("mineur", "§7⛏ §lMineur", "§7Maître de l'Extraction",
+                "Optimisé pour l'extraction de ressources", Arrays.asList(
+                new ProfessionTalent("exp_greed", "Exp Greed+", "Bonus d'expérience",
+                        new int[]{2, 5, 10, 15, 25, 35, 50, 75, 125, 200}),
+                new ProfessionTalent("token_greed", "Token Greed+", "Bonus de tokens",
+                        new int[]{2, 5, 10, 15, 25, 35, 50, 75, 125, 200}),
+                new ProfessionTalent("money_greed", "Money Greed+", "Bonus d'argent",
+                        new int[]{2, 5, 10, 15, 25, 35, 50, 75, 125, 200})
+        )));
+
+        // Métier Commerçant
+        professions.put("commercant", new Profession("commercant", "§6💰 §lCommerçant", "§6Maître de l'Économie",
+                "Excellence dans la valorisation des ventes et exploitation des marchés", Arrays.asList(
+                new ProfessionTalent("negotiations", "Négociations", "Augmentation nombre de générateurs",
+                        new int[]{2, 5, 10, 15, 20, 25, 30, 35, 45, 60}),
+                new ProfessionTalent("vitrines_sup", "Vitrines Sup.", "Slots HDV supplémentaires",
+                        new int[]{0, 1, 1, 1, 1, 1, 1, 2, 2, 2}),
+                new ProfessionTalent("sell_boost", "SellBoost", "Augmentation prix de vente",
+                        new int[]{2, 5, 10, 20, 35, 60, 100, 150, 200, 300})
+        )));
+
+        // Métier Guerrier
+        professions.put("guerrier", new Profession("guerrier", "§c⚔ §lGuerrier", "§cMaître du Combat",
+                "Spécialisé dans le PvP, contrôle de l'avant-poste et équipement de combat", Arrays.asList(
+                new ProfessionTalent("soldes", "Soldes", "Réduction prix marchand PvP",
+                        new int[]{2, 5, 10, 15, 25, 35, 45, 55, 70, 85}),
+                new ProfessionTalent("garde", "Garde", "Augmentation gains avant-poste",
+                        new int[]{5, 15, 30, 50, 75, 125, 200, 300, 500, 750}),
+                new ProfessionTalent("beacon_multiplier", "Bonus Minage Beacon", "Multiplicateur de beacons",
+                        new int[]{1, 1, 1, 2, 2, 2, 3, 3, 3, 4}) // x1, x1.5, x2, x3 selon le niveau
+        )));
+    }
+
+    /**
+     * Vérifie si un joueur peut débloquer les métiers (rang F)
+     */
+    public boolean canUnlockProfessions(Player player) {
+        String currentRank = plugin.getMineManager().getCurrentRank(player);
+        return currentRank.charAt(0) >= 'f';
+    }
+
+    /**
+     * Notifie un joueur qu'il peut débloquer les métiers
+     */
+    public void notifyProfessionUnlock(Player player) {
+        if (canUnlockProfessions(player)) {
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            if (playerData.getActiveProfession() == null) {
+                player.sendMessage("");
+                player.sendMessage("§e🎯 §lFélicitations ! Vous avez débloqué le système de métiers !");
+                player.sendMessage("§7Utilisez §a/metier §7pour choisir votre premier métier gratuitement.");
+                player.sendMessage("");
+            }
+        }
+    }
+
+    /**
+     * Définit le métier actif d'un joueur (premier choix gratuit)
+     */
+    public boolean setActiveProfession(Player player, String professionId) {
+        if (!professions.containsKey(professionId.toLowerCase())) {
+            return false;
+        }
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String currentProfession = playerData.getActiveProfession();
+
+        // Premier choix gratuit
+        if (currentProfession == null) {
+            playerData.setActiveProfession(professionId.toLowerCase());
+            plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+            Profession prof = professions.get(professionId.toLowerCase());
+            player.sendMessage("§a✅ Vous avez choisi le métier §e" + prof.getDisplayName() + " §a!");
+            player.sendMessage("§7" + prof.getDescription());
+            return true;
+        }
+
+        return false; // Changement payant géré par /changemetier
+    }
+
+    /**
+     * Change le métier actif (payant, cooldown)
+     */
+    public boolean changeProfession(Player player, String professionId) {
+        if (!professions.containsKey(professionId.toLowerCase())) {
+            player.sendMessage("§cMétier invalide ! Métiers disponibles: mineur, commercant, guerrier");
+            return false;
+        }
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String currentProfession = playerData.getActiveProfession();
+
+        if (currentProfession == null) {
+            player.sendMessage("§cVous devez d'abord choisir un métier avec /metier");
+            return false;
+        }
+
+        if (currentProfession.equals(professionId.toLowerCase())) {
+            player.sendMessage("§cVous avez déjà ce métier actif !");
+            return false;
+        }
+
+        // Vérification du cooldown (24h)
+        long lastChange = playerData.getLastProfessionChange();
+        long cooldownTime = 24 * 60 * 60 * 1000; // 24h en ms
+        long timeLeft = (lastChange + cooldownTime) - System.currentTimeMillis();
+
+        if (timeLeft > 0) {
+            long hoursLeft = timeLeft / (60 * 60 * 1000);
+            long minutesLeft = (timeLeft % (60 * 60 * 1000)) / (60 * 1000);
+            player.sendMessage("§cCooldown actif ! Temps restant: §e" + hoursLeft + "h " + minutesLeft + "m");
+            return false;
+        }
+
+        // Vérification du coût (5000 beacons)
+        if (playerData.getBeacons() < 5000) {
+            player.sendMessage("§cIl vous faut §e5000 beacons §cpour changer de métier !");
+            player.sendMessage("§7Vous avez: §e" + NumberFormatter.format(playerData.getBeacons()) + " beacons");
+            return false;
+        }
+
+        // Effectue le changement
+        playerData.removeBeacon(5000);
+        playerData.setActiveProfession(professionId.toLowerCase());
+        playerData.setLastProfessionChange(System.currentTimeMillis());
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+        Profession prof = professions.get(professionId.toLowerCase());
+        player.sendMessage("§a✅ Métier changé vers §e" + prof.getDisplayName() + " §a!");
+        player.sendMessage("§7Coût: §c-5000 beacons");
+
+        return true;
+    }
+
+    /**
+     * Ajoute de l'XP métier à un joueur
+     */
+    public void addProfessionXP(Player player, String professionId, int xp) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String activeProfession = playerData.getActiveProfession();
+
+        if (activeProfession == null || !activeProfession.equals(professionId)) {
+            return; // XP uniquement pour le métier actif
+        }
+
+        int currentXP = playerData.getProfessionXP(professionId);
+        int currentLevel = playerData.getProfessionLevel(professionId);
+        int newXP = currentXP + xp;
+
+        playerData.setProfessionXP(professionId, newXP);
+
+        // Vérification de montée de niveau
+        int newLevel = calculateLevelFromXP(newXP);
+        if (newLevel > currentLevel) {
+            playerData.setProfessionLevel(professionId, newLevel);
+            onProfessionLevelUp(player, professionId, newLevel);
+        }
+
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+    }
+
+    /**
+     * Calcule le niveau basé sur l'XP (progression exponentielle)
+     */
+    private int calculateLevelFromXP(int xp) {
+        int level = 1;
+        int required = 100; // XP requis pour niveau 2
+        int totalRequired = 0;
+
+        while (level < 10 && xp >= totalRequired + required) {
+            totalRequired += required;
+            level++;
+            required = (int) (required * 1.5); // Progression exponentielle
+        }
+
+        return level;
+    }
+
+    /**
+     * Calcule l'XP requis pour le prochain niveau
+     */
+    public int getXPForNextLevel(int currentLevel) {
+        if (currentLevel >= 10) return 0;
+
+        int required = 100;
+        int totalRequired = 0;
+
+        for (int i = 1; i < currentLevel; i++) {
+            totalRequired += required;
+            required = (int) (required * 1.5);
+        }
+
+        return totalRequired + required;
+    }
+
+    /**
+     * Gère la montée de niveau d'un métier
+     */
+    private void onProfessionLevelUp(Player player, String professionId, int newLevel) {
+        Profession profession = professions.get(professionId);
+        if (profession == null) return;
+
+        player.sendMessage("");
+        player.sendMessage("§e🎯 §lMétier: Niveau supérieur !");
+        player.sendMessage("§7" + profession.getDisplayName() + " §7→ §eNiveau " + newLevel);
+
+        // Récompenses selon le métier et niveau (à implémenter plus tard)
+        giveRewardsForLevel(player, professionId, newLevel);
+
+        player.sendMessage("");
+    }
+
+    /**
+     * Donne les récompenses de niveau (à implémenter plus tard)
+     */
+    private void giveRewardsForLevel(Player player, String professionId, int level) {
+        // Récompenses définies dans la documentation mais marquées "à venir plus tard"
+        // On peut les implémenter ici quand les systèmes de clés/cristaux seront prêts
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Pour l'instant, on donne juste des beacons comme récompense de base
+        int beaconReward = level * 10;
+        playerData.addBeacons(beaconReward);
+        player.sendMessage("§7Récompense: §e+" + beaconReward + " beacons");
+    }
+
+    /**
+     * Active un talent (dépense d'XP joueur)
+     */
+    public boolean activateTalent(Player player, String talentId, int level) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String activeProfession = playerData.getActiveProfession();
+
+        if (activeProfession == null) {
+            player.sendMessage("§cVous devez avoir un métier actif !");
+            return false;
+        }
+
+        Profession profession = professions.get(activeProfession);
+        if (profession == null) return false;
+
+        ProfessionTalent talent = profession.getTalent(talentId);
+        if (talent == null) {
+            player.sendMessage("§cTalent introuvable !");
+            return false;
+        }
+
+        // Vérification du niveau de métier requis
+        int professionLevel = playerData.getProfessionLevel(activeProfession);
+        if (professionLevel < level) {
+            player.sendMessage("§cNiveau de métier requis: §e" + level);
+            player.sendMessage("§7Votre niveau actuel: §c" + professionLevel);
+            return false;
+        }
+
+        // Vérification du niveau actuel du talent
+        int currentTalentLevel = playerData.getTalentLevel(activeProfession, talentId);
+        if (currentTalentLevel >= level) {
+            player.sendMessage("§cVous avez déjà ce niveau de talent ou supérieur !");
+            return false;
+        }
+
+        // Calcul du coût (exponentiel)
+        long cost = calculateTalentCost(level);
+        if (playerData.getExperience() < cost) {
+            player.sendMessage("§cCoût en XP: §e" + NumberFormatter.format(cost));
+            player.sendMessage("§7Votre XP: §c" + NumberFormatter.format(playerData.getExperience()));
+            return false;
+        }
+
+        // Active le talent
+        playerData.removeExperience(cost);
+        playerData.setTalentLevel(activeProfession, talentId, level);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+        player.sendMessage("§a✅ Talent activé: §e" + talent.getDisplayName() + " §7niveau §e" + level);
+        player.sendMessage("§7Coût: §c-" + NumberFormatter.format(cost) + " XP");
+
+        return true;
+    }
+
+    /**
+     * NOUVEAU: Active un niveau de kit (dépense d'XP joueur)
+     */
+    public boolean activateKit(Player player, int level) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String activeProfession = playerData.getActiveProfession();
+
+        if (activeProfession == null) {
+            player.sendMessage("§cVous devez avoir un métier actif !");
+            return false;
+        }
+
+        // Vérification du niveau de métier requis
+        int professionLevel = playerData.getProfessionLevel(activeProfession);
+        if (professionLevel < level) {
+            player.sendMessage("§cNiveau de métier requis: §e" + level);
+            player.sendMessage("§7Votre niveau actuel: §c" + professionLevel);
+            return false;
+        }
+
+        // Vérification du niveau actuel du kit
+        int currentKitLevel = playerData.getKitLevel(activeProfession);
+        if (currentKitLevel >= level) {
+            player.sendMessage("§cVous avez déjà ce niveau de kit ou supérieur !");
+            return false;
+        }
+
+        // Calcul du coût (différent des talents)
+        long cost = calculateKitCost(level);
+        if (playerData.getExperience() < cost) {
+            player.sendMessage("§cCoût en XP: §e" + NumberFormatter.format(cost));
+            player.sendMessage("§7Votre XP: §c" + NumberFormatter.format(playerData.getExperience()));
+            return false;
+        }
+
+        // Active le kit
+        playerData.removeExperience(cost);
+        playerData.setKitLevel(activeProfession, level);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+        player.sendMessage("§a✅ Kit amélioré: §6Niveau §e" + level);
+        player.sendMessage("§7Coût: §c-" + NumberFormatter.format(cost) + " XP");
+
+        return true;
+    }
+
+    /**
+     * Calcule le coût d'un talent (exponentiel)
+     */
+    private long calculateTalentCost(int level) {
+        return (long) (1000 * Math.pow(2, level - 1)); // 1000, 2000, 4000, 8000, etc.
+    }
+
+    /**
+     * NOUVEAU: Calcule le coût d'un kit (progression différente)
+     */
+    private long calculateKitCost(int level) {
+        return (long) (2000 * Math.pow(1.8, level - 1)); // 2000, 3600, 6480, etc.
+    }
+
+    /**
+     * Obtient un métier par son ID
+     */
+    public Profession getProfession(String professionId) {
+        return professions.get(professionId.toLowerCase());
+    }
+
+    /**
+     * Obtient tous les métiers
+     */
+    public Collection<Profession> getAllProfessions() {
+        return professions.values();
+    }
+
+    // Classes internes
+
+    /**
+     * Représente un métier
+     */
+    public static class Profession {
+        private final String id;
+        private final String displayName;
+        private final String title;
+        private final String description;
+        private final List<ProfessionTalent> talents;
+
+        public Profession(String id, String displayName, String title, String description, List<ProfessionTalent> talents) {
+            this.id = id;
+            this.displayName = displayName;
+            this.title = title;
+            this.description = description;
+            this.talents = talents;
+        }
+
+        public String getId() { return id; }
+        public String getDisplayName() { return displayName; }
+        public String getTitle() { return title; }
+        public String getDescription() { return description; }
+        public List<ProfessionTalent> getTalents() { return talents; }
+
+        public ProfessionTalent getTalent(String talentId) {
+            return talents.stream().filter(t -> t.getId().equals(talentId)).findFirst().orElse(null);
+        }
+    }
+
+    /**
+     * Représente un talent de métier
+     */
+    public static class ProfessionTalent {
+        private final String id;
+        private final String displayName;
+        private final String description;
+        private final int[] values; // Valeurs pour les niveaux 1-10
+
+        public ProfessionTalent(String id, String displayName, String description, int[] values) {
+            this.id = id;
+            this.displayName = displayName;
+            this.description = description;
+            this.values = values;
+        }
+
+        public String getId() { return id; }
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+        public int[] getValues() { return values; }
+
+        public int getValueAtLevel(int level) {
+            if (level < 1 || level > values.length) return 0;
+            return values[level - 1];
+        }
+    }
+}

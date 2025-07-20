@@ -114,6 +114,10 @@ public class PlayerDataManager {
             if (tokensViaPickaxe > 0) data.setTokensViaPickaxe(tokensViaPickaxe);
             if (experienceViaPickaxe > 0) data.setExperienceViaPickaxe(experienceViaPickaxe);
 
+            //metier
+            data.setActiveProfession(config.getString("active-profession"));
+            data.setLastProfessionChange(config.getLong("last-profession-change", 0));
+
             // Enchantements
             if (config.contains("enchantments")) {
                 for (String enchName : config.getConfigurationSection("enchantments").getKeys(false)) {
@@ -179,6 +183,40 @@ public class PlayerDataManager {
                 Set<String> booksSet = new HashSet<>(books);
                 data.setPickaxeEnchantmentBook(booksSet);
             }
+
+            // Niveaux de métiers
+            if (config.contains("profession-levels")) {
+                for (String profession : config.getConfigurationSection("profession-levels").getKeys(false)) {
+                    int level = config.getInt("profession-levels." + profession);
+                    data.setProfessionLevel(profession, level);
+                }
+            }
+
+            // XP des métiers
+            if (config.contains("profession-xp")) {
+                for (String profession : config.getConfigurationSection("profession-xp").getKeys(false)) {
+                    int xp = config.getInt("profession-xp." + profession);
+                    data.setProfessionXP(profession, xp);
+                }
+            }
+
+            // Talents
+            if (config.contains("talent-levels")) {
+                for (String profession : config.getConfigurationSection("talent-levels").getKeys(false)) {
+                    for (String talent : config.getConfigurationSection("talent-levels." + profession).getKeys(false)) {
+                        int level = config.getInt("talent-levels." + profession + "." + talent);
+                        data.setTalentLevel(profession, talent, level);
+                    }
+                }
+            }
+
+            if (config.contains("kit-levels")) {
+                for (String profession : config.getConfigurationSection("kit-levels").getKeys(false)) {
+                    int level = config.getInt("kit-levels." + profession);
+                    data.setKitLevel(profession, level);
+                }
+            }
+
 
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
@@ -290,6 +328,45 @@ public class PlayerDataManager {
             Set<String> activeEnchants = data.getActiveEnchantmentBooks();
             if (!activeEnchants.isEmpty()) {
                 config.set("active-enchantments", new ArrayList<>(activeEnchants));
+            }
+
+            // Système de métiers
+            if (data.getActiveProfession() != null) {
+                config.set("active-profession", data.getActiveProfession());
+            }
+            config.set("last-profession-change", data.getLastProfessionChange());
+
+            // Niveaux de métiers
+            Map<String, Integer> professionLevels = data.getAllProfessionLevels();
+            if (!professionLevels.isEmpty()) {
+                for (Map.Entry<String, Integer> entry : professionLevels.entrySet()) {
+                    config.set("profession-levels." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            // XP des métiers
+            Map<String, Integer> professionXP = data.getAllProfessionXP();
+            if (!professionXP.isEmpty()) {
+                for (Map.Entry<String, Integer> entry : professionXP.entrySet()) {
+                    config.set("profession-xp." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            // Talents
+            Map<String, Map<String, Integer>> talentLevels = data.getAllTalentLevels();
+            if (!talentLevels.isEmpty()) {
+                for (Map.Entry<String, Map<String, Integer>> professionEntry : talentLevels.entrySet()) {
+                    for (Map.Entry<String, Integer> talentEntry : professionEntry.getValue().entrySet()) {
+                        config.set("talent-levels." + professionEntry.getKey() + "." + talentEntry.getKey(), talentEntry.getValue());
+                    }
+                }
+            }
+
+            Map<String, Integer> kitLevels = data.getAllKitLevels();
+            if (!kitLevels.isEmpty()) {
+                for (Map.Entry<String, Integer> entry : kitLevels.entrySet()) {
+                    config.set("kit-levels." + entry.getKey(), entry.getValue());
+                }
             }
 
             // Statistiques complètes

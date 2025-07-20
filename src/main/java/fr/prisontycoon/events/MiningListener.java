@@ -2,6 +2,7 @@ package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.managers.PickaxeManager;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
@@ -108,7 +109,9 @@ public class MiningListener implements Listener {
                 plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !PickaxeManager.isPickaxeBroken(player)) {
 
             blockLocation.getBlock().setType(Material.AIR);
-            playerData.addBeacons(1);
+            double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusType.BEACON_MULTIPLIER);
+            int finalBeaconGain = (int) (1*beaconBonus);
+            playerData.addBeacons(finalBeaconGain);
 
             // Effets visuels spéciaux
             blockLocation.getWorld().spawnParticle(Particle.END_ROD, blockLocation, 20, 0.5, 0.5, 0.5, 0.1);

@@ -202,6 +202,10 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7Vous pouvez maintenant miner dans les mines A à " + finalRank.toUpperCase() + "!");
             player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
+            if (finalRank.equals("f")) {
+                plugin.getProfessionManager().notifyProfessionUnlock(player);
+            }
+
             plugin.getPluginLogger().info("Rankup All effectué: " + player.getName() + " " +
                     originalRank.toUpperCase() + " → " + finalRank.toUpperCase() +
                     " (" + rankupsCount + " rankups, coût: " + totalCost + " coins)");

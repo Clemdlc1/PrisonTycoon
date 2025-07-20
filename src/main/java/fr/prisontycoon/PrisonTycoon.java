@@ -37,6 +37,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private VipManager vipManager;
     private PermissionManager permissionManager;
     private EnchantmentBookManager enchantmentBookManager;
+    private ProfessionManager professionManager;
+
 
 
     private Logger logger;
@@ -59,6 +61,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private CristalManager cristalManager;
     private CristalBonusHelper cristalBonusHelper;
     private CristalGUI cristalGUI;
+    private ProfessionGUI professionGUI;
+
 
     // 3 tâches séparées
     private ActionBarTask actionBarTask;
@@ -188,6 +192,8 @@ public final class PrisonTycoon extends JavaPlugin {
         vipManager = new VipManager(this);
         permissionManager = new PermissionManager(this); // NOUVEAU !
         enchantmentBookManager = new EnchantmentBookManager(this);
+        professionManager = new ProfessionManager(this);
+
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -208,6 +214,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pickaxeRepairGUI = new PickaxeRepairGUI(this);
         containerGUI = new ContainerGUI(this);
         containerFilterGUI = new ContainerFilterGUI(this);
+        professionGUI = new ProfessionGUI(this);
+
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -266,15 +274,21 @@ public final class PrisonTycoon extends JavaPlugin {
 
         getCommand("adminchat").setExecutor(new AdminChatCommand(this));
         getCommand("adminchat").setTabCompleter(new AdminChatCommand(this));
-        logger.info("§7- Commande /adminchat enregistrée");
 
         getCommand("vip").setExecutor(new VipCommand(this));
         getCommand("vip").setTabCompleter(new VipCommand(this));
-        logger.info("§7- Commande /vip enregistrée");
 
         getCommand("invsee").setExecutor(new InvseeCommand(this));
         getCommand("invsee").setTabCompleter(new InvseeCommand(this));
-        logger.info("§7- Commande /invsee enregistrée");
+
+        getCommand("metier").setExecutor(new MetierCommand(this));
+        getCommand("metier").setTabCompleter(new MetierCommand(this));
+
+        getCommand("changemetier").setExecutor(new ChangeMetierCommand(this));
+        getCommand("changemetier").setTabCompleter(new ChangeMetierCommand(this));
+
+        getCommand("metierxp").setExecutor(new MetierXPCommand(this));
+        getCommand("metierxp").setTabCompleter(new MetierXPCommand(this));
 
         getCommand("enchantbook").setExecutor(new EnchantmentBookCommand(this));
 
@@ -529,6 +543,20 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public PermissionManager getPermissionManager() {
         return permissionManager;
+    }
+
+    /**
+     * Obtient le gestionnaire des métiers
+     */
+    public ProfessionManager getProfessionManager() {
+        return professionManager;
+    }
+
+    /**
+     * Obtient l'interface graphique des métiers
+     */
+    public ProfessionGUI getProfessionGUI() {
+        return professionGUI;
     }
 }
 

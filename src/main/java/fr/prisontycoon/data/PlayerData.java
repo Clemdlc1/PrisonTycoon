@@ -67,6 +67,15 @@ public class PlayerData {
     private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
     private Set<String> activeEnchantmentBooks = new HashSet<>();
 
+    // Système de métiers
+    private String activeProfession; // null si aucun métier choisi
+    private long lastProfessionChange; // Timestamp du dernier changement
+    private final Map<String, Integer> professionLevels; // profession -> niveau (1-10)
+    private final Map<String, Integer> professionXP; // profession -> XP métier
+    private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
+    private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
+
+
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -102,6 +111,14 @@ public class PlayerData {
         this.pickaxeCristals = new ConcurrentHashMap<>(); // NOUVEAU
         this.sanctionHistory = new ArrayList<>();
         this.customPermissions = new HashSet<>(); // NOUVEAU
+
+        // Dans le constructeur existant de PlayerData, ajouter:
+        this.activeProfession = null;
+        this.lastProfessionChange = 0;
+        this.professionLevels = new ConcurrentHashMap<>();
+        this.professionXP = new ConcurrentHashMap<>();
+        this.talentLevels = new ConcurrentHashMap<>();
+        this.kitLevels = new ConcurrentHashMap<>();
 
 
         // Reset stats dernière minute
@@ -967,5 +984,123 @@ public class PlayerData {
      * @param type MUTE, BAN
      */
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    //metier
+    /**
+     * Obtient le métier actif du joueur
+     */
+    public String getActiveProfession() {
+        return activeProfession;
+    }
+
+    /**
+     * Définit le métier actif du joueur
+     */
+    public void setActiveProfession(String profession) {
+        this.activeProfession = profession;
+    }
+
+    /**
+     * Obtient le timestamp du dernier changement de métier
+     */
+    public long getLastProfessionChange() {
+        return lastProfessionChange;
+    }
+
+    /**
+     * Définit le timestamp du dernier changement de métier
+     */
+    public void setLastProfessionChange(long timestamp) {
+        this.lastProfessionChange = timestamp;
+    }
+
+    /**
+     * Obtient le niveau d'un métier
+     */
+    public int getProfessionLevel(String profession) {
+        return professionLevels.getOrDefault(profession, 1);
+    }
+
+    /**
+     * Définit le niveau d'un métier
+     */
+    public void setProfessionLevel(String profession, int level) {
+        professionLevels.put(profession, Math.max(1, Math.min(10, level)));
+    }
+
+    /**
+     * Obtient l'XP d'un métier
+     */
+    public int getProfessionXP(String profession) {
+        return professionXP.getOrDefault(profession, 0);
+    }
+
+    /**
+     * Définit l'XP d'un métier
+     */
+    public void setProfessionXP(String profession, int xp) {
+        professionXP.put(profession, Math.max(0, xp));
+    }
+
+    /**
+     * Obtient le niveau d'un talent spécifique
+     */
+    public int getTalentLevel(String profession, String talent) {
+        Map<String, Integer> talents = talentLevels.get(profession);
+        if (talents == null) return 0;
+        return talents.getOrDefault(talent, 0);
+    }
+
+    /**
+     * Définit le niveau d'un talent
+     */
+    public void setTalentLevel(String profession, String talent, int level) {
+        talentLevels.computeIfAbsent(profession, k -> new ConcurrentHashMap<>()).put(talent, level);
+    }
+
+    /**
+     * Obtient tous les niveaux de métiers
+     */
+    public Map<String, Integer> getAllProfessionLevels() {
+        return new HashMap<>(professionLevels);
+    }
+
+    /**
+     * Obtient tout l'XP de métiers
+     */
+    public Map<String, Integer> getAllProfessionXP() {
+        return new HashMap<>(professionXP);
+    }
+
+    /**
+     * Obtient tous les niveaux de talents
+     */
+    public Map<String, Map<String, Integer>> getAllTalentLevels() {
+        Map<String, Map<String, Integer>> result = new HashMap<>();
+        for (Map.Entry<String, Map<String, Integer>> entry : talentLevels.entrySet()) {
+            result.put(entry.getKey(), new HashMap<>(entry.getValue()));
+        }
+        return result;
+    }
+    /**
+     * NOUVEAU: Obtient tous les niveaux de kits
+     */
+    public Map<String, Integer> getAllKitLevels() {
+        return new HashMap<>(kitLevels);
+    }
+
+    /**
+     * NOUVEAU: Obtient le niveau du kit d'un métier
+     */
+    public int getKitLevel(String profession) {
+        return kitLevels.getOrDefault(profession, 0);
+    }
+
+    /**
+     * NOUVEAU: Définit le niveau du kit d'un métier
+     */
+    public void setKitLevel(String profession, int level) {
+        kitLevels.put(profession, Math.max(0, Math.min(10, level)));
     }
 }
