@@ -1,257 +1,442 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.MineData;
-import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import fr.prisontycoon.data.PlayerData;
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Gestionnaire des mines
- * CORRIGÉ : Utilisation de l'enum ChatColor pour une meilleure lisibilité.
+ * Gestionnaire des mines amélioré avec support Prestige et VIP
  */
 public class MineManager {
 
     private final PrisonTycoon plugin;
-    private final Set<String> regeneratingMines;
+    private final Map<String, MineData> mines = new ConcurrentHashMap<>();
+    private final Map<String, Long> mineResetTimes = new ConcurrentHashMap<>();
+    private final Random random = new Random();
+
+    // Types de mines
+    public enum MineType {
+        NORMAL,     // Mines A-Z normales
+        PRESTIGE,   // Mines prestige (P1, P11, etc.)
+        VIP         // Mines VIP
+    }
 
     public MineManager(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.regeneratingMines = ConcurrentHashMap.newKeySet();
-
-        plugin.getPluginLogger().info(ChatColor.GREEN + "MineManager initialisé.");
+        loadMinesFromConfig();
+        startMineResetScheduler();
     }
 
     /**
-     * Génère une mine selon sa configuration
+     * Charge toutes les mines depuis la configuration
      */
-    public boolean generateMine(String mineName, Player sender) {
-        var mineData = plugin.getConfigManager().getMineData(mineName);
-        if (mineData == null) {
-            if (sender != null) {
-                sender.sendMessage(ChatColor.RED + "Mine '" + mineName + "' introuvable dans la configuration!");
-            }
-            return false;
+    private void loadMinesFromConfig() {
+        ConfigurationSection minesSection = plugin.getConfig().getConfigurationSection("mines");
+        if (minesSection == null) {
+            plugin.getPluginLogger().warning("Aucune mine configurée!");
+            return;
         }
 
-        if (regeneratingMines.contains(mineName)) {
-            if (sender != null) {
-                sender.sendMessage(ChatColor.RED + "La mine '" + mineName + "' est déjà en cours de régénération!");
-            }
-            return false;
-        }
-
-        regeneratingMines.add(mineName);
-
-        if (sender != null) {
-            sender.sendMessage(ChatColor.GRAY + "Génération de la mine '" + mineName + "' en cours...");
-        }
-
-        // Génération asynchrone pour éviter le lag
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        for (String mineId : minesSection.getKeys(false)) {
             try {
-                long startTime = System.currentTimeMillis();
-                int blocksGenerated = generateMineBlocks(mineData);
-                long duration = System.currentTimeMillis() - startTime;
-
-                // Message de retour sur le thread principal
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    String message = ChatColor.GREEN + "Mine '" + mineName + "' générée! " +
-                            ChatColor.GRAY + "(" + NumberFormatter.format(blocksGenerated) + " blocs en " + duration + "ms)";
-
-                    if (sender != null) {
-                        sender.sendMessage(message);
-                    }
-
-                    plugin.getPluginLogger().info(message);
-                    regeneratingMines.remove(mineName);
-                });
-
+                MineData mineData = loadMineData(mineId, minesSection.getConfigurationSection(mineId));
+                if (mineData != null) {
+                    mines.put(mineId, mineData);
+                    plugin.getPluginLogger().info("Mine chargée: " + mineId + " (Type: " + mineData.getType() + ")");
+                }
             } catch (Exception e) {
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    String errorMessage = ChatColor.RED + "Erreur lors de la génération de la mine '" + mineName + "'!";
-
-                    if (sender != null) {
-                        sender.sendMessage(errorMessage);
-                    }
-
-                    plugin.getPluginLogger().severe(errorMessage);
-                    e.printStackTrace();
-                    regeneratingMines.remove(mineName);
-                });
+                plugin.getPluginLogger().severe("Erreur lors du chargement de la mine " + mineId + ": " + e.getMessage());
             }
-        });
+        }
+
+        plugin.getPluginLogger().info("Mines chargées: " + mines.size());
+    }
+
+    /**
+     * Charge les données d'une mine depuis la configuration
+     */
+    private MineData loadMineData(String mineId, ConfigurationSection section) {
+        if (section == null) return null;
+
+        // Coordonnées
+        ConfigurationSection coords = section.getConfigurationSection("coordinates");
+        if (coords == null) {
+            plugin.getPluginLogger().warning("Coordonnées manquantes pour la mine: " + mineId);
+            return null;
+        }
+
+        String worldName = section.getString("world", "world");
+        int minX = coords.getInt("min-x");
+        int minY = coords.getInt("min-y");
+        int minZ = coords.getInt("min-z");
+        int maxX = coords.getInt("max-x");
+        int maxY = coords.getInt("max-y");
+        int maxZ = coords.getInt("max-z");
+
+        // Composition des blocs
+        ConfigurationSection blocks = section.getConfigurationSection("blocks");
+        if (blocks == null) {
+            plugin.getPluginLogger().warning("Composition de blocs manquante pour la mine: " + mineId);
+            return null;
+        }
+
+        Map<Material, Double> blockComposition = new HashMap<>();
+        for (String blockName : blocks.getKeys(false)) {
+            try {
+                Material material = Material.valueOf(blockName.toUpperCase());
+                double probability = blocks.getDouble(blockName);
+                blockComposition.put(material, probability);
+            } catch (IllegalArgumentException e) {
+                plugin.getPluginLogger().warning("Matériau invalide dans la mine " + mineId + ": " + blockName);
+            }
+        }
+
+        // Informations de la mine
+        String displayName = section.getString("display-name", mineId);
+        String description = section.getString("description", "");
+        long rankupPrice = section.getLong("rankup-price", -1);
+
+        // Déterminer le type de mine
+        MineType type = determineMineType(mineId);
+
+        // Conditions d'accès spéciales
+        int requiredPrestige = section.getInt("required-prestige", -1);
+        String requiredRank = section.getString("required-rank", null);
+        String requiredPermission = section.getString("required-permission", null);
+
+        return new MineData(mineId, worldName, minX, minY, minZ, maxX, maxY, maxZ,
+                blockComposition, displayName, description, rankupPrice, type,
+                requiredPrestige, requiredRank, requiredPermission);
+    }
+
+    /**
+     * Détermine le type d'une mine basé sur son ID
+     */
+    private MineType determineMineType(String mineId) {
+        if (mineId.startsWith("mine-prestige")) {
+            return MineType.PRESTIGE;
+        } else if (mineId.startsWith("mine-vip")) {
+            return MineType.VIP;
+        } else {
+            return MineType.NORMAL;
+        }
+    }
+
+    /**
+     * Vérifie si un joueur peut accéder à une mine
+     */
+    public boolean canAccessMine(Player player, String mineId) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) return false;
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        switch (mine.getType()) {
+            case NORMAL -> {
+                return canAccessNormalMine(player, mineId);
+            }
+            case PRESTIGE -> {
+                return canAccessPrestigeMine(player, mine, playerData);
+            }
+            case VIP -> {
+                return canAccessVipMine(player, mine);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Vérifie l'accès aux mines normales (A-Z)
+     */
+    private boolean canAccessNormalMine(Player player, String mineId) {
+        if (mineId.equals("mine-a")) return true; // Mine A toujours accessible
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Extraire la lettre de la mine
+        if (mineId.startsWith("mine-") && mineId.length() >= 6) {
+            String rank = mineId.substring(5); // Récupère la lettre après "mine-"
+            return playerData.hasMinePermission(rank);
+        }
+
+        return false;
+    }
+
+    /**
+     * Vérifie l'accès aux mines prestige
+     */
+    private boolean canAccessPrestigeMine(Player player, MineData mine, PlayerData playerData) {
+        // Vérifier le niveau de prestige requis
+        if (mine.getRequiredPrestige() > 0 && playerData.getPrestigeLevel() < mine.getRequiredPrestige()) {
+            return false;
+        }
+
+        // Vérifier le rang requis (généralement Z)
+        if (mine.getRequiredRank() != null) {
+            String currentRank = getCurrentRank(player);
+            if (!currentRank.equals(mine.getRequiredRank()) && !playerData.hasCustomPermission("specialmine.free")) {
+                return false;
+            }
+        }
 
         return true;
     }
 
     /**
+     * Vérifie l'accès aux mines VIP
+     */
+    private boolean canAccessVipMine(Player player, MineData mine) {
+        if (mine.getRequiredPermission() != null) {
+            return player.hasPermission(mine.getRequiredPermission());
+        }
+        return player.hasPermission("specialmine.vip");
+    }
+
+    /**
      * Génère les blocs d'une mine selon sa composition
      */
-    private int generateMineBlocks(MineData mineData) {
-        Location min = mineData.getMinCorner();
-        Location max = mineData.getMaxCorner();
+    public void generateMine(String mineId) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) return;
 
-        int minX = (int) Math.min(min.getX(), max.getX());
-        int maxX = (int) Math.max(min.getX(), max.getX());
-        int minY = (int) Math.min(min.getY(), max.getY());
-        int maxY = (int) Math.max(min.getY(), max.getY());
-        int minZ = (int) Math.min(min.getZ(), max.getZ());
-        int maxZ = (int) Math.max(min.getZ(), max.getZ());
+        World world = Bukkit.getWorld(mine.getWorldName());
+        if (world == null) {
+            plugin.getPluginLogger().warning("Monde introuvable pour la mine: " + mineId);
+            return;
+        }
 
-        int blocksGenerated = 0;
+        // Calculer le nombre total de blocs
+        int totalBlocks = (mine.getMaxX() - mine.getMinX() + 1) *
+                (mine.getMaxY() - mine.getMinY() + 1) *
+                (mine.getMaxZ() - mine.getMinZ() + 1);
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    Location blockLocation = new Location(min.getWorld(), x, y, z);
-                    Material randomMaterial = mineData.getRandomMaterial();
+        plugin.getPluginLogger().info("Génération de la mine " + mineId + " (" + totalBlocks + " blocs)");
 
-                    // Place le bloc de manière synchrone
-                    plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        blockLocation.getBlock().setType(randomMaterial);
-                    });
-
-                    blocksGenerated++;
-
-                    // Pause occasionnelle pour éviter de surcharger le serveur
-                    if (blocksGenerated % 1000 == 0) {
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                    }
+        // Générer les blocs
+        for (int x = mine.getMinX(); x <= mine.getMaxX(); x++) {
+            for (int y = mine.getMinY(); y <= mine.getMaxY(); y++) {
+                for (int z = mine.getMinZ(); z <= mine.getMaxZ(); z++) {
+                    Block block = world.getBlockAt(x, y, z);
+                    Material material = getRandomMaterial(mine.getBlockComposition());
+                    block.setType(material);
                 }
             }
         }
 
-        return blocksGenerated;
+        // Mettre à jour le temps de reset
+        mineResetTimes.put(mineId, System.currentTimeMillis());
+        plugin.getPluginLogger().info("Mine " + mineId + " générée avec succès!");
     }
 
     /**
-     * Vérifie si un bloc peut être miné (protection des mines)
+     * Sélectionne un matériau aléatoire selon les probabilités
      */
-    public boolean canMineBlock(Location location, Player player) {
-        // Vérifie si le joueur est dans une mine
-        String mineName = plugin.getConfigManager().getPlayerMine(location);
-        if (mineName == null) {
-            // Hors mine: peut miner avec n'importe quel outil
-            return true;
-        }
+    private Material getRandomMaterial(Map<Material, Double> composition) {
+        double randomValue = random.nextDouble();
+        double cumulativeProbability = 0.0;
 
-        // Dans une mine: seule la pioche légendaire peut miner
-        var handItem = player.getInventory().getItemInMainHand();
-        return plugin.getPickaxeManager().isLegendaryPickaxe(handItem) &&
-                plugin.getPickaxeManager().isOwner(handItem, player);
-    }
-
-    /**
-     * Retourne toutes les mines configurées
-     */
-    public Set<String> getAllMineNames() {
-        return plugin.getConfigManager().getAllMines().keySet();
-    }
-
-    /**
-     * Vérifie si une mine est en cours de régénération
-     */
-    public boolean isRegenerating(String mineName) {
-        return regeneratingMines.contains(mineName);
-    }
-
-    /**
-     * Statistiques des mines
-     */
-    public Map<String, Object> getMineStats() {
-        Map<String, Object> stats = new HashMap<>();
-
-        var allMines = plugin.getConfigManager().getAllMines();
-        stats.put("total-mines", allMines.size());
-        stats.put("regenerating-mines", regeneratingMines.size());
-
-        long totalVolume = 0;
-        for (var mineData : allMines.values()) {
-            totalVolume += mineData.getVolume();
-        }
-        stats.put("total-blocks", totalVolume);
-
-        return stats;
-    }
-
-    /**
-     * NOUVEAU: Vérifie les permissions d'accès hiérarchiques pour une mine
-     */
-    public boolean hasAccessToMine(Player player, String mineName) {
-        if (mineName == null || mineName.isEmpty()) {
-            return true;
-        }
-
-        // Normalise le nom de la mine
-        String targetMine = mineName.toLowerCase();
-        if (targetMine.startsWith("mine-")) {
-            targetMine = targetMine.substring(5);
-        }
-
-        // Rang A toujours accessible
-        if (targetMine.equals("a")) {
-            return true;
-        }
-
-        // Trouve le rang le plus élevé du joueur
-        String highestRank = getPlayerHighestRank(player);
-        if (highestRank == null) {
-            return false; // Aucune permission
-        }
-
-        // LOGIQUE HIÉRARCHIQUE: compare les rangs
-        char playerRank = highestRank.charAt(0);
-        char targetRank = targetMine.charAt(0);
-
-        return targetRank <= playerRank;
-    }
-
-    /**
-     * NOUVEAU: Obtient le rang le plus élevé d'un joueur en ligne
-     */
-    public String getPlayerHighestRank(Player player) {
-        // Parcourt les rangs de z à a pour trouver le plus élevé
-        for (char c = 'z'; c >= 'a'; c--) {
-            String rank = String.valueOf(c);
-            if (player.hasPermission("specialmine.mine." + rank)) {
-                return rank;
+        for (Map.Entry<Material, Double> entry : composition.entrySet()) {
+            cumulativeProbability += entry.getValue();
+            if (randomValue <= cumulativeProbability) {
+                return entry.getKey();
             }
         }
 
-        return null; // Aucune permission trouvée
+        // Fallback vers le premier matériau si aucun n'est trouvé
+        return composition.keySet().iterator().next();
     }
 
     /**
-     * NOUVEAU: Vérifie si un joueur peut miner dans une location spécifique
+     * Téléporte un joueur vers une mine
      */
-    public boolean canMineAtLocation(Player player, Location location) {
-        // Vérifie si c'est dans une mine
-        String mineName = plugin.getConfigManager().getPlayerMine(location);
-        if (mineName == null) {
-            return true; // Hors mine, peut miner avec n'importe quel outil
-        }
-
-        // Vérifie la pioche légendaire
-        if (!canMineBlock(location, player)) {
+    public boolean teleportToMine(Player player, String mineId) {
+        if (!canAccessMine(player, mineId)) {
+            player.sendMessage("§c❌ Vous n'avez pas accès à cette mine!");
             return false;
         }
 
-        // Vérifie les permissions hiérarchiques
-        return hasAccessToMine(player, mineName);
+        MineData mine = mines.get(mineId);
+        if (mine == null) {
+            player.sendMessage("§c❌ Mine introuvable!");
+            return false;
+        }
+
+        World world = Bukkit.getWorld(mine.getWorldName());
+        if (world == null) {
+            player.sendMessage("§c❌ Monde de la mine introuvable!");
+            return false;
+        }
+
+        // Calculer le centre de la mine
+        double centerX = (mine.getMinX() + mine.getMaxX()) / 2.0 + 0.5;
+        double centerY = mine.getMaxY() + 1.0; // Au-dessus de la mine
+        double centerZ = (mine.getMinZ() + mine.getMaxZ()) / 2.0 + 0.5;
+
+        Location teleportLocation = new Location(world, centerX, centerY, centerZ);
+
+        // S'assurer qu'il y a de l'air pour le joueur
+        Block airBlock1 = teleportLocation.getBlock();
+        Block airBlock2 = teleportLocation.add(0, 1, 0).getBlock();
+
+        if (airBlock1.getType() != Material.AIR) {
+            airBlock1.setType(Material.AIR);
+        }
+        if (airBlock2.getType() != Material.AIR) {
+            airBlock2.setType(Material.AIR);
+        }
+
+        player.teleport(teleportLocation);
+        player.sendMessage("§a✅ Téléporté à la mine " + mine.getDisplayName());
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+
+        return true;
     }
+
+    /**
+     * Obtient la liste des mines accessibles pour un joueur
+     */
+    public List<MineData> getAccessibleMines(Player player) {
+        List<MineData> accessible = new ArrayList<>();
+
+        for (MineData mine : mines.values()) {
+            if (canAccessMine(player, mine.getId())) {
+                accessible.add(mine);
+            }
+        }
+
+        // Trier par ordre alphabétique/numérique
+        accessible.sort((a, b) -> {
+            // Priorité: Normal < VIP < Prestige
+            if (a.getType() != b.getType()) {
+                return a.getType().ordinal() - b.getType().ordinal();
+            }
+            return a.getId().compareToIgnoreCase(b.getId());
+        });
+
+        return accessible;
+    }
+
+    /**
+     * Obtient les informations d'une mine
+     */
+    public String getMineInfo(Player player, String mineId) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) {
+            return "§c❌ Mine introuvable!";
+        }
+
+        StringBuilder info = new StringBuilder();
+        info.append("§6📍 Informations - ").append(mine.getDisplayName()).append("\n");
+        info.append("§7Description: ").append(mine.getDescription()).append("\n");
+        info.append("§7Type: ").append(getMineTypeDisplay(mine.getType())).append("\n");
+
+        // Conditions d'accès
+        if (!canAccessMine(player, mineId)) {
+            info.append("§c🔒 ACCÈS VERROUILLÉ\n");
+
+            switch (mine.getType()) {
+                case PRESTIGE -> {
+                    if (mine.getRequiredPrestige() > 0) {
+                        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+                        info.append("§7Prestige requis: §6P").append(mine.getRequiredPrestige())
+                                .append(" §7(Actuel: P").append(playerData.getPrestigeLevel()).append(")\n");
+                    }
+                    if (mine.getRequiredRank() != null) {
+                        info.append("§7Rang requis: ").append(mine.getRequiredRank().toUpperCase()).append("\n");
+                    }
+                }
+                case VIP -> {
+                    info.append("§7Permission VIP requise\n");
+                }
+                case NORMAL -> {
+                    String currentRank = getCurrentRank(player);
+                    String requiredRank = mine.getId().replace("mine-", "");
+                    info.append("§7Rang requis: ").append(requiredRank.toUpperCase())
+                            .append(" §7(Actuel: ").append(currentRank.toUpperCase()).append(")\n");
+                }
+            }
+        } else {
+            info.append("§a✅ ACCÈS AUTORISÉ\n");
+        }
+
+        // Composition des blocs
+        info.append("§e⚒ Composition:\n");
+        for (Map.Entry<Material, Double> entry : mine.getBlockComposition().entrySet()) {
+            String materialName = entry.getKey().toString().toLowerCase().replace("_", " ");
+            double percentage = entry.getValue() * 100;
+            String percentageStr = percentage < 1 ? String.format("%.2f%%", percentage) : String.format("%.0f%%", percentage);
+            info.append("§7• ").append(materialName).append(": ").append(percentageStr).append("\n");
+        }
+
+        // Temps depuis le dernier reset
+        Long lastReset = mineResetTimes.get(mineId);
+        if (lastReset != null) {
+            long timeSince = (System.currentTimeMillis() - lastReset) / 1000 / 60; // minutes
+            info.append("§7Dernier reset: il y a ").append(timeSince).append(" minute(s)");
+        }
+
+        return info.toString();
+    }
+
+    /**
+     * Affichage du type de mine
+     */
+    private String getMineTypeDisplay(MineType type) {
+        return switch (type) {
+            case NORMAL -> "§fNormale";
+            case PRESTIGE -> "§dPrestige";
+            case VIP -> "§6VIP";
+        };
+    }
+
+    /**
+     * Obtient les mines par type
+     */
+    public List<MineData> getMinesByType(MineType type) {
+        return mines.values().stream()
+                .filter(mine -> mine.getType() == type)
+                .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
+                .toList();
+    }
+
+    /**
+     * Obtient une mine par son ID
+     */
+    public MineData getMine(String mineId) {
+        return mines.get(mineId);
+    }
+
+    /**
+     * Obtient toutes les mines
+     */
+    public Collection<MineData> getAllMines() {
+        return mines.values();
+    }
+
+    /**
+     * Lance le scheduler de reset automatique des mines
+     */
+    private void startMineResetScheduler() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Reset automatique toutes les 30 minutes
+            long currentTime = System.currentTimeMillis();
+            for (Map.Entry<String, Long> entry : mineResetTimes.entrySet()) {
+                if (currentTime - entry.getValue() >= 30 * 60 * 1000) { // 30 minutes
+                    generateMine(entry.getKey());
+                }
+            }
+        }, 20L * 60L, 20L * 60L); // Vérification chaque minute
+    }
+
+    // ==================== MÉTHODES EXISTANTES CONSERVÉES ====================
 
     /**
      * Détermine le rang et les couleurs du joueur
@@ -279,24 +464,29 @@ public class MineManager {
     public String getRankColor(String rank) {
         if (rank == null || rank.isEmpty()) return ChatColor.GRAY.toString();
 
+        // Couleur spéciale pour FREE
+        if (rank.equalsIgnoreCase("free")) {
+            return ChatColor.LIGHT_PURPLE.toString() + ChatColor.BOLD.toString(); // Violet gras
+        }
+
         char rankChar = rank.toLowerCase().charAt(0);
 
-        // Couleurs progressives de a à z
+        // Couleurs progressives de a à z (logique existante)
         return switch (rankChar) {
-            case 'a', 'b' -> ChatColor.WHITE.toString();      // Blanc (débutant)
-            case 'c', 'd' -> ChatColor.GRAY.toString();      // Gris clair
-            case 'e', 'f' -> ChatColor.DARK_GRAY.toString();      // Gris foncé
-            case 'g', 'h' -> ChatColor.DARK_GREEN.toString();      // Vert foncé
-            case 'i', 'j' -> ChatColor.GREEN.toString();      // Vert clair
-            case 'k', 'l' -> ChatColor.YELLOW.toString();      // Jaune
-            case 'm', 'n' -> ChatColor.GOLD.toString();      // Orange
-            case 'o', 'p' -> ChatColor.RED.toString();      // Rouge clair
-            case 'q', 'r' -> ChatColor.DARK_RED.toString();      // Rouge foncé
-            case 's', 't' -> ChatColor.LIGHT_PURPLE.toString();      // Rose
-            case 'u', 'v' -> ChatColor.DARK_PURPLE.toString();      // Violet
-            case 'w', 'x' -> ChatColor.BLUE.toString();      // Bleu
-            case 'y' -> ChatColor.AQUA.toString();           // Cyan
-            case 'z' -> ChatColor.GOLD.toString() + ChatColor.BOLD; // Or gras (rang maximum)
+            case 'a', 'b' -> ChatColor.WHITE.toString();
+            case 'c', 'd' -> ChatColor.GRAY.toString();
+            case 'e', 'f' -> ChatColor.DARK_GRAY.toString();
+            case 'g', 'h' -> ChatColor.DARK_GREEN.toString();
+            case 'i', 'j' -> ChatColor.GREEN.toString();
+            case 'k', 'l' -> ChatColor.YELLOW.toString();
+            case 'm', 'n' -> ChatColor.GOLD.toString();
+            case 'o', 'p' -> ChatColor.RED.toString();
+            case 'q', 'r' -> ChatColor.DARK_RED.toString();
+            case 's', 't' -> ChatColor.LIGHT_PURPLE.toString();
+            case 'u', 'v' -> ChatColor.DARK_PURPLE.toString();
+            case 'w', 'x' -> ChatColor.BLUE.toString();
+            case 'y' -> ChatColor.AQUA.toString();
+            case 'z' -> ChatColor.GOLD.toString() + ChatColor.BOLD;
             default -> ChatColor.GRAY.toString();
         };
     }
@@ -306,15 +496,109 @@ public class MineManager {
      */
     public String getCurrentRank(Player player) {
         var playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Vérifier d'abord si le joueur a le rang FREE
+        if (playerData.hasCustomPermission("specialmine.free")) {
+            return "free";
+        }
+
+        // Logique existante pour les rangs a-z
         String highestPermission = playerData.getHighestMinePermission();
         if (highestPermission == null) {
             return "a"; // Rang par défaut
         }
 
-        // NOUVEAU: Gère les permissions bukkit
         if (highestPermission.startsWith("specialmine.mine.")) {
             return highestPermission.substring("specialmine.mine.".length());
         }
         return "a";
+    }
+
+    // ==================== CLASSE INTERNE MineData ====================
+
+    /**
+     * Représente les données d'une mine
+     */
+    public static class MineData {
+        private final String id;
+        private final String worldName;
+        private final int minX, minY, minZ, maxX, maxY, maxZ;
+        private final Map<Material, Double> blockComposition;
+        private final String displayName;
+        private final String description;
+        private final long rankupPrice;
+        private final MineType type;
+        private final int requiredPrestige;
+        private final String requiredRank;
+        private final String requiredPermission;
+
+        public MineData(String id, String worldName, int minX, int minY, int minZ,
+                        int maxX, int maxY, int maxZ, Map<Material, Double> blockComposition,
+                        String displayName, String description, long rankupPrice,
+                        MineType type, int requiredPrestige, String requiredRank,
+                        String requiredPermission) {
+            this.id = id;
+            this.worldName = worldName;
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+            this.blockComposition = new HashMap<>(blockComposition);
+            this.displayName = displayName;
+            this.description = description;
+            this.rankupPrice = rankupPrice;
+            this.type = type;
+            this.requiredPrestige = requiredPrestige;
+            this.requiredRank = requiredRank;
+            this.requiredPermission = requiredPermission;
+        }
+
+        // Getters
+        public String getId() { return id; }
+        public String getWorldName() { return worldName; }
+        public int getMinX() { return minX; }
+        public int getMinY() { return minY; }
+        public int getMinZ() { return minZ; }
+        public int getMaxX() { return maxX; }
+        public int getMaxY() { return maxY; }
+        public int getMaxZ() { return maxZ; }
+        public Map<Material, Double> getBlockComposition() { return new HashMap<>(blockComposition); }
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+        public long getRankupPrice() { return rankupPrice; }
+        public MineType getType() { return type; }
+        public int getRequiredPrestige() { return requiredPrestige; }
+        public String getRequiredRank() { return requiredRank; }
+        public String getRequiredPermission() { return requiredPermission; }
+
+        /**
+         * Vérifie si la mine contient des beacons
+         */
+        public boolean hasBeacons() {
+            return blockComposition.containsKey(Material.BEACON) && blockComposition.get(Material.BEACON) > 0;
+        }
+
+        /**
+         * Obtient le taux de beacons de la mine
+         */
+        public double getBeaconRate() {
+            return blockComposition.getOrDefault(Material.BEACON, 0.0) * 100;
+        }
+
+        /**
+         * Vérifie si un point est dans la mine
+         */
+        public boolean contains(int x, int y, int z) {
+            return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
+        }
+
+        /**
+         * Calcule le volume de la mine
+         */
+        public int getVolume() {
+            return (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        }
     }
 }

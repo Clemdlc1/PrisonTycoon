@@ -126,7 +126,7 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
     private void clearAllMinePermissions(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Efface les permissions bukkit de mine (de A à Z)
+        // Retirer les permissions de mine a-z
         for (char c = 'a'; c <= 'z'; c++) {
             String minePermission = "specialmine.mine." + c;
             if (playerData.hasCustomPermission(minePermission)) {
@@ -134,7 +134,12 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             }
         }
 
-        // NOUVEAU: Garde aussi l'ancienne logique pour compatibilité
+        // Retirer la permission FREE si elle existe
+        if (playerData.hasCustomPermission("specialmine.free")) {
+            plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), "specialmine.free");
+        }
+
+        // Ancienne logique pour compatibilité
         playerData.clearMinePermissions();
     }
 
@@ -142,9 +147,23 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
      * NOUVEAU: Ajoute toutes les permissions de mine jusqu'au rang spécifié (système cumulatif)
      */
     private void addMinePermissionsUpToRank(Player player, String targetRank) {
-        char targetChar = targetRank.charAt(0);
+        // Gestion spéciale pour le rang FREE
+        if (targetRank.equalsIgnoreCase("free")) {
+            // Ajouter toutes les permissions de A à Z
+            for (char c = 'a'; c <= 'z'; c++) {
+                String minePermission = "specialmine.mine." + c;
+                plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), minePermission);
+            }
 
-        // Ajoute toutes les permissions de A jusqu'au rang cible
+            // Ajouter la permission FREE
+            plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), "specialmine.free");
+
+            plugin.getPluginLogger().info("Permissions de mine ajoutées pour " + player.getName() + ": A-Z + FREE");
+            return;
+        }
+
+        // Logique normale pour les rangs a-z
+        char targetChar = targetRank.charAt(0);
         for (char c = 'a'; c <= targetChar; c++) {
             String minePermission = "specialmine.mine." + c;
             plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), minePermission);
@@ -376,9 +395,21 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
         if (currentRank == null || currentRank.isEmpty()) {
             return "a";
         }
+
+        // Si on a déjà le rang FREE, on ne peut plus ranker
+        if (currentRank.equalsIgnoreCase("free")) {
+            return null;
+        }
+
+        // Si on est au rang Z, le prochain est FREE
+        if (currentRank.equalsIgnoreCase("z")) {
+            return "free";
+        }
+
+        // Progression normale a->b->c->...->z
         char currentChar = currentRank.charAt(0);
         if (currentChar >= 'z') {
-            return null; // Rang maximum atteint
+            return "free"; // Fallback au cas où
         }
         return String.valueOf((char) (currentChar + 1));
     }
@@ -386,8 +417,16 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
     /**
      * Obtient le prix de rankup depuis la configuration
      */
-    private long getRankupPrice(String rank) {
-        String mineName = "mine-" + rank;
+    private long getRankupPrice(String targetRank) {
+        if (targetRank == null) return -1;
+
+        // Prix spécial pour le rang FREE
+        if (targetRank.equalsIgnoreCase("free")) {
+            return plugin.getConfig().getLong("ranks.free.price", 1000000); // 1M par défaut
+        }
+
+        // Prix normal pour les autres rangs
+        String mineName = "mine-" + targetRank.toLowerCase();
         return plugin.getConfig().getLong("mines." + mineName + ".rankup-price", -1);
     }
 

@@ -38,6 +38,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private PermissionManager permissionManager;
     private EnchantmentBookManager enchantmentBookManager;
     private ProfessionManager professionManager;
+    private PrestigeManager prestigeManager; // NOUVEAU
+
 
 
 
@@ -194,6 +196,8 @@ public final class PrisonTycoon extends JavaPlugin {
         permissionManager = new PermissionManager(this); // NOUVEAU !
         enchantmentBookManager = new EnchantmentBookManager(this);
         professionManager = new ProfessionManager(this);
+        prestigeManager = new PrestigeManager(this);
+
 
 
 
@@ -287,6 +291,10 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("metier").setTabCompleter(new MetierCommand(this));
 
         getCommand("enchantbook").setExecutor(new EnchantmentBookCommand(this));
+
+        getCommand("prestige").setExecutor(new PrestigeCommand(this));
+        getCommand("prestige").setTabCompleter(new PrestigeCommand(this));
+
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -560,6 +568,10 @@ public final class PrisonTycoon extends JavaPlugin {
      */
     public ProfessionRewardsGUI getProfessionRewardsGUI() {
         return professionRewardsGUI;
+    }
+
+    public PrestigeManager getPrestigeManager() {
+        return prestigeManager;
     }
 }
 

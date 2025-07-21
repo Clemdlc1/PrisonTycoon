@@ -14,10 +14,34 @@ auto-save-interval: 300 # secondes (5 minutes)
 cache-cleanup-interval: 3000 # secondes (50 minutes)
 
 # ========================================
-#              MINES
+#         Configuration PrisonTycoon
 # ========================================
-# Configuration des mines protégées
-# Format: nom_mine -> coordonnées + composition
+# Plugin de minage avec pioche légendaire
+# Auteur: PrisonCore
+# Version: 2.0.0 - Système Prestige
+
+# ========================================
+#           OPTIONS GÉNÉRALES
+# ========================================
+
+debug: false
+auto-save-interval: 300 # secondes (5 minutes)
+cache-cleanup-interval: 3000 # secondes (50 minutes)
+
+# ========================================
+#           SYSTÈME DE RANGS
+# ========================================
+
+ranks:
+  free:
+    price: 1000000  # 1 million de coins pour atteindre le rang FREE
+    permission: "specialmine.free"
+    display-name: "§d§lFREE"
+    description: "Rang ultime permettant d'effectuer un prestige"
+
+# ========================================
+#        MINES NORMALES (A-Z)
+# ========================================
 
 mines:
   # Mine A - Mine de débutant (rang par défaut, pas de prix)
@@ -31,13 +55,16 @@ mines:
       max-y: 60
       max-z: 150
     blocks:
-      stone: 0.5
-      cobblestone: 0.3
-      coal_ore: 0.15
+      stone: 0.6
+      cobblestone: 0.25
+      coal_ore: 0.10
       iron_ore: 0.05
+    display-name: "§fMine A"
+    description: "Mine de débutant"
 
-  # Mine B - Mine intermédiaire
+  # Mine B
   mine-b:
+    world: world
     coordinates:
       min-x: -150
       min-y: 10
@@ -46,17 +73,18 @@ mines:
       max-y: 60
       max-z: 150
     blocks:
-      stone: 0.4
+      stone: 0.5
       cobblestone: 0.25
       coal_ore: 0.15
-      iron_ore: 0.1
-      gold_ore: 0.05
-      redstone_ore: 0.04
-      diamond_ore: 0.01
-    rankup-price: 1000  # 1,000 coins pour passer au rang B
+      iron_ore: 0.08
+      gold_ore: 0.02
+    rankup-price: 1000
+    display-name: "§fMine B"
+    description: "Mine débutant+"
 
-  # Mine C - Mine avancée
+  # Mine C
   mine-c:
+    world: world
     coordinates:
       min-x: 100
       min-y: 10
@@ -65,19 +93,19 @@ mines:
       max-y: 60
       max-z: -100
     blocks:
-      stone: 0.3
-      coal_ore: 0.2
-      iron_ore: 0.15
+      stone: 0.4
+      coal_ore: 0.25
+      iron_ore: 0.2
       gold_ore: 0.1
-      redstone_ore: 0.1
-      lapis_ore: 0.05
-      diamond_ore: 0.05
-      emerald_ore: 0.03
-      ancient_debris: 0.02
-    rankup-price: 5000  # 5,000 coins pour passer au rang C
+      redstone_ore: 0.04
+      diamond_ore: 0.01
+    rankup-price: 5000
+    display-name: "§fMine C"
+    description: "Mine intermédiaire"
 
-  # Mine D - Mine légendaire
+  # Mine D
   mine-d:
+    world: world
     coordinates:
       min-x: -150
       min-y: 10
@@ -86,194 +114,752 @@ mines:
       max-y: 60
       max-z: -100
     blocks:
+      stone: 0.3
       coal_ore: 0.25
       iron_ore: 0.2
       gold_ore: 0.15
-      redstone_ore: 0.1
-      lapis_ore: 0.1
-      diamond_ore: 0.1
-      emerald_ore: 0.05
-      ancient_debris: 0.05
-    rankup-price: 15000  # 15,000 coins pour passer au rang D
+      redstone_ore: 0.05
+      lapis_ore: 0.03
+      diamond_ore: 0.02
+    rankup-price: 15000
+    display-name: "§fMine D"
+    description: "Mine intermédiaire+"
 
-  # Ajout de nouvelles mines jusqu'au rang Z
+  # Mine E
   mine-e:
+    world: world
     coordinates:
       min-x: 200
       min-y: 10
-      min-z: 200
+      min-z: 100
       max-x: 250
       max-y: 60
-      max-z: 250
+      max-z: 150
     blocks:
-      coal_ore: 0.2
-      iron_ore: 0.15
+      stone: 0.25
+      coal_ore: 0.25
+      iron_ore: 0.25
       gold_ore: 0.15
-      redstone_ore: 0.1
-      lapis_ore: 0.1
-      diamond_ore: 0.15
-      emerald_ore: 0.1
-      ancient_debris: 0.05
-    rankup-price: 50000  # 50,000 coins
+      redstone_ore: 0.05
+      lapis_ore: 0.03
+      diamond_ore: 0.02
+    rankup-price: 50000
+    display-name: "§8Mine E"
+    description: "Mine avancée"
 
+  # Mine F
   mine-f:
+    world: world
     coordinates:
       min-x: -250
       min-y: 10
-      min-z: 200
+      min-z: 100
       max-x: -200
       max-y: 60
-      max-z: 250
+      max-z: 150
     blocks:
-      iron_ore: 0.1
-      gold_ore: 0.2
-      redstone_ore: 0.15
-      lapis_ore: 0.1
-      diamond_ore: 0.2
-      emerald_ore: 0.15
-      ancient_debris: 0.1
-    rankup-price: 125000  # 125,000 coins
+      stone: 0.2
+      coal_ore: 0.25
+      iron_ore: 0.25
+      gold_ore: 0.18
+      redstone_ore: 0.06
+      lapis_ore: 0.03
+      diamond_ore: 0.03
+    rankup-price: 100000
+    display-name: "§8Mine F"
+    description: "Mine avancée+"
 
+  # Mine G
   mine-g:
+    world: world
     coordinates:
-      min-x: 200
+      min-x: 100
       min-y: 10
       min-z: -250
-      max-x: 250
+      max-x: 150
       max-y: 60
       max-z: -200
     blocks:
-      gold_ore: 0.25
-      redstone_ore: 0.15
-      lapis_ore: 0.1
-      diamond_ore: 0.25
-      emerald_ore: 0.15
-      ancient_debris: 0.1
-    rankup-price: 300000  # 300,000 coins
-
-  # Continuer avec des prix exponentiels pour les autres rangs...
-  mine-h:
-    coordinates:
-      min-x: -250
-      min-y: 10
-      min-z: -250
-      max-x: -200
-      max-y: 60
-      max-z: -200
-    blocks:
+      stone: 0.15
+      coal_ore: 0.25
+      iron_ore: 0.25
       gold_ore: 0.2
-      redstone_ore: 0.1
-      lapis_ore: 0.1
-      diamond_ore: 0.3
-      emerald_ore: 0.2
-      ancient_debris: 0.1
-    rankup-price: 750000  # 750,000 coins
+      redstone_ore: 0.08
+      lapis_ore: 0.04
+      diamond_ore: 0.03
+    rankup-price: 250000
+    display-name: "§2Mine G"
+    description: "Mine experte"
 
+  # Mine H
+  mine-h:
+    world: world
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: -250
+      max-x: -100
+      max-y: 60
+      max-z: -200
+    blocks:
+      stone: 0.1
+      coal_ore: 0.25
+      iron_ore: 0.25
+      gold_ore: 0.22
+      redstone_ore: 0.1
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 500000
+    display-name: "§2Mine H"
+    description: "Mine experte+"
+
+  # Mine I
   mine-i:
+    world: world
     coordinates:
       min-x: 300
       min-y: 10
-      min-z: 300
+      min-z: 100
       max-x: 350
       max-y: 60
-      max-z: 350
+      max-z: 150
     blocks:
-      gold_ore: 0.15
-      lapis_ore: 0.1
-      diamond_ore: 0.35
-      emerald_ore: 0.25
-      ancient_debris: 0.15
-    rankup-price: 1500000  # 1.5M coins
+      stone: 0.05
+      coal_ore: 0.25
+      iron_ore: 0.25
+      gold_ore: 0.25
+      redstone_ore: 0.12
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 1000000
+    display-name: "§aMain I"
+    description: "Mine professionnelle"
 
+  # Mine J
   mine-j:
+    world: world
     coordinates:
       min-x: -350
       min-y: 10
-      min-z: 300
+      min-z: 100
       max-x: -300
       max-y: 60
-      max-z: 350
+      max-z: 150
     blocks:
-      diamond_ore: 0.4
-      emerald_ore: 0.35
-      ancient_debris: 0.25
-    rankup-price: 3000000  # 3M coins
+      coal_ore: 0.3
+      iron_ore: 0.25
+      gold_ore: 0.25
+      redstone_ore: 0.12
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 2000000
+    display-name: "§aMine J"
+    description: "Mine professionnelle+"
 
-  # Exemple jusqu'au rang Z (les autres rangs suivent la même logique)
-  # Les prix augmentent de façon exponentielle
+  # Mine K
+  mine-k:
+    world: world
+    coordinates:
+      min-x: 100
+      min-y: 10
+      min-z: -350
+      max-x: 150
+      max-y: 60
+      max-z: -300
+    blocks:
+      coal_ore: 0.25
+      iron_ore: 0.25
+      gold_ore: 0.28
+      redstone_ore: 0.15
+      lapis_ore: 0.04
+      diamond_ore: 0.03
+    rankup-price: 5000000
+    display-name: "§eMine K"
+    description: "Mine élite"
+
+  # Mine L
+  mine-l:
+    world: world
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: -350
+      max-x: -100
+      max-y: 60
+      max-z: -300
+    blocks:
+      coal_ore: 0.2
+      iron_ore: 0.25
+      gold_ore: 0.3
+      redstone_ore: 0.17
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 10000000
+    display-name: "§eMine L"
+    description: "Mine élite+"
+
+  # Mine M
+  mine-m:
+    world: world
+    coordinates:
+      min-x: 400
+      min-y: 10
+      min-z: 100
+      max-x: 450
+      max-y: 60
+      max-z: 150
+    blocks:
+      coal_ore: 0.15
+      iron_ore: 0.25
+      gold_ore: 0.32
+      redstone_ore: 0.2
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 25000000
+    display-name: "§6Mine M"
+    description: "Mine maîtrise"
+
+  # Mine N
+  mine-n:
+    world: world
+    coordinates:
+      min-x: -450
+      min-y: 10
+      min-z: 100
+      max-x: -400
+      max-y: 60
+      max-z: 150
+    blocks:
+      coal_ore: 0.1
+      iron_ore: 0.25
+      gold_ore: 0.35
+      redstone_ore: 0.22
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 50000000
+    display-name: "§6Mine N"
+    description: "Mine maîtrise+"
+
+  # Mine O
+  mine-o:
+    world: world
+    coordinates:
+      min-x: 100
+      min-y: 10
+      min-z: -450
+      max-x: 150
+      max-y: 60
+      max-z: -400
+    blocks:
+      coal_ore: 0.05
+      iron_ore: 0.25
+      gold_ore: 0.37
+      redstone_ore: 0.25
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 100000000
+    display-name: "§cMine O"
+    description: "Mine supérieure"
+
+  # Mine P
+  mine-p:
+    world: world
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: -450
+      max-x: -100
+      max-y: 60
+      max-z: -400
+    blocks:
+      iron_ore: 0.25
+      gold_ore: 0.4
+      redstone_ore: 0.27
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 200000000
+    display-name: "§cMine P"
+    description: "Mine supérieure+"
+
+  # Mine Q
+  mine-q:
+    world: world
+    coordinates:
+      min-x: 500
+      min-y: 10
+      min-z: 100
+      max-x: 550
+      max-y: 60
+      max-z: 150
+    blocks:
+      iron_ore: 0.2
+      gold_ore: 0.42
+      redstone_ore: 0.3
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 500000000
+    display-name: "§4Mine Q"
+    description: "Mine légendaire"
+
+  # Mine R
+  mine-r:
+    world: world
+    coordinates:
+      min-x: -550
+      min-y: 10
+      min-z: 100
+      max-x: -500
+      max-y: 60
+      max-z: 150
+    blocks:
+      iron_ore: 0.15
+      gold_ore: 0.45
+      redstone_ore: 0.32
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 1000000000
+    display-name: "§4Mine R"
+    description: "Mine légendaire+"
+
+  # Mine S
+  mine-s:
+    world: world
+    coordinates:
+      min-x: 100
+      min-y: 10
+      min-z: -550
+      max-x: 150
+      max-y: 60
+      max-z: -500
+    blocks:
+      iron_ore: 0.1
+      gold_ore: 0.47
+      redstone_ore: 0.35
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 2500000000
+    display-name: "§dMine S"
+    description: "Mine mythique"
+
+  # Mine T
+  mine-t:
+    world: world
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: -550
+      max-x: -100
+      max-y: 60
+      max-z: -500
+    blocks:
+      iron_ore: 0.05
+      gold_ore: 0.5
+      redstone_ore: 0.37
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 5000000000
+    display-name: "§dMine T"
+    description: "Mine mythique+"
+
+  # Mine U
+  mine-u:
+    world: world
+    coordinates:
+      min-x: 600
+      min-y: 10
+      min-z: 100
+      max-x: 650
+      max-y: 60
+      max-z: 150
+    blocks:
+      gold_ore: 0.52
+      redstone_ore: 0.4
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 10000000000
+    display-name: "§5Mine U"
+    description: "Mine divine"
+
+  # Mine V
+  mine-v:
+    world: world
+    coordinates:
+      min-x: -650
+      min-y: 10
+      min-z: 100
+      max-x: -600
+      max-y: 60
+      max-z: 150
+    blocks:
+      gold_ore: 0.55
+      redstone_ore: 0.37
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 25000000000
+    display-name: "§5Mine V"
+    description: "Mine divine+"
+
+  # Mine W
+  mine-w:
+    world: world
+    coordinates:
+      min-x: 100
+      min-y: 10
+      min-z: -650
+      max-x: 150
+      max-y: 60
+      max-z: -600
+    blocks:
+      gold_ore: 0.57
+      redstone_ore: 0.35
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 50000000000
+    display-name: "§9Mine W"
+    description: "Mine cosmique"
+
+  # Mine X
+  mine-x:
+    world: world
+    coordinates:
+      min-x: -150
+      min-y: 10
+      min-z: -650
+      max-x: -100
+      max-y: 60
+      max-z: -600
+    blocks:
+      gold_ore: 0.6
+      redstone_ore: 0.32
+      lapis_ore: 0.05
+      diamond_ore: 0.03
+    rankup-price: 100000000000
+    display-name: "§9Mine X"
+    description: "Mine cosmique+"
+
+  # Mine Y
+  mine-y:
+    world: world
+    coordinates:
+      min-x: 700
+      min-y: 10
+      min-z: 100
+      max-x: 750
+      max-y: 60
+      max-z: 150
+    blocks:
+      gold_ore: 0.55
+      redstone_ore: 0.25
+      lapis_ore: 0.05
+      diamond_ore: 0.05
+      emerald_ore: 0.05
+      ancient_debris: 0.05
+    rankup-price: 250000000000
+    display-name: "§bMine Y"
+    description: "Mine ultime"
+
+  # Mine Z - Rang maximum avant FREE
   mine-z:
+    world: world
+    coordinates:
+      min-x: -750
+      min-y: 10
+      min-z: 100
+      max-x: -700
+      max-y: 60
+      max-z: 150
+    blocks:
+      gold_ore: 0.5
+      redstone_ore: 0.2
+      lapis_ore: 0.05
+      diamond_ore: 0.1
+      emerald_ore: 0.1
+      ancient_debris: 0.05
+    rankup-price: 500000000000
+    display-name: "§6§lMine Z"
+    description: "Mine maximum"
+
+  # ========================================
+  #            MINES PRESTIGE
+  # ========================================
+
+  # Mine Prestige I (P1+)
+  mine-prestige1:
+    world: world
+    coordinates:
+      min-x: 800
+      min-y: 10
+      min-z: 100
+      max-x: 900
+      max-y: 60
+      max-z: 200
+    blocks:
+      gold_ore: 0.4
+      diamond_ore: 0.2
+      emerald_ore: 0.15
+      ancient_debris: 0.1
+      netherite_scrap: 0.05
+      beacon: 0.001  # 0.1% de beacons
+      coal_ore: 0.099
+    display-name: "§d§lMine Prestige I"
+    description: "Mine exclusive P1+ (0.1% beacons)"
+    required-prestige: 1
+    required-rank: "z"
+
+  # Mine Prestige XI (P11+)
+  mine-prestige11:
+    world: world
+    coordinates:
+      min-x: -900
+      min-y: 10
+      min-z: 100
+      max-x: -800
+      max-y: 60
+      max-z: 200
+    blocks:
+      gold_ore: 0.35
+      diamond_ore: 0.25
+      emerald_ore: 0.2
+      ancient_debris: 0.15
+      netherite_scrap: 0.1
+      beacon: 0.005  # 0.5% de beacons
+      coal_ore: 0.095
+    display-name: "§d§lMine Prestige XI"
+    description: "Mine exclusive P11+ (0.5% beacons)"
+    required-prestige: 11
+    required-rank: "z"
+
+  # Mine Prestige XXI (P21+)
+  mine-prestige21:
+    world: world
+    coordinates:
+      min-x: 800
+      min-y: 10
+      min-z: -200
+      max-x: 900
+      max-y: 60
+      max-z: -100
+    blocks:
+      gold_ore: 0.3
+      diamond_ore: 0.3
+      emerald_ore: 0.25
+      ancient_debris: 0.2
+      netherite_scrap: 0.15
+      beacon: 0.01  # 1% de beacons
+      coal_ore: 0.09
+    display-name: "§d§lMine Prestige XXI"
+    description: "Mine exclusive P21+ (1% beacons)"
+    required-prestige: 21
+    required-rank: "z"
+
+  # Mine Prestige XXXI (P31+)
+  mine-prestige31:
+    world: world
+    coordinates:
+      min-x: -900
+      min-y: 10
+      min-z: -200
+      max-x: -800
+      max-y: 60
+      max-z: -100
+    blocks:
+      gold_ore: 0.25
+      diamond_ore: 0.35
+      emerald_ore: 0.3
+      ancient_debris: 0.25
+      netherite_scrap: 0.2
+      beacon: 0.03  # 3% de beacons
+      coal_ore: 0.07
+    display-name: "§d§lMine Prestige XXXI"
+    description: "Mine exclusive P31+ (3% beacons)"
+    required-prestige: 31
+    required-rank: "z"
+
+  # Mine Prestige XLI (P41+)
+  mine-prestige41:
+    world: world
     coordinates:
       min-x: 1000
       min-y: 10
-      min-z: 1000
-      max-x: 1050
+      min-z: 0
+      max-x: 1100
       max-y: 60
-      max-z: 1050
+      max-z: 100
     blocks:
-      emerald_ore: 0.5
-      ancient_debris: 0.5
-    rankup-price: 1000000000  # 1 milliard de coins (rang maximum)
+      gold_ore: 0.2
+      diamond_ore: 0.4
+      emerald_ore: 0.35
+      ancient_debris: 0.3
+      netherite_scrap: 0.25
+      beacon: 0.05  # 5% de beacons
+      coal_ore: 0.05
+    display-name: "§d§lMine Prestige XLI"
+    description: "Mine exclusive P41+ (5% beacons)"
+    required-prestige: 41
+    required-rank: "z"
+
+  # ========================================
+  #             MINES VIP
+  # ========================================
+
+  # Mine VIP I
+  mine-vip1:
+    world: world
+    coordinates:
+      min-x: 0
+      min-y: 10
+      min-z: 800
+      max-x: 100
+      max-y: 60
+      max-z: 900
+    blocks:
+      diamond_ore: 0.4
+      emerald_ore: 0.3
+      ancient_debris: 0.15
+      netherite_scrap: 0.1
+      beacon: 0.02  # 2% de beacons
+      gold_ore: 0.03
+    display-name: "§6§lMine VIP I"
+    description: "Mine exclusive VIP (2% beacons)"
+    required-permission: "specialmine.vip"
+
+  # Mine VIP II
+  mine-vip2:
+    world: world
+    coordinates:
+      min-x: 0
+      min-y: 10
+      min-z: -900
+      max-x: 100
+      max-y: 60
+      max-z: -800
+    blocks:
+      diamond_ore: 0.35
+      emerald_ore: 0.35
+      ancient_debris: 0.2
+      netherite_scrap: 0.15
+      beacon: 0.025  # 2.5% de beacons
+      gold_ore: 0.025
+    display-name: "§6§lMine VIP II"
+    description: "Mine exclusive VIP+ (2.5% beacons)"
+    required-permission: "specialmine.vip"
 
 # ========================================
-#          VALEURS DES BLOCS
+#        CONFIGURATION PRESTIGE
 # ========================================
-# Gains économiques par type de bloc miné
 
+prestige:
+  max-level: 50
+  confirmation-timeout: 30  # secondes
+
+  # Conditions pour effectuer un prestige
+  requirements:
+    rank: "free"
+    no-bank-savings: true
+    no-active-investments: true
+    not-in-challenge: true
+
+  # Récompenses automatiques par tranche
+  automatic-rewards:
+    p1-10:
+      tokens: 50000  # 50k × niveau
+      keys:
+        type: "rare"
+        amount: 1
+      crystals:
+        level-range: [12, 16]
+        amount: 1
+
+    p11-20:
+      tokens: 500000  # 500k × (niveau-10)
+      keys:
+        type: "legendary"
+        amount: 1
+      crystals:
+        level-range: [13, 17]
+        amount: 1
+
+    p21-30:
+      tokens: 5000000  # 5M × (niveau-20)
+      keys:
+        type: "crystal"
+        amount: 1
+      special-items:
+        p21: "autominer_iron"
+        p23: "autominer_diamond"
+        p25: "autominer_emerald,book_beaconbreaker"
+        p27: "book_thunder"
+
+    p31-40:
+      tokens: 25000000  # 25M × (niveau-30)
+      crystals:
+        level-range: [15, 19]
+        amount: 1
+      special-items:
+        p35: "book_bomber"
+        p40: "book_unbreakable"
+
+    p41-50:
+      tokens: 100000000  # 100M × (niveau-40)
+      beacons: "1000 * ((niveau-40) ^ 2)"  # 1k × (niveau-40)²
+      armor-set: true
+      sword: true
+
+# ========================================
+#      CONFIGURATION ÉCONOMIE
+# ========================================
+
+economy:
+  default-money: 0
+  default-tokens: 0
+  max-money: 999999999999999  # 999 trillions
+  max-tokens: 999999999999999
+
+# Valeurs de vente des blocs
 block-values:
-  # Blocs de base
-  stone:
-    coins: 5
-    tokens: 2
-    experience: 10
+  coal_ore: 10
+  iron_ore: 25
+  gold_ore: 50
+  redstone_ore: 75
+  lapis_ore: 100
+  diamond_ore: 250
+  emerald_ore: 500
+  ancient_debris: 1000
+  netherite_scrap: 2000
+  beacon: 50000  # Beacons valent très cher
+  stone: 1
+  cobblestone: 1
 
-  cobblestone:
-    coins: 3
-    tokens: 1
-    experience: 8
+# ========================================
+#     PERMISSIONS ET GROUPES
+# ========================================
 
-  # Minerais communs
-  coal_ore:
-    coins: 15
-    tokens: 5
-    experience: 25
+permissions:
+  default-group: "joueur"
 
-  iron_ore:
-    coins: 30
-    tokens: 10
-    experience: 50
+  groups:
+    joueur:
+      prefix: "§7[Joueur]"
+      permissions:
+        - "specialmine.basic"
+        - "specialmine.rankup"
+        - "specialmine.sell"
 
-  # Minerais rares
-  gold_ore:
-    coins: 75
-    tokens: 25
-    experience: 100
+    vip:
+      prefix: "§6[VIP]"
+      permissions:
+        - "specialmine.basic"
+        - "specialmine.vip"
+        - "specialmine.rankup.auto"
+        - "specialmine.mine.vip1"
+        - "specialmine.mine.vip2"
+      inherit: ["joueur"]
 
-  redstone_ore:
-    coins: 50
-    tokens: 20
-    experience: 80
-
-  lapis_ore:
-    coins: 60
-    tokens: 25
-    experience: 90
-
-  # Minerais précieux
-  diamond_ore:
-    coins: 200
-    tokens: 75
-    experience: 300
-
-  emerald_ore:
-    coins: 300
-    tokens: 100
-    experience: 400
-
-  # Minerais légendaires
-  ancient_debris:
-    coins: 1000
-    tokens: 500
-    experience: 1500
+    admin:
+      prefix: "§c[Admin]"
+      permissions:
+        - "specialmine.*"
+      inherit: ["vip"]
 
 # ========================================
 #          ENCHANTEMENTS
@@ -634,6 +1220,17 @@ messages:
     escalator-used: "§a✨ Escalateur activé! Téléportation vers la surface."
     escalator-blocked: "§cImpossible de se téléporter: surface obstruée!"
     outside-mine-restriction: "§c⚠️ Hors mine: seuls efficacité, solidité et mobilité actifs!"
+
+  rankup:
+    success: "§a✅ Rankup réussi! Nouveau rang: {rank}"
+    insufficient-funds: "§c❌ Fonds insuffisants! Coût: {cost}"
+    max-rank: "§e⭐ Rang maximum atteint!"
+
+  prestige:
+    success: "§6🏆 Prestige {level} atteint! Félicitations!"
+    broadcast: "§6🏆 {player} a atteint le Prestige {level}!"
+    insufficient-requirements: "§c❌ Conditions non remplies pour le prestige"
+    confirmation: "§e⚠ Tapez /prestige confirmer dans les 30 secondes"
 
 # ========================================
 #         OPTIMISATIONS

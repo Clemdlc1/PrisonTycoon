@@ -1,5 +1,6 @@
 package fr.prisontycoon.data;
 
+import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.Material;
 
 import java.util.*;
@@ -75,6 +76,13 @@ public class PlayerData {
     private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
     private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
     private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
+
+//prestige
+    private int prestigeLevel = 0;
+    private final Map<PrestigeTalent, Integer> prestigeTalents = new ConcurrentHashMap<>();
+    private final Set<String> chosenSpecialRewards = ConcurrentHashMap.newKeySet(); // IDs des récompenses P5, P10, etc.
+    private final Set<String> unlockedPrestigeMines = ConcurrentHashMap.newKeySet();
+    private long lastPrestigeTime = 0; // Timestamp du dernier prestige
 
 
 
@@ -1137,5 +1145,295 @@ public class PlayerData {
             result.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
         return result;
+    }
+
+    /**
+     * Obtient le niveau de prestige du joueur
+     */
+    public int getPrestigeLevel() {
+        synchronized (dataLock) {
+            return prestigeLevel;
+        }
+    }
+
+    /**
+     * Définit le niveau de prestige du joueur
+     */
+    public void setPrestigeLevel(int level) {
+        synchronized (dataLock) {
+            this.prestigeLevel = Math.max(0, Math.min(50, level));
+        }
+    }
+
+    /**
+     * Vérifie si le joueur peut faire un prestige
+     */
+    public boolean canPrestige() {
+        synchronized (dataLock) {
+            return prestigeLevel < 50 && hasCustomPermission("specialmine.free");
+        }
+    }
+
+    /**
+     * Incrémente le niveau de prestige
+     */
+    public boolean incrementPrestige() {
+        synchronized (dataLock) {
+            if (prestigeLevel < 50) {
+                prestigeLevel++;
+                lastPrestigeTime = System.currentTimeMillis();
+                return true;
+            }
+            return false;
+        }
+    }
+
+// ==================== TALENTS DE PRESTIGE ====================
+
+    /**
+     * Ajoute un talent de prestige
+     */
+    public void addPrestigeTalent(PrestigeTalent talent) {
+        synchronized (dataLock) {
+            prestigeTalents.put(talent, prestigeTalents.getOrDefault(talent, 0) + 1);
+        }
+    }
+
+    /**
+     * Obtient le niveau d'un talent de prestige
+     */
+    public int getPrestigeTalentLevel(PrestigeTalent talent) {
+        synchronized (dataLock) {
+            return prestigeTalents.getOrDefault(talent, 0);
+        }
+    }
+
+    /**
+     * Obtient tous les talents de prestige du joueur
+     */
+    public Map<PrestigeTalent, Integer> getPrestigeTalents() {
+        synchronized (dataLock) {
+            return new HashMap<>(prestigeTalents);
+        }
+    }
+
+    /**
+     * Retire tous les talents de prestige (pour reset)
+     */
+    public void clearPrestigeTalents() {
+        synchronized (dataLock) {
+            prestigeTalents.clear();
+        }
+    }
+
+    /**
+     * Définit les talents de prestige (pour chargement)
+     */
+    public void setPrestigeTalents(Map<PrestigeTalent, Integer> talents) {
+        synchronized (dataLock) {
+            prestigeTalents.clear();
+            prestigeTalents.putAll(talents);
+        }
+    }
+
+// ==================== RÉCOMPENSES SPÉCIALES ====================
+
+    /**
+     * Marque une récompense spéciale comme choisie
+     */
+    public void addChosenSpecialReward(String rewardId) {
+        synchronized (dataLock) {
+            chosenSpecialRewards.add(rewardId);
+        }
+    }
+
+    /**
+     * Vérifie si une récompense spéciale a été choisie
+     */
+    public boolean hasChosenSpecialReward(String rewardId) {
+        synchronized (dataLock) {
+            return chosenSpecialRewards.contains(rewardId);
+        }
+    }
+
+    /**
+     * Obtient toutes les récompenses spéciales choisies
+     */
+    public Set<String> getChosenSpecialRewards() {
+        synchronized (dataLock) {
+            return new HashSet<>(chosenSpecialRewards);
+        }
+    }
+
+    /**
+     * Vérifie si le joueur peut choisir une récompense pour un niveau donné
+     */
+    public boolean canChooseRewardForPrestige(int prestigeLevel) {
+        synchronized (dataLock) {
+            if (prestigeLevel % 5 != 0) return false; // Seuls les paliers P5, P10, etc.
+
+            // Vérifier si une récompense pour ce niveau a déjà été choisie
+            String prefix = "p" + prestigeLevel + "_";
+            return chosenSpecialRewards.stream().noneMatch(reward -> reward.startsWith(prefix));
+        }
+    }
+
+// ==================== MINES PRESTIGE ====================
+
+    /**
+     * Débloque une mine prestige
+     */
+    public void unlockPrestigeMine(String mineName) {
+        synchronized (dataLock) {
+            unlockedPrestigeMines.add(mineName.toLowerCase());
+        }
+    }
+
+    /**
+     * Vérifie si une mine prestige est débloquée
+     */
+    public boolean hasUnlockedPrestigeMine(String mineName) {
+        synchronized (dataLock) {
+            return unlockedPrestigeMines.contains(mineName.toLowerCase());
+        }
+    }
+
+    /**
+     * Obtient toutes les mines prestige débloquées
+     */
+    public Set<String> getUnlockedPrestigeMines() {
+        synchronized (dataLock) {
+            return new HashSet<>(unlockedPrestigeMines);
+        }
+    }
+
+    /**
+     * Débloque automatiquement les mines selon le niveau de prestige
+     */
+    public void updateUnlockedPrestigeMines() {
+        synchronized (dataLock) {
+            if (prestigeLevel >= 1) unlockPrestigeMine("prestige1");
+            if (prestigeLevel >= 11) unlockPrestigeMine("prestige11");
+            if (prestigeLevel >= 21) unlockPrestigeMine("prestige21");
+            if (prestigeLevel >= 31) unlockPrestigeMine("prestige31");
+            if (prestigeLevel >= 41) unlockPrestigeMine("prestige41");
+        }
+    }
+
+// ==================== BONUS ET CALCULS ====================
+
+    /**
+     * Calcule le bonus Money Greed total du prestige
+     */
+    public double getPrestigeMoneyGreedBonus() {
+        synchronized (dataLock) {
+            double bonus = 0.0;
+
+            // Profit Amélioré : +3% par niveau
+            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE, 0);
+            bonus += profitLevel * 0.03;
+
+            // Profit Amélioré II : +3% d'effet Money Greed (multiplicateur)
+            int profitLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE_II, 0);
+            bonus *= (1.0 + profitLevel2 * 0.03);
+
+            return bonus;
+        }
+    }
+
+    /**
+     * Calcule le bonus Token Greed total du prestige
+     */
+    public double getPrestigeTokenGreedBonus() {
+        synchronized (dataLock) {
+            double bonus = 0.0;
+
+            // Économie Optimisée : +3% par niveau
+            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE, 0);
+            bonus += ecoLevel * 0.03;
+
+            // Économie Optimisée II : +3% d'effet Token Greed (multiplicateur)
+            int ecoLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE_II, 0);
+            bonus *= (1.0 + ecoLevel2 * 0.03);
+
+            return bonus;
+        }
+    }
+
+    /**
+     * Calcule la réduction de taxe du prestige
+     */
+    public double getPrestigeTaxReduction() {
+        synchronized (dataLock) {
+            double reduction = 0.0;
+
+            // Économie Optimisée : -1% par niveau
+            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE, 0);
+            reduction += ecoLevel * 0.01;
+
+            // Économie Optimisée II : -1% sur le taux final (multiplicateur)
+            int ecoLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE_II, 0);
+            reduction += ecoLevel2 * 0.01;
+
+            return Math.min(reduction, 0.99); // Maximum 99% de réduction
+        }
+    }
+
+    /**
+     * Calcule le bonus de prix de vente du prestige
+     */
+    public double getPrestigeSellBonus() {
+        synchronized (dataLock) {
+            double bonus = 0.0;
+
+            // Profit Amélioré : +3% prix de vente
+            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE, 0);
+            bonus += profitLevel * 0.03;
+
+            // Profit Amélioré II : +3% prix vente direct
+            int profitLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE_II, 0);
+            bonus += profitLevel2 * 0.03;
+
+            return bonus;
+        }
+    }
+
+// ==================== INFORMATIONS ====================
+
+    /**
+     * Obtient le temps du dernier prestige
+     */
+    public long getLastPrestigeTime() {
+        synchronized (dataLock) {
+            return lastPrestigeTime;
+        }
+    }
+
+    /**
+     * Obtient le nom affiché du prestige
+     */
+    public String getPrestigeDisplayName() {
+        synchronized (dataLock) {
+            if (prestigeLevel == 0) return "§7Aucun";
+            return "§6§lP" + prestigeLevel;
+        }
+    }
+
+    /**
+     * Vérifie si le joueur a atteint un prestige spécifique
+     */
+    public boolean hasReachedPrestige(int level) {
+        synchronized (dataLock) {
+            return prestigeLevel >= level;
+        }
+    }
+
+    /**
+     * Obtient le pourcentage de progression vers le prestige maximum
+     */
+    public double getPrestigeProgress() {
+        synchronized (dataLock) {
+            return (double) prestigeLevel / 50.0 * 100.0;
+        }
     }
 }
