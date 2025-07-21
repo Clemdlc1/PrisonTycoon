@@ -14,7 +14,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Commande /rankup - Système de montée en rang pour les mines A-Z (CORRIGÉ: sans rang FREE)
+ * Commande /rankup - Système de montée en rang pour les mines A-Z
+ * CORRIGÉ: Permissions non-cumulatives - seulement le rang le plus élevé
  */
 public class RankupCommand implements CommandExecutor, TabCompleter {
 
@@ -103,11 +104,8 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
         // Effectuer le rankup
         playerData.removeCoins(price);
 
-        // Effacer toutes les anciennes permissions de mine
-        clearAllMinePermissions(player);
-
-        // Ajouter toutes les permissions de mine jusqu'au nouveau rang (système cumulatif)
-        addMinePermissionsUpToRank(player, nextRank);
+        // CORRIGÉ : Donne seulement la permission du nouveau rang (pas cumulatif)
+        setMinePermissionToRank(player, nextRank);
 
         if (!silent) {
             player.sendMessage("§a✅ Rankup réussi!");
@@ -182,27 +180,10 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * CORRIGÉ: Retire toutes les permissions de mine (plus de FREE)
+     * NOUVEAU: Définit la permission de mine au rang spécifique (non-cumulatif)
+     * Remplace addMinePermissionsUpToRank() pour un système exclusif
      */
-    private void clearAllMinePermissions(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Retirer toutes les permissions de mine a-z via PermissionManager
-        for (char c = 'a'; c <= 'z'; c++) {
-            String minePermission = "specialmine.mine." + c;
-            if (playerData.hasCustomPermission(minePermission)) {
-                plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), minePermission);
-            }
-        }
-
-        // Ancienne logique pour compatibilité
-        playerData.clearMinePermissions();
-    }
-
-    /**
-     * CORRIGÉ: Ajoute toutes les permissions de mine jusqu'au rang spécifié (système cumulatif, plus de FREE)
-     */
-    private void addMinePermissionsUpToRank(Player player, String targetRank) {
+    private void setMinePermissionToRank(Player player, String targetRank) {
         // Validation du rang
         if (targetRank == null || targetRank.length() != 1) {
             plugin.getPluginLogger().warning("Rang invalide: " + targetRank);
@@ -215,13 +196,20 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Ajouter toutes les permissions de A jusqu'au rang cible via PermissionManager
-        for (char c = 'a'; c <= targetChar; c++) {
-            String minePermission = "specialmine.mine." + c;
-            plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), minePermission);
-        }
+        // CORRIGÉ : Utilise PlayerDataManager qui gère déjà la suppression des anciennes permissions
+        // et n'ajoute que la nouvelle permission
+        plugin.getPlayerDataManager().addMinePermissionToPlayer(player.getUniqueId(), targetRank);
 
-        plugin.getPluginLogger().info("Permissions de mine ajoutées pour " + player.getName() + ": A-" + targetRank.toUpperCase());
+        plugin.getPluginLogger().info("Permission de mine définie pour " + player.getName() + ": " + targetRank.toUpperCase() +
+                " (les permissions précédentes ont été supprimées)");
+    }
+
+    /**
+     * CORRIGÉ: Retire toutes les permissions de mine (plus de FREE)
+     */
+    private void clearAllMinePermissions(Player player) {
+        // Utilise la méthode du PlayerDataManager qui gère déjà la suppression
+        plugin.getPlayerDataManager().removeAllMinePermissionsFromPlayer(player.getUniqueId());
     }
 
     /**
@@ -246,49 +234,45 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
      * Effectue le maximum de rankups possibles en appelant tryRankup en boucle.
      */
     private void performMaxRankup(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String originalRank = getCurrentRank(player);
-        String finalRank = originalRank;
-        long totalCost = 0;
         int rankupsCount = 0;
+        long totalCost = 0;
 
-        // Tente de rankup en boucle jusqu'à ce que ça échoue (argent ou rang max)
-        while (tryRankup(player, true)) {
-            rankupsCount++;
+        // Boucle pour effectuer tous les rankups possibles
+        while (true) {
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            String currentRank = getCurrentRank(player);
+            String nextRank = getNextRank(currentRank);
+
+            if (nextRank == null) break; // Plus de rang disponible
+
+            long price = getRankupPrice(nextRank);
+            if (price < 0) break; // Prix non configuré
+
+            if (playerData.getCoins() < price) break; // Pas assez de coins
+
+            // Effectue le rankup silencieusement
+            if (tryRankup(player, true)) {
+                rankupsCount++;
+                totalCost += price;
+            } else {
+                break; // Une erreur est survenue
+            }
         }
 
-        // Met à jour le rang final et le coût total
-        finalRank = getCurrentRank(player);
+        // Affiche le résultat final
+        if (rankupsCount > 0) {
+            String finalRank = getCurrentRank(player);
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Recalculer le coût total
-        long cost = 0;
-        String tempRank = originalRank;
-        for (int i = 0; i < rankupsCount; i++) {
-            String next = getNextRank(tempRank);
-            if (next == null) break;
-            cost += getRankupPrice(next);
-            tempRank = next;
-        }
-        totalCost = cost;
-
-        if (rankupsCount == 0) {
-            // Si aucun rankup n'a eu lieu, on affiche le message d'erreur du premier échec.
-            tryRankup(player, false);
-        } else {
-            // Messages de succès pour /rankup all
-            player.sendMessage("§a✅ Rankup All réussi!");
-            player.sendMessage("§7Progressé de §e" + originalRank.toUpperCase() + " §7à §a" + finalRank.toUpperCase());
-            player.sendMessage("§7Nombre de rankups: §e" + rankupsCount);
+            player.sendMessage("§a✅ Rankup ALL terminé!");
+            player.sendMessage("§7Progression: §e" + originalRank.toUpperCase() + " §7→ §a" + finalRank.toUpperCase());
+            player.sendMessage("§7Rankups effectués: §a" + rankupsCount);
             player.sendMessage("§7Coût total: §c-" + NumberFormatter.format(totalCost) + " coins");
             player.sendMessage("§7Coins restants: §e" + NumberFormatter.format(playerData.getCoins()));
-            player.sendMessage("§7Vous pouvez maintenant miner dans les mines A à " + finalRank.toUpperCase() + "!");
             player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
-            if (finalRank.equals("f")) {
-                plugin.getProfessionManager().notifyProfessionUnlock(player);
-            }
-
-            // Notification spéciale pour le rang Z
+            // Notification spéciale pour rang Z
             if (finalRank.equals("z")) {
                 player.sendMessage("§6🏆 Félicitations! Vous avez atteint le rang maximum!");
                 player.sendMessage("§6✨ Vous pouvez maintenant effectuer un /prestige pour obtenir des bonus permanents!");
@@ -354,66 +338,73 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Affiche les informations de rankup du joueur
+     * Affiche les informations de rankup.
      */
     private void showRankupInfo(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String currentRank = getCurrentRank(player);
         String nextRank = getNextRank(currentRank);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        player.sendMessage("§e📊 Informations de Rankup");
-        player.sendMessage("§7Rang actuel: §e" + currentRank.toUpperCase());
-        player.sendMessage("§7Coins disponibles: §e" + NumberFormatter.format(playerData.getCoins()));
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        player.sendMessage("§6⛏ §lINFORMATIONS RANKUP");
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        player.sendMessage("§7Rang actuel: §a" + currentRank.toUpperCase());
 
-        if (nextRank == null) {
-            player.sendMessage("§a✅ Rang maximum atteint (Z)!");
-            player.sendMessage("§6🏆 Utilisez /prestige pour continuer votre progression!");
-        } else {
+        if (nextRank != null) {
             long price = getRankupPrice(nextRank);
-            player.sendMessage("§7Prochain rang: §a" + nextRank.toUpperCase());
+            player.sendMessage("§7Prochain rang: §e" + nextRank.toUpperCase());
             player.sendMessage("§7Prix: §c" + NumberFormatter.format(price) + " coins");
+            player.sendMessage("§7Vos coins: §e" + NumberFormatter.format(playerData.getCoins()) + " coins");
 
             if (playerData.getCoins() >= price) {
-                player.sendMessage("§a✅ Vous pouvez effectuer ce rankup!");
+                player.sendMessage("§a✅ Vous pouvez rankup!");
             } else {
-                long missing = price - playerData.getCoins();
-                player.sendMessage("§c❌ Coins manquants: " + NumberFormatter.format(missing));
+                long needed = price - playerData.getCoins();
+                player.sendMessage("§c❌ Il vous manque " + NumberFormatter.format(needed) + " coins");
             }
+        } else {
+            player.sendMessage("§6★ Vous êtes au rang maximum (Z)!");
+            player.sendMessage("§7Utilisez §e/prestige §7pour continuer votre progression.");
         }
 
-        // Info auto-rankup
-        if (player.hasPermission("specialmine.vip")) {
-            boolean hasAutoRankup = playerData.hasAutoRankup();
-            player.sendMessage("§7Auto-rankup: " + (hasAutoRankup ? "§a✅ Activé" : "§c❌ Désactivé"));
+        // Informations auto-rankup pour VIP
+        if (player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin")) {
+            boolean autoRankupEnabled = playerData.hasAutoRankup();
+            player.sendMessage("§7Auto-rankup VIP: " +
+                    (autoRankupEnabled ? "§a✅ Activé" : "§c❌ Désactivé"));
         }
+
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
     }
 
     /**
-     * Affiche l'aide de la commande
+     * Envoie le message d'aide.
      */
     private void sendHelpMessage(Player player) {
-        player.sendMessage("§e📋 Commandes Rankup:");
-        player.sendMessage("§7• §6/rankup §7- Monte d'un rang");
-        player.sendMessage("§7• §6/rankup all §7- Monte au maximum possible");
-        player.sendMessage("§7• §6/rankup info §7- Informations sur votre progression");
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        player.sendMessage("§6⛏ §lCOMMANDES RANKUP");
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        player.sendMessage("§e/rankup §7- Monte d'un rang");
+        player.sendMessage("§e/rankup all §7- Monte au maximum possible");
+        player.sendMessage("§e/rankup info §7- Informations sur votre progression");
 
-        if (player.hasPermission("specialmine.vip")) {
-            player.sendMessage("§e🌟 VIP:");
-            player.sendMessage("§7• §6/rankup auto §7- Active/désactive l'auto-rankup");
+        if (player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin")) {
+            player.sendMessage("§e/rankup auto §7- Active/désactive l'auto-rankup VIP");
         }
 
         if (player.hasPermission("specialmine.admin")) {
-            player.sendMessage("§c🔧 Admin:");
-            player.sendMessage("§7• §6/rankup force <joueur> <a-z> §7- Force le rang d'un joueur");
+            player.sendMessage("§c/rankup force <joueur> <rang> §7- Force un rang (admin)");
         }
+
+        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
     }
 
     /**
-     * Commande admin pour forcer le rang d'un joueur
+     * ADMIN: Force le rang d'un joueur
      */
-    public void forceRankPlayer(Player admin, String playerName, String rank) {
-        if (!admin.hasPermission("specialmine.admin")) {
-            admin.sendMessage("§c❌ Vous n'avez pas la permission!");
+    private void forceRankPlayer(Player admin, String playerName, String rank) {
+        if (playerName == null || rank == null) {
+            admin.sendMessage("§cUsage: /rankup force <joueur> <a-z>");
             return;
         }
 
@@ -429,11 +420,8 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Efface les anciennes permissions
-        clearAllMinePermissions(target);
-
-        // Ajoute les nouvelles permissions
-        addMinePermissionsUpToRank(target, rank);
+        // CORRIGÉ : Utilise la nouvelle méthode non-cumulative
+        setMinePermissionToRank(target, rank);
 
         admin.sendMessage("§a✅ Rang forcé pour " + target.getName() + ": " + rank.toUpperCase());
         target.sendMessage("§a✅ Votre rang a été défini à " + rank.toUpperCase() + " par un administrateur!");

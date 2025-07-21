@@ -42,15 +42,6 @@ public class MineData {
     private final int volume;
 
     /**
-     * Types de mines
-     */
-    public enum MineType {
-        NORMAL,     // Mines A-Z normales
-        PRESTIGE,   // Mines prestige (P1, P11, etc.)
-        VIP         // Mines VIP
-    }
-
-    /**
      * Constructeur principal
      */
     public MineData(String id, String worldName, int minX, int minY, int minZ,
@@ -236,31 +227,99 @@ public class MineData {
         };
     }
 
+    public String getId() {
+        return id;
+    }
+
     // ==================== GETTERS ====================
 
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getWorldName() { return worldName; }
-    public int getMinX() { return minX; }
-    public int getMinY() { return minY; }
-    public int getMinZ() { return minZ; }
-    public int getMaxX() { return maxX; }
-    public int getMaxY() { return maxY; }
-    public int getMaxZ() { return maxZ; }
-    public Location getMinCorner() { return minCorner != null ? minCorner.clone() : null; }
-    public Location getMaxCorner() { return maxCorner != null ? maxCorner.clone() : null; }
-    public Map<Material, Double> getBlockComposition() { return new HashMap<>(blockComposition); }
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
-    public long getRankupPrice() { return rankupPrice; }
-    public double getBeaconRate() { return beaconRate; }
-    public MineType getType() { return type; }
-    public int getRequiredPrestige() { return requiredPrestige; }
-    public String getRequiredRank() { return requiredRank; }
-    public String getRequiredPermission() { return requiredPermission; }
-    public boolean isVipOnly() { return vipOnly; }
-    public int getVolume() { return volume; }
-    public List<Material> getWeightedMaterials() { return new ArrayList<>(weightedMaterials); }
+    public String getName() {
+        return name;
+    }
+
+    public String getWorldName() {
+        return worldName;
+    }
+
+    public int getMinX() {
+        return minX;
+    }
+
+    public int getMinY() {
+        return minY;
+    }
+
+    public int getMinZ() {
+        return minZ;
+    }
+
+    public int getMaxX() {
+        return maxX;
+    }
+
+    public int getMaxY() {
+        return maxY;
+    }
+
+    public int getMaxZ() {
+        return maxZ;
+    }
+
+    public Location getMinCorner() {
+        return minCorner != null ? minCorner.clone() : null;
+    }
+
+    public Location getMaxCorner() {
+        return maxCorner != null ? maxCorner.clone() : null;
+    }
+
+    public Map<Material, Double> getBlockComposition() {
+        return new HashMap<>(blockComposition);
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public long getRankupPrice() {
+        return rankupPrice;
+    }
+
+    public double getBeaconRate() {
+        return beaconRate;
+    }
+
+    public MineType getType() {
+        return type;
+    }
+
+    public int getRequiredPrestige() {
+        return requiredPrestige;
+    }
+
+    public String getRequiredRank() {
+        return requiredRank;
+    }
+
+    public String getRequiredPermission() {
+        return requiredPermission;
+    }
+
+    public boolean isVipOnly() {
+        return vipOnly;
+    }
+
+    public int getVolume() {
+        return volume;
+    }
+
+    public List<Material> getWeightedMaterials() {
+        return new ArrayList<>(weightedMaterials);
+    }
 
     @Override
     public String toString() {
@@ -278,5 +337,14 @@ public class MineData {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    /**
+     * Types de mines
+     */
+    public enum MineType {
+        NORMAL,     // Mines A-Z normales
+        PRESTIGE,   // Mines prestige (P1, P11, etc.)
+        VIP         // Mines VIP
     }
 }

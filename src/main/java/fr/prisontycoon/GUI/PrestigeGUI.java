@@ -2,7 +2,8 @@ package fr.prisontycoon.GUI;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.prestige.*;
+import fr.prisontycoon.prestige.PrestigeReward;
+import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -24,12 +25,6 @@ import java.util.Map;
  */
 public class PrestigeGUI {
 
-    private final PrisonTycoon plugin;
-    private final NamespacedKey actionKey;
-    private final NamespacedKey prestigeLevelKey;
-    private final NamespacedKey rewardIdKey;
-    private final NamespacedKey talentKey;
-
     // Slots du menu principal
     private static final int PRESTIGE_INFO_SLOT = 13;
     private static final int REWARDS_BUTTON_SLOT = 11;
@@ -38,6 +33,11 @@ public class PrestigeGUI {
     private static final int MINES_INFO_SLOT = 22;
     private static final int HELP_SLOT = 18;
     private static final int CLOSE_SLOT = 26;
+    private final PrisonTycoon plugin;
+    private final NamespacedKey actionKey;
+    private final NamespacedKey prestigeLevelKey;
+    private final NamespacedKey rewardIdKey;
+    private final NamespacedKey talentKey;
 
     public PrestigeGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -335,7 +335,7 @@ public class PrestigeGUI {
                 lore.add("§7  • Réduction taxe: §a-" + String.format("%.1f", playerData.getPrestigeTaxReduction() * 100) + "%");
             } else {
                 lore.add("§7Aucun prestige effectué");
-                lore.add("§7Atteignez le rang §d§lFREE §7pour débloquer");
+                lore.add("§7Atteignez le rang §d§lZ §7pour débloquer");
             }
 
             meta.setLore(lore);
@@ -423,7 +423,6 @@ public class PrestigeGUI {
             meta.setDisplayName("§c🔒 Prestige Verrouillé");
             meta.setLore(List.of(
                     "§7Conditions non remplies:",
-                    "§c• Rang FREE requis",
                     "§c• Pas d'épargne active",
                     "§c• Pas d'investissement actif",
                     "§c• Ne pas être en challenge"

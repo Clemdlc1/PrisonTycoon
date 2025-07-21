@@ -6,7 +6,6 @@ import fr.prisontycoon.data.PlayerData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -487,6 +486,7 @@ public class MineManager {
 
     /**
      * NOUVEAU: Obtient le rang et sa couleur d'un joueur
+     *
      * @param player Le joueur
      * @return String[] avec [0] = rang, [1] = couleur
      */

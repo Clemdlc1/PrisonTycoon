@@ -29,12 +29,6 @@ import java.util.List;
  */
 public class ProfessionGUI {
 
-    private final PrisonTycoon plugin;
-    private final NamespacedKey actionKey;
-    private final NamespacedKey professionKey;
-    private final NamespacedKey talentKey;
-    private final NamespacedKey targetLevelKey;
-
     // Slots du menu principal (27 slots)
     private static final int ACTIVE_PROFESSION_SLOT = 13; // Centre
     private static final int TALENTS_BUTTON_SLOT = 11; // Bouton talents/kits
@@ -42,18 +36,21 @@ public class ProfessionGUI {
     private static final int REWARDS_SLOT = 15; // Récompenses
     private static final int HELP_SLOT = 18; // Aide
     private static final int CLOSE_SLOT = 26; // Fermer
-
     // Slots du menu talents/kits (54 slots) - DÉCALÉ D'UNE COLONNE À GAUCHE
     private static final int TALENT_1_COL = 2; // 2ème colonne (base)
     private static final int TALENT_2_COL = 21; // 3ème colonne (base)
     private static final int TALENT_3_COL = 22; // 4ème colonne (base)
     private static final int KIT_COL = 6; // 6ème colonne (base)
     private static final int INFO_SLOT = 49; // Centre pour infos
-
     // Navigation
     private static final int PREV_PAGE_SLOT = 48;
     private static final int NEXT_PAGE_SLOT = 50;
     private static final int BACK_SLOT = 45;
+    private final PrisonTycoon plugin;
+    private final NamespacedKey actionKey;
+    private final NamespacedKey professionKey;
+    private final NamespacedKey talentKey;
+    private final NamespacedKey targetLevelKey;
 
     public ProfessionGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -576,8 +573,8 @@ public class ProfessionGUI {
     }
 
     /**
-    * Compte les récompenses disponibles
-    */
+     * Compte les récompenses disponibles
+     */
     private int getAvailableRewardsCount(Player player, String professionId) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int professionLevel = playerData.getProfessionLevel(professionId);

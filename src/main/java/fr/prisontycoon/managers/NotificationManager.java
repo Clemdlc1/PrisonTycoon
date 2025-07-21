@@ -1,12 +1,12 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Gestionnaire amélioré des notifications avec support multi-types et gestion de durée

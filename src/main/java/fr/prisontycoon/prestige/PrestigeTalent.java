@@ -32,31 +32,6 @@ public enum PrestigeTalent {
         this.cycle = cycle;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public int getCycle() {
-        return cycle;
-    }
-
-    /**
-     * Détermine si ce talent est disponible pour un niveau de prestige donné
-     */
-    public boolean isAvailableForPrestige(int prestigeLevel) {
-        if (prestigeLevel < 1 || prestigeLevel > 50) return false;
-
-        // Les talents spéciaux (P5, P10, etc.) n'utilisent pas les talents cycliques
-        if (prestigeLevel % 5 == 0) return false;
-
-        // Vérifie si le prestige correspond au cycle de ce talent
-        return ((prestigeLevel - 1) % 4) + 1 == this.cycle;
-    }
-
     /**
      * Obtient le talent disponible pour un niveau de prestige donné
      */
@@ -80,5 +55,30 @@ public enum PrestigeTalent {
             }
         }
         return count;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public int getCycle() {
+        return cycle;
+    }
+
+    /**
+     * Détermine si ce talent est disponible pour un niveau de prestige donné
+     */
+    public boolean isAvailableForPrestige(int prestigeLevel) {
+        if (prestigeLevel < 1 || prestigeLevel > 50) return false;
+
+        // Les talents spéciaux (P5, P10, etc.) n'utilisent pas les talents cycliques
+        if (prestigeLevel % 5 == 0) return false;
+
+        // Vérifie si le prestige correspond au cycle de ce talent
+        return ((prestigeLevel - 1) % 4) + 1 == this.cycle;
     }
 }

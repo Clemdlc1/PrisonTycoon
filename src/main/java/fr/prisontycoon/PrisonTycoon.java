@@ -41,8 +41,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private PrestigeManager prestigeManager; // NOUVEAU
 
 
-
-
     private Logger logger;
 
     // SUPPRIMÉ : ScoreboardManager (maintenant intégré dans ScoreboardTask)
@@ -199,8 +197,6 @@ public final class PrisonTycoon extends JavaPlugin {
         prestigeManager = new PrestigeManager(this);
 
 
-
-
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
 
@@ -222,7 +218,6 @@ public final class PrisonTycoon extends JavaPlugin {
         professionGUI = new ProfessionGUI(this);
         professionRewardsGUI = new ProfessionRewardsGUI(this);
         prestigeGUI = new PrestigeGUI(this);
-
 
 
         logger.info("§aInterfaces graphiques initialisées.");
@@ -503,7 +498,7 @@ public final class PrisonTycoon extends JavaPlugin {
     }
 
     public RankupCommand getRankupCommand() {
-        return this.rankupCommand;
+        return rankupCommand;
     }
 
     public CristalManager getCristalManager() {
@@ -575,6 +570,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public PrestigeManager getPrestigeManager() {
         return prestigeManager;
     }
+
     public PrestigeGUI getPrestigeGUI() {
         return prestigeGUI;
     }

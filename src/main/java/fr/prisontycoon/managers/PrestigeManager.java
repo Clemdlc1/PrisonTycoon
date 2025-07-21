@@ -6,7 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Gestionnaire principal du système de prestige (CORRIGÉ: sans rang FREE)

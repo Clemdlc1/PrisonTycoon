@@ -13,25 +13,12 @@ import java.util.List;
  */
 public class PrestigeReward {
 
-    public enum RewardType {
-        TOKENS,
-        KEYS,
-        CRYSTALS,
-        AUTOMINER,
-        BOOK,
-        TITLE,
-        COSMETIC,
-        BEACONS,
-        ARMOR_SET
-    }
-
     private final String id;
     private final String displayName;
     private final String description;
     private final RewardType type;
     private final Object value; // Peut être int, String, etc. selon le type
     private final ItemStack displayItem;
-
     public PrestigeReward(String id, String displayName, String description, RewardType type, Object value, Material displayMaterial) {
         this.id = id;
         this.displayName = displayName;
@@ -56,12 +43,41 @@ public class PrestigeReward {
         return item;
     }
 
-    public String getId() { return id; }
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
-    public RewardType getType() { return type; }
-    public Object getValue() { return value; }
-    public ItemStack getDisplayItem() { return displayItem.clone(); }
+    public String getId() {
+        return id;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public RewardType getType() {
+        return type;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public ItemStack getDisplayItem() {
+        return displayItem.clone();
+    }
+
+    public enum RewardType {
+        TOKENS,
+        KEYS,
+        CRYSTALS,
+        AUTOMINER,
+        BOOK,
+        TITLE,
+        COSMETIC,
+        BEACONS,
+        ARMOR_SET
+    }
 
     /**
      * Créé les récompenses spéciales pour chaque palier

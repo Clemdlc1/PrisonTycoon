@@ -170,7 +170,7 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
                     bar.append("§7░");
                 }
             }
-            bar.append("§7] ").append("§e").append((int)((double) xp / nextLevelXP * 100)).append("%");
+            bar.append("§7] ").append("§e").append((int) ((double) xp / nextLevelXP * 100)).append("%");
             player.sendMessage(bar.toString());
         } else {
             player.sendMessage("§a[████████████████████] §e100% §a(MAX)");
@@ -309,13 +309,11 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
             }
 
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
-        }
-        else if (args.length == 2) {
+        } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("choisir") || args[0].equalsIgnoreCase("changemetier")) {
                 List<String> professions = Arrays.asList("mineur", "commercant", "guerrier");
                 StringUtil.copyPartialMatches(args[1], professions, completions);
-            }
-            else if (args[0].equalsIgnoreCase("metierxp") && sender.hasPermission("specialmine.admin")) {
+            } else if (args[0].equalsIgnoreCase("metierxp") && sender.hasPermission("specialmine.admin")) {
                 List<String> amounts = Arrays.asList("100", "500", "1000", "5000", "10000");
                 StringUtil.copyPartialMatches(args[1], amounts, completions);
             }

@@ -741,7 +741,7 @@ prestige:
         type: "rare"
         amount: 1
       crystals:
-        level-range: [12, 16]
+        level-range: [ 12, 16 ]
         amount: 1
 
     p11-20:
@@ -750,7 +750,7 @@ prestige:
         type: "legendary"
         amount: 1
       crystals:
-        level-range: [13, 17]
+        level-range: [ 13, 17 ]
         amount: 1
 
     p21-30:
@@ -767,7 +767,7 @@ prestige:
     p31-40:
       tokens: 25000000  # 25M × (niveau-30)
       crystals:
-        level-range: [15, 19]
+        level-range: [ 15, 19 ]
         amount: 1
       special-items:
         p35: "book_bomber"
@@ -827,13 +827,13 @@ permissions:
         - "specialmine.rankup.auto"
         - "specialmine.mine.vip1"
         - "specialmine.mine.vip2"
-      inherit: ["joueur"]
+      inherit: [ "joueur" ]
 
     admin:
       prefix: "§c[Admin]"
       permissions:
         - "specialmine.*"
-      inherit: ["vip"]
+      inherit: [ "vip" ]
 
 # ========================================
 #          ENCHANTEMENTS

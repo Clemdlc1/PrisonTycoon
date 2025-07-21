@@ -102,46 +102,44 @@ public class EconomyManager {
      * CORRIGÉ : Met à jour l'expérience vanilla avec formule rééquilibrée et logging
      */
     public void updateVanillaExpFromCustom(Player player, long customExp) {
-        if (customExp < 0) customExp = 0; // Sécurité
+        if (customExp < 0) customExp = 0; // Sécurité pour ne jamais avoir d'expérience négative
 
-        // CORRIGÉ : Formule logarithmique plus équilibrée
-        // niveau = log₂(customExp / 1000) + 1, mais minimum 0
-        double rawLevel = Math.log(Math.max(1, customExp / 1000.0)) / Math.log(2);
-        int vanillaLevel = Math.max(0, (int) Math.floor(rawLevel));
+        // NOUVEAU : Définissez ici la quantité d'expérience requise pour chaque niveau.
+        // Augmentez cette valeur pour rendre la progression plus longue.
+        final long EXP_PAR_NIVEAU = 5000;
 
-        // CORRIGÉ : Calcule la progression vers le niveau suivant avec la même formule logarithmique
-        long expForCurrentLevel = (long) (Math.pow(2, Math.max(0, vanillaLevel - 1)) * 1000);
-        long expForNextLevel = (long) (Math.pow(2, vanillaLevel) * 1000);
+        int vanillaLevel = (int) (customExp / EXP_PAR_NIVEAU);
 
-        // Sécurité pour éviter la division par zéro
-        if (expForNextLevel <= expForCurrentLevel) {
-            expForNextLevel = expForCurrentLevel + 1000;
-        }
+        // Calcule l'EXP nécessaire pour le niveau actuel et le suivant.
+        long expPourNiveauActuel = (long) vanillaLevel * EXP_PAR_NIVEAU;
+        long expPourNiveauSuivant = (long) (vanillaLevel + 1) * EXP_PAR_NIVEAU;
 
-        long expInCurrentLevel = Math.max(0, customExp - expForCurrentLevel);
-        long expNeededForNext = expForNextLevel - expForCurrentLevel;
+        // Calcule la quantité d'EXP accumulée dans le niveau en cours.
+        long expDansNiveauActuel = customExp - expPourNiveauActuel;
+        long expTotalPourNiveau = expPourNiveauSuivant - expPourNiveauActuel; // Ceci sera toujours égal à EXP_PAR_NIVEAU
 
-        float progress = expNeededForNext > 0 ?
-                Math.max(0.0f, Math.min(1.0f, (float) expInCurrentLevel / expNeededForNext)) : 0f;
+        // Calcule la progression en pourcentage pour la barre d'expérience.
+        float progress = (expTotalPourNiveau > 0) ?
+                Math.max(0.0f, Math.min(1.0f, (float) expDansNiveauActuel / expTotalPourNiveau)) : 0f;
 
-        // CORRIGÉ : Applique seulement si changement significatif (évite le spam)
+        // On vérifie s'il y a un changement réel pour éviter de surcharger le serveur.
         boolean shouldUpdate = false;
-
-        if (Math.abs(player.getLevel() - vanillaLevel) > 0) {
+        if (player.getLevel() != vanillaLevel) {
             shouldUpdate = true;
-        } else if (Math.abs(player.getExp() - progress) > 0.01f) {
+        } else if (Math.abs(player.getExp() - progress) > 0.01f) { // Comparaison avec une petite marge d'erreur
             shouldUpdate = true;
         }
 
         if (shouldUpdate) {
-            // NOUVEAU : Protection contre les valeurs invalides
             try {
-                player.setLevel(Math.max(0, Math.min(21863, vanillaLevel))); // Limite Minecraft
+                // Limite le niveau à la valeur maximale gérée par Minecraft (21863).
+                player.setLevel(Math.max(0, Math.min(21863, vanillaLevel)));
                 player.setExp(Math.max(0.0f, Math.min(1.0f, progress)));
 
+                // Message de log pour le débogage.
                 plugin.getPluginLogger().debug("Sync exp pour " + player.getName() + ": " +
                         "custom=" + customExp + " -> vanilla=" + vanillaLevel + " (+" +
-                        String.format("%.1f%%", progress * 100) + ") [" + expInCurrentLevel + "/" + expNeededForNext + "]");
+                        String.format("%.1f%%", progress * 100) + ") [" + expDansNiveauActuel + "/" + expTotalPourNiveau + "]");
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() +
                         ": level=" + vanillaLevel + ", exp=" + progress + " - " + e.getMessage());

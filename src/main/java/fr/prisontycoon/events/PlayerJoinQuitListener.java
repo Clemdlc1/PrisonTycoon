@@ -13,7 +13,7 @@ import org.bukkit.inventory.meta.Damageable;
 
 /**
  * Listener pour les événements de connexion/déconnexion
- * CORRIGÉ : Utilise ScoreboardTask au lieu de ScoreboardManager + ajout checkLegendaryPickaxeState
+ * CORRIGÉ : Ajout du chargement des enchantements actifs à la connexion
  */
 public class PlayerJoinQuitListener implements Listener {
 
@@ -53,6 +53,10 @@ public class PlayerJoinQuitListener implements Listener {
 
         // Charge les données du joueur
         plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // NOUVEAU : Charge les enchantements uniques actifs du joueur
+        plugin.getEnchantmentBookManager().loadActiveEnchantments(player);
+        plugin.getPluginLogger().debug("Enchantements actifs chargés pour " + player.getName());
 
         // Détermine le message personnalisé selon le rang
         String joinMessage = getJoinMessage(player);
@@ -127,10 +131,12 @@ public class PlayerJoinQuitListener implements Listener {
         // NOUVEAU : Nettoie les notifications en attente
         plugin.getNotificationManager().cleanupPlayerData(player.getUniqueId());
 
+        // NOUVEAU : Sauvegarde les enchantements actifs avant déconnexion
+        plugin.getEnchantmentBookManager().saveActiveEnchantments(player);
+
         // Décharge les données du joueur (avec sauvegarde)
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());
         plugin.getPermissionManager().removeAttachment(player);
-
 
         plugin.getPluginLogger().info("§7Joueur déconnecté: " + player.getName());
     }
@@ -151,16 +157,16 @@ public class PlayerJoinQuitListener implements Listener {
     }
 
     /**
-     * Génère le message de connexion selon le rang du joueur
+     * Génère le message de déconnexion selon le rang du joueur
      */
     private String getQuitMessage(Player player) {
         if (player.hasPermission("specialmine.admin")) {
             return null;
         } else if (player.hasPermission("specialmine.vip")) {
-            // VIP : [+] [VIP(jaune)] NOM
+            // VIP : [-] [VIP(jaune)] NOM
             return "§c[-] §e[VIP] §6" + player.getName();
         } else {
-            // Joueur normal : [+] NOM
+            // Joueur normal : [-] NOM
             return "§c[-] §7" + player.getName();
         }
     }

@@ -68,19 +68,8 @@ public class ChatListener implements Listener {
         // Traite le message
         String processedMessage = processMessage(player, message);
 
-        // Détermine le type de joueur et ses couleurs
-        String[] playerInfo = getPlayerTypeAndColors(player);
-        String playerType = playerInfo[0];
-        String playerTypeColor = playerInfo[1];
-
-        // Récupère le rang de mine et sa couleur
-        String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
-        String mineRank = rankInfo[0];
-        String mineRankColor = rankInfo[1];
-
-        // Crée le message formaté
-        TextComponent formattedMessage = createFormattedMessage(player, playerTypeColor, playerType,
-                mineRankColor, mineRank, processedMessage);
+        // Crée le message formaté avec la nouvelle méthode commune
+        TextComponent formattedMessage = createFormattedMessage(player, processedMessage);
 
         // Diffuse le message à tous les joueurs en ligne
         plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -88,7 +77,7 @@ public class ChatListener implements Listener {
         });
 
         // Log le message
-        String rawLogMessage = "[" + playerType + "] " + player.getName() + ": " + message;
+        String rawLogMessage = getPlayerPrefix(player) + " " + player.getName() + ": " + message;
         String formattedLogMessage = ChatColor.stripColor(formattedMessage.toLegacyText());
         plugin.getChatLogger().logChatMessage(player, rawLogMessage, formattedLogMessage);
 
@@ -110,149 +99,102 @@ public class ChatListener implements Listener {
 
                 if (!banData.isPermanent()) {
                     long remaining = banData.getRemainingTime();
-                    kickMessage += ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining) + "\n";
+                    kickMessage += ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining);
                 } else {
-                    kickMessage += ChatColor.GRAY + "Durée: " + ChatColor.RED + "Permanent\n";
+                    kickMessage += ChatColor.GRAY + "Durée: " + ChatColor.RED + "PERMANENT";
                 }
 
-                kickMessage += ChatColor.GRAY + "Par: " + ChatColor.YELLOW + banData.getModerator();
-
-                // Kick le joueur après un court délai
-                String finalKickMessage = kickMessage;
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if (player.isOnline()) {
-                        player.kickPlayer(finalKickMessage);
-                    }
-                }, 5L);
+                player.kickPlayer(kickMessage);
+                return;
             }
         }
+
+        // Nettoie les données du joueur s'il était en ligne
+        lastMessages.remove(player.getUniqueId());
+        lastMessageTimes.remove(player.getUniqueId());
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
+        // Nettoie les données anti-spam quand le joueur quitte
         UUID uuid = event.getPlayer().getUniqueId();
         lastMessages.remove(uuid);
         lastMessageTimes.remove(uuid);
     }
 
     /**
-     * Vérifie si un joueur peut envoyer un message
+     * NOUVELLE MÉTHODE COMMUNE - Obtient le préfixe complet du joueur selon les nouvelles spécifications
+     * Format: [TYPE] [P{niveau}] [RANG] pour chat/tab
      */
-    private boolean canPlayerChat(Player player, String message) {
-        // Vérification anti-spam
-        if (isSpamming(player, message)) {
-            player.sendMessage(ChatColor.RED + "⚠ Ralentissez ! Attendez avant d'envoyer un autre message.");
-            return false;
+    public String getPlayerPrefix(Player player) {
+        // Détermine le type de joueur et sa couleur de base
+        String playerType;
+        String playerTypeColor;
+
+        if (player.hasPermission("specialmine.admin")) {
+            playerType = "ADMIN";
+            playerTypeColor = "§4"; // Rouge foncé
+        } else if (player.hasPermission("specialmine.vip")) {
+            playerType = "VIP";
+            playerTypeColor = "§e"; // Jaune
+        } else {
+            playerType = "JOUEUR";
+            playerTypeColor = "§7"; // Gris
         }
 
-        // Vérification de la longueur du message
-        if (message.length() > 256) {
-            player.sendMessage(ChatColor.RED + "❌ Votre message est trop long (maximum 256 caractères).");
-            return false;
-        }
+        // Récupère le niveau de prestige
+        int prestigeLevel = plugin.getPrestigeManager().getPrestigeLevel(player);
 
-        // Vérification du message vide
-        return !message.trim().isEmpty();
-    }
-
-    /**
-     * Vérifie si le joueur fait du spam
-     */
-    private boolean isSpamming(Player player, String message) {
-        UUID uuid = player.getUniqueId();
-        long currentTime = System.currentTimeMillis();
-
-        // Vérification du délai entre messages
-        Long lastTime = lastMessageTimes.get(uuid);
-        if (lastTime != null && (currentTime - lastTime) < SPAM_DELAY) {
-            return true;
-        }
-
-        // Vérification de la répétition du même message
-        String lastMessage = lastMessages.get(uuid);
-        if (lastMessage != null && lastMessage.equals(message)) {
-            player.sendMessage(ChatColor.RED + "⚠ Vous ne pouvez pas envoyer le même message deux fois de suite.");
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Met à jour les données anti-spam
-     */
-    private void updateSpamData(Player player, String message) {
-        UUID uuid = player.getUniqueId();
-        lastMessages.put(uuid, message);
-        lastMessageTimes.put(uuid, System.currentTimeMillis());
-    }
-
-    /**
-     * CORRIGÉ: Traite le message (couleurs, [hand], [inv], etc.)
-     */
-    private String processMessage(Player player, String message) {
-        // Vérifie les permissions pour les couleurs
-        boolean canUseColors = player.hasPermission("specialmine.chat.colors") ||
-                player.hasPermission("specialmine.vip") ||
-                player.hasPermission("specialmine.admin");
-
-        // Applique les couleurs si autorisé
-        if (canUseColors) {
-            message = ChatColor.translateAlternateColorCodes('&', message);
-        }
-
-        // NOUVEAU: Vérifie si le message ne contient QUE des placeholders
-        String trimmedMessage = message.trim();
-        if (trimmedMessage.equals("[hand]") || trimmedMessage.equals("[inv]") ||
-                (trimmedMessage.contains("[hand]") && trimmedMessage.contains("[inv]") &&
-                        trimmedMessage.replaceAll("\\[hand\\]|\\[inv\\]", "").trim().isEmpty())) {
-
-            // Ajoute un texte par défaut pour éviter un message vide
-            if (trimmedMessage.equals("[hand]")) {
-                message = "Regarde mon objet: [hand]";
-            } else if (trimmedMessage.equals("[inv]")) {
-                message = "Voir mon inventaire: [inv]";
-            } else {
-                message = "Mon stuff: [hand] [inv]";
-            }
-
-            // Applique les couleurs après modification
-            if (canUseColors) {
-                message = ChatColor.translateAlternateColorCodes('&', message);
-            }
-        }
-
-        return message;
-    }
-
-    /**
-     * Détermine le type de joueur et ses couleurs
-     */
-    private String[] getPlayerTypeAndColors(Player player) {
-        // Utilise la méthode du MineManager pour avoir la cohérence
+        // Récupère le rang de mine actuel
         String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
+        String mineRank = rankInfo[0].toUpperCase(); // A, B, C... Z
+        String mineRankColor = rankInfo[1]; // Couleur du rang
 
-        return new String[]{rankInfo[0], rankInfo[1]};
+        // Construit le préfixe selon les spécifications
+        StringBuilder prefix = new StringBuilder();
+
+        // [TYPE] en couleur du type de joueur
+        prefix.append(playerTypeColor).append("[").append(playerType).append("]");
+
+        // [P{niveau}] seulement si prestige > 0, couleur selon prestige
+        if (prestigeLevel > 0) {
+            String prestigeColor = getPrestigeColor(prestigeLevel);
+            prefix.append(" ").append(prestigeColor).append("[P").append(prestigeLevel).append("]");
+        }
+
+        // [RANG] en couleur du rang de mine
+        prefix.append(" ").append(mineRankColor).append("[").append(mineRank).append("]");
+
+        return prefix.toString();
     }
 
     /**
-     * CORRIGÉ: Crée le message formaté avec support amélioré pour [hand] et [inv]
+     * NOUVELLE MÉTHODE COMMUNE - Obtient la couleur selon le niveau de prestige
      */
-    private TextComponent createFormattedMessage(Player player, String playerTypeColor, String playerType,
-                                                 String mineRankColor, String mineRank, String processedMessage) {
+    public String getPrestigeColor(int prestigeLevel) {
+        if (prestigeLevel >= 50) return "§c"; // Rouge - Prestige légendaire
+        if (prestigeLevel >= 40) return "§6"; // Orange - Prestige élevé
+        if (prestigeLevel >= 30) return "§d"; // Rose/Magenta - Haut prestige
+        if (prestigeLevel >= 20) return "§b"; // Cyan - Prestige moyen-haut
+        if (prestigeLevel >= 10) return "§a"; // Vert - Prestige moyen
+        if (prestigeLevel >= 5) return "§9";  // Bleu foncé - Bas prestige
+        return "§f"; // Blanc - Prestige très bas (P1-P4)
+    }
 
+    /**
+     * Crée le message formaté avec le nouveau système de préfixes
+     */
+    private TextComponent createFormattedMessage(Player player, String processedMessage) {
         TextComponent finalMessage = new TextComponent();
 
-        // Ajoute le préfixe du joueur
-        TextComponent prefix = new TextComponent();
-        if (!playerType.isEmpty()) {
-            prefix.addExtra(new TextComponent(playerTypeColor + "[" + playerType + "] "));
-        }
-        prefix.addExtra(new TextComponent(mineRankColor + "[" + mineRank + "] "));
-        prefix.addExtra(new TextComponent(player.getName() + ChatColor.WHITE + ": "));
-        finalMessage.addExtra(prefix);
+        // Ajoute le préfixe complet du joueur
+        String prefix = getPlayerPrefix(player);
+        finalMessage.addExtra(new TextComponent(prefix + " "));
 
-        // NOUVEAU: Traitement amélioré des placeholders
+        // Ajoute le nom en blanc suivi de ": "
+        finalMessage.addExtra(new TextComponent("§f" + player.getName() + ": "));
+
+        // Traitement des placeholders [hand] et [inv]
         if (processedMessage.contains("[hand]") || processedMessage.contains("[inv]")) {
             // Vérifie les permissions pour les placeholders spéciaux
             boolean canUseSpecialPlaceholders = player.hasPermission("specialmine.chat.hand") ||
@@ -269,7 +211,6 @@ public class ChatListener implements Listener {
             }
 
             // Traite le message partie par partie
-            String[] segments = processedMessage.split("(\\[hand\\]|\\[inv\\])");
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[hand\\]|\\[inv\\]");
             java.util.regex.Matcher matcher = pattern.matcher(processedMessage);
 
@@ -304,9 +245,8 @@ public class ChatListener implements Listener {
             if (!remaining.isEmpty()) {
                 finalMessage.addExtra(new TextComponent(remaining));
             }
-
         } else {
-            // Pas de placeholders spéciaux, ajoute le message tel quel
+            // Pas de placeholder spécial, ajoute le message directement
             finalMessage.addExtra(new TextComponent(processedMessage));
         }
 
@@ -314,63 +254,134 @@ public class ChatListener implements Listener {
     }
 
     /**
-     * NOUVEAU: Crée le composant pour [hand]
+     * Crée le composant pour [hand]
      */
-    private TextComponent createHandComponent(ItemStack item) {
-        TextComponent handComponent = new TextComponent(ChatColor.YELLOW + "[MAIN]");
-
-        if (item == null || item.getType() == Material.AIR) {
-            handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new TextComponent[]{new TextComponent(ChatColor.RED + "Aucun objet en main")}));
-            return handComponent;
+    private TextComponent createHandComponent(ItemStack handItem) {
+        if (handItem == null || handItem.getType() == Material.AIR) {
+            TextComponent emptyHand = new TextComponent("§7[Rien en main]");
+            emptyHand.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    new TextComponent[]{new TextComponent("§cAucun objet en main")}));
+            return emptyHand;
         }
 
-        // Construit l'hover text détaillé
+        String itemName = getItemDisplayName(handItem);
+        int amount = handItem.getAmount();
+        String displayText = amount > 1 ? itemName + " x" + amount : itemName;
+
+        TextComponent handComponent = new TextComponent("§e[" + displayText + "]");
+
+        // Crée le texte de hover détaillé
         StringBuilder hoverText = new StringBuilder();
-        hoverText.append(ChatColor.WHITE).append(item.getAmount()).append("x ");
+        hoverText.append("§6").append(itemName);
 
-        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            hoverText.append(item.getItemMeta().getDisplayName());
-        } else {
-            hoverText.append(ChatColor.WHITE).append(getItemDisplayName(item));
+        if (amount > 1) {
+            hoverText.append(" §7x").append(amount);
         }
 
-        // Ajoute les enchantements si présents
-        if (item.hasItemMeta() && item.getItemMeta().hasEnchants()) {
-            hoverText.append("\n").append(ChatColor.GRAY).append("Enchantements:");
-            item.getEnchantments().forEach((enchant, level) -> {
-                hoverText.append("\n").append(ChatColor.DARK_GRAY).append("- ").append(ChatColor.LIGHT_PURPLE).append(enchant.getKey().getKey())
-                        .append(" ").append(ChatColor.YELLOW).append("Niv.").append(level);
-            });
-        }
+        hoverText.append("\n§7Type: §f").append(handItem.getType().name().toLowerCase().replace("_", " "));
 
-        // Ajoute la lore si présente
-        if (item.hasItemMeta() && item.getItemMeta().hasLore()) {
-            hoverText.append("\n");
-            for (String loreLine : item.getItemMeta().getLore()) {
-                hoverText.append("\n").append(loreLine);
+        if (handItem.hasItemMeta() && handItem.getItemMeta().hasLore()) {
+            hoverText.append("\n\n§7Description:");
+            for (String lore : handItem.getItemMeta().getLore()) {
+                hoverText.append("\n").append(lore);
             }
         }
 
-        // CORRECTION : Utilise SHOW_TEXT au lieu de SHOW_ITEM pour éviter les bugs
-        handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+        handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM,
                 new TextComponent[]{new TextComponent(hoverText.toString())}));
 
         return handComponent;
     }
 
     /**
-     * NOUVEAU: Crée le composant pour [inv]
+     * Crée le composant pour [inv]
      */
     private TextComponent createInventoryComponent(Player player) {
-        TextComponent invComponent = new TextComponent(ChatColor.AQUA + "[INVENTAIRE]");
+        TextComponent invComponent = new TextComponent("§b[📦 Inventaire]");
 
         invComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                new TextComponent[]{new TextComponent(ChatColor.GRAY + "Cliquez pour voir l'inventaire de " + player.getName())}));
+                new TextComponent[]{new TextComponent("§7Cliquez pour voir l'inventaire de §e" + player.getName())}));
+
         invComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                 "/invsee " + player.getName()));
 
         return invComponent;
+    }
+
+    /**
+     * Vérifie si un joueur peut envoyer un message (anti-spam)
+     */
+    private boolean canPlayerChat(Player player, String message) {
+        UUID uuid = player.getUniqueId();
+        long currentTime = System.currentTimeMillis();
+
+        // Vérifie le délai anti-spam
+        if (lastMessageTimes.containsKey(uuid)) {
+            long timeSinceLastMessage = currentTime - lastMessageTimes.get(uuid);
+            if (timeSinceLastMessage < SPAM_DELAY) {
+                long remainingTime = (SPAM_DELAY - timeSinceLastMessage) / 1000;
+                player.sendMessage(ChatColor.RED + "⏳ Attendez " + remainingTime + " seconde(s) avant d'envoyer un autre message!");
+                return false;
+            }
+        }
+
+        // Vérifie la répétition de messages
+        if (lastMessages.containsKey(uuid)) {
+            String lastMessage = lastMessages.get(uuid);
+            if (lastMessage.equals(message)) {
+                player.sendMessage(ChatColor.RED + "🔄 Vous ne pouvez pas envoyer le même message deux fois de suite!");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Met à jour les données anti-spam
+     */
+    private void updateSpamData(Player player, String message) {
+        UUID uuid = player.getUniqueId();
+        lastMessages.put(uuid, message);
+        lastMessageTimes.put(uuid, System.currentTimeMillis());
+    }
+
+    /**
+     * Traite le message (couleurs, validation, etc.)
+     */
+    private String processMessage(Player player, String message) {
+        // Vérifie les permissions pour les couleurs
+        boolean canUseColors = player.hasPermission("specialmine.chat.colors") ||
+                player.hasPermission("specialmine.vip") ||
+                player.hasPermission("specialmine.admin");
+
+        // Applique les couleurs si autorisé
+        if (canUseColors) {
+            message = ChatColor.translateAlternateColorCodes('&', message);
+        }
+
+        // Vérifie si le message ne contient QUE des placeholders
+        String trimmedMessage = message.trim();
+        if (trimmedMessage.equals("[hand]") || trimmedMessage.equals("[inv]") ||
+                (trimmedMessage.contains("[hand]") && trimmedMessage.contains("[inv]") &&
+                        trimmedMessage.replaceAll("\\[hand\\]|\\[inv\\]", "").trim().isEmpty())) {
+
+            // Ajoute un texte par défaut pour éviter un message vide
+            if (trimmedMessage.equals("[hand]")) {
+                message = "Regarde mon objet: [hand]";
+            } else if (trimmedMessage.equals("[inv]")) {
+                message = "Voir mon inventaire: [inv]";
+            } else {
+                message = "Mon stuff: [hand] [inv]";
+            }
+
+            // Applique les couleurs après modification
+            if (canUseColors) {
+                message = ChatColor.translateAlternateColorCodes('&', message);
+            }
+        }
+
+        return message;
     }
 
     /**

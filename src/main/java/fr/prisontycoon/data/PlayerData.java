@@ -26,6 +26,14 @@ public class PlayerData {
     // Données thread-safe
     private final Object dataLock = new Object();
     private final List<SanctionData> sanctionHistory;
+    private final Map<String, Integer> professionLevels; // profession -> niveau (1-10)
+    private final Map<String, Integer> professionXP; // profession -> XP métier
+    private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
+    private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
+    private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
+    private final Map<PrestigeTalent, Integer> prestigeTalents = new ConcurrentHashMap<>();
+    private final Set<String> chosenSpecialRewards = ConcurrentHashMap.newKeySet(); // IDs des récompenses P5, P10, etc.
+    private final Set<String> unlockedPrestigeMines = ConcurrentHashMap.newKeySet();
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -67,23 +75,12 @@ public class PlayerData {
     private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
     private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
     private Set<String> activeEnchantmentBooks = new HashSet<>();
-
     // Système de métiers
     private String activeProfession; // null si aucun métier choisi
     private long lastProfessionChange; // Timestamp du dernier changement
-    private final Map<String, Integer> professionLevels; // profession -> niveau (1-10)
-    private final Map<String, Integer> professionXP; // profession -> XP métier
-    private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
-    private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
-    private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
-
-//prestige
+    //prestige
     private int prestigeLevel = 0;
-    private final Map<PrestigeTalent, Integer> prestigeTalents = new ConcurrentHashMap<>();
-    private final Set<String> chosenSpecialRewards = ConcurrentHashMap.newKeySet(); // IDs des récompenses P5, P10, etc.
-    private final Set<String> unlockedPrestigeMines = ConcurrentHashMap.newKeySet();
     private long lastPrestigeTime = 0; // Timestamp du dernier prestige
-
 
 
     public PlayerData(UUID playerId, String playerName) {
@@ -129,7 +126,6 @@ public class PlayerData {
         this.talentLevels = new ConcurrentHashMap<>();
         this.kitLevels = new ConcurrentHashMap<>();
         this.claimedProfessionRewards = new ConcurrentHashMap<>();
-
 
 
         // Reset stats dernière minute
@@ -986,18 +982,6 @@ public class PlayerData {
         return sanctionHistory.size();
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    /**
-     * Classe interne pour représenter une sanction
-     *
-     * @param type MUTE, BAN
-     */
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
-    //metier
     /**
      * Obtient le métier actif du joueur
      */
@@ -1011,6 +995,8 @@ public class PlayerData {
     public void setActiveProfession(String profession) {
         this.activeProfession = profession;
     }
+
+    //metier
 
     /**
      * Obtient le timestamp du dernier changement de métier
@@ -1094,6 +1080,7 @@ public class PlayerData {
         }
         return result;
     }
+
     /**
      * NOUVEAU: Obtient tous les niveaux de kits
      */
@@ -1207,8 +1194,6 @@ public class PlayerData {
         }
     }
 
-// ==================== TALENTS DE PRESTIGE ====================
-
     /**
      * Ajoute un talent de prestige
      */
@@ -1227,21 +1212,14 @@ public class PlayerData {
         }
     }
 
+// ==================== TALENTS DE PRESTIGE ====================
+
     /**
      * Obtient tous les talents de prestige du joueur
      */
     public Map<PrestigeTalent, Integer> getPrestigeTalents() {
         synchronized (dataLock) {
             return new HashMap<>(prestigeTalents);
-        }
-    }
-
-    /**
-     * Retire tous les talents de prestige (pour reset)
-     */
-    public void clearPrestigeTalents() {
-        synchronized (dataLock) {
-            prestigeTalents.clear();
         }
     }
 
@@ -1255,7 +1233,14 @@ public class PlayerData {
         }
     }
 
-// ==================== RÉCOMPENSES SPÉCIALES ====================
+    /**
+     * Retire tous les talents de prestige (pour reset)
+     */
+    public void clearPrestigeTalents() {
+        synchronized (dataLock) {
+            prestigeTalents.clear();
+        }
+    }
 
     /**
      * Marque une récompense spéciale comme choisie
@@ -1274,6 +1259,8 @@ public class PlayerData {
             return chosenSpecialRewards.contains(rewardId);
         }
     }
+
+// ==================== RÉCOMPENSES SPÉCIALES ====================
 
     /**
      * Obtient toutes les récompenses spéciales choisies
@@ -1297,8 +1284,6 @@ public class PlayerData {
         }
     }
 
-// ==================== MINES PRESTIGE ====================
-
     /**
      * Débloque une mine prestige
      */
@@ -1316,6 +1301,8 @@ public class PlayerData {
             return unlockedPrestigeMines.contains(mineName.toLowerCase());
         }
     }
+
+// ==================== MINES PRESTIGE ====================
 
     /**
      * Obtient toutes les mines prestige débloquées
@@ -1338,8 +1325,6 @@ public class PlayerData {
             if (prestigeLevel >= 41) unlockPrestigeMine("prestige41");
         }
     }
-
-// ==================== BONUS ET CALCULS ====================
 
     /**
      * Calcule le bonus Money Greed total du prestige
@@ -1379,6 +1364,8 @@ public class PlayerData {
         }
     }
 
+// ==================== BONUS ET CALCULS ====================
+
     /**
      * Calcule la réduction de taxe du prestige
      */
@@ -1417,8 +1404,6 @@ public class PlayerData {
         }
     }
 
-// ==================== INFORMATIONS ====================
-
     /**
      * Obtient le temps du dernier prestige
      */
@@ -1439,6 +1424,8 @@ public class PlayerData {
         }
     }
 
+// ==================== INFORMATIONS ====================
+
     /**
      * Vérifie si le joueur a atteint un prestige spécifique
      */
@@ -1455,5 +1442,16 @@ public class PlayerData {
         synchronized (dataLock) {
             return (double) prestigeLevel / 50.0 * 100.0;
         }
+    }
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    /**
+     * Classe interne pour représenter une sanction
+     *
+     * @param type MUTE, BAN
+     */
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

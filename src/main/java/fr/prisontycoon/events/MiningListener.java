@@ -5,9 +5,10 @@ import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.managers.PickaxeManager;
-import org.bukkit.*;
-import org.bukkit.advancement.Advancement;
-import org.bukkit.advancement.AdvancementProgress;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,13 +17,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -113,7 +112,7 @@ public class MiningListener implements Listener {
 
             blockLocation.getBlock().setType(Material.AIR);
             double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusType.BEACON_MULTIPLIER);
-            int finalBeaconGain = (int) (1*beaconBonus);
+            int finalBeaconGain = (int) (1 * beaconBonus);
             playerData.addBeacons(finalBeaconGain);
 
             // Effets visuels spéciaux

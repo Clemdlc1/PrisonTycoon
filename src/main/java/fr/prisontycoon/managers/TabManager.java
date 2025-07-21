@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
+import fr.prisontycoon.events.ChatListener;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -11,7 +12,7 @@ import org.bukkit.scoreboard.Team;
 
 /**
  * Gestionnaire pour le système de tab personnalisé avec teams de scoreboard
- * Version améliorée avec tri automatique par rang et correction des couleurs.
+ * Version corrigée utilisant la méthode commune pour le formatage des préfixes
  */
 public class TabManager {
 
@@ -21,9 +22,17 @@ public class TabManager {
     private static final String PLAYER_TEAM = "03_joueur";
     private final PrisonTycoon plugin;
     private BukkitRunnable tabUpdateTask;
+    private ChatListener chatListener; // Référence au ChatListener pour la méthode commune
 
     public TabManager(PrisonTycoon plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * NOUVEAU: Définit la référence au ChatListener pour utiliser les méthodes communes
+     */
+    public void setChatListener(ChatListener chatListener) {
+        this.chatListener = chatListener;
     }
 
     /**
@@ -117,6 +126,7 @@ public class TabManager {
                 ChatColor.AQUA + "🎟 Tokens: " + ChatColor.DARK_AQUA + NumberFormatter.format(playerData.getTokens()) + "\n" +
                 ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
                 ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
+                ChatColor.DARK_PURPLE + "🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
                 separator;
     }
 
@@ -130,6 +140,31 @@ public class TabManager {
             return "Mine " + rank;
         }
         return "Mine A";
+    }
+
+    /**
+     * NOUVEAU: Obtient l'affichage du prestige
+     */
+    private String getPrestigeDisplay(Player player) {
+        int prestigeLevel = plugin.getPrestigeManager().getPrestigeLevel(player);
+        if (prestigeLevel > 0) {
+            String prestigeColor = getPrestigeColor(prestigeLevel);
+            return prestigeColor + "P" + prestigeLevel;
+        }
+        return "§7Aucun";
+    }
+
+    /**
+     * MÉTHODE COMMUNE - Obtient la couleur selon le niveau de prestige (copiée du ChatListener)
+     */
+    private String getPrestigeColor(int prestigeLevel) {
+        if (prestigeLevel >= 50) return "§c"; // Rouge - Prestige légendaire
+        if (prestigeLevel >= 40) return "§6"; // Orange - Prestige élevé
+        if (prestigeLevel >= 30) return "§d"; // Rose/Magenta - Haut prestige
+        if (prestigeLevel >= 20) return "§b"; // Cyan - Prestige moyen-haut
+        if (prestigeLevel >= 10) return "§a"; // Vert - Prestige moyen
+        if (prestigeLevel >= 5) return "§9";  // Bleu foncé - Bas prestige
+        return "§f"; // Blanc - Prestige très bas (P1-P4)
     }
 
     /**
@@ -149,18 +184,13 @@ public class TabManager {
     }
 
     /**
-     * CORRIGÉ: Utilise ChatColor.getByChar() pour trouver la couleur à partir du code.
+     * CORRIGÉ: Met à jour une équipe de joueur avec le nouveau système de préfixes
      */
     private void updatePlayerTeam(Scoreboard scoreboard, Player player) {
-        String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
         String teamName = getTeamName(player);
 
-        String prefix = "";
-        if ("ADMIN".equals(rankInfo[0])) {
-            prefix = rankInfo[2] + "[ADMIN] "; // rankInfo[2] est déjà un code couleur (ex: "§4")
-        } else if ("VIP".equals(rankInfo[0])) {
-            prefix = rankInfo[2] + "[VIP] "; // rankInfo[2] est déjà un code couleur (ex: "§e")
-        }
+        // Utilise la méthode commune pour obtenir le préfixe complet
+        String prefix = getPlayerPrefixForTab(player);
 
         removePlayerFromAllTeams(scoreboard, player);
 
@@ -169,8 +199,71 @@ public class TabManager {
             team = scoreboard.registerNewTeam(teamName);
         }
 
-        team.setPrefix(prefix);
+        // Limite le préfixe à 16 caractères (limitation Bukkit)
+        if (prefix.length() > 16) {
+            prefix = prefix.substring(0, 16);
+        }
+
+        team.setPrefix(prefix + " ");
         team.addEntry(player.getName());
+    }
+
+    /**
+     * NOUVELLE MÉTHODE COMMUNE - Obtient le préfixe pour le tab (utilise la même logique que le chat)
+     */
+    private String getPlayerPrefixForTab(Player player) {
+        // Si chatListener est disponible, utilise sa méthode
+        if (chatListener != null) {
+            return chatListener.getPlayerPrefix(player);
+        }
+
+        // Sinon, implémentation de secours avec la même logique
+        return getPlayerPrefixFallback(player);
+    }
+
+    /**
+     * Implémentation de secours pour le préfixe (même logique que ChatListener)
+     */
+    private String getPlayerPrefixFallback(Player player) {
+        // Détermine le type de joueur et sa couleur de base
+        String playerType;
+        String playerTypeColor;
+
+        if (player.hasPermission("specialmine.admin")) {
+            playerType = "ADMIN";
+            playerTypeColor = "§4"; // Rouge foncé
+        } else if (player.hasPermission("specialmine.vip")) {
+            playerType = "VIP";
+            playerTypeColor = "§e"; // Jaune
+        } else {
+            playerType = "JOUEUR";
+            playerTypeColor = "§7"; // Gris
+        }
+
+        // Récupère le niveau de prestige
+        int prestigeLevel = plugin.getPrestigeManager().getPrestigeLevel(player);
+
+        // Récupère le rang de mine actuel
+        String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
+        String mineRank = rankInfo[0].toUpperCase(); // A, B, C... Z
+        String mineRankColor = rankInfo[1]; // Couleur du rang
+
+        // Construit le préfixe selon les spécifications
+        StringBuilder prefix = new StringBuilder();
+
+        // [TYPE] en couleur du type de joueur
+        prefix.append(playerTypeColor).append("[").append(playerType).append("]");
+
+        // [P{niveau}] seulement si prestige > 0, couleur selon prestige
+        if (prestigeLevel > 0) {
+            String prestigeColor = getPrestigeColor(prestigeLevel);
+            prefix.append(" ").append(prestigeColor).append("[P").append(prestigeLevel).append("]");
+        }
+
+        // [RANG] en couleur du rang de mine
+        prefix.append(" ").append(mineRankColor).append("[").append(mineRank).append("]");
+
+        return prefix.toString();
     }
 
     /**
@@ -238,7 +331,7 @@ public class TabManager {
     }
 
     /**
-     * CORRIGÉ: Utilise ChatColor.getByChar() et ne prend que les paramètres nécessaires.
+     * Crée une équipe si elle n'existe pas déjà
      */
     private void createTeamIfNotExists(Scoreboard scoreboard, String teamName, String nameColorCode) {
         if (scoreboard.getTeam(teamName) == null) {

@@ -3,24 +3,13 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.ContainerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
@@ -35,17 +24,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ContainerManager {
 
+    private static final int DATA_VERSION = 3;
     private final PrisonTycoon plugin;
-
     private final NamespacedKey containerKey;
     private final NamespacedKey containerTierKey;
     private final NamespacedKey containerDataKey;
     private final NamespacedKey containerUUIDKey;
-
     private final Map<String, ContainerData> containerCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<String>> playerContainers = new ConcurrentHashMap<>();
-
-    private static final int DATA_VERSION = 3;
 
     public ContainerManager(PrisonTycoon plugin) {
         this.plugin = plugin;

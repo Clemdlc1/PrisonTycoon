@@ -3,7 +3,6 @@ package fr.prisontycoon.GUI;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.ProfessionManager;
-import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -26,15 +25,14 @@ import java.util.List;
  */
 public class ProfessionRewardsGUI {
 
-    private final PrisonTycoon plugin;
-    private final NamespacedKey actionKey;
-    private final NamespacedKey professionKey;
-    private final NamespacedKey levelKey;
-
     private static final int[] LEVEL_1_TO_5_SLOTS = {11, 12, 13, 14, 15};
     private static final int[] LEVEL_6_TO_10_SLOTS = {20, 21, 22, 23, 24};
     private static final int INFO_SLOT = 4;
     private static final int BACK_SLOT = 31;
+    private final PrisonTycoon plugin;
+    private final NamespacedKey actionKey;
+    private final NamespacedKey professionKey;
+    private final NamespacedKey levelKey;
 
     public ProfessionRewardsGUI(PrisonTycoon plugin) {
         this.plugin = plugin;

@@ -113,7 +113,7 @@ public class GUIListener implements Listener {
         } else if (title.contains("🎁")) {
             plugin.getProfessionRewardsGUI().handleRewardMenuClick(player, slot, item, clickType);
         } else if (title.contains("Prestige")) {
-        plugin.getPrestigeGUI().handleClick(player, item, clickType);
+            plugin.getPrestigeGUI().handleClick(player, item, clickType);
         }
     }
 

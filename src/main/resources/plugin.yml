@@ -191,49 +191,49 @@ commands:
   prisontycoon:
     description: "Commande principale du plugin"
     usage: /prisontycoon [reload|stats|economy|top] [args...]
-    aliases: [pt, ptycoon, prison]
+    aliases: [ pt, ptycoon, prison ]
 
   rankup:
     description: "Système de montée en rang pour les mines (A-Z + FREE)"
     usage: /rankup [all|auto|info|max]
     permission: specialmine.rankup
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [randup, rank]
+    aliases: [ randup, rank ]
 
   mine:
     description: "Gérer les mines et obtenir des informations"
     usage: /mine <list|tp|info|generate|types|accessible> [nom]
     permission: specialmine.mine
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [mines, prisonmine, mina]
+    aliases: [ mines, prisonmine, mina ]
 
   prestige:
     description: "Système de prestige - Reset volontaire avec bonus permanents"
     usage: /prestige [info|récompenses|talents|effectuer|confirmer]
     permission: specialmine.prestige
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [престиж, prest]
+    aliases: [ престиж, prest ]
 
   metier:
     description: "Ouvre le menu des métiers"
     usage: /metier [info|choisir <métier>|help]
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [profession, job, trabajo]
+    aliases: [ profession, job, trabajo ]
 
   changemetier:
     description: "Change de métier (payant, cooldown)"
     usage: /changemetier <mineur|commercant|guerrier>
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [changeprofession, changejob]
+    aliases: [ changeprofession, changejob ]
 
   metierxp:
     description: "Donne de l'XP métier (admin)"
     usage: /metierxp <nombre>
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [professionxp, jobxp]
+    aliases: [ professionxp, jobxp ]
 
   # Commandes existantes conservées
   pickaxe:
@@ -241,35 +241,35 @@ commands:
     usage: /pickaxe
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [pioche]
+    aliases: [ pioche ]
 
   repair:
     description: "Ouvre le menu de réparation de la pioche légendaire"
     usage: /repair
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [fix, reparer]
+    aliases: [ fix, reparer ]
 
   sell:
     description: "Vendre des items"
     usage: /sell <all|hand>
     permission: specialmine.sell
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [vendre]
+    aliases: [ vendre ]
 
   givetokens:
     description: "Donner des tokens à un joueur (ADMIN)"
     usage: /givetokens <joueur> <quantité>
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [givetoken, addtokens]
+    aliases: [ givetoken, addtokens ]
 
   conteneur:
     description: "Obtenir et gérer les conteneurs de collecte automatique"
     usage: /conteneur <1-5|info|list>
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [container, coffre, box]
+    aliases: [ container, coffre, box ]
 
   cristal:
     description: "Gère les cristaux"
@@ -288,21 +288,21 @@ commands:
     usage: /vip <add|remove|list|check> [joueur]
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [setvip, managevip]
+    aliases: [ setvip, managevip ]
 
   invsee:
     description: "Voir l'inventaire d'un autre joueur"
     usage: /invsee <joueur>
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [inv, openinv, viewinv]
+    aliases: [ inv, openinv, viewinv ]
 
   enchantbook:
     description: "Accès au système d'enchantements uniques"
     usage: /enchantbook <joueur>"
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [livre]
+    aliases: [ livre ]
 
 # Chargement
 load: POSTWORLD
@@ -312,8 +312,8 @@ startup: POSTWORLD
 depend-bootstrap: false
 
 # Dépendances (optionnelles)
-softdepend: [Vault, PlaceholderAPI]
+softdepend: [ Vault, PlaceholderAPI ]
 
 # Site web et auteur
 website: https://github.com/prisontycoon
-authors: [PrisonCore]
+authors: [ PrisonCore ]

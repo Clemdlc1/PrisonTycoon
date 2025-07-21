@@ -23,9 +23,9 @@ public class ContainerData {
     private int totalItemsCache = 0;
     private boolean totalItemsCacheValid = false;
 
-    // Constructeurs existants restent identiques...
+    //
     public ContainerData(int tier) {
-        this(tier, new LinkedHashMap<>(), new HashSet<>(), false, getMaxDurabilityForTier(tier));
+        this(tier, new LinkedHashMap<>(), new HashSet<>(), true, getMaxDurabilityForTier(tier));
     }
 
     public ContainerData(int tier, Map<ItemStack, Integer> contents, Set<Material> whitelist, boolean sellEnabled, int durability) {
@@ -37,6 +37,17 @@ public class ContainerData {
         this.sellEnabled = sellEnabled;
         this.durability = Math.max(0, Math.min(maxDurability, durability));
         invalidateTotalItemsCache();
+    }
+
+    public static int getMaxDurabilityForTier(int tier) {
+        return switch (tier) {
+            case 1 -> 50;
+            case 2 -> 100;
+            case 3 -> 200;
+            case 4 -> 400;
+            case 5 -> 800;
+            default -> 25;
+        };
     }
 
     private void invalidateTotalItemsCache() {
@@ -199,35 +210,55 @@ public class ContainerData {
     }
 
     // Getters
-    public int getTier() { return tier; }
-    public int getMaxCapacity() { return maxCapacity; }
-    public Map<ItemStack, Integer> getContents() { return new LinkedHashMap<>(contents); }
-    public Set<Material> getWhitelist() { return new HashSet<>(whitelist); }
-    public boolean isSellEnabled() { return sellEnabled; }
-    public int getDurability() { return durability; }
-    public int getMaxDurability() { return maxDurability; }
-    public Map<Integer, ItemStack> getReferenceItems() { return this.referenceItems; }
+    public int getTier() {
+        return tier;
+    }
+
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public Map<ItemStack, Integer> getContents() {
+        return new LinkedHashMap<>(contents);
+    }
+
+    public Set<Material> getWhitelist() {
+        return new HashSet<>(whitelist);
+    }
+
+    public boolean isSellEnabled() {
+        return sellEnabled;
+    }
 
     // Setters
-    public void setSellEnabled(boolean sellEnabled) { this.sellEnabled = sellEnabled; }
-    public void setDurability(int durability) { this.durability = Math.max(0, Math.min(maxDurability, durability)); }
-    public void setReferenceItems(Map<Integer, ItemStack> referenceItems) { this.referenceItems = new HashMap<>(referenceItems); }
+    public void setSellEnabled(boolean sellEnabled) {
+        this.sellEnabled = sellEnabled;
+    }
+
+    public int getDurability() {
+        return durability;
+    }
+
+    public void setDurability(int durability) {
+        this.durability = Math.max(0, Math.min(maxDurability, durability));
+    }
+
+    public int getMaxDurability() {
+        return maxDurability;
+    }
+
+    public Map<Integer, ItemStack> getReferenceItems() {
+        return this.referenceItems;
+    }
+
+    public void setReferenceItems(Map<Integer, ItemStack> referenceItems) {
+        this.referenceItems = new HashMap<>(referenceItems);
+    }
 
     @Override
     public ContainerData clone() {
         ContainerData cloned = new ContainerData(tier, contents, whitelist, sellEnabled, durability);
         cloned.setReferenceItems(this.referenceItems);
         return cloned;
-    }
-
-    public static int getMaxDurabilityForTier(int tier) {
-        return switch (tier) {
-            case 1 -> 50;
-            case 2 -> 100;
-            case 3 -> 200;
-            case 4 -> 400;
-            case 5 -> 800;
-            default -> 25;
-        };
     }
 }

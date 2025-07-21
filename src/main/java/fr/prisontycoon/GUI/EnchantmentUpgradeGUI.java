@@ -257,7 +257,7 @@ public class EnchantmentUpgradeGUI {
     private long calculateExactCost(CustomEnchantment enchantment, int currentLevel, int requestedLevels) {
         long totalCost = 0;
         for (int i = 1; i <= requestedLevels; i++) {
-            totalCost += enchantment.getUpgradeCost(currentLevel + i -1); // Cost is for the target level
+            totalCost += enchantment.getUpgradeCost(currentLevel + i - 1); // Cost is for the target level
         }
         return totalCost;
     }

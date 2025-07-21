@@ -419,11 +419,25 @@ public class ProfessionManager {
             this.talents = talents;
         }
 
-        public String getId() { return id; }
-        public String getDisplayName() { return displayName; }
-        public String getTitle() { return title; }
-        public String getDescription() { return description; }
-        public List<ProfessionTalent> getTalents() { return talents; }
+        public String getId() {
+            return id;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public List<ProfessionTalent> getTalents() {
+            return talents;
+        }
 
         public ProfessionTalent getTalent(String talentId) {
             return talents.stream().filter(t -> t.getId().equals(talentId)).findFirst().orElse(null);
@@ -446,10 +460,21 @@ public class ProfessionManager {
             this.values = values;
         }
 
-        public String getId() { return id; }
-        public String getDisplayName() { return displayName; }
-        public String getDescription() { return description; }
-        public int[] getValues() { return values; }
+        public String getId() {
+            return id;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public int[] getValues() {
+            return values;
+        }
 
         public int getValueAtLevel(int level) {
             if (level < 1 || level > values.length) return 0;
