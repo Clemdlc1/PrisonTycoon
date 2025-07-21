@@ -2,6 +2,7 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -227,22 +228,17 @@ public class PlayerDataManager {
                 }
             }
 
-            ConfigurationSection unlockedRewardsSection = config.getConfigurationSection("prestige.unlocked-rewards");
-            if (unlockedRewardsSection != null) {
-                Map<String, Boolean> unlockedRewards = new HashMap<>();
-                for (String key : unlockedRewardsSection.getKeys(false)) {
-                    unlockedRewards.put(key, unlockedRewardsSection.getBoolean(key));
-                }
-                data.setUnlockedPrestigeRewards(unlockedRewards);
+            Set<String> chosenRewards = data.getChosenSpecialRewards();
+            if (!chosenRewards.isEmpty()) {
+                config.set("prestige.chosen-special-rewards", new ArrayList<>(chosenRewards));
             }
 
-            ConfigurationSection chosenTalentsSection = config.getConfigurationSection("prestige.chosen-talents");
-            if (chosenTalentsSection != null) {
-                Map<Integer, String> chosenTalents = new HashMap<>();
-                for (String key : chosenTalentsSection.getKeys(false)) {
-                    chosenTalents.put(Integer.parseInt(key), chosenTalentsSection.getString(key));
+            // Récompenses débloquées (statut)
+            Map<String, Boolean> unlockedRewards = data.getUnlockedPrestigeRewards();
+            if (!unlockedRewards.isEmpty()) {
+                for (Map.Entry<String, Boolean> entry : unlockedRewards.entrySet()) {
+                    config.set("prestige.unlocked-rewards." + entry.getKey(), entry.getValue());
                 }
-                data.setChosenPrestigeTalents(chosenTalents);
             }
 
             // Statistiques de base
@@ -406,10 +402,10 @@ public class PlayerDataManager {
                 }
             }
 
-            Map<String, Boolean> unlockedRewards = data.getUnlockedPrestigeRewards();
-            if (!unlockedRewards.isEmpty()) {
-                for (Map.Entry<String, Boolean> entry : unlockedRewards.entrySet()) {
-                    config.set("prestige.unlocked-rewards." + entry.getKey(), entry.getValue());
+            Map<PrestigeTalent, Integer> prestigeTalents = data.getPrestigeTalents();
+            if (!prestigeTalents.isEmpty()) {
+                for (Map.Entry<PrestigeTalent, Integer> entry : prestigeTalents.entrySet()) {
+                    config.set("prestige.talents." + entry.getKey().name(), entry.getValue());
                 }
             }
 

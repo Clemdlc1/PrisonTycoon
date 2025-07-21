@@ -10,10 +10,8 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Commande principale du système de prestige
@@ -23,6 +21,8 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
 
     private final PrisonTycoon plugin;
     private final PrestigeGUI prestigeGUI;
+    private final Map<UUID, Long> pendingResetConfirmations = new ConcurrentHashMap<>();
+    private static final long RESET_CONFIRMATION_TIMEOUT = 30000; // 30 secondes
 
     public PrestigeCommand(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -69,7 +69,43 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
      * Gère la commande /prestige confirmer-reset
      */
     private void handleConfirmResetCommand(Player player) {
+        UUID playerId = player.getUniqueId();
+        Long confirmationTime = pendingResetConfirmations.get(playerId);
+
+        // Vérifier si une confirmation est en attente
+        if (confirmationTime == null) {
+            player.sendMessage("§c❌ Aucune confirmation de reset en attente!");
+            player.sendMessage("§7Utilisez d'abord le bouton de réinitialisation dans le menu.");
+            return;
+        }
+
+        // Vérifier si le délai est écoulé
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - confirmationTime > RESET_CONFIRMATION_TIMEOUT) {
+            pendingResetConfirmations.remove(playerId);
+            player.sendMessage("§c❌ Délai de confirmation écoulé!");
+            player.sendMessage("§7Veuillez réinitier la réinitialisation depuis le menu.");
+            return;
+        }
+
+        // Supprimer la confirmation en attente
+        pendingResetConfirmations.remove(playerId);
+
+        // Procéder à la confirmation
         prestigeGUI.confirmTalentReset(player);
+    }
+
+    public void addPendingResetConfirmation(UUID playerId, long timestamp) {
+        pendingResetConfirmations.put(playerId, timestamp);
+    }
+
+    public boolean removePendingResetConfirmation(UUID playerId, long timestamp) {
+        Long existingTime = pendingResetConfirmations.get(playerId);
+        if (existingTime != null && existingTime.equals(timestamp)) {
+            pendingResetConfirmations.remove(playerId);
+            return true;
+        }
+        return false;
     }
 
     /**

@@ -85,6 +85,8 @@ public class PlayerData {
     // NOUVEAUX ajouts pour le système amélioré
     private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
+    private final Set<Integer> completedPrestigeLevels = new HashSet<>();
+
 
 
 
@@ -1252,7 +1254,13 @@ public class PlayerData {
      */
     public void addChosenSpecialReward(String rewardId) {
         synchronized (dataLock) {
-            chosenSpecialRewards.add(rewardId);
+            try {
+                String levelStr = rewardId.substring(1, rewardId.indexOf("_"));
+                int prestigeLevel = Integer.parseInt(levelStr);
+                completedPrestigeLevels.add(prestigeLevel);
+            } catch (Exception e) {
+                // Log erreur
+            }
         }
     }
 
@@ -1261,7 +1269,14 @@ public class PlayerData {
      */
     public boolean hasChosenSpecialReward(String rewardId) {
         synchronized (dataLock) {
-            return chosenSpecialRewards.contains(rewardId);
+            // Extraire le niveau depuis l'ID (format: "p5_autominer", "p10_title", etc.)
+            try {
+                String levelStr = rewardId.substring(1, rewardId.indexOf("_"));
+                int prestigeLevel = Integer.parseInt(levelStr);
+                return completedPrestigeLevels.contains(prestigeLevel);
+            } catch (Exception e) {
+                return false;
+            }
         }
     }
 
@@ -1531,6 +1546,23 @@ public class PlayerData {
         synchronized (dataLock) {
             this.chosenPrestigeTalents.clear();
             this.chosenPrestigeTalents.putAll(talents);
+        }
+    }
+    public void markPrestigeLevelCompleted(int prestigeLevel) {
+        synchronized (dataLock) {
+            completedPrestigeLevels.add(prestigeLevel);
+        }
+    }
+
+    public boolean isPrestigeLevelCompleted(int prestigeLevel) {
+        synchronized (dataLock) {
+            return completedPrestigeLevels.contains(prestigeLevel);
+        }
+    }
+
+    public Set<Integer> getCompletedPrestigeLevels() {
+        synchronized (dataLock) {
+            return new HashSet<>(completedPrestigeLevels);
         }
     }
 }
