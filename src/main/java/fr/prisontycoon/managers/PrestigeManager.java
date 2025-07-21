@@ -2,16 +2,14 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.prestige.*;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.*;
 
 /**
- * Gestionnaire principal du système de prestige
+ * Gestionnaire principal du système de prestige (CORRIGÉ: sans rang FREE)
  */
 public class PrestigeManager {
 
@@ -24,13 +22,13 @@ public class PrestigeManager {
     }
 
     /**
-     * Vérifie si un joueur peut effectuer un prestige
+     * CORRIGÉ: Vérifie si un joueur peut effectuer un prestige (rang Z requis au lieu de FREE)
      */
     public boolean canPrestige(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Vérifier le rang FREE
-        if (!playerData.hasCustomPermission("specialmine.free")) {
+        // Vérifier le rang Z (maximum) au lieu du rang FREE
+        if (!playerData.hasCustomPermission("specialmine.mine.z")) {
             return false;
         }
 
@@ -47,7 +45,7 @@ public class PrestigeManager {
     }
 
     /**
-     * Effectue le prestige d'un joueur
+     * CORRIGÉ: Effectue le prestige d'un joueur (reset vers rang A avec permission prestige)
      */
     public boolean performPrestige(Player player) {
         if (!canPrestige(player)) {
@@ -63,7 +61,7 @@ public class PrestigeManager {
         }
 
         // Sauvegarder l'ancien rang pour les messages
-        String oldRank = plugin.getMineManager().getCurrentRank(player);
+        String oldRank = getCurrentRank(player);
 
         // Effectuer le reset
         resetPlayerForPrestige(player);
@@ -71,14 +69,14 @@ public class PrestigeManager {
         // Mettre à jour le niveau de prestige
         playerData.setPrestigeLevel(newPrestigeLevel);
 
-        // Ajouter la permission de prestige
+        // Ajouter la permission de prestige via PermissionManager
         String prestigePermission = "specialmine.prestige." + newPrestigeLevel;
-        playerData.addPermission(prestigePermission);
+        plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), prestigePermission);
 
         // Retirer l'ancienne permission de prestige si elle existe
         if (newPrestigeLevel > 1) {
             String oldPrestigePermission = "specialmine.prestige." + (newPrestigeLevel - 1);
-            playerData.removePermission(oldPrestigePermission);
+            plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), oldPrestigePermission);
         }
 
         // Donner les récompenses automatiques
@@ -100,6 +98,25 @@ public class PrestigeManager {
     }
 
     /**
+     * CORRIGÉ: Obtient le rang actuel du joueur via PermissionManager
+     */
+    private String getCurrentRank(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String highestRank = "a"; // Rang par défaut
+
+        // Recherche du rang le plus élevé via les permissions bukkit
+        for (char c = 'z'; c >= 'a'; c--) {
+            String minePermission = "specialmine.mine." + c;
+            if (playerData.hasCustomPermission(minePermission)) {
+                highestRank = String.valueOf(c);
+                break;
+            }
+        }
+
+        return highestRank;
+    }
+
+    /**
      * Demande confirmation au joueur pour le prestige
      */
     private boolean confirmPrestige(Player player, int newLevel) {
@@ -109,36 +126,39 @@ public class PrestigeManager {
     }
 
     /**
-     * Reset le joueur pour le prestige
+     * CORRIGÉ: Reset le joueur pour le prestige (retour au rang A via PermissionManager)
      */
     private void resetPlayerForPrestige(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Retirer toutes les permissions de mine
+        // Retirer toutes les permissions de mine via PermissionManager
         clearAllMinePermissions(player);
 
-        // Remettre la permission de base (rang A)
-        playerData.addPermission("specialmine.mine.a");
+        // Remettre uniquement la permission de base (rang A) via PermissionManager
+        plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), "specialmine.mine.a");
 
+        // Reset des coins
         playerData.setCoins(0);
 
-        plugin.getPluginLogger().info("Reset de prestige effectué pour: " + player.getName());
+        plugin.getPluginLogger().info("Reset de prestige effectué pour: " + player.getName() + " (retour au rang A)");
     }
 
     /**
-     * Retire toutes les permissions de mine d'un joueur
+     * CORRIGÉ: Retire toutes les permissions de mine d'un joueur via PermissionManager (plus de FREE)
      */
     private void clearAllMinePermissions(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Retirer les permissions de mine a-z
+        // Retirer toutes les permissions de mine a-z via PermissionManager
         for (char c = 'a'; c <= 'z'; c++) {
             String minePermission = "specialmine.mine." + c;
-            playerData.removePermission(minePermission);
+            if (playerData.hasCustomPermission(minePermission)) {
+                plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), minePermission);
+            }
         }
 
-        // Retirer la permission FREE
-        playerData.removePermission("specialmine.free");
+        // Ancienne logique pour compatibilité
+        playerData.clearMinePermissions();
     }
 
     /**
@@ -146,28 +166,27 @@ public class PrestigeManager {
      */
     private void handlePrestigeRewardOrTalent(Player player, int prestigeLevel) {
         if (prestigeLevel % 5 == 0) {
-            // Paliers spéciaux (P5, P10, P15, etc.) - Récompenses spéciales
-            List<PrestigeReward> specialRewards = PrestigeReward.SpecialRewards.getSpecialRewardsForPrestige(prestigeLevel);
+            // Paliers spéciaux (P5, P10, P15, etc.)
+            player.sendMessage("§6🎁 Palier spécial P" + prestigeLevel + " atteint!");
+            player.sendMessage("§7Consultez /prestige talents pour découvrir vos nouveaux bonus!");
+        }
 
-            if (specialRewards.size() == 1) {
-                // Récompense unique (titres)
-                rewardManager.giveSpecialReward(player, specialRewards.get(0));
-            } else if (specialRewards.size() > 1) {
-                // Choix entre plusieurs récompenses
-                // TODO: Ouvrir interface de choix
-                player.sendMessage("§e🎁 Vous avez débloqué des récompenses spéciales!");
-                player.sendMessage("§7Utilisez §6/prestige récompenses §7pour choisir votre récompense P" + prestigeLevel);
+        // Récompenses automatiques selon le niveau
+        switch (prestigeLevel) {
+            case 1 -> {
+                player.sendMessage("§a🎉 Premier prestige! Bonus de vitesse permanente débloqué!");
             }
-        } else {
-            // Talents cycliques
-            PrestigeTalent availableTalent = PrestigeTalent.getTalentForPrestige(prestigeLevel);
-            if (availableTalent != null) {
-                // Ajouter automatiquement le talent (ou permettre le choix plus tard)
-                PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-                playerData.addPrestigeTalent(availableTalent);
-
-                player.sendMessage("§a✨ Talent débloqué: §6" + availableTalent.getDisplayName());
-                player.sendMessage("§7" + availableTalent.getDescription().replace("\n", " §7"));
+            case 5 -> {
+                player.sendMessage("§b🎁 P5 atteint! Bonus d'efficacité de minage débloqué!");
+            }
+            case 10 -> {
+                player.sendMessage("§d🏆 P10 atteint! Accès aux mines de prestige débloqué!");
+            }
+            case 25 -> {
+                player.sendMessage("§6👑 P25 atteint! Bonus de multiplicateur de coins débloqué!");
+            }
+            case 50 -> {
+                player.sendMessage("§c🌟 P50 atteint! Rang LÉGENDE débloqué! Félicitations!");
             }
         }
     }
@@ -176,116 +195,123 @@ public class PrestigeManager {
      * Envoie les messages de prestige au joueur
      */
     private void sendPrestigeMessages(Player player, int prestigeLevel) {
-        player.sendMessage("");
-        player.sendMessage("§6§l╔══════════════════════════════════════╗");
-        player.sendMessage("§6§l║           §e✨ PRESTIGE RÉUSSI! ✨           §6§l║");
-        player.sendMessage("§6§l╠══════════════════════════════════════╣");
-        player.sendMessage("§6§l║  §fVous êtes maintenant §6§lPRESTIGE " + prestigeLevel + "§f!     §6§l║");
-        player.sendMessage("§6§l║  §7Retour au rang §fA §7avec des bonus     §6§l║");
-        player.sendMessage("§6§l║  §7permanents et des mines exclusives!    §6§l║");
-        player.sendMessage("§6§l╚══════════════════════════════════════╝");
-        player.sendMessage("");
-
-        // Informations sur les mines prestige débloquées
-        List<String> unlockedMines = getUnlockedPrestigeMines(prestigeLevel);
-        if (!unlockedMines.isEmpty()) {
-            player.sendMessage("§a🏔️ Mines Prestige débloquées:");
-            for (String mine : unlockedMines) {
-                player.sendMessage("§7• §6" + mine);
-            }
-        }
+        player.sendMessage("§6════════════════════════════════");
+        player.sendMessage("§6🏆        PRESTIGE RÉUSSI!        🏆");
+        player.sendMessage("§6════════════════════════════════");
+        player.sendMessage("§7Nouveau niveau de prestige: §6§lP" + prestigeLevel);
+        player.sendMessage("§7Vous avez été reset au rang §eA §7avec des bonus permanents!");
+        player.sendMessage("§7Tapez §e/prestige info §7pour voir vos avantages!");
+        player.sendMessage("§6════════════════════════════════");
     }
 
     /**
-     * Diffuse le prestige dans le chat global
+     * Annonce le prestige à tous les joueurs
      */
     private void broadcastPrestige(Player player, int prestigeLevel) {
-        String message = ChatColor.GOLD + "🏆 " + ChatColor.YELLOW + player.getName() +
-                ChatColor.WHITE + " a atteint le " +
-                ChatColor.GOLD + ChatColor.BOLD + "PRESTIGE " + prestigeLevel + ChatColor.WHITE + "! " +
-                ChatColor.GRAY + "Félicitations!";
+        String message = "§6🏆 " + player.getName() + " a atteint le Prestige " + prestigeLevel + "! 🏆";
 
-        Bukkit.broadcastMessage(message);
-
-        // Son pour tous les joueurs en ligne
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            onlinePlayer.playSound(onlinePlayer.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.5f, 1.2f);
+            onlinePlayer.sendMessage(message);
+            onlinePlayer.playSound(onlinePlayer.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.5f, 1.0f);
         }
     }
 
     /**
-     * Obtient les mines prestige débloquées pour un niveau donné
+     * Vérifie si un joueur a un niveau de prestige spécifique
      */
-    private List<String> getUnlockedPrestigeMines(int prestigeLevel) {
-        List<String> mines = new ArrayList<>();
-
-        if (prestigeLevel >= 1) mines.add("Mine Prestige I (0.1% beacons)");
-        if (prestigeLevel >= 11) mines.add("Mine Prestige XI (0.5% beacons)");
-        if (prestigeLevel >= 21) mines.add("Mine Prestige XXI (1% beacons)");
-        if (prestigeLevel >= 31) mines.add("Mine Prestige XXXI (3% beacons)");
-        if (prestigeLevel >= 41) mines.add("Mine Prestige XLI (5% beacons)");
-
-        return mines;
+    public boolean hasPrestigeLevel(Player player, int level) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        return playerData.getPrestigeLevel() >= level;
     }
 
     /**
-     * Vérifie si un joueur peut accéder à une mine prestige
+     * Obtient le niveau de prestige d'un joueur
      */
-    public boolean canAccessPrestigeMine(Player player, String mineName) {
+    public int getPrestigeLevel(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int prestigeLevel = playerData.getPrestigeLevel();
+        return playerData.getPrestigeLevel();
+    }
 
-        // Le joueur doit aussi avoir atteint le rang Z pour accéder aux mines prestige
-        String currentRank = plugin.getMineManager().getCurrentRank(player);
-        if (!currentRank.equals("z") && !playerData.hasCustomPermission("specialmine.free")) {
-            return false;
+    /**
+     * Obtient le gestionnaire de récompenses de prestige
+     */
+    public PrestigeRewardManager getRewardManager() {
+        return rewardManager;
+    }
+
+    /**
+     * NOUVEAU: Vérifie si un joueur peut accéder à une mine de prestige
+     */
+    public boolean canAccessPrestigeMine(Player player, int requiredPrestigeLevel) {
+        return hasPrestigeLevel(player, requiredPrestigeLevel) && getCurrentRank(player).equals("z");
+    }
+
+    /**
+     * NOUVEAU: Obtient la liste des mines de prestige accessibles
+     */
+    public List<String> getAccessiblePrestigeMines(Player player) {
+        List<String> accessibleMines = new ArrayList<>();
+        int playerPrestigeLevel = getPrestigeLevel(player);
+        String currentRank = getCurrentRank(player);
+
+        // Vérifie que le joueur est au rang Z
+        if (!currentRank.equals("z")) {
+            return accessibleMines; // Liste vide si pas rang Z
         }
 
-        return switch (mineName.toLowerCase()) {
-            case "prestige1", "prestige_i" -> prestigeLevel >= 1;
-            case "prestige11", "prestige_xi" -> prestigeLevel >= 11;
-            case "prestige21", "prestige_xxi" -> prestigeLevel >= 21;
-            case "prestige31", "prestige_xxxi" -> prestigeLevel >= 31;
-            case "prestige41", "prestige_xli" -> prestigeLevel >= 41;
-            default -> false;
-        };
+        // Ajoute les mines de prestige selon le niveau
+        if (playerPrestigeLevel >= 1) {
+            accessibleMines.add("mine-prestige1");
+        }
+        if (playerPrestigeLevel >= 11) {
+            accessibleMines.add("mine-prestige11");
+        }
+        if (playerPrestigeLevel >= 21) {
+            accessibleMines.add("mine-prestige21");
+        }
+        if (playerPrestigeLevel >= 31) {
+            accessibleMines.add("mine-prestige31");
+        }
+        if (playerPrestigeLevel >= 41) {
+            accessibleMines.add("mine-prestige41");
+        }
+
+        return accessibleMines;
     }
 
     /**
-     * Obtient les informations de prestige d'un joueur
+     * NOUVEAU: Affiche les informations de prestige du joueur
+     *
+     * @return
      */
-    public String getPrestigeInfo(Player player) {
+    public String showPrestigeInfo(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int prestigeLevel = playerData.getPrestigeLevel();
+        String currentRank = getCurrentRank(player);
 
-        StringBuilder info = new StringBuilder();
-        info.append("§6🏆 Informations Prestige:\n");
-        info.append("§7Niveau actuel: §6").append(prestigeLevel > 0 ? "P" + prestigeLevel : "Aucun").append("\n");
+        player.sendMessage("§6═══════════ PRESTIGE INFO ═══════════");
+        player.sendMessage("§7Niveau de prestige: §6P" + prestigeLevel);
+        player.sendMessage("§7Rang actuel: §e" + currentRank.toUpperCase());
 
         if (canPrestige(player)) {
-            info.append("§a✅ Vous pouvez effectuer un prestige!\n");
-            info.append("§7Prochain niveau: §6P").append(prestigeLevel + 1).append("\n");
+            player.sendMessage("§a✅ Vous pouvez effectuer un prestige!");
+            player.sendMessage("§7Tapez §e/prestige effectuer §7pour continuer.");
+        } else if (!currentRank.equals("z")) {
+            player.sendMessage("§c❌ Vous devez atteindre le rang Z pour prestigier.");
         } else if (prestigeLevel >= 50) {
-            info.append("§e⭐ Niveau maximum atteint!\n");
-        } else {
-            info.append("§c❌ Conditions non remplies pour le prestige\n");
-            info.append("§7Requis: §fRang FREE\n");
+            player.sendMessage("§6👑 Prestige maximum atteint! Rang LÉGENDE!");
         }
 
-        // Talents actifs
-        Map<PrestigeTalent, Integer> talents = playerData.getPrestigeTalents();
-        if (!talents.isEmpty()) {
-            info.append("§e⚡ Talents actifs:\n");
-            for (Map.Entry<PrestigeTalent, Integer> entry : talents.entrySet()) {
-                info.append("§7• §6").append(entry.getKey().getDisplayName())
-                        .append(" §7(Niveau ").append(entry.getValue()).append(")\n");
+        // Affiche les mines de prestige accessibles
+        List<String> accessibleMines = getAccessiblePrestigeMines(player);
+        if (!accessibleMines.isEmpty()) {
+            player.sendMessage("§dMines de prestige accessibles:");
+            for (String mine : accessibleMines) {
+                player.sendMessage("§7- §d" + mine);
             }
         }
 
-        return info.toString();
-    }
-
-    public PrestigeRewardManager getRewardManager() {
-        return rewardManager;
+        player.sendMessage("§6═══════════════════════════════════");
+        return currentRank;
     }
 }

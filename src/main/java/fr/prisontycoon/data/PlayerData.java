@@ -1165,14 +1165,6 @@ public class PlayerData {
         }
     }
 
-    /**
-     * Vérifie si le joueur peut faire un prestige
-     */
-    public boolean canPrestige() {
-        synchronized (dataLock) {
-            return prestigeLevel < 50 && hasCustomPermission("specialmine.free");
-        }
-    }
 
     /**
      * Incrémente le niveau de prestige

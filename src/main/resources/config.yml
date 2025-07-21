@@ -14,17 +14,6 @@ auto-save-interval: 300 # secondes (5 minutes)
 cache-cleanup-interval: 3000 # secondes (50 minutes)
 
 # ========================================
-#           SYSTÈME DE RANGS
-# ========================================
-
-ranks:
-  free:
-    price: 1000000  # 1 million de coins pour atteindre le rang FREE
-    permission: "specialmine.free"
-    display-name: "§d§lFREE"
-    description: "Rang ultime permettant d'effectuer un prestige"
-
-# ========================================
 #        MINES NORMALES (A-Z)
 # ========================================
 

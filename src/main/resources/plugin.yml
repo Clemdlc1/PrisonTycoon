@@ -120,11 +120,6 @@ permissions:
     description: "Accès à la mine Z"
     default: false
 
-  # Permission rang FREE
-  specialmine.free:
-    description: "Rang FREE - permet le prestige"
-    default: false
-
   # Permissions mines VIP
   specialmine.mine.vip1:
     description: "Accès à la mine VIP I"

@@ -61,7 +61,7 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
      * Gère la commande /prestige info
      */
     private void handleInfoCommand(Player player) {
-        String info = plugin.getPrestigeManager().getPrestigeInfo(player);
+        String info = plugin.getPrestigeManager().showPrestigeInfo(player);
         player.sendMessage(info);
     }
 
