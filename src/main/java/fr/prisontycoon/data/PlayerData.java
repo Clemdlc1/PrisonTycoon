@@ -1152,7 +1152,24 @@ public class PlayerData {
      */
     public int getPrestigeLevel() {
         synchronized (dataLock) {
-            return prestigeLevel;
+            int highestPrestige = 0;
+
+            // Parcourt toutes les permissions du joueur
+            for (String permission : customPermissions) {
+                if (permission.startsWith("specialmine.prestige.")) {
+                    try {
+                        String prestigeStr = permission.substring("specialmine.prestige.".length());
+                        int prestigeLevel = Integer.parseInt(prestigeStr);
+
+                        if (prestigeLevel > highestPrestige) {
+                            highestPrestige = prestigeLevel;
+                        }
+                    } catch (NumberFormatException e) {
+                    }
+                }
+            }
+
+            return highestPrestige;
         }
     }
 
@@ -1161,22 +1178,32 @@ public class PlayerData {
      */
     public void setPrestigeLevel(int level) {
         synchronized (dataLock) {
-            this.prestigeLevel = Math.max(0, Math.min(50, level));
-        }
-    }
+            // Valider le niveau (0-50)
+            int validLevel = Math.max(0, Math.min(50, level));
 
-
-    /**
-     * Incrémente le niveau de prestige
-     */
-    public boolean incrementPrestige() {
-        synchronized (dataLock) {
-            if (prestigeLevel < 50) {
-                prestigeLevel++;
-                lastPrestigeTime = System.currentTimeMillis();
-                return true;
+            // Retirer toutes les anciennes permissions de prestige
+            Set<String> prestigePermissionsToRemove = new HashSet<>();
+            for (String permission : customPermissions) {
+                if (permission.startsWith("specialmine.prestige.")) {
+                    prestigePermissionsToRemove.add(permission);
+                }
             }
-            return false;
+
+            // Supprimer les anciennes permissions
+            for (String permission : prestigePermissionsToRemove) {
+                customPermissions.remove(permission);
+            }
+
+            // Ajouter la nouvelle permission si le niveau est supérieur à 0
+            if (validLevel > 0) {
+                String newPrestigePermission = "specialmine.prestige." + validLevel;
+                customPermissions.add(newPrestigePermission);
+            }
+
+            // Mettre à jour le timestamp du dernier prestige si c'est un niveau valide
+            if (validLevel > 0) {
+                this.lastPrestigeTime = System.currentTimeMillis();
+            }
         }
     }
 
@@ -1406,8 +1433,9 @@ public class PlayerData {
      */
     public String getPrestigeDisplayName() {
         synchronized (dataLock) {
-            if (prestigeLevel == 0) return "§7Aucun";
-            return "§6§lP" + prestigeLevel;
+            int currentLevel = getPrestigeLevel(); // Utilise les permissions
+            if (currentLevel == 0) return "§7Aucun";
+            return "§6§lP" + currentLevel;
         }
     }
 

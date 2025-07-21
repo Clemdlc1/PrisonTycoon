@@ -10,10 +10,8 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Commande /rankup - Système de montée en rang pour les mines A-Z (CORRIGÉ: sans rang FREE)
@@ -141,24 +139,21 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
     /**
      * CORRIGÉ: Obtient le rang actuel via PermissionManager
      */
-    private String getCurrentRank(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+    public String getCurrentRank(Player player) {
         String highestRank = "a"; // Rang par défaut
 
-        // Recherche du rang le plus élevé via les permissions bukkit
+        // Cherche toutes les permissions de mine que le joueur possède
+        Set<String> minePermissions = player.getEffectivePermissions().stream()
+                .map(perm -> perm.getPermission())
+                .filter(perm -> perm.startsWith("specialmine.mine."))
+                .collect(Collectors.toSet());
+
+        // Recherche du rang le plus élevé en itérant de z vers a
         for (char c = 'z'; c >= 'a'; c--) {
             String minePermission = "specialmine.mine." + c;
-            if (playerData.hasCustomPermission(minePermission)) {
+            if (minePermissions.contains(minePermission)) {
                 highestRank = String.valueOf(c);
-                break;
-            }
-        }
-
-        // Fallback vers l'ancienne logique si nécessaire
-        if (highestRank.equals("a")) {
-            String oldPermission = playerData.getHighestMinePermission();
-            if (oldPermission != null && oldPermission.startsWith("mine-")) {
-                highestRank = oldPermission.substring(5);
+                break; // Premier trouvé = le plus élevé
             }
         }
 

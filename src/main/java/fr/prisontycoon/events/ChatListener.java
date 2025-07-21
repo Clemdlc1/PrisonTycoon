@@ -75,8 +75,8 @@ public class ChatListener implements Listener {
 
         // Récupère le rang de mine et sa couleur
         String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
-        String mineRank = rankInfo[3];
-        String mineRankColor = rankInfo[4];
+        String mineRank = rankInfo[0];
+        String mineRankColor = rankInfo[1];
 
         // Crée le message formaté
         TextComponent formattedMessage = createFormattedMessage(player, playerTypeColor, playerType,

@@ -422,22 +422,23 @@ public class MineManager {
      * Obtient le rang actuel d'un joueur
      */
     public String getCurrentRank(Player player) {
-        // Cherche la permission de rang la plus élevée
-        String highestPermission = null;
-        for (String permission : player.getEffectivePermissions().stream()
+        String highestRank = "a"; // Rang par défaut
+
+        // Cherche toutes les permissions de mine que le joueur possède
+        Set<String> minePermissions = player.getEffectivePermissions().stream()
                 .map(perm -> perm.getPermission())
                 .filter(perm -> perm.startsWith("specialmine.mine."))
-                .collect(Collectors.toSet())) {
+                .collect(Collectors.toSet());
 
-            if (highestPermission == null || permission.compareTo(highestPermission) > 0) {
-                highestPermission = permission;
+        // Recherche du rang le plus élevé en itérant de z vers a
+        for (char c = 'z'; c >= 'a'; c--) {
+            String minePermission = "specialmine.mine." + c;
+            if (minePermissions.contains(minePermission)) {
+                highestRank = String.valueOf(c);
+                break; // Premier trouvé = le plus élevé
             }
         }
-
-        if (highestPermission != null) {
-            return highestPermission.substring("specialmine.mine.".length());
-        }
-        return "a";
+        return highestRank;
     }
 
     /**

@@ -66,17 +66,14 @@ public class PrestigeManager {
         // Effectuer le reset
         resetPlayerForPrestige(player);
 
-        // Mettre à jour le niveau de prestige
+        // Mettre à jour le niveau de prestige via PlayerData (qui gère les permissions)
         playerData.setPrestigeLevel(newPrestigeLevel);
 
-        // Ajouter la permission de prestige via PermissionManager
-        String prestigePermission = "specialmine.prestige." + newPrestigeLevel;
-        plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), prestigePermission);
-
-        // Retirer l'ancienne permission de prestige si elle existe
-        if (newPrestigeLevel > 1) {
-            String oldPrestigePermission = "specialmine.prestige." + (newPrestigeLevel - 1);
-            plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), oldPrestigePermission);
+        // Appliquer immédiatement la permission si le joueur est en ligne
+        Player onlinePlayer = plugin.getServer().getPlayer(player.getUniqueId());
+        if (onlinePlayer != null && onlinePlayer.isOnline()) {
+            String prestigePermission = "specialmine.prestige." + newPrestigeLevel;
+            plugin.getPermissionManager().attachPermission(onlinePlayer, prestigePermission);
         }
 
         // Donner les récompenses automatiques
