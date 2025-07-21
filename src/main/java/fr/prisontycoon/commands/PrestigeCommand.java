@@ -46,10 +46,10 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
         String subCommand = args[0].toLowerCase();
         switch (subCommand) {
             case "info", "informations" -> handleInfoCommand(player);
-            case "récompenses", "recompenses", "rewards" -> handleRewardsCommand(player, args);
-            case "talents", "talent" -> handleTalentsCommand(player, args);
+            case "progression", "progress" -> handleProgressionCommand(player);
             case "effectuer", "faire", "perform" -> handlePerformCommand(player);
             case "confirmer", "confirm" -> handleConfirmCommand(player);
+            case "confirmer-reset", "confirm-reset", "confirmreset" -> handleConfirmResetCommand(player); // NOUVEAU
             case "help", "aide" -> sendHelpMessage(player);
             default -> sendHelpMessage(player);
         }
@@ -66,36 +66,17 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Gère la commande /prestige récompenses
+     * Gère la commande /prestige confirmer-reset
      */
-    private void handleRewardsCommand(Player player, String[] args) {
-        if (args.length >= 2 && args[1].equalsIgnoreCase("choisir")) {
-            // Ouvrir l'interface de choix pour les récompenses en attente
-            prestigeGUI.openSpecialRewardsMenu(player);
-        } else {
-            // Ouvrir le menu général des récompenses
-            prestigeGUI.openRewardsMenu(player, 0);
-        }
+    private void handleConfirmResetCommand(Player player) {
+        prestigeGUI.confirmTalentReset(player);
     }
 
     /**
-     * Gère la commande /prestige talents
+     * Gère la commande /prestige récompenses
      */
-    private void handleTalentsCommand(Player player, String[] args) {
-        int page = 0;
-
-        // Parse de la page si spécifiée
-        if (args.length >= 2) {
-            try {
-                page = Integer.parseInt(args[1]) - 1; // Les joueurs comptent de 1, on compte de 0
-                page = Math.max(0, page);
-            } catch (NumberFormatException e) {
-                player.sendMessage("§cPage invalide! Utilisez un nombre.");
-                return;
-            }
-        }
-
-        prestigeGUI.openTalentsMenu(player, page);
+    private void handleProgressionCommand(Player player) {
+        prestigeGUI.openMainPrestigeMenu(player);
     }
 
     /**
@@ -157,14 +138,14 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§6§l║ §e/prestige info                  §6§l║");
         player.sendMessage("§6§l║ §7├─ Informations de prestige      §6§l║");
         player.sendMessage("§6§l║                                   §6§l║");
-        player.sendMessage("§6§l║ §e/prestige récompenses           §6§l║");
-        player.sendMessage("§6§l║ §7├─ Menu des récompenses          §6§l║");
-        player.sendMessage("§6§l║                                   §6§l║");
-        player.sendMessage("§6§l║ §e/prestige talents               §6§l║");
-        player.sendMessage("§6§l║ §7├─ Menu des talents              §6§l║");
+        player.sendMessage("§6§l║ §e/prestige progression           §6§l║");
+        player.sendMessage("§6§l║ §7├─ Menu talents & récompenses    §6§l║");
         player.sendMessage("§6§l║                                   §6§l║");
         player.sendMessage("§6§l║ §e/prestige effectuer             §6§l║");
         player.sendMessage("§6§l║ §7├─ Effectuer un prestige         §6§l║");
+        player.sendMessage("§6§l║                                   §6§l║");
+        player.sendMessage("§6§l║ §c/prestige confirmer-reset       §6§l║"); // NOUVEAU
+        player.sendMessage("§6§l║ §7├─ Confirmer reset des talents   §6§l║"); // NOUVEAU
         player.sendMessage("§6§l╚═══════════════════════════════════╝");
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -178,34 +159,30 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
         } else if (prestigeLevel >= 50) {
             player.sendMessage("§e⭐ Niveau maximum atteint!");
         } else {
-            player.sendMessage("§c❌ Conditions non remplies");
+            player.sendMessage("§c❌ Conditions de prestige non remplies");
+            player.sendMessage("§7Tapez §e/prestige info §7pour voir les prérequis");
+        }
+
+        // Ajout d'informations sur les talents si ils peuvent être reset
+        if (!playerData.getPrestigeTalents().isEmpty()) {
+            player.sendMessage("");
+            player.sendMessage("§7💡 Vous avez des talents de prestige actifs");
+            player.sendMessage("§7Vous pouvez les réinitialiser pour 500 beacons");
         }
     }
 
+    // Modifier la méthode getTabCompletions pour inclure la nouvelle commande :
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList(
-                    "info", "récompenses", "talents", "effectuer", "confirmer", "help"
-            );
-            StringUtil.copyPartialMatches(args[0], subCommands, completions);
-        } else if (args.length == 2) {
-            switch (args[0].toLowerCase()) {
-                case "récompenses", "recompenses", "rewards" -> {
-                    List<String> rewardCommands = Arrays.asList("choisir");
-                    StringUtil.copyPartialMatches(args[1], rewardCommands, completions);
-                }
-                case "talents", "talent" -> {
-                    // Suggestions de pages
-                    List<String> pages = Arrays.asList("1", "2", "3", "4", "5");
-                    StringUtil.copyPartialMatches(args[1], pages, completions);
-                }
-            }
+            List<String> completions = new ArrayList<>();
+            List<String> commands = Arrays.asList("info", "progression", "effectuer",
+                    "confirmer", "confirmer-reset", "help"); // AJOUT de "confirmer-reset"
+            StringUtil.copyPartialMatches(args[0], commands, completions);
+            Collections.sort(completions);
+            return completions;
         }
 
-        Collections.sort(completions);
-        return completions;
+        return Collections.emptyList();
     }
 }

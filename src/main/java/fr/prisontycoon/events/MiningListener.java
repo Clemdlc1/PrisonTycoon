@@ -350,10 +350,7 @@ public class MiningListener implements Listener {
 
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
-        event.getPlayer().sendMessage("1");
-
         Player player = (Player) event.getPlayer();
-
         plugin.getPickaxeManager().updatePlayerPickaxe(player);
     }
 }

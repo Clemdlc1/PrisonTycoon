@@ -12,6 +12,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -21,18 +22,31 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Interface graphique pour le système de prestige
+ * Interface graphique REFONTE pour le système de prestige
+ * - Talents et récompenses dans le même menu
+ * - Organisation en lignes par niveau, colonnes par type
+ * - Pages dynamiques selon le prestige
+ * - Système de réinitialisation des talents
  */
 public class PrestigeGUI {
 
-    // Slots du menu principal
-    private static final int PRESTIGE_INFO_SLOT = 13;
-    private static final int REWARDS_BUTTON_SLOT = 11;
-    private static final int TALENTS_BUTTON_SLOT = 15;
-    private static final int PERFORM_PRESTIGE_SLOT = 31;
-    private static final int MINES_INFO_SLOT = 22;
-    private static final int HELP_SLOT = 18;
+    // Slots du menu principal - NOUVEAU LAYOUT
+    private static final int PRESTIGE_INFO_SLOT = 4;
+    private static final int COMBINED_BUTTON_SLOT = 15; // Talents & Récompenses
+    private static final int RESET_TALENTS_SLOT = 14; // Réinitialiser talents
+    private static final int PERFORM_PRESTIGE_SLOT = 11;
+    private static final int HELP_SLOT = 9;
     private static final int CLOSE_SLOT = 26;
+
+    // Layout du menu talents/récompenses (54 slots)
+    // 5 prestiges par page, 3 slots par prestige (colonnes)
+    private static final int[] PRESTIGE_ROWS = {3, 12, 21, 30, 39}; // 5 lignes
+
+    // Navigation
+    private static final int PREV_PAGE_SLOT = 45;
+    private static final int NEXT_PAGE_SLOT = 53;
+    private static final int BACK_SLOT = 49;
+
     private final PrisonTycoon plugin;
     private final NamespacedKey actionKey;
     private final NamespacedKey prestigeLevelKey;
@@ -51,7 +65,7 @@ public class PrestigeGUI {
      * Ouvre le menu principal du prestige
      */
     public void openMainPrestigeMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 45, "§6🏆 §lSystème de Prestige §6🏆");
+        Inventory gui = Bukkit.createInventory(null, 27, "§6🏆 §lSystème de Prestige §6🏆");
 
         fillWithGlass(gui);
         setupMainPrestigeMenu(gui, player);
@@ -66,13 +80,14 @@ public class PrestigeGUI {
     private void setupMainPrestigeMenu(Inventory gui, Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Informations de prestige au centre
+        // Informations de prestige au centre-haut
         gui.setItem(PRESTIGE_INFO_SLOT, createPrestigeInfoItem(player));
 
-        // Boutons principaux
-        gui.setItem(REWARDS_BUTTON_SLOT, createRewardsButton());
-        gui.setItem(TALENTS_BUTTON_SLOT, createTalentsButton());
-        gui.setItem(MINES_INFO_SLOT, createMinesInfoItem(player));
+        // Bouton principal : Talents & Récompenses combinés
+        gui.setItem(COMBINED_BUTTON_SLOT, createCombinedButton());
+
+        // Bouton réinitialisation des talents
+        gui.setItem(RESET_TALENTS_SLOT, createResetTalentsButton(player));
 
         // Bouton de prestige (si possible)
         if (plugin.getPrestigeManager().canPrestige(player)) {
@@ -87,204 +102,282 @@ public class PrestigeGUI {
     }
 
     /**
-     * Ouvre le menu des récompenses de prestige
+     * Ouvre le menu combiné talents/récompenses avec pages dynamiques
      */
-    public void openRewardsMenu(Player player, int page) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6📦 Récompenses de Prestige §7(Page " + (page + 1) + ")");
-
-        fillWithGlass(gui);
-        setupRewardsMenu(gui, player, page);
-
-        player.openInventory(gui);
-        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
-    }
-
-    /**
-     * Configure le menu des récompenses
-     */
-    private void setupRewardsMenu(Inventory gui, Player player, int page) {
+    public void openCombinedMenu(Player player, int page) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int prestigeLevel = playerData.getPrestigeLevel();
+        int maxPrestige = Math.max(5, playerData.getPrestigeLevel()); // Au minimum afficher jusqu'à P5
+        int maxPage = (maxPrestige - 1) / 5; // 5 prestiges par page
 
-        // Affichage des récompenses par tranches de 10 niveaux
-        int startLevel = (page * 10) + 1;
-        int endLevel = Math.min(startLevel + 9, 50);
+        // Clamp de la page
+        page = Math.max(0, Math.min(page, maxPage));
 
-        int slot = 10; // Commencer à la deuxième ligne
-        for (int level = startLevel; level <= endLevel && slot < 44; level++) {
-            ItemStack rewardItem = createRewardDisplayItem(player, level);
-            gui.setItem(slot, rewardItem);
-
-            slot++;
-            if (slot % 9 == 8) slot += 2; // Éviter les bords
-        }
-
-        // Navigation
-        if (page > 0) {
-            gui.setItem(45, createPageButton("§a⬅ Page précédente", page - 1, "rewards"));
-        }
-        if (endLevel < 50) {
-            gui.setItem(53, createPageButton("§aPage suivante ➡", page + 1, "rewards"));
-        }
-
-        gui.setItem(49, createBackToMainButton());
-    }
-
-    /**
-     * Ouvre le menu des talents de prestige
-     */
-    public void openTalentsMenu(Player player, int page) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§5⚡ Talents de Prestige");
+        Inventory gui = Bukkit.createInventory(null, 54,
+                "§5⚡ Progression Prestige §7(P" + (page * 5 + 1) + "-" + Math.min((page + 1) * 5, maxPrestige) + ")");
 
         fillWithGlass(gui);
-        setupTalentsMenu(gui, player);
+        setupCombinedMenu(gui, player, page);
 
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
     }
 
     /**
-     * Configure le menu des talents
+     * Configure le menu combiné avec organisation en lignes/colonnes
      */
-    private void setupTalentsMenu(Inventory gui, Player player) {
+    private void setupCombinedMenu(Inventory gui, Player player, int page) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Map<PrestigeTalent, Integer> playerTalents = playerData.getPrestigeTalents();
+        int currentPrestige = playerData.getPrestigeLevel();
 
-        // Affichage des 4 talents cycliques
-        PrestigeTalent[] talents = PrestigeTalent.values();
-        int[] slots = {20, 21, 23, 24}; // 2x2 au centre
+        // Calcul des prestiges à afficher sur cette page
+        int startPrestige = page * 5 + 1;
+        int endPrestige = Math.min(startPrestige + 4, Math.max(5, currentPrestige));
 
-        for (int i = 0; i < talents.length && i < slots.length; i++) {
-            PrestigeTalent talent = talents[i];
-            int currentLevel = playerTalents.getOrDefault(talent, 0);
+        // Pour chaque ligne (niveau de prestige)
+        for (int i = 0; i < 5; i++) {
+            int prestigeLevel = startPrestige + i;
+            if (prestigeLevel > Math.max(5, currentPrestige)) break;
 
-            gui.setItem(slots[i], createTalentDisplayItem(talent, currentLevel, playerData.getPrestigeLevel()));
+            int baseSlot = PRESTIGE_ROWS[i];
+            setupPrestigeRow(gui, player, prestigeLevel, baseSlot);
         }
-
-        // Informations sur les talents
-        gui.setItem(13, createTalentsInfoItem(player));
 
         // Navigation
-        gui.setItem(49, createBackToMainButton());
+        if (page > 0) {
+            gui.setItem(PREV_PAGE_SLOT, createPageButton("§a⬅ Page précédente", page - 1));
+        }
+
+        int maxPage = (Math.max(5, currentPrestige) - 1) / 5;
+        if (page < maxPage) {
+            gui.setItem(NEXT_PAGE_SLOT, createPageButton("§aPage suivante ➡", page + 1));
+        }
+
+        gui.setItem(BACK_SLOT, createBackToMainButton());
     }
 
     /**
-     * Ouvre le menu de choix des récompenses spéciales
+     * Configure une ligne de prestige (3 colonnes : talent1, talent2/spécial, talent3)
      */
-    public void openSpecialRewardsMenu(Player player) {
+    private void setupPrestigeRow(Inventory gui, Player player, int prestigeLevel, int baseSlot) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        boolean isUnlocked = prestigeLevel <= playerData.getPrestigeLevel();
+
+        if (prestigeLevel % 5 == 0) {
+            String[] rewardline = reward.getDescription().split("\n");
+            for (int col = 0; col < 3 && col < rewardline.length; col++) {
+                gui.setItem(baseSlot + col, createRewardItem(player, prestigeLevel, isUnlocked));
+            }
+        } else {
+            // Palier normal avec 3 talents
+            PrestigeTalent talent = PrestigeTalent.getTalentForPrestige(prestigeLevel);
+            if (talent != null) {
+                // Afficher les 3 bonus du talent dans les 3 colonnes
+                String[] bonusLines = talent.getDescription().split("\n");
+                for (int col = 0; col < 3 && col < bonusLines.length; col++) {
+                    gui.setItem(baseSlot + col, createTalentColumnItem(player, prestigeLevel, talent, bonusLines[col], col, isUnlocked));
+                }
+            }
+        }
+    }
+
+    /**
+     * Crée un item pour une colonne de talent
+     */
+    private ItemStack createTalentColumnItem(Player player, int prestigeLevel, PrestigeTalent talent,
+                                             String bonusDescription, int column, boolean isUnlocked) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Trouver le prochain niveau de prestige qui a des récompenses à choisir
-        int targetLevel = -1;
-        for (int level = 5; level <= playerData.getPrestigeLevel(); level += 5) {
-            if (playerData.canChooseRewardForPrestige(level)) {
-                targetLevel = level;
-                break;
+        // Matériaux selon la colonne et le type
+        Material material = isUnlocked ? getMaterialForTalentColumn(talent, column) : Material.GRAY_STAINED_GLASS_PANE;
+
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            // Nom selon la colonne
+            String columnName = getColumnName(talent, column);
+            meta.setDisplayName(isUnlocked ? "§6" + columnName : "§7" + columnName);
+
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Prestige: §e" + prestigeLevel);
+            lore.add("§7Bonus: " + bonusDescription);
+            lore.add("");
+
+            if (isUnlocked) {
+                int talentLevel = playerData.getPrestigeTalents().getOrDefault(talent, 0);
+                int availableLevel = PrestigeTalent.getTalentLevel(talent, playerData.getPrestigeLevel());
+                lore.add("§7Niveau actuel: §a" + talentLevel + "/" + availableLevel);
+                lore.add("§aCet bonus est actif!");
+            } else {
+                lore.add("§cRequiert le prestige " + prestigeLevel);
             }
-        }
 
-        if (targetLevel == -1) {
-            player.sendMessage("§c❌ Aucune récompense spéciale à choisir!");
-            return;
-        }
+            meta.setLore(lore);
 
-        List<PrestigeReward> rewards = PrestigeReward.SpecialRewards.getSpecialRewardsForPrestige(targetLevel);
-        if (rewards.size() <= 1) {
-            player.sendMessage("§c❌ Pas de choix disponible pour ce niveau!");
-            return;
-        }
-
-        Inventory gui = Bukkit.createInventory(null, 27, "§6🎁 Choisir Récompense P" + targetLevel);
-
-        fillWithGlass(gui);
-
-        // Afficher les choix
-        int[] choiceSlots = {11, 13, 15};
-        for (int i = 0; i < rewards.size() && i < choiceSlots.length; i++) {
-            ItemStack rewardItem = rewards.get(i).getDisplayItem();
-            ItemMeta meta = rewardItem.getItemMeta();
-            if (meta != null) {
-                meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "choose_reward");
-                meta.getPersistentDataContainer().set(rewardIdKey, PersistentDataType.STRING, rewards.get(i).getId());
-                meta.getPersistentDataContainer().set(prestigeLevelKey, PersistentDataType.INTEGER, targetLevel);
-                rewardItem.setItemMeta(meta);
+            // Enchantement si actif
+            if (isUnlocked) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
-            gui.setItem(choiceSlots[i], rewardItem);
+
+            item.setItemMeta(meta);
         }
 
-        // Retour
-        gui.setItem(22, createBackToMainButton());
-
-        player.openInventory(gui);
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 1.0f, 1.0f);
+        return item;
     }
 
     /**
-     * Gère les clics dans les menus de prestige
+     * Obtient le matériau pour une colonne de talent
      */
-    public void handleClick(Player player, ItemStack clickedItem, ClickType clickType) {
+    private Material getMaterialForTalentColumn(PrestigeTalent talent, int column) {
+        return switch (talent) {
+            case PROFIT_AMELIORE -> switch (column) {
+                case 0 -> Material.GOLD_NUGGET; // Money Greed
+                case 1 -> Material.EMERALD; // Prix vente
+                case 2 -> Material.BEACON; // Gain avant-poste
+                default -> Material.GOLD_INGOT;
+            };
+            case ECONOMIE_OPTIMISEE -> switch (column) {
+                case 0 -> Material.DIAMOND; // Token Greed
+                case 1 -> Material.REDSTONE; // Taxe
+                case 2 -> Material.IRON_SWORD; // Prix marchand PvP
+                default -> Material.DIAMOND;
+            };
+            case PROFIT_AMELIORE_II -> switch (column) {
+                case 0 -> Material.GOLD_BLOCK; // Effet Money Greed
+                case 1 -> Material.EMERALD_BLOCK; // Prix vente direct
+                case 2 -> Material.BEACON; // Gain rinacoins avant-poste
+                default -> Material.GOLD_BLOCK;
+            };
+            case ECONOMIE_OPTIMISEE_II -> switch (column) {
+                case 0 -> Material.DIAMOND_BLOCK; // Effet Token Greed
+                case 1 -> Material.REDSTONE_BLOCK; // Taux taxe final
+                case 2 -> Material.NETHERITE_SWORD; // Prix marchand PvP
+                default -> Material.DIAMOND_BLOCK;
+            };
+        };
+    }
+
+    /**
+     * Obtient le nom de la colonne
+     */
+    private String getColumnName(PrestigeTalent talent, int column) {
+        return switch (talent) {
+            case PROFIT_AMELIORE -> switch (column) {
+                case 0 -> "Money Greed";
+                case 1 -> "Prix Vente";
+                case 2 -> "Gain Avant-poste";
+                default -> "Bonus";
+            };
+            case ECONOMIE_OPTIMISEE -> switch (column) {
+                case 0 -> "Token Greed";
+                case 1 -> "Réduction Taxe";
+                case 2 -> "Prix PvP";
+                default -> "Bonus";
+            };
+            case PROFIT_AMELIORE_II -> switch (column) {
+                case 0 -> "Effet Money Greed";
+                case 1 -> "Prix Vente Direct";
+                case 2 -> "Rinacoins Avant-poste";
+                default -> "Bonus";
+            };
+            case ECONOMIE_OPTIMISEE_II -> switch (column) {
+                case 0 -> "Effet Token Greed";
+                case 1 -> "Taux Taxe Final";
+                case 2 -> "Prix PvP Final";
+                default -> "Bonus";
+            };
+        };
+    }
+
+    /**
+     * Gère les clics dans le menu
+     */
+    public void handleMenuClick(Player player, int slot, ItemStack clickedItem, ClickType clickType) {
         if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
         ItemMeta meta = clickedItem.getItemMeta();
-        if (!meta.getPersistentDataContainer().has(actionKey, PersistentDataType.STRING)) return;
-
         String action = meta.getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
+        if (action == null) return;
 
         switch (action) {
-            case "open_rewards" -> openRewardsMenu(player, 0);
-            case "open_talents" -> openTalentsMenu(player, 0);
+            case "open_combined" -> openCombinedMenu(player, 0);
+            case "reset_talents" -> handleTalentReset(player);
             case "perform_prestige" -> {
-                player.closeInventory();
-                player.performCommand("prestige effectuer");
-            }
-            case "choose_reward" -> {
-                String rewardId = meta.getPersistentDataContainer().get(rewardIdKey, PersistentDataType.STRING);
-                int prestigeLevel = meta.getPersistentDataContainer().get(prestigeLevelKey, PersistentDataType.INTEGER);
-                handleRewardChoice(player, rewardId, prestigeLevel);
+                if (plugin.getPrestigeManager().canPrestige(player)) {
+                    plugin.getPrestigeManager().performPrestige(player);
+                    openMainPrestigeMenu(player); // Refresh
+                }
             }
             case "page_navigation" -> {
-                // Géré par les données dans l'item
+                Integer targetPage = meta.getPersistentDataContainer().get(NamespacedKey.fromString("page"), PersistentDataType.INTEGER);
+                if (targetPage != null) {
+                    openCombinedMenu(player, targetPage);
+                }
             }
             case "back_to_main" -> openMainPrestigeMenu(player);
-            case "close" -> player.closeInventory();
         }
-
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
     }
 
     /**
-     * Gère le choix d'une récompense spéciale
+     * Gère la réinitialisation des talents
      */
-    private void handleRewardChoice(Player player, String rewardId, int prestigeLevel) {
+    private void handleTalentReset(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        if (!playerData.canChooseRewardForPrestige(prestigeLevel)) {
-            player.sendMessage("§c❌ Vous ne pouvez plus choisir de récompense pour ce niveau!");
+        // Vérification des beacons
+        if (playerData.getBeacons() < 500) {
+            player.sendMessage("§c❌ Vous n'avez pas assez de beacons! Requis: §e500");
+            player.sendMessage("§7Vous avez: §c" + playerData.getBeacons() + " beacons");
             return;
         }
 
-        // Trouver la récompense
-        List<PrestigeReward> rewards = PrestigeReward.SpecialRewards.getSpecialRewardsForPrestige(prestigeLevel);
-        PrestigeReward chosenReward = rewards.stream()
-                .filter(reward -> reward.getId().equals(rewardId))
-                .findFirst()
-                .orElse(null);
-
-        if (chosenReward == null) {
-            player.sendMessage("§c❌ Récompense introuvable!");
+        // Vérification qu'il y a des talents à réinitialiser
+        if (playerData.getPrestigeTalents().isEmpty()) {
+            player.sendMessage("§c❌ Vous n'avez aucun talent de prestige à réinitialiser!");
             return;
         }
 
-        // Donner la récompense
-        plugin.getPrestigeManager().getRewardManager().giveSpecialReward(player, chosenReward);
-
-        // Marquer comme choisie
-        playerData.addChosenSpecialReward(rewardId);
+        // Confirmation
+        player.sendMessage("§6⚠ CONFIRMATION REQUISE ⚠");
+        player.sendMessage("§7Cette action va:");
+        player.sendMessage("§7• Réinitialiser TOUS vos talents de prestige");
+        player.sendMessage("§7• Coûter §c500 beacons");
+        player.sendMessage("§7• Les récompenses spéciales ne seront PAS récupérables");
+        player.sendMessage("");
+        player.sendMessage("§aTapez §e/prestige confirmer-reset §apour confirmer");
 
         player.closeInventory();
-        player.sendMessage("§a✅ Récompense choisie: §6" + chosenReward.getDisplayName());
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 0.8f);
     }
+
+    /**
+     * Confirme la réinitialisation des talents (appelée depuis la commande)
+     */
+    public void confirmTalentReset(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Vérifications finales
+        if (playerData.getBeacons() < 500) {
+            player.sendMessage("§c❌ Beacons insuffisants!");
+            return;
+        }
+
+        // Effectuer la réinitialisation
+        playerData.removeBeacon(500);
+        playerData.clearPrestigeTalents();
+
+        // Réappliquer les bonus au GlobalBonusManager
+
+        // Messages et effets
+        player.sendMessage("§a✅ Talents de prestige réinitialisés!");
+        player.sendMessage("§7Coût: §c-500 beacons");
+        player.sendMessage("§7Vous pouvez maintenant réattribuer vos talents selon vos nouveaux prestiges");
+
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+    }
+
 
     // =============== MÉTHODES DE CRÉATION D'ITEMS ===============
 
@@ -319,23 +412,31 @@ public class PrestigeGUI {
             lore.add("");
 
             if (prestigeLevel > 0) {
-                lore.add("§e⚡ Talents actifs:");
-                Map<PrestigeTalent, Integer> talents = playerData.getPrestigeTalents();
-                if (talents.isEmpty()) {
-                    lore.add("§7  Aucun talent actif");
-                } else {
-                    for (Map.Entry<PrestigeTalent, Integer> entry : talents.entrySet()) {
-                        lore.add("§7  • §6" + entry.getKey().getDisplayName() + " §7(Niv." + entry.getValue() + ")");
-                    }
+                lore.add("§e⚡ Bonus actifs:");
+
+                // Calculer les bonus totaux
+                double moneyBonus = playerData.getPrestigeMoneyGreedBonus();
+                double tokenBonus = playerData.getPrestigeTokenGreedBonus();
+                double taxReduction = playerData.getPrestigeTaxReduction();
+                double sellBonus = playerData.getPrestigeSellBonus();
+
+                if (moneyBonus > 0) {
+                    lore.add("§7  • §6Money Greed: §a+" + String.format("%.1f", moneyBonus * 100) + "%");
                 }
+                if (tokenBonus > 0) {
+                    lore.add("§7  • §bToken Greed: §a+" + String.format("%.1f", tokenBonus * 100) + "%");
+                }
+                if (taxReduction > 0) {
+                    lore.add("§7  • §cRéduction Taxe: §a-" + String.format("%.1f", taxReduction * 100) + "%");
+                }
+                if (sellBonus > 0) {
+                    lore.add("§7  • §ePrix Vente: §a+" + String.format("%.1f", sellBonus * 100) + "%");
+                }
+
                 lore.add("");
-                lore.add("§a📈 Bonus totaux:");
-                lore.add("§7  • Money Greed: §a+" + String.format("%.1f", playerData.getPrestigeMoneyGreedBonus() * 100) + "%");
-                lore.add("§7  • Token Greed: §a+" + String.format("%.1f", playerData.getPrestigeTokenGreedBonus() * 100) + "%");
-                lore.add("§7  • Réduction taxe: §a-" + String.format("%.1f", playerData.getPrestigeTaxReduction() * 100) + "%");
+                lore.add("§7Récompenses spéciales réclamées: §e" + playerData.getChosenSpecialRewards().size());
             } else {
-                lore.add("§7Aucun prestige effectué");
-                lore.add("§7Atteignez le rang §d§lZ §7pour débloquer");
+                lore.add("§7Atteignez le prestige 1 pour débloquer des bonus!");
             }
 
             meta.setLore(lore);
@@ -345,42 +446,68 @@ public class PrestigeGUI {
         return item;
     }
 
-    private ItemStack createRewardsButton() {
-        ItemStack item = new ItemStack(Material.CHEST);
+    private ItemStack createCombinedButton() {
+        ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§6📦 Récompenses de Prestige");
+            meta.setDisplayName("§5⚡ Talents & Récompenses");
             meta.setLore(List.of(
-                    "§7Consultez toutes les récompenses",
-                    "§7disponibles pour chaque niveau",
-                    "§7de prestige.",
+                    "§7Consultez et gérez vos talents",
+                    "§7de prestige et récompenses spéciales",
+                    "",
+                    "§7• Organisation par niveau de prestige",
+                    "§7• Affichage des bonus par colonne",
+                    "§7• Récompenses spéciales tous les 5 niveaux",
                     "",
                     "§eCliquez pour ouvrir!"
             ));
-            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_rewards");
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_combined");
             item.setItemMeta(meta);
         }
 
         return item;
     }
 
-    private ItemStack createTalentsButton() {
-        ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
+    private ItemStack createResetTalentsButton(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        boolean hasEnoughBeacons = playerData.getBeacons() >= 500;
+        boolean hasTalents = !playerData.getPrestigeTalents().isEmpty();
+
+        Material material = hasEnoughBeacons && hasTalents ? Material.TNT : Material.BARRIER;
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§5⚡ Talents de Prestige");
-            meta.setLore(List.of(
-                    "§7Visualisez vos talents de prestige",
-                    "§7et leurs effets cumulés.",
-                    "",
-                    "§7Les talents se débloquent automatiquement",
-                    "§7selon un cycle de 4 niveaux.",
-                    "",
-                    "§eCliquez pour ouvrir!"
-            ));
-            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_talents");
+            meta.setDisplayName("§c🔄 Réinitialiser Talents");
+
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Remet à zéro tous vos talents");
+            lore.add("§7de prestige pour les réattribuer");
+            lore.add("");
+            lore.add("§7Coût: §e500 beacons");
+            lore.add("§7Vos beacons: " + (hasEnoughBeacons ? "§a" : "§c") + playerData.getBeacons());
+            lore.add("");
+
+            if (!hasTalents) {
+                lore.add("§cAucun talent à réinitialiser");
+            } else if (!hasEnoughBeacons) {
+                lore.add("§cBeacons insuffisants!");
+            } else {
+                lore.add("§7⚠ Les récompenses spéciales");
+                lore.add("§7ne peuvent PAS être réclamées à nouveau");
+                lore.add("");
+                lore.add("§eCliquez pour réinitialiser");
+            }
+
+            meta.setLore(lore);
+
+            if (hasEnoughBeacons && hasTalents) {
+                meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "reset_talents");
+            }
+
             item.setItemMeta(meta);
         }
 
@@ -388,26 +515,21 @@ public class PrestigeGUI {
     }
 
     private ItemStack createPerformPrestigeButton(int nextLevel) {
-        ItemStack item = new ItemStack(Material.BEACON);
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§a✨ Effectuer Prestige " + nextLevel);
+            meta.setDisplayName("§6🚀 Effectuer Prestige " + nextLevel);
             meta.setLore(List.of(
-                    "§7Effectuez votre prochain prestige!",
+                    "§7Passez au niveau de prestige suivant",
+                    "§7et débloquez de nouveaux bonus!",
                     "",
-                    "§c⚠ ATTENTION:",
-                    "§7• Retour au rang A",
-                    "§7• Remise à 0 des coins",
+                    "§aConditions remplies!",
                     "",
-                    "§a✅ AVANTAGES:",
-                    "§7• Talents permanents",
-                    "§7• Mines prestige exclusives",
-                    "§7• Récompenses spéciales",
-                    "",
-                    "§eCliquez pour commencer!"
+                    "§eCliquez pour prestigier!"
             ));
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "perform_prestige");
             item.setItemMeta(meta);
         }
@@ -422,10 +544,11 @@ public class PrestigeGUI {
         if (meta != null) {
             meta.setDisplayName("§c🔒 Prestige Verrouillé");
             meta.setLore(List.of(
-                    "§7Conditions non remplies:",
-                    "§c• Pas d'épargne active",
-                    "§c• Pas d'investissement actif",
-                    "§c• Ne pas être en challenge"
+                    "§7Vous devez remplir les conditions",
+                    "§7pour effectuer un prestige",
+                    "",
+                    "§7Consultez §e/prestige info §7pour",
+                    "§7voir les prérequis"
             ));
             item.setItemMeta(meta);
         }
@@ -433,131 +556,15 @@ public class PrestigeGUI {
         return item;
     }
 
-    private ItemStack createMinesInfoItem(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int prestigeLevel = playerData.getPrestigeLevel();
-
-        ItemStack item = new ItemStack(Material.DIAMOND_PICKAXE);
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName("§b⛏ Mines Prestige");
-
-            List<String> lore = new ArrayList<>();
-            lore.add("§7Mines exclusives aux joueurs prestige");
-            lore.add("");
-
-            if (prestigeLevel >= 1) {
-                lore.add("§a✅ Mine Prestige I §7(0.1% beacons)");
-            } else {
-                lore.add("§c🔒 Mine Prestige I §7(P1+)");
-            }
-
-            if (prestigeLevel >= 11) {
-                lore.add("§a✅ Mine Prestige XI §7(0.5% beacons)");
-            } else {
-                lore.add("§c🔒 Mine Prestige XI §7(P11+)");
-            }
-
-            if (prestigeLevel >= 21) {
-                lore.add("§a✅ Mine Prestige XXI §7(1% beacons)");
-            } else {
-                lore.add("§c🔒 Mine Prestige XXI §7(P21+)");
-            }
-
-            if (prestigeLevel >= 31) {
-                lore.add("§a✅ Mine Prestige XXXI §7(3% beacons)");
-            } else {
-                lore.add("§c🔒 Mine Prestige XXXI §7(P31+)");
-            }
-
-            if (prestigeLevel >= 41) {
-                lore.add("§a✅ Mine Prestige XLI §7(5% beacons)");
-            } else {
-                lore.add("§c🔒 Mine Prestige XLI §7(P41+)");
-            }
-
-            meta.setLore(lore);
-            item.setItemMeta(meta);
-        }
-
-        return item;
-    }
-
-    private ItemStack createRewardDisplayItem(Player player, int level) {
-        // TODO: Créer l'affichage des récompenses pour chaque niveau
-        ItemStack item = new ItemStack(Material.GOLD_INGOT);
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName("§6Prestige " + level);
-            // Ajouter les détails des récompenses selon le niveau
-            item.setItemMeta(meta);
-        }
-
-        return item;
-    }
-
-    private ItemStack createTalentDisplayItem(PrestigeTalent talent, int currentLevel, int prestigeLevel) {
-        Material material = switch (talent) {
-            case PROFIT_AMELIORE -> Material.GOLD_NUGGET;
-            case ECONOMIE_OPTIMISEE -> Material.EMERALD;
-            case PROFIT_AMELIORE_II -> Material.GOLD_INGOT;
-            case ECONOMIE_OPTIMISEE_II -> Material.DIAMOND;
-        };
-
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName("§6" + talent.getDisplayName());
-
-            List<String> lore = new ArrayList<>();
-            lore.add("§7" + talent.getDescription().replace("\n", " §7"));
-            lore.add("");
-            lore.add("§7Niveau actuel: §e" + currentLevel);
-            lore.add("§7Disponible tous les " + talent.getCycle() + " prestiges");
-
-            meta.setLore(lore);
-            meta.getPersistentDataContainer().set(talentKey, PersistentDataType.STRING, talent.name());
-            item.setItemMeta(meta);
-        }
-
-        return item;
-    }
-
-    private ItemStack createTalentsInfoItem(Player player) {
-        ItemStack item = new ItemStack(Material.BOOK);
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName("§e📖 Informations Talents");
-            meta.setLore(List.of(
-                    "§7Les talents de prestige sont obtenus",
-                    "§7automatiquement selon un cycle:",
-                    "",
-                    "§6P1,6,11,16... §7Profit Amélioré",
-                    "§bP2,7,12,17... §7Économie Optimisée",
-                    "§6P3,8,13,18... §7Profit Amélioré II",
-                    "§bP4,9,14,19... §7Économie Optimisée II",
-                    "",
-                    "§7Les paliers P5,10,15... donnent",
-                    "§7des récompenses spéciales à choisir."
-            ));
-            item.setItemMeta(meta);
-        }
-
-        return item;
-    }
-
-    private ItemStack createPageButton(String name, int page, String type) {
+    private ItemStack createPageButton(String name, int targetPage) {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
             meta.setDisplayName(name);
+            meta.setLore(List.of("§7Page " + (targetPage + 1)));
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "page_navigation");
-            meta.getPersistentDataContainer().set(prestigeLevelKey, PersistentDataType.INTEGER, page);
+            meta.getPersistentDataContainer().set(NamespacedKey.fromString("page"), PersistentDataType.INTEGER, targetPage);
             item.setItemMeta(meta);
         }
 
@@ -565,11 +572,11 @@ public class PrestigeGUI {
     }
 
     private ItemStack createBackToMainButton() {
-        ItemStack item = new ItemStack(Material.DARK_OAK_DOOR);
+        ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§7← Retour au menu principal");
+            meta.setDisplayName("§c← Retour au menu principal");
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_to_main");
             item.setItemMeta(meta);
         }
@@ -577,14 +584,35 @@ public class PrestigeGUI {
         return item;
     }
 
+    private ItemStack createBackToCombinedButton() {
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            meta.setDisplayName("§a← Retour aux Talents & Récompenses");
+            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "page_navigation");
+            meta.getPersistentDataContainer().set(NamespacedKey.fromString("page"), PersistentDataType.INTEGER, 0);
+            item.setItemMeta(meta);
+        }
+
+        return item;
+    }
+
     private ItemStack createHelpItem() {
-        ItemStack item = new ItemStack(Material.WRITABLE_BOOK);
+        ItemStack item = new ItemStack(Material.BOOK);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
             meta.setDisplayName("§e❓ Aide");
             meta.setLore(List.of(
-                    "§7Aide sur le système de prestige"
+                    "§7Le système de prestige vous permet",
+                    "§7de recommencer avec des bonus permanents",
+                    "",
+                    "§7• Talents cycliques automatiques",
+                    "§7• Récompenses spéciales tous les 5 niveaux",
+                    "§7• Possibilité de réinitialiser les talents",
+                    "",
+                    "§7Plus d'infos: §e/prestige help"
             ));
             item.setItemMeta(meta);
         }
@@ -597,8 +625,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§c✖ Fermer");
-            meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
+            meta.setDisplayName("§c✗ Fermer");
             item.setItemMeta(meta);
         }
 
