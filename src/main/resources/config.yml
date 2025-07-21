@@ -583,7 +583,7 @@ mines:
       diamond_ore: 0.2
       emerald_ore: 0.15
       ancient_debris: 0.1
-      netherite_scrap: 0.05
+      netherite_block: 0.05
       beacon: 0.001  # 0.1% de beacons
       coal_ore: 0.099
     display-name: "§d§lMine Prestige I"
@@ -606,7 +606,7 @@ mines:
       diamond_ore: 0.25
       emerald_ore: 0.2
       ancient_debris: 0.15
-      netherite_scrap: 0.1
+      netherite_block: 0.1
       beacon: 0.005  # 0.5% de beacons
       coal_ore: 0.095
     display-name: "§d§lMine Prestige XI"
@@ -629,7 +629,7 @@ mines:
       diamond_ore: 0.3
       emerald_ore: 0.25
       ancient_debris: 0.2
-      netherite_scrap: 0.15
+      netherite_block: 0.15
       beacon: 0.01  # 1% de beacons
       coal_ore: 0.09
     display-name: "§d§lMine Prestige XXI"
@@ -652,7 +652,7 @@ mines:
       diamond_ore: 0.35
       emerald_ore: 0.3
       ancient_debris: 0.25
-      netherite_scrap: 0.2
+      netherite_block: 0.2
       beacon: 0.03  # 3% de beacons
       coal_ore: 0.07
     display-name: "§d§lMine Prestige XXXI"
@@ -675,7 +675,7 @@ mines:
       diamond_ore: 0.4
       emerald_ore: 0.35
       ancient_debris: 0.3
-      netherite_scrap: 0.25
+      netherite_block: 0.25
       beacon: 0.05  # 5% de beacons
       coal_ore: 0.05
     display-name: "§d§lMine Prestige XLI"
@@ -701,7 +701,7 @@ mines:
       diamond_ore: 0.4
       emerald_ore: 0.3
       ancient_debris: 0.15
-      netherite_scrap: 0.1
+      netherite_block: 0.1
       beacon: 0.02  # 2% de beacons
       gold_ore: 0.03
     display-name: "§6§lMine VIP I"
@@ -722,7 +722,7 @@ mines:
       diamond_ore: 0.35
       emerald_ore: 0.35
       ancient_debris: 0.2
-      netherite_scrap: 0.15
+      netherite_block: 0.15
       beacon: 0.025  # 2.5% de beacons
       gold_ore: 0.025
     display-name: "§6§lMine VIP II"
@@ -810,7 +810,7 @@ block-values:
   diamond_ore: 250
   emerald_ore: 500
   ancient_debris: 1000
-  netherite_scrap: 2000
+  netherite_block: 2000
   beacon: 50000  # Beacons valent très cher
   stone: 1
   cobblestone: 1
@@ -1062,7 +1062,7 @@ sell-prices:
   lapis_lazuli: 3
   diamond: 40
   emerald: 60
-  netherite_scrap: 150
+  netherite_block: 150
   netherite_ingot: 800
 
   # Items de craft

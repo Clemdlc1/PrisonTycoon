@@ -1,6 +1,7 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.managers.PickaxeManager;
@@ -60,16 +61,19 @@ public class MiningListener implements Listener {
                 player.sendMessage("§c❌ Seule la pioche légendaire peut miner dans cette zone!");
                 return;
             }
-
-            if (!plugin.getMineManager().canMineAtLocation(player, location)) {
+            if (!plugin.getMineManager().canAccessMine(player, mineName)) {
                 event.setCancelled(true);
-                String requiredRank = mineName.replace("mine-", "").toUpperCase();
-                String currentRank = plugin.getMineManager().getPlayerHighestRank(player);
+
+                String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
+                String currentRank = rankInfo[0];      // Rang actuel
+                String rankColor = rankInfo[1];        // Couleur du rang
+
+                MineData mine = plugin.getConfigManager().getMineData(mineName);
+                String requiredRank = mine != null ? mine.getRequiredRank().toUpperCase() :
+                        mineName.replace("mine-", "").toUpperCase();
 
                 player.sendMessage("§c❌ Vous n'avez pas accès à cette mine!");
-                player.sendMessage("§7Mine: §e" + requiredRank + " §7- Votre rang: §c" +
-                        (currentRank != null ? currentRank.toUpperCase() : "A"));
-                player.sendMessage("§7Utilisez §e/rankup §7pour monter de rang!");
+                player.sendMessage("§7Mine: §e" + requiredRank + " §7- Votre rang: " + rankColor + currentRank.toUpperCase());
                 return;
             }
 
@@ -86,11 +90,10 @@ public class MiningListener implements Listener {
             // Hors mine avec pioche légendaire - restrictions appliquées
             processMiningOutsideMine(player, location, material);
             handlePickaxeDurability(player, event);
-
         }
 
         // 3. POST-TRAITEMENT : Mise à jour de la pioche légendaire si utilisée
-        if (playerPickaxe != null) {
+        if (playerPickaxe != null && plugin.getPickaxeManager().isLegendaryPickaxe(playerPickaxe)) {
             postProcessLegendaryPickaxe(player);
 
             // NOUVEAU : Incrémente le compteur de blocs et vérifie les notifications de durabilité
