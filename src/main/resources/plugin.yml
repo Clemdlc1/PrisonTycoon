@@ -4,6 +4,8 @@ main: fr.prisontycoon.PrisonTycoon
 api-version: 1.20
 author: PrisonCore
 description: Plugin de prison avec système de prestige, mines spéciales et métiers
+depend:
+  - Multiverse-Core
 
 # Permissions principales
 permissions:

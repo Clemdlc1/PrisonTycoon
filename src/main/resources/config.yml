@@ -20,7 +20,7 @@ cache-cleanup-interval: 3000 # secondes (50 minutes)
 mines:
   # Mine A - Mine de débutant (rang par défaut, pas de prix)
   mine-a:
-    world: world
+    world: MineA
     coordinates:
       min-x: 100
       min-y: 10

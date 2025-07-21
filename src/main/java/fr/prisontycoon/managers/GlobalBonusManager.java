@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.cristaux.CristalType;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -32,13 +33,13 @@ public class GlobalBonusManager {
             totalBonus += plugin.getCristalManager().getTotalCristalBonus(player, bonusType.getAssociatedCristal());
         }
 
-        // 2. NOUVEAU: Bonus des talents de métiers
+        // 2. Bonus des talents de métiers
         totalBonus += getProfessionTalentBonus(player, bonusType);
 
-        // 3. Futurs bonus (VIP, événements, etc.)
-        // ...
+        // 3. NOUVEAU: Bonus des talents de prestige
+        totalBonus += getPrestigeTalentBonus(player, bonusType);
 
-        return 1.0 + (totalBonus / 100.0); // Convertit pourcentage en multiplicateur
+        return 1.0 + (totalBonus / 100.0);
     }
 
     /**
@@ -182,6 +183,51 @@ public class GlobalBonusManager {
         return bonus;
     }
 
+    private double getPrestigeTalentBonus(Player player, BonusType bonusType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        double bonus = 0.0;
+
+        Map<PrestigeTalent, Integer> talents = playerData.getPrestigeTalents();
+
+        for (Map.Entry<PrestigeTalent, Integer> entry : talents.entrySet()) {
+            PrestigeTalent talent = entry.getKey();
+            int level = entry.getValue();
+
+            if (level > 0) {
+                bonus += calculateTalentBonus(talent, level, bonusType);
+            }
+        }
+
+        return bonus;
+    }
+
+    /**
+     * Calcule le bonus d'un talent spécifique pour un type de bonus
+     */
+    private double calculateTalentBonus(PrestigeTalent talent, int level, BonusType bonusType) {
+        switch (talent) {
+            case PROFIT_AMELIORE:
+            case PROFIT_AMELIORE_II:
+                switch (bonusType) {
+                    case PRESTIGE_MONEY_GREED: return level * 3.0; // +3% par niveau
+                    case PRESTIGE_SELL_BONUS: return level * 3.0;  // +3% par niveau
+                    case PRESTIGE_OUTPOST_BONUS: return level * 3.0; // +3% par niveau
+                }
+                break;
+
+            case ECONOMIE_OPTIMISEE:
+            case ECONOMIE_OPTIMISEE_II:
+                switch (bonusType) {
+                    case PRESTIGE_TOKEN_GREED: return level * 3.0; // +3% par niveau
+                    case PRESTIGE_TAX_REDUCTION: return level * 1.0; // -1% par niveau
+                    case PRESTIGE_PVP_MERCHANT_REDUCTION: return level * 1.0; // -1% par niveau
+                }
+                break;
+        }
+        return 0.0;
+    }
+
+
     /**
      * NOUVELLE MÉTHODE: Obtient le bonus de négociations (générateurs) pour les commerçants
      */
@@ -320,18 +366,25 @@ public class GlobalBonusManager {
         }
     }
 
-    // Types de bonus gérés
     public enum BonusType {
-        // Types existants (ne pas modifier)
+        // Types existants (cristaux)
         TOKEN_GREED("TokenGreed", CristalType.TOKEN_BOOST),
         MONEY_GREED("MoneyGreed", CristalType.MONEY_BOOST),
         EXP_GREED("ExpGreed", CristalType.XP_BOOST),
         SELL_BONUS("SellBonus", CristalType.SELL_BOOST),
         MINERAL_GREED("MineralGreed", CristalType.MINERAL_GREED),
 
-        // NOUVEAUX types pour les métiers (avec null car pas de cristal associé)
+        // NOUVEAUX types pour les métiers
         SELL_BOOST("SellBoost", null),
-        BEACON_MULTIPLIER("BeaconMultiplier", null);
+        BEACON_MULTIPLIER("BeaconMultiplier", null),
+
+        // NOUVEAUX types pour le PRESTIGE
+        PRESTIGE_MONEY_GREED("PrestigeMoneyGreed", null),
+        PRESTIGE_TOKEN_GREED("PrestigeTokenGreed", null),
+        PRESTIGE_TAX_REDUCTION("PrestigeTaxReduction", null),
+        PRESTIGE_SELL_BONUS("PrestigeSellBonus", null),
+        PRESTIGE_OUTPOST_BONUS("PrestigeOutpostBonus", null),
+        PRESTIGE_PVP_MERCHANT_REDUCTION("PrestigePvpMerchantReduction", null);
 
         private final String displayName;
         private final CristalType associatedCristal;

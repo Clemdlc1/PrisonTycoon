@@ -3,6 +3,8 @@ package fr.prisontycoon.events;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import io.papermc.paper.event.player.PlayerItemFrameChangeEvent;
+import net.kyori.adventure.text.Component;
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -218,53 +220,20 @@ public class PickaxeProtectionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-
-        // NOUVELLE RÈGLE : Le joueur ne perd pas son exp vanilla
         event.setKeepLevel(true);
         event.setDroppedExp(0);
-
-        // Cherche la pioche légendaire dans les drops
-        ItemStack pickaxeToSave = null;
-        var drops = event.getDrops();
-
-        for (ItemStack drop : new java.util.ArrayList<>(drops)) {
-            if (plugin.getPickaxeManager().isLegendaryPickaxe(drop) &&
-                    plugin.getPickaxeManager().isOwner(drop, player)) {
-
+        plugin.getPickaxeManager().removeMobilityEffects(player);
+        var iterator = event.getDrops().iterator();
+        ItemStack pickaxeToSave;
+        while (iterator.hasNext()) {
+            ItemStack drop = iterator.next();
+            if (plugin.getPickaxeManager().isLegendaryPickaxe(drop)) {
                 pickaxeToSave = drop;
-                drops.remove(drop); // Retire des drops
+                applyDeathDurabilityPenalty(pickaxeToSave, player);
+                event.getItemsToKeep().add(pickaxeToSave);
+                iterator.remove();
                 break;
             }
-        }
-
-        // NOUVELLE RÈGLE : Si le joueur a une pioche légendaire, elle perd 5% de durabilité
-        if (pickaxeToSave != null) {
-            applyDeathDurabilityPenalty(pickaxeToSave, player);
-        }
-
-        // Remet la pioche dans le slot 0 après respawn
-        if (pickaxeToSave != null) {
-            final ItemStack finalPickaxe = pickaxeToSave;
-
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                // NOUVEAU : Force le placement au slot 0
-                ItemStack existingSlot0 = player.getInventory().getItem(0);
-
-                // Place la pioche au slot 0
-                player.getInventory().setItem(0, finalPickaxe);
-
-                // Si il y avait un item au slot 0, essaie de le replacer
-                if (existingSlot0 != null && existingSlot0.getType() != org.bukkit.Material.AIR) {
-                    var leftover = player.getInventory().addItem(existingSlot0);
-                    if (!leftover.isEmpty()) {
-                        for (ItemStack overflow : leftover.values()) {
-                            player.getWorld().dropItemNaturally(player.getLocation(), overflow);
-                        }
-                    }
-                }
-                plugin.getPickaxeManager().updatePlayerPickaxe(player);
-
-            }, 1L); // 1 tick après la mort
         }
     }
 
@@ -304,6 +273,7 @@ public class PickaxeProtectionListener implements Listener {
         double percentageLost = (durabilityPenalty / (double) maxDurability) * 100;
         player.sendMessage("§c⚠ Votre pioche a perdu " + String.format("%.1f%%", percentageLost) +
                 " de durabilité due à votre mort (");
+        plugin.getPickaxeManager().updatePlayerPickaxe(player);
 
         plugin.getPluginLogger().debug("Pénalité de mort appliquée à la pioche de " + player.getName() +
                 ": -" + durabilityPenalty + " durabilité (" + String.format("%.1f%%", percentageLost) + ")");

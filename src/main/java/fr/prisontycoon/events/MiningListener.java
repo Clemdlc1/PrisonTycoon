@@ -194,7 +194,6 @@ public class MiningListener implements Listener {
     /**
      * NOUVEAU : Incrémente le compteur de blocs et vérifie s'il faut envoyer une notification de durabilité
      */
-
     private void incrementBlockCountAndCheckDurabilityNotification(Player player, ItemStack pickaxe) {
         // Vérifie d'abord si l'item ou son ItemMeta est non-existant
         if (pickaxe == null || !pickaxe.hasItemMeta()) {

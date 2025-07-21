@@ -2,6 +2,7 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -226,6 +227,24 @@ public class PlayerDataManager {
                 }
             }
 
+            ConfigurationSection unlockedRewardsSection = config.getConfigurationSection("prestige.unlocked-rewards");
+            if (unlockedRewardsSection != null) {
+                Map<String, Boolean> unlockedRewards = new HashMap<>();
+                for (String key : unlockedRewardsSection.getKeys(false)) {
+                    unlockedRewards.put(key, unlockedRewardsSection.getBoolean(key));
+                }
+                data.setUnlockedPrestigeRewards(unlockedRewards);
+            }
+
+            ConfigurationSection chosenTalentsSection = config.getConfigurationSection("prestige.chosen-talents");
+            if (chosenTalentsSection != null) {
+                Map<Integer, String> chosenTalents = new HashMap<>();
+                for (String key : chosenTalentsSection.getKeys(false)) {
+                    chosenTalents.put(Integer.parseInt(key), chosenTalentsSection.getString(key));
+                }
+                data.setChosenPrestigeTalents(chosenTalents);
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -360,7 +379,7 @@ public class PlayerDataManager {
                 }
             }
 
-            // Talents
+            // Talents métier
             Map<String, Map<String, Integer>> talentLevels = data.getAllTalentLevels();
             if (!talentLevels.isEmpty()) {
                 for (Map.Entry<String, Map<String, Integer>> professionEntry : talentLevels.entrySet()) {
@@ -384,6 +403,20 @@ public class PlayerDataManager {
                     if (!claimedLevels.isEmpty()) {
                         config.set("profession-rewards." + profession, new ArrayList<>(claimedLevels));
                     }
+                }
+            }
+
+            Map<String, Boolean> unlockedRewards = data.getUnlockedPrestigeRewards();
+            if (!unlockedRewards.isEmpty()) {
+                for (Map.Entry<String, Boolean> entry : unlockedRewards.entrySet()) {
+                    config.set("prestige.unlocked-rewards." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            Map<Integer, String> chosenTalents = data.getChosenPrestigeTalents();
+            if (!chosenTalents.isEmpty()) {
+                for (Map.Entry<Integer, String> entry : chosenTalents.entrySet()) {
+                    config.set("prestige.chosen-talents." + entry.getKey(), entry.getValue());
                 }
             }
 

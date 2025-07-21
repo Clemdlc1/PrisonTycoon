@@ -21,16 +21,6 @@ public class MobilityEffectsListener implements Listener {
     }
 
     /**
-     * Gère la mort du joueur - retire les effets de mobilité
-     */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        // Retire les effets de mobilité à la mort
-        plugin.getPickaxeManager().removeMobilityEffects(player);
-    }
-
-    /**
      * Gère le respawn du joueur - remet les effets si il a la pioche + vérifie l'état de la pioche
      */
     @EventHandler(priority = EventPriority.MONITOR)

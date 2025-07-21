@@ -31,8 +31,8 @@ public class PlayerData {
     private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
     private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
     private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
-    private final Map<PrestigeTalent, Integer> prestigeTalents = new ConcurrentHashMap<>();
-    private final Set<String> chosenSpecialRewards = ConcurrentHashMap.newKeySet(); // IDs des récompenses P5, P10, etc.
+    private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
+    private Set<String> chosenSpecialRewards = new HashSet<>();
     private final Set<String> unlockedPrestigeMines = ConcurrentHashMap.newKeySet();
     // Économie TOTALE (toutes sources)
     private long coins;
@@ -81,6 +81,11 @@ public class PlayerData {
     //prestige
     private int prestigeLevel = 0;
     private long lastPrestigeTime = 0; // Timestamp du dernier prestige
+
+    // NOUVEAUX ajouts pour le système amélioré
+    private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
+    private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
+
 
 
     public PlayerData(UUID playerId, String playerName) {
@@ -1453,5 +1458,79 @@ public class PlayerData {
      * @param type MUTE, BAN
      */
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    /**
+     * Débloque une récompense de prestige (action gratuite)
+     */
+    public void unlockPrestigeReward(String rewardId) {
+        synchronized (dataLock) {
+            unlockedPrestigeRewards.put(rewardId, true);
+        }
+    }
+
+    /**
+     * Vérifie si une récompense de prestige est débloquée
+     */
+    public boolean isPrestigeRewardUnlocked(String rewardId) {
+        synchronized (dataLock) {
+            return unlockedPrestigeRewards.getOrDefault(rewardId, false);
+        }
+    }
+
+    /**
+     * Choisit un talent pour un niveau de prestige donné (un seul par niveau)
+     */
+    public void choosePrestigeTalent(int prestigeLevel, String talentName) {
+        synchronized (dataLock) {
+            chosenPrestigeTalents.put(prestigeLevel, talentName);
+        }
+    }
+
+    /**
+     * Obtient le talent choisi pour un niveau de prestige
+     */
+    public String getChosenPrestigeTalent(int prestigeLevel) {
+        synchronized (dataLock) {
+            return chosenPrestigeTalents.get(prestigeLevel);
+        }
+    }
+
+    /**
+     * Réinitialise les talents de prestige (mais garde les récompenses)
+     */
+    public void resetPrestigeTalents() {
+        synchronized (dataLock) {
+            prestigeTalents.clear();
+            chosenPrestigeTalents.clear();
+            // Les récompenses spéciales sont CONSERVÉES
+        }
+    }
+
+    // Getters/Setters pour la sauvegarde
+    public Map<String, Boolean> getUnlockedPrestigeRewards() {
+        synchronized (dataLock) {
+            return new HashMap<>(unlockedPrestigeRewards);
+        }
+    }
+
+    public void setUnlockedPrestigeRewards(Map<String, Boolean> rewards) {
+        synchronized (dataLock) {
+            this.unlockedPrestigeRewards.clear();
+            this.unlockedPrestigeRewards.putAll(rewards);
+        }
+    }
+
+    public Map<Integer, String> getChosenPrestigeTalents() {
+        synchronized (dataLock) {
+            return new HashMap<>(chosenPrestigeTalents);
+        }
+    }
+
+    public void setChosenPrestigeTalents(Map<Integer, String> talents) {
+        synchronized (dataLock) {
+            this.chosenPrestigeTalents.clear();
+            this.chosenPrestigeTalents.putAll(talents);
+        }
     }
 }
