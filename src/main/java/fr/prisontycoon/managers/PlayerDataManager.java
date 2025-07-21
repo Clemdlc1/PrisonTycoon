@@ -228,16 +228,76 @@ public class PlayerDataManager {
                 }
             }
 
-            Set<String> chosenRewards = data.getChosenSpecialRewards();
-            if (!chosenRewards.isEmpty()) {
-                config.set("prestige.chosen-special-rewards", new ArrayList<>(chosenRewards));
+            if (config.contains("prestige.talents")) {
+                ConfigurationSection talentsSection = config.getConfigurationSection("prestige.talents");
+                Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
+
+                for (String talentName : talentsSection.getKeys(false)) {
+                    try {
+                        PrestigeTalent talent = PrestigeTalent.valueOf(talentName);
+                        int level = talentsSection.getInt(talentName, 0);
+                        if (level > 0) {
+                            prestigeTalents.put(talent, level);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        plugin.getPluginLogger().warning("Talent de prestige invalide trouvé pour " + playerName + ": " + talentName);
+                    }
+                }
+
+                if (!prestigeTalents.isEmpty()) {
+                    data.setPrestigeTalents(prestigeTalents);
+                }
+            }
+
+            // Talents choisis par niveau
+            if (config.contains("prestige.chosen-talents")) {
+                ConfigurationSection chosenTalentsSection = config.getConfigurationSection("prestige.chosen-talents");
+                Map<Integer, String> chosenTalents = new HashMap<>();
+
+                for (String levelStr : chosenTalentsSection.getKeys(false)) {
+                    try {
+                        int level = Integer.parseInt(levelStr);
+                        String talentName = chosenTalentsSection.getString(levelStr);
+                        if (talentName != null && !talentName.isEmpty()) {
+                            chosenTalents.put(level, talentName);
+                        }
+                    } catch (NumberFormatException e) {
+                        plugin.getPluginLogger().warning("Niveau de prestige invalide trouvé pour " + playerName + ": " + levelStr);
+                    }
+                }
+
+                if (!chosenTalents.isEmpty()) {
+                    data.setChosenPrestigeTalents(chosenTalents);
+                }
+            }
+
+            // Récompenses spéciales réclamées
+            if (config.contains("prestige.chosen-special-rewards")) {
+                List<String> chosenRewardsList = config.getStringList("prestige.chosen-special-rewards");
+                if (!chosenRewardsList.isEmpty()) {
+                    for (String rewardId : chosenRewardsList) {
+                        if (rewardId != null && !rewardId.isEmpty()) {
+                            data.addChosenSpecialReward(rewardId);
+                        }
+                    }
+
+                    plugin.getPluginLogger().debug("Chargé " + chosenRewardsList.size() + " récompenses spéciales pour " + playerName);
+                }
             }
 
             // Récompenses débloquées (statut)
-            Map<String, Boolean> unlockedRewards = data.getUnlockedPrestigeRewards();
-            if (!unlockedRewards.isEmpty()) {
-                for (Map.Entry<String, Boolean> entry : unlockedRewards.entrySet()) {
-                    config.set("prestige.unlocked-rewards." + entry.getKey(), entry.getValue());
+            if (config.contains("prestige.unlocked-rewards")) {
+                ConfigurationSection unlockedSection = config.getConfigurationSection("prestige.unlocked-rewards");
+                Map<String, Boolean> unlockedRewards = new HashMap<>();
+
+                for (String rewardId : unlockedSection.getKeys(false)) {
+                    boolean unlocked = unlockedSection.getBoolean(rewardId, false);
+                    unlockedRewards.put(rewardId, unlocked);
+                }
+
+                if (!unlockedRewards.isEmpty()) {
+                    data.setUnlockedPrestigeRewards(unlockedRewards);
+                    plugin.getPluginLogger().debug("Chargé " + unlockedRewards.size() + " statuts de récompenses pour " + playerName);
                 }
             }
 
@@ -413,6 +473,19 @@ public class PlayerDataManager {
             if (!chosenTalents.isEmpty()) {
                 for (Map.Entry<Integer, String> entry : chosenTalents.entrySet()) {
                     config.set("prestige.chosen-talents." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            Set<String> chosenRewards = data.getChosenSpecialRewards();
+            if (!chosenRewards.isEmpty()) {
+                config.set("prestige.chosen-special-rewards", new ArrayList<>(chosenRewards));
+            }
+
+            // Récompenses débloquées (statut)
+            Map<String, Boolean> unlockedRewards = data.getUnlockedPrestigeRewards();
+            if (!unlockedRewards.isEmpty()) {
+                for (Map.Entry<String, Boolean> entry : unlockedRewards.entrySet()) {
+                    config.set("prestige.unlocked-rewards." + entry.getKey(), entry.getValue());
                 }
             }
 
