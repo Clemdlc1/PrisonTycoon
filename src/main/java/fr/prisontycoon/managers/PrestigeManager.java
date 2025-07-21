@@ -118,11 +118,9 @@ public class PrestigeManager {
         clearAllMinePermissions(player);
 
         // Remettre la permission de base (rang A)
-        playerData.addCustomPermission("specialmine.mine.a");
+        playerData.addPermission("specialmine.mine.a");
 
-        // Remise à 0 des coins
-        // TODO: Intégrer avec le système d'économie
-        // playerData.setCoins(0);
+        playerData.setCoins(0);
 
         plugin.getPluginLogger().info("Reset de prestige effectué pour: " + player.getName());
     }
@@ -136,11 +134,11 @@ public class PrestigeManager {
         // Retirer les permissions de mine a-z
         for (char c = 'a'; c <= 'z'; c++) {
             String minePermission = "specialmine.mine." + c;
-            playerData.removeCustomPermission(minePermission);
+            playerData.removePermission(minePermission);
         }
 
         // Retirer la permission FREE
-        playerData.removeCustomPermission("specialmine.free");
+        playerData.removePermission("specialmine.free");
     }
 
     /**

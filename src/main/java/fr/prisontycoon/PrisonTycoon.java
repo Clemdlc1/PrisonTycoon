@@ -57,7 +57,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private ContainerGUI containerGUI;
     private ContainerFilterGUI containerFilterGUI;
     private ProfessionRewardsGUI professionRewardsGUI;
-
+    private PrestigeGUI prestigeGUI;
     private RankupCommand rankupCommand;
 
     //cristaux
@@ -221,6 +221,8 @@ public final class PrisonTycoon extends JavaPlugin {
         containerFilterGUI = new ContainerFilterGUI(this);
         professionGUI = new ProfessionGUI(this);
         professionRewardsGUI = new ProfessionRewardsGUI(this);
+        prestigeGUI = new PrestigeGUI(this);
+
 
 
         logger.info("§aInterfaces graphiques initialisées.");
@@ -572,6 +574,9 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public PrestigeManager getPrestigeManager() {
         return prestigeManager;
+    }
+    public PrestigeGUI getPrestigeGUI() {
+        return prestigeGUI;
     }
 }
 

@@ -1,24 +1,9 @@
 # ========================================
 #         Configuration PrisonTycoon
 # ========================================
-# Plugin de minage avec pioche légendaire
+# Plugin Prison
 # Auteur: PrisonCore
 # Version: 1.0.0
-
-# ========================================
-#           OPTIONS GÉNÉRALES
-# ========================================
-
-debug: false
-auto-save-interval: 300 # secondes (5 minutes)
-cache-cleanup-interval: 3000 # secondes (50 minutes)
-
-# ========================================
-#         Configuration PrisonTycoon
-# ========================================
-# Plugin de minage avec pioche légendaire
-# Auteur: PrisonCore
-# Version: 2.0.0 - Système Prestige
 
 # ========================================
 #           OPTIONS GÉNÉRALES

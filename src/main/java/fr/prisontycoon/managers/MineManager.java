@@ -601,4 +601,78 @@ public class MineManager {
             return (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         }
     }
+
+    public String getPlayerHighestRank(Player player) {
+        // Parcourt les rangs de z à a pour trouver le plus élevé
+        for (char c = 'z'; c >= 'a'; c--) {
+            String rank = String.valueOf(c);
+            if (player.hasPermission("specialmine.mine." + rank)) {
+                return rank;
+            }
+        }
+
+        return null; // Aucune permission trouvée
+    }
+
+    /**
+     * NOUVEAU: Vérifie si un joueur peut miner dans une location spécifique
+     */
+    public boolean canMineAtLocation(Player player, Location location) {
+        // Vérifie si c'est dans une mine
+        String mineName = plugin.getConfigManager().getPlayerMine(location);
+        if (mineName == null) {
+            return true; // Hors mine, peut miner avec n'importe quel outil
+        }
+
+        // Vérifie la pioche légendaire
+        if (!canMineBlock(location, player)) {
+            return false;
+        }
+
+        // Vérifie les permissions hiérarchiques
+        return hasAccessToMine(player, mineName);
+    }
+
+    public boolean hasAccessToMine(Player player, String mineName) {
+        if (mineName == null || mineName.isEmpty()) {
+            return true;
+        }
+
+        // Normalise le nom de la mine
+        String targetMine = mineName.toLowerCase();
+        if (targetMine.startsWith("mine-")) {
+            targetMine = targetMine.substring(5);
+        }
+
+        // Rang A toujours accessible
+        if (targetMine.equals("a")) {
+            return true;
+        }
+
+        // Trouve le rang le plus élevé du joueur
+        String highestRank = getPlayerHighestRank(player);
+        if (highestRank == null) {
+            return false; // Aucune permission
+        }
+
+        // LOGIQUE HIÉRARCHIQUE: compare les rangs
+        char playerRank = highestRank.charAt(0);
+        char targetRank = targetMine.charAt(0);
+
+        return targetRank <= playerRank;
+    }
+
+    public boolean canMineBlock(Location location, Player player) {
+        // Vérifie si le joueur est dans une mine
+        String mineName = plugin.getConfigManager().getPlayerMine(location);
+        if (mineName == null) {
+            // Hors mine: peut miner avec n'importe quel outil
+            return true;
+        }
+
+        // Dans une mine: seule la pioche légendaire peut miner
+        var handItem = player.getInventory().getItemInMainHand();
+        return plugin.getPickaxeManager().isLegendaryPickaxe(handItem) &&
+                plugin.getPickaxeManager().isOwner(handItem, player);
+    }
 }

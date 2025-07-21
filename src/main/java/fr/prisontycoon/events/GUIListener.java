@@ -111,7 +111,10 @@ public class GUIListener implements Listener {
         } else if (title.contains("Métiers") || title.contains("Choisir un Métier") || title.contains("⭐") || title.contains("Changer de Métier")) {
             plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
         } else if (title.contains("🎁")) {
-            plugin.getProfessionRewardsGUI().handleRewardMenuClick(player, slot, item, clickType);}
+            plugin.getProfessionRewardsGUI().handleRewardMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Prestige")) {
+        plugin.getPrestigeGUI().handleClick(player, item, clickType);
+        }
     }
 
     /**
@@ -182,6 +185,7 @@ public class GUIListener implements Listener {
                 title.contains("Choisir un Métier") ||
                 title.contains("⭐") ||
                 title.contains("Changer de Métier") ||
-                title.contains("🎁");
+                title.contains("🎁") ||
+                title.contains("Prestige");
     }
 }

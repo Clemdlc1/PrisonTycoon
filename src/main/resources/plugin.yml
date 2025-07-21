@@ -1,248 +1,313 @@
 name: PrisonTycoon
-version: 1.0.0
+version: 2.0.0
 main: fr.prisontycoon.PrisonTycoon
+api-version: 1.20
 author: PrisonCore
-description: Plugin de minage avec pioche légendaire et enchantements custom
-website: https://prisoncore.fr
-api-version: '1.21'
+description: Plugin de prison avec système de prestige, mines spéciales et métiers
 
-# Serveur supporté
-folia-supported: false
-
-# Dépendances (aucune pour ce plugin)
-softdepend: [ ]
-depend: [ ]
-
-# Permissions
+# Permissions principales
 permissions:
-  # --- Permissions pour tous les joueurs ---
-  specialmine.pickaxe:
-    description: Permet d'obtenir la pioche légendaire via /pickaxe.
-    default: true
-
-  specialmine.repair:
-    description: Permet d'ouvrir le menu de réparation via /repair.
-    default: true
-
-  specialmine.sell:
-    description: Permet de vendre des items via /sell.
-    default: true
-
-  specialmine.mine:
-    description: Accès aux commandes de base pour les mines (/mine list, /mine info, /mine stats).
-    default: true
-
-  # --- Permissions hiérarchiques pour l'accès aux mines (à assigner manuellement) ---
-  specialmine.mine.a:
-    description: Accès à la mine A
-    default: false
-
-  specialmine.mine.b:
-    description: Accès à la mine B
-    default: false
-
-  specialmine.mine.c:
-    description: Accès à la mine C
-    default: false
-
-  # --- Permissions Administrateur ---
-  specialmine.admin.mine.permission:
-    description: Permet de gérer les permissions de mine d'autres joueurs.
-    default: op
-
-  specialmine.admin.givetokens:
-    description: Permet de donner des tokens à un joueur.
-    default: op
-
-  specialmine.admin.reload:
-    description: Permet de recharger la configuration du plugin.
-    default: op
-
-  specialmine.admin.economy:
-    description: Permet de gérer l'économie du plugin.
-    default: op
-
-  specialmine.admin.mine.generate:
-    description: Permet de générer ou de supprimer une mine.
-    default: op
-
-  # NOUVELLES permissions
-  specialmine.rankup:
-    description: Utiliser le système de rankup
-    default: true
-
-  specialmine.chat:
-    description: Permet d'envoyer des messages en chat
-    default: true
-
-  specialmine.chat.colors:
-    description: Permet d'utiliser les codes couleur dans le chat
-    default: false
-
-  specialmine.admin.chat:
-    description: "Permet d'utiliser les commandes admin du chat"
+  specialmine.*:
+    description: "Accès complet au plugin"
     default: op
     children:
-      - specialmine.admin.mute
-      - specialmine.admin.ban
-      - specialmine.admin.logs
+      specialmine.admin: true
+      specialmine.vip: true
+      specialmine.basic: true
 
-  specialmine.admin.vip:
-    description: "Permet de gérer les joueurs VIP"
-    default: op
-
-  specialmine.admin.mute:
-    description: "Permet de muter/démuter des joueurs"
-    default: op
-
-  specialmine.admin.ban:
-    description: "Permet de bannir/débannir des joueurs"
-    default: op
-
-  specialmine.admin.logs:
-    description: "Permet de consulter les logs du chat"
-    default: op
-
-  # PERMISSIONS VIP
-  specialmine.vip:
-    description: "Permissions de base pour les VIP"
-    default: false
-    children:
-      - specialmine.chat.colors
-      - specialmine.chat.hand
-      - specialmine.chat.inv
-      - specialmine.invsee.use
-
-  specialmine.chat.hand:
-    description: "Permet d'utiliser [hand] dans le chat"
-    default: false
-
-  specialmine.chat.inv:
-    description: "Permet d'utiliser [inv] dans le chat"
-    default: false
-
-  specialmine.invsee.use:
-    description: "Permet d'utiliser /invsee (lecture seule)"
-    default: false
-
-  specialmine.invsee.modify:
-    description: "Permet de modifier les inventaires avec /invsee"
-    default: op
-
-  specialmine.enchantbook:
-    description: "Accès au système d'enchantements uniques"
-    default: true
-
-  # PERMISSIONS ADMIN COMPLÈTES
   specialmine.admin:
-    description: "Toutes les permissions admin"
+    description: "Permissions administrateur"
     default: op
     children:
-      - specialmine.admin.chat
-      - specialmine.admin.vip
-      - specialmine.invsee.modify
-      - specialmine.invsee.use
-      - specialmine.chat.colors
-      - specialmine.chat.hand
-      - specialmine.chat.inv
-      - specialmine.enchantbook
+      specialmine.vip: true
+      specialmine.mine.generate: true
+      specialmine.prestige.admin: true
 
-# Commandes
+  specialmine.vip:
+    description: "Permissions VIP"
+    default: false
+    children:
+      specialmine.basic: true
+      specialmine.rankup.auto: true
+      specialmine.mine.vip1: true
+      specialmine.mine.vip2: true
+
+  specialmine.basic:
+    description: "Permissions de base"
+    default: true
+    children:
+      specialmine.rankup: true
+      specialmine.sell: true
+      specialmine.mine.a: true
+
+  # Permissions de mines (A-Z)
+  specialmine.mine.a:
+    description: "Accès à la mine A"
+    default: true
+  specialmine.mine.b:
+    description: "Accès à la mine B"
+    default: false
+  specialmine.mine.c:
+    description: "Accès à la mine C"
+    default: false
+  specialmine.mine.d:
+    description: "Accès à la mine D"
+    default: false
+  specialmine.mine.e:
+    description: "Accès à la mine E"
+    default: false
+  specialmine.mine.f:
+    description: "Accès à la mine F"
+    default: false
+  specialmine.mine.g:
+    description: "Accès à la mine G"
+    default: false
+  specialmine.mine.h:
+    description: "Accès à la mine H"
+    default: false
+  specialmine.mine.i:
+    description: "Accès à la mine I"
+    default: false
+  specialmine.mine.j:
+    description: "Accès à la mine J"
+    default: false
+  specialmine.mine.k:
+    description: "Accès à la mine K"
+    default: false
+  specialmine.mine.l:
+    description: "Accès à la mine L"
+    default: false
+  specialmine.mine.m:
+    description: "Accès à la mine M"
+    default: false
+  specialmine.mine.n:
+    description: "Accès à la mine N"
+    default: false
+  specialmine.mine.o:
+    description: "Accès à la mine O"
+    default: false
+  specialmine.mine.p:
+    description: "Accès à la mine P"
+    default: false
+  specialmine.mine.q:
+    description: "Accès à la mine Q"
+    default: false
+  specialmine.mine.r:
+    description: "Accès à la mine R"
+    default: false
+  specialmine.mine.s:
+    description: "Accès à la mine S"
+    default: false
+  specialmine.mine.t:
+    description: "Accès à la mine T"
+    default: false
+  specialmine.mine.u:
+    description: "Accès à la mine U"
+    default: false
+  specialmine.mine.v:
+    description: "Accès à la mine V"
+    default: false
+  specialmine.mine.w:
+    description: "Accès à la mine W"
+    default: false
+  specialmine.mine.x:
+    description: "Accès à la mine X"
+    default: false
+  specialmine.mine.y:
+    description: "Accès à la mine Y"
+    default: false
+  specialmine.mine.z:
+    description: "Accès à la mine Z"
+    default: false
+
+  # Permission rang FREE
+  specialmine.free:
+    description: "Rang FREE - permet le prestige"
+    default: false
+
+  # Permissions mines VIP
+  specialmine.mine.vip1:
+    description: "Accès à la mine VIP I"
+    default: false
+  specialmine.mine.vip2:
+    description: "Accès à la mine VIP II"
+    default: false
+
+  # Permissions prestige
+  specialmine.prestige.1:
+    description: "Prestige niveau 1"
+    default: false
+  specialmine.prestige.5:
+    description: "Prestige niveau 5"
+    default: false
+  specialmine.prestige.10:
+    description: "Prestige niveau 10"
+    default: false
+  specialmine.prestige.15:
+    description: "Prestige niveau 15"
+    default: false
+  specialmine.prestige.20:
+    description: "Prestige niveau 20"
+    default: false
+  specialmine.prestige.25:
+    description: "Prestige niveau 25"
+    default: false
+  specialmine.prestige.30:
+    description: "Prestige niveau 30"
+    default: false
+  specialmine.prestige.35:
+    description: "Prestige niveau 35"
+    default: false
+  specialmine.prestige.40:
+    description: "Prestige niveau 40"
+    default: false
+  specialmine.prestige.45:
+    description: "Prestige niveau 45"
+    default: false
+  specialmine.prestige.50:
+    description: "Prestige niveau 50"
+    default: false
+
+  # Autres permissions
+  specialmine.rankup:
+    description: "Utiliser /rankup"
+    default: true
+  specialmine.rankup.auto:
+    description: "Auto-rankup (VIP)"
+    default: false
+  specialmine.sell:
+    description: "Utiliser /sell"
+    default: true
+  specialmine.mine:
+    description: "Utiliser /mine"
+    default: true
+  specialmine.mine.generate:
+    description: "Générer les mines (admin)"
+    default: op
+  specialmine.prestige:
+    description: "Utiliser /prestige"
+    default: true
+  specialmine.prestige.admin:
+    description: "Administration prestige"
+    default: op
+
+# Commandes du plugin
 commands:
-  pickaxe:
-    description: "Obtenir la pioche légendaire."
-    usage: /pickaxe
-    permission: specialmine.pickaxe
+  prisontycoon:
+    description: "Commande principale du plugin"
+    usage: /prisontycoon [reload|stats|economy|top] [args...]
+    aliases: [pt, ptycoon, prison]
+
+  rankup:
+    description: "Système de montée en rang pour les mines (A-Z + FREE)"
+    usage: /rankup [all|auto|info|max]
+    permission: specialmine.rankup
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ pioche ]
+    aliases: [randup, rank]
+
+  mine:
+    description: "Gérer les mines et obtenir des informations"
+    usage: /mine <list|tp|info|generate|types|accessible> [nom]
+    permission: specialmine.mine
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [mines, prisonmine, mina]
+
+  prestige:
+    description: "Système de prestige - Reset volontaire avec bonus permanents"
+    usage: /prestige [info|récompenses|talents|effectuer|confirmer]
+    permission: specialmine.prestige
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [престиж, prest]
+
+  metier:
+    description: "Ouvre le menu des métiers"
+    usage: /metier [info|choisir <métier>|help]
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [profession, job, trabajo]
+
+  changemetier:
+    description: "Change de métier (payant, cooldown)"
+    usage: /changemetier <mineur|commercant|guerrier>
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [changeprofession, changejob]
+
+  metierxp:
+    description: "Donne de l'XP métier (admin)"
+    usage: /metierxp <nombre>
+    permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [professionxp, jobxp]
+
+  # Commandes existantes conservées
+  pickaxe:
+    description: "Ouvre le menu de la pioche légendaire"
+    usage: /pickaxe
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [pioche]
 
   repair:
-    description: "Ouvre le menu de réparation de la pioche légendaire."
+    description: "Ouvre le menu de réparation de la pioche légendaire"
     usage: /repair
-    permission: specialmine.repair
+    permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ fix, reparer ]
+    aliases: [fix, reparer]
 
   sell:
-    description: "Vendre des items."
+    description: "Vendre des items"
     usage: /sell <all|hand>
     permission: specialmine.sell
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ vendre ]
-
-  mine:
-    description: "Gérer les mines et obtenir des informations."
-    usage: /mine <generate|list|info|stats> [nom]
-    permission: specialmine.mine
-    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ mines, prisonmine ]
+    aliases: [vendre]
 
   givetokens:
-    description: "Donner des tokens à un joueur (ADMIN)."
+    description: "Donner des tokens à un joueur (ADMIN)"
     usage: /givetokens <joueur> <quantité>
-    permission: specialmine.admin.givetokens
+    permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ givetoken, addtokens ]
-
-  prisontycoon:
-    description: "Commande principale du plugin."
-    usage: /prisontycoon [reload|stats|economy|top] [args...]
-    aliases: [ pt, ptycoon, prison ]
+    aliases: [givetoken, addtokens]
 
   conteneur:
-    description: "Obtenir et gérer les conteneurs de collecte automatique."
+    description: "Obtenir et gérer les conteneurs de collecte automatique"
     usage: /conteneur <1-5|info|list>
-    permission: specialmine.container
+    permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ container, coffre, box ]
-
-  rankup:
-    description: "Système de montée en rang pour les mines"
-    usage: /<command> [all|auto|info]
+    aliases: [container, coffre, box]
 
   cristal:
-    description: "Gère les cristaux."
+    description: "Gère les cristaux"
     usage: /cristal <niveau> [joueur] [type]
     permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
   adminchat:
     description: "Commandes administratives pour gérer le chat"
-    usage: "/adminchat <mute|unmute|ban|unban|reload|stats|test|broadcast|clear> [arguments]"
+    usage: /adminchat <mute|unmute|ban|unban|reload|stats|test|broadcast|clear> [arguments]
     permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
   vip:
     description: "Gère les joueurs VIP"
-    usage: "/vip <add|remove|list|check> [joueur]"
+    usage: /vip <add|remove|list|check> [joueur]
     permission: specialmine.admin
-    aliases: [ setvip, managevip ]
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [setvip, managevip]
 
   invsee:
     description: "Voir l'inventaire d'un autre joueur"
-    usage: "/invsee <joueur>"
-    permission: specialmine.invsee.use
-    aliases: [ inv, openinv, viewinv ]
+    usage: /invsee <joueur>
+    permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [inv, openinv, viewinv]
 
   enchantbook:
     description: "Accès au système d'enchantements uniques"
-    usage: "/enchantbook <joueur>"
-    permission: specialmine.enchantbook
-    aliases: [ livre ]
-
-  metier:
-    description: Ouvre le menu des métiers
-    usage: /metier [info|choisir <métier>|help]
-    aliases: [ profession, job ]
-
-  changemetier:
-    description: Change de métier (payant, cooldown)
-    usage: /changemetier <mineur|commercant|guerrier>
-    aliases: [ changeprofession, changejob ]
-
-  metierxp:
-    description: Donne de l'XP métier (admin)
-    usage: /metierxp <nombre>
+    usage: /enchantbook <joueur>"
     permission: specialmine.admin
-    aliases: [ professionxp, jobxp ]
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [livre]
 
 # Chargement
 load: POSTWORLD
@@ -250,3 +315,10 @@ startup: POSTWORLD
 
 # Compatibilité
 depend-bootstrap: false
+
+# Dépendances (optionnelles)
+softdepend: [Vault, PlaceholderAPI]
+
+# Site web et auteur
+website: https://github.com/prisontycoon
+authors: [PrisonCore]
