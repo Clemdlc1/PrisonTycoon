@@ -203,26 +203,55 @@ public class BlackMarketManager {
     }
 
     /**
-     * Relocalise le marché noir avec gestion des événements
+     * Relocalise le marché noir vers un nouvel emplacement
      */
     private void relocateMarket() {
         if (possibleLocations.isEmpty()) {
-            plugin.getPluginLogger().warning("Aucun emplacement configuré pour le Black Market!");
+            plugin.getPluginLogger().warning("§cAucun emplacement disponible pour relocaliser le marché noir!");
             return;
         }
 
-        // Supprime l'ancien PNJ s'il existe
+        plugin.getPluginLogger().info("Relocalisation du marché noir en cours...");
+
+        // Met le marché en état de relocalisation
+        currentState = MarketState.RELOCATING;
+        isAvailable = false;
+
+        // Supprime l'ancien PNJ s'il existe et attend avant de créer le nouveau
         if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
             // Animation de disparition
             playNPCAnimation(blackMarketNPC, "disappear");
+
+            // Crée une référence finale pour l'utiliser dans la tâche asynchrone
+            final Villager oldNPC = blackMarketNPC;
+            blackMarketNPC = null; // Réinitialise immédiatement la référence
+
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    blackMarketNPC.remove();
-                }
-            }.runTaskLater(plugin, 40L); // 2 secondes
-        }
+                    // Supprime définitivement l'ancien PNJ
+                    oldNPC.remove();
 
+                    // Attend un tick supplémentaire pour s'assurer que la suppression est effective
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            // Maintenant on peut créer le nouveau marché en toute sécurité
+                            createNewMarketLocation();
+                        }
+                    }.runTaskLater(plugin, 1L);
+                }
+            }.runTaskLater(plugin, 40L); // 2 secondes pour l'animation
+        } else {
+            // Pas d'ancien PNJ, on peut créer directement le nouveau marché
+            createNewMarketLocation();
+        }
+    }
+
+    /**
+     * Crée le nouveau marché à un nouvel emplacement
+     */
+    private void createNewMarketLocation() {
         // Vérifie s'il y a un raid
         double raidChance = plugin.getConfig().getDouble("black-market.raid-chance", RAID_CHANCE);
         if (ThreadLocalRandom.current().nextDouble() < raidChance) {
@@ -231,7 +260,9 @@ public class BlackMarketManager {
         }
 
         // Nouvelle localisation aléatoire
-        BlackMarketLocation chosenLocation = possibleLocations.get(ThreadLocalRandom.current().nextInt(possibleLocations.size()));
+        BlackMarketLocation chosenLocation = possibleLocations.get(
+                ThreadLocalRandom.current().nextInt(possibleLocations.size())
+        );
         currentLocation = chosenLocation.getLocation();
         isAvailable = true;
         currentState = MarketState.AVAILABLE;
@@ -243,10 +274,12 @@ public class BlackMarketManager {
         refreshStock();
 
         plugin.getPluginLogger().info("Black Market relocalisé: " + chosenLocation.getName() +
-                " [" + (int) currentLocation.getX() + ", " + (int) currentLocation.getY() + ", " + (int) currentLocation.getZ() + "]");
+                " [" + (int) currentLocation.getX() + ", " + (int) currentLocation.getY() +
+                ", " + (int) currentLocation.getZ() + "]");
 
         // Notifie les joueurs proches
-        notifyPlayersNearby("§8§l[MARKET] §7Un marchand mystérieux s'est installé près de " + chosenLocation.getName() + "...");
+        notifyPlayersNearby("§8§l[MARKET] §7Un marchand mystérieux s'est installé près de " +
+                chosenLocation.getName() + "...");
     }
 
     /**
