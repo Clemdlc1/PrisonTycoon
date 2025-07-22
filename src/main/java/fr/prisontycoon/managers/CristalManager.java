@@ -15,6 +15,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID; // Importation ajoutée
 
 /**
  * Gestionnaire des cristaux - MODIFIÉ pour sauvegarder dans PlayerData
@@ -46,7 +47,7 @@ public class CristalManager {
         if (niveau < 1 || niveau > 20) {
             throw new IllegalArgumentException("Niveau de cristal invalide: " + niveau);
         }
-        return new Cristal(niveau);
+        return new Cristal(UUID.randomUUID().toString(), niveau, null, true);
     }
 
     /**
@@ -56,7 +57,7 @@ public class CristalManager {
         if (niveau < 1 || niveau > 20) {
             throw new IllegalArgumentException("Niveau de cristal invalide: " + niveau);
         }
-        return new Cristal(niveau, type);
+        return new Cristal(UUID.randomUUID().toString(), niveau, type, false);
     }
 
     /**

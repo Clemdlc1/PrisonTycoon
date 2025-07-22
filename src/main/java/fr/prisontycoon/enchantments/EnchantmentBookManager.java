@@ -163,7 +163,7 @@ public class EnchantmentBookManager {
     /**
      * NOUVEAU : Crée un item livre physique
      */
-    private ItemStack createPhysicalEnchantmentBook(EnchantmentBook book) {
+    public ItemStack createPhysicalEnchantmentBook(EnchantmentBook book) {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 

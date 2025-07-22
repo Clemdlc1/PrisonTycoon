@@ -455,7 +455,7 @@ public class EnchantmentManager {
      * @param keyType Le type de la clé (ex: "Cristal", "Légendaire").
      * @return L'ItemStack de la clé configurée.
      */
-    private ItemStack createKey(String keyType) {
+    public ItemStack createKey(String keyType) {
         String keyColor;
 
         // Détermine la couleur en fonction du type de clé
