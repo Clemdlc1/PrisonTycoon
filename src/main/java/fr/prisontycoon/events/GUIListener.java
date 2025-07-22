@@ -116,6 +116,8 @@ public class GUIListener implements Listener {
             plugin.getPrestigeGUI().handleClick(player, item, clickType);
         } else if (title.contains("MARCHÉ NOIR")) {
             plugin.getBlackMarketManager().handleBlackMarketClick(player, item);
+        } else if (title.contains("Enchantement d'Épée") || title.contains("Enchantement d'Armure")) {
+            plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
         }
     }
 
@@ -189,6 +191,6 @@ public class GUIListener implements Listener {
                 title.contains("Changer de Métier") ||
                 title.contains("🎁") ||
                 title.contains("Prestige") ||
-                (title.contains("MARCHÉ NOIR"));
+                title.contains("MARCHÉ NOIR");
     }
 }

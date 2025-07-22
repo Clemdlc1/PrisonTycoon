@@ -5,6 +5,8 @@ import fr.prisontycoon.commands.*;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentManager;
+import fr.prisontycoon.enchantments.UniqueEnchantmentBookFactory;
+import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
 import fr.prisontycoon.events.*;
 import fr.prisontycoon.managers.*;
 import fr.prisontycoon.tasks.*;
@@ -41,6 +43,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private PrestigeManager prestigeManager; // NOUVEAU
     private ReputationManager reputationManager;
     private BlackMarketManager blackMarketManager;
+    private WeaponArmorEnchantmentManager weaponArmorEnchantmentManager;
+    private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
+    private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
 
 
     private Logger logger;
@@ -199,6 +204,9 @@ public final class PrisonTycoon extends JavaPlugin {
         prestigeManager = new PrestigeManager(this);
         reputationManager = new ReputationManager(this);
         blackMarketManager = new BlackMarketManager(this);
+        weaponArmorEnchantmentManager = new WeaponArmorEnchantmentManager(this);
+        weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
+        uniqueEnchantmentBookFactory = new UniqueEnchantmentBookFactory(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -245,6 +253,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new CristalListener(this), this);
         pluginManager.registerEvents(new ChatListener(this), this);
         pluginManager.registerEvents(new PNJInteract(this), this);
+        pluginManager.registerEvents(new WeaponArmorEnchantmentListener(this), this);
+
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -589,6 +599,18 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public BlackMarketManager getBlackMarketManager() {
         return blackMarketManager;
+    }
+
+    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() {
+        return weaponArmorEnchantmentManager;
+    }
+
+    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() {
+        return weaponArmorEnchantGUI;
+    }
+
+    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() {
+        return uniqueEnchantmentBookFactory;
     }
 }
 

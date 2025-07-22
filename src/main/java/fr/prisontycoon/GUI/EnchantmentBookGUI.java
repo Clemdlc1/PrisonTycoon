@@ -3,6 +3,7 @@ package fr.prisontycoon.GUI;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
+import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -204,11 +205,11 @@ public class EnchantmentBookGUI {
      * Ouvre la boutique des livres d'enchantement
      */
     public void openBookShop(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 36, "§a💰 §lBoutique de Livres §a💰");
+        Inventory gui = Bukkit.createInventory(null, 45, "§a💰 §lBoutique de Livres §a💰");
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Information du joueur
+        // Information du joueur (existant)
         ItemStack playerInfo = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta infoMeta = playerInfo.getItemMeta();
         infoMeta.setDisplayName("§6💰 Vos Beacons");
@@ -219,26 +220,36 @@ public class EnchantmentBookGUI {
         playerInfo.setItemMeta(infoMeta);
         gui.setItem(4, playerInfo);
 
+        // Livres d'enchantement de pioche (existants - garde les slots 11-15 et 20-24)
         List<EnchantmentBookManager.EnchantmentBook> allBooks = new ArrayList<>(plugin.getEnchantmentBookManager().getAllEnchantmentBooks());
+        int[] pickaxeSlots = {11, 12, 13, 14, 15, 20, 21, 22, 23, 24};
 
-        // Slots pour les livres
-        int[] bookSlots = {11, 12, 13, 14, 15, 20, 21, 22, 23, 24};
-
-        for (int i = 0; i < Math.min(allBooks.size(), bookSlots.length); i++) {
+        for (int i = 0; i < Math.min(allBooks.size(), pickaxeSlots.length); i++) {
             EnchantmentBookManager.EnchantmentBook book = allBooks.get(i);
             ItemStack bookItem = createShopBookItem(player, book);
-            gui.setItem(bookSlots[i], bookItem);
+            gui.setItem(pickaxeSlots[i], bookItem);
         }
 
-        // Bouton retour
+        // NOUVEAU : Livres d'enchantements épées/armures (ajout dans les slots libres)
+        String[] newEnchants = {"tornade", "repercussion", "behead", "chasseur"};
+        int[] newSlots = {30, 31, 32, 33}; // Utilise la ligne du bas
+
+        for (int i = 0; i < Math.min(newEnchants.length, newSlots.length); i++) {
+            ItemStack newBook = plugin.getUniqueEnchantmentBookFactory().createShopItem(newEnchants[i]);
+            if (newBook != null) {
+                gui.setItem(newSlots[i], newBook);
+            }
+        }
+
+        // Bouton retour (existant)
         ItemStack backButton = new ItemStack(Material.ARROW);
         ItemMeta backMeta = backButton.getItemMeta();
         backMeta.setDisplayName("§c⬅ §lRetour");
         backButton.setItemMeta(backMeta);
-        gui.setItem(27, backButton);
+        gui.setItem(36, backButton);
 
-        // Remplissage décoratif
-        ItemStack glass = new ItemStack(Material.GREEN_STAINED_GLASS_PANE);
+        // Remplissage décoratif (existant)
+        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
         glassMeta.setDisplayName(" ");
         glass.setItemMeta(glassMeta);
@@ -250,7 +261,7 @@ public class EnchantmentBookGUI {
         }
 
         player.openInventory(gui);
-        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.5f);
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
     }
 
     /**
@@ -325,7 +336,7 @@ public class EnchantmentBookGUI {
     }
 
     /**
-     * AMÉLIORÉ : Gère les clics dans la boutique avec effet rouge d'erreur
+     * NOUVEAU : Gère les achats de livres épées/armures dans la boutique
      */
     public void handleBookShopClick(Player player, int slot, ItemStack clickedItem) {
         // Bouton retour
@@ -340,27 +351,70 @@ public class EnchantmentBookGUI {
         }
 
         ItemMeta meta = clickedItem.getItemMeta();
-        String bookId = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "shop_book_id"), PersistentDataType.STRING);
 
-        if (bookId == null) return;
+        // Gestion des livres de pioche (existant)
+        String pickaxeBookId = meta.getPersistentDataContainer().get(
+                new NamespacedKey(plugin, "shop_book_id"), PersistentDataType.STRING);
 
-        EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
-        if (book == null) return;
+        if (pickaxeBookId != null) {
+            // Logique existante pour les livres de pioche
+            EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(pickaxeBookId);
+            if (book == null) return;
 
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        long cost = book.getCost();
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            long cost = book.getCost();
 
-        if (playerData.getBeacons() < cost) {
-            long missing = cost - playerData.getBeacons();
-            // MODIFIÉ : On passe l'item cliqué à la fonction d'erreur
-            showErrorFeedback(player, slot, "§c💸 Pas assez de beacons!\n§c(" + NumberFormatter.format(missing) + " manquants)", clickedItem);
+            if (playerData.getBeacons() < cost) {
+                long missing = cost - playerData.getBeacons();
+                showErrorFeedback(player, slot, "§c💸 Pas assez de beacons!\n§c(" + NumberFormatter.format(missing) + " manquants)", clickedItem);
+                return;
+            }
+
+            // Achat réussi
+            boolean success = plugin.getEnchantmentBookManager().purchasePhysicalEnchantmentBook(player, pickaxeBookId);
+            if (success) {
+                openBookShop(player); // Refresh
+            }
             return;
         }
 
-        // Achat réussi
-        boolean success = plugin.getEnchantmentBookManager().purchasePhysicalEnchantmentBook(player, bookId);
-        if (success) {
-            openBookShop(player); // Refresh
+        // NOUVEAU : Gestion des livres épées/armures
+        String weaponArmorBookId = meta.getPersistentDataContainer().get(
+                new NamespacedKey(plugin, "shop_enchant_id"), PersistentDataType.STRING);
+
+        if (weaponArmorBookId != null) {
+            WeaponArmorEnchantmentManager.UniqueEnchantment enchant =
+                    plugin.getWeaponArmorEnchantmentManager().getEnchantment(weaponArmorBookId);
+
+            if (enchant == null) return;
+
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            long cost = enchant.getCost();
+
+            if (playerData.getBeacons() < cost) {
+                long missing = cost - playerData.getBeacons();
+                showErrorFeedback(player, slot, "§c💸 Pas assez de beacons!\n§c(" + NumberFormatter.format(missing) + " manquants)", clickedItem);
+                return;
+            }
+
+            // Retirer les beacons
+            playerData.removeBeacon(cost);
+
+            // Créer et donner le livre
+            ItemStack book = plugin.getUniqueEnchantmentBookFactory().createUniqueEnchantmentBook(weaponArmorBookId);
+            if (book != null) {
+                if (player.getInventory().firstEmpty() != -1) {
+                    player.getInventory().addItem(book);
+                } else {
+                    player.getWorld().dropItemNaturally(player.getLocation(), book);
+                    player.sendMessage("§e⚠ Inventaire plein! Le livre a été droppé au sol.");
+                }
+
+                player.sendMessage("§a✅ Livre §e" + enchant.getName() + " §aacheté pour §e" + NumberFormatter.format(cost) + " beacons§a!");
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+
+                openBookShop(player); // Refresh
+            }
         }
     }
 
