@@ -59,30 +59,35 @@ public class WeaponArmorEnchantmentManager {
     }
 
     /**
-     * Ajoute un enchantement unique à un item
+     * CORRIGÉ : addEnchantment avec gestion des items sans meta
      */
     public boolean addEnchantment(ItemStack item, String enchantId, int level) {
-        if (item == null || !item.hasItemMeta()) return false;
+        if (item == null) return false;
 
         UniqueEnchantment enchant = enchantments.get(enchantId);
         if (enchant == null) return false;
 
+        // CORRIGÉ : Récupère ou crée les métadonnées
         ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            meta = Bukkit.getItemFactory().getItemMeta(item.getType());
+            if (meta == null) return false;
+        }
 
         // Récupère les enchantements existants
         Map<String, Integer> currentEnchants = getUniqueEnchantments(item);
 
-        // CORRIGÉ : Vérifie si l'enchantement peut être amélioré
+        // Vérifie si l'enchantement peut être amélioré
         int currentLevel = currentEnchants.getOrDefault(enchantId, 0);
         if (currentLevel >= enchant.getMaxLevel()) {
-            return false; // Niveau maximum atteint
+            return false;
         }
 
-        // CORRIGÉ : Vérifie le nombre maximum d'enchantements uniques
+        // Vérifie le nombre maximum d'enchantements uniques
         if (currentLevel == 0) { // Nouvel enchantement
             int maxUnique = isValidWeapon(item) ? 2 : 1;
             if (currentEnchants.size() >= maxUnique) {
-                return false; // Trop d'enchantements uniques
+                return false;
             }
         }
 
@@ -92,17 +97,38 @@ public class WeaponArmorEnchantmentManager {
         // Sauvegarde dans les métadonnées
         StringBuilder enchantData = new StringBuilder();
         for (Map.Entry<String, Integer> entry : currentEnchants.entrySet()) {
-            if (enchantData.length() > 0) enchantData.append(";");
-            enchantData.append(entry.getKey()).append(":").append(entry.getValue());
+            if (entry.getValue() > 0) { // Seulement les niveaux > 0
+                if (enchantData.length() > 0) enchantData.append(";");
+                enchantData.append(entry.getKey()).append(":").append(entry.getValue());
+            }
         }
 
         meta.getPersistentDataContainer().set(uniqueEnchantsKey, PersistentDataType.STRING, enchantData.toString());
 
-        // Met à jour le lore
+        // Met à jour le lore (qui sera complètement reconstruit)
         updateItemLore(meta, currentEnchants);
         item.setItemMeta(meta);
 
         return true;
+    }
+
+    /**
+     * Détermine le nombre maximum d'enchantements uniques pour un item.
+     * @param item L'item à vérifier.
+     * @return Le nombre maximum d'enchantements (2 pour les épées, 1 pour les armures/pioches).
+     */
+    public int getMaxEnchantments(ItemStack item) {
+        if (item == null) return 0;
+        // Une épée peut avoir 2 enchantements uniques.
+        if (isValidWeapon(item)) {
+            return 2;
+        }
+        // Les armures et les pioches ne peuvent en avoir qu'un seul.
+        if (isValidArmor(item) || isValidPickaxe(item)) {
+            return 1;
+        }
+        // Les autres items ne peuvent pas en avoir.
+        return 0;
     }
 
     /**
@@ -111,17 +137,32 @@ public class WeaponArmorEnchantmentManager {
     public Map<String, Integer> getUniqueEnchantments(ItemStack item) {
         Map<String, Integer> result = new HashMap<>();
 
-        if (item == null || !item.hasItemMeta()) return result;
+        // CORRIGÉ : Retourne une map vide si pas de meta (c'est normal pour items vierges)
+        if (item == null) {
+            return result;
+        }
 
-        String enchantData = item.getItemMeta().getPersistentDataContainer().get(uniqueEnchantsKey, PersistentDataType.STRING);
-        if (enchantData == null || enchantData.isEmpty()) return result;
+        String enchantData = item.getItemMeta().getPersistentDataContainer()
+                .get(uniqueEnchantsKey, PersistentDataType.STRING);
+
+        if (enchantData == null || enchantData.isEmpty()) {
+            return result;
+        }
 
         String[] enchants = enchantData.split(";");
         for (String enchantStr : enchants) {
+            if (enchantStr.trim().isEmpty()) continue;
+
             String[] parts = enchantStr.split(":");
             if (parts.length == 2) {
                 try {
-                    result.put(parts[0], Integer.parseInt(parts[1]));
+                    String enchantId = parts[0].trim();
+                    int enchantLevel = Integer.parseInt(parts[1].trim());
+
+                    // Seulement les enchantements valides et avec niveau > 0
+                    if (enchantLevel > 0 && enchantments.containsKey(enchantId)) {
+                        result.put(enchantId, enchantLevel);
+                    }
                 } catch (NumberFormatException ignored) {}
             }
         }
@@ -182,24 +223,113 @@ public class WeaponArmorEnchantmentManager {
      * Met à jour le lore de l'item avec les enchantements uniques
      */
     private void updateItemLore(ItemMeta meta, Map<String, Integer> enchants) {
-        List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+        // SIMPLE ET EFFICACE : Vide complètement le lore
+        List<String> lore = new ArrayList<>();
 
-        // Retire les anciennes lignes d'enchantements uniques
-        lore.removeIf(line -> line.startsWith("§5⚡"));
-
-        if (!enchants.isEmpty()) {
-            lore.add("");
-            lore.add("§5⚡ §lEnchantements Uniques:");
-            for (Map.Entry<String, Integer> entry : enchants.entrySet()) {
-                UniqueEnchantment enchant = enchantments.get(entry.getKey());
-                if (enchant != null) {
-                    String levelStr = enchant.getMaxLevel() > 1 ? " " + toRoman(entry.getValue()) : "";
-                    lore.add("§5⚡ " + enchant.getName() + levelStr);
-                }
+        // Filtre les enchantements valides seulement
+        Map<String, Integer> validEnchants = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : enchants.entrySet()) {
+            if (entry.getValue() > 0 && enchantments.containsKey(entry.getKey())) {
+                validEnchants.put(entry.getKey(), entry.getValue());
             }
         }
 
+        if (!validEnchants.isEmpty()) {
+            // Header élégant
+            lore.add("");
+            lore.add("§8▬▬▬ §5⚡ §lENCHANTEMENTS UNIQUES §5⚡ §8▬▬▬");
+
+            for (Map.Entry<String, Integer> entry : validEnchants.entrySet()) {
+                UniqueEnchantment enchant = enchantments.get(entry.getKey());
+                if (enchant != null) {
+                    String enchantId = entry.getKey();
+                    int level = entry.getValue();
+
+                    // Couleur et titre
+                    String color = getEnchantColor(enchantId);
+                    String levelDisplay = enchant.getMaxLevel() > 1 ? " §8[§f" + toRoman(level) + "§8]" : "";
+
+                    lore.add(color + "⚡ §l" + enchant.getName() + levelDisplay);
+
+                    // Description courte et détails essentiels seulement
+                    lore.add("§7▸ " + enchant.getDescription());
+
+                    // Détails techniques condensés
+                    addCompactDetails(lore, enchantId, level, enchant);
+
+                    // Progression si multi-niveaux
+                    if (enchant.getMaxLevel() > 1) {
+                        if (level < enchant.getMaxLevel()) {
+                            lore.add("§7▸ §a✦ Améliorable §8(§e" + level + "§8/§e" + enchant.getMaxLevel() + "§8)");
+                        } else {
+                            lore.add("§7▸ §6★ Niveau Maximum §8(§e" + level + "§8/§e" + enchant.getMaxLevel() + "§8)");
+                        }
+                    }
+                }
+            }
+
+            lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        }
+
         meta.setLore(lore);
+    }
+
+    /**
+     * NOUVEAU : Détails compacts pour éviter la surcharge d'informations
+     */
+    private void addCompactDetails(List<String> lore, String enchantId, int level, UniqueEnchantment enchant) {
+        switch (enchantId) {
+            case "tonnerre":
+                int chance = 5 + (level / 2);
+                double damage = 0.5 + (level * 0.5);
+                lore.add("§7▸ §e" + chance + "% chance §8| §c" + damage + " ❤ §8| §5Pioches & Épées");
+                break;
+
+            case "incassable":
+                lore.add("§7▸ §bDurabilité infinie §8| §5Universel");
+                break;
+
+            case "tornade":
+                lore.add("§7▸ §aZone 3x3 §8| §cRepousse ennemis");
+                break;
+
+            case "repercussion":
+                int radius = 2 + level;
+                lore.add("§7▸ §cExplosion " + radius + " blocs §8| §6Vengeance posthume");
+                break;
+
+            case "behead":
+                int dropChance = 10 + (level * 5);
+                lore.add("§7▸ §4" + dropChance + "% décapitation §8| §6Trophée tête");
+                break;
+
+            case "chasseur":
+                int pvpBonus = level * 15;
+                lore.add("§7▸ §6+" + pvpBonus + "% dégâts PvP §8| §eAnti-joueurs");
+                break;
+        }
+    }
+
+    /**
+     * CORRIGÉ : Couleurs distinctes pour chaque enchantement
+     */
+    private String getEnchantColor(String enchantId) {
+        switch (enchantId) {
+            case "tonnerre":
+                return "§e"; // Jaune électrique
+            case "incassable":
+                return "§b"; // Bleu cyan
+            case "tornade":
+                return "§a"; // Vert
+            case "repercussion":
+                return "§c"; // Rouge
+            case "behead":
+                return "§4"; // Rouge foncé
+            case "chasseur":
+                return "§6"; // Orange
+            default:
+                return "§5"; // Violet
+        }
     }
 
     /**
@@ -598,6 +728,7 @@ public class WeaponArmorEnchantmentManager {
                     }
                 }
             }
+            TornadeEnchantment.getActiveTornadoPlayers().remove(attacker.getUniqueId());
         }
     }
 

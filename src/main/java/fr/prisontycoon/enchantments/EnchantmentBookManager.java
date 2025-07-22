@@ -167,22 +167,37 @@ public class EnchantmentBookManager {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§5⚡ §l" + book.getName());
+        meta.setDisplayName("§5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§e✨ §lEnchantement Unique Légendaire");
+        lore.add("§e✨ §lEnchantement Unique Légendaire"); // UNIFORMISÉ
         lore.add("");
-        lore.add("§6📖 Description:");
-        lore.add("§7▸ " + book.getDescription());
+
+        // NOUVEAU : Ajout de la compatibilité uniformisée
+        switch (book.getId()) {
+            case "tonnerre":
+                lore.add("§5⚡ §lCompatible: §7Pioches et Épées");
+                break;
+            case "incassable":
+                lore.add("§5⚡ §lCompatible: §7Pioches, Épées et Armures");
+                break;
+            default:
+                lore.add("§5⛏ §lCompatible: §7Pioches uniquement");
+                break;
+        }
+
         lore.add("");
-        lore.add("§a🎯 Utilisation:");
-        lore.add("§7▸ §6Cliquez dans le menu enchantements");
+        lore.add("§6📖 §lDescription:"); // UNIFORMISÉ
+        lore.add("§7▸ " + book.getDescription()); // UNIFORMISÉ avec ▸
+        lore.add("");
+        lore.add("§a🎯 §lUtilisation:"); // UNIFORMISÉ
+        lore.add("§7▸ §6Cliquez dans le menu enchantements"); // UNIFORMISÉ
         lore.add("§7  pour appliquer à votre pioche");
         lore.add("§7▸ §aPeut être activé/désactivé");
         lore.add("§7▸ §cCoût d'activation en XP");
         lore.add("");
-        lore.add("§e⚡ Pouvoir: §d" + getEnchantmentPowerDescription(book.getId()));
+        lore.add("§e⚡ Pouvoir: §d" + getEnchantmentPowerDescription(book.getId())); // UNIFORMISÉ
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);

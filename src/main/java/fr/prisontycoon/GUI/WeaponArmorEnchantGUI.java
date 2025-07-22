@@ -42,6 +42,9 @@ public class WeaponArmorEnchantGUI {
     /**
      * Ouvre le menu d'enchantement pour épée/armure
      */
+    /**
+     * CORRIGÉ : Méthode openEnchantMenu mise à jour pour passer l'item à setupUniqueBookSlots
+     */
     public void openEnchantMenu(Player player, ItemStack item) {
         if (item == null || (!isValidWeapon(item) && !isValidArmor(item))) {
             player.sendMessage("§cVous devez tenir une épée ou une pièce d'armure!");
@@ -56,7 +59,7 @@ public class WeaponArmorEnchantGUI {
         fillWithGlass(gui, isWeapon);
         setupItemDisplay(gui, item, isWeapon);
         setupVanillaEnchantButton(gui, item, player);
-        setupUniqueBookSlots(gui, isWeapon);
+        setupUniqueBookSlots(gui, isWeapon, item); // CORRIGÉ : Passe l'item en paramètre
         setupControlButtons(gui);
 
         player.openInventory(gui);
@@ -88,18 +91,6 @@ public class WeaponArmorEnchantGUI {
         ItemMeta meta = displayItem.getItemMeta();
 
         List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-        lore.add("");
-        lore.add("§7Item à enchanter:");
-        lore.add("§e" + getItemDisplayName(item));
-
-        // Affiche les enchantements actuels
-        if (!item.getEnchantments().isEmpty()) {
-            lore.add("");
-            lore.add("§6Enchantements actuels:");
-            for (Map.Entry<Enchantment, Integer> enchant : item.getEnchantments().entrySet()) {
-                lore.add("§7- " + getEnchantmentName(enchant.getKey()) + " " + enchant.getValue());
-            }
-        }
 
         meta.setLore(lore);
         displayItem.setItemMeta(meta);
@@ -163,37 +154,119 @@ public class WeaponArmorEnchantGUI {
     /**
      * Configure les slots pour les livres uniques
      */
-    private void setupUniqueBookSlots(Inventory gui, boolean isWeapon) {
-        // Premier slot de livre unique (épée et armure)
-        ItemStack slot1 = new ItemStack(Material.ITEM_FRAME);
-        ItemMeta meta1 = slot1.getItemMeta();
-        meta1.setDisplayName("§5📚 §lSlot Livre Unique");
-        meta1.setLore(List.of(
-                "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
-                "§7Glissez un livre d'enchantement unique",
-                "§7ici pour l'appliquer à votre item.",
-                "",
-                "§e➤ Drag & Drop depuis votre inventaire!",
-                "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-        ));
-        slot1.setItemMeta(meta1);
-        gui.setItem(UNIQUE_BOOK_SLOT_1, slot1);
+    private void setupUniqueBookSlots(Inventory gui, boolean isWeapon, ItemStack item) {
+        Map<String, Integer> existingEnchants = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
+        List<Map.Entry<String, Integer>> enchantList = new ArrayList<>(existingEnchants.entrySet());
 
-        // Deuxième slot uniquement pour les épées
-        if (isWeapon) {
-            ItemStack slot2 = new ItemStack(Material.ITEM_FRAME);
-            ItemMeta meta2 = slot2.getItemMeta();
-            meta2.setDisplayName("§5📚 §lSlot Livre Unique #2");
-            meta2.setLore(List.of(
+        // Premier slot de livre unique (épée et armure)
+        if (!enchantList.isEmpty()) {
+            // NOUVEAU : Affiche le premier enchantement existant
+            Map.Entry<String, Integer> firstEnchant = enchantList.get(0);
+            ItemStack existingBook = createDisplayBook(firstEnchant.getKey(), firstEnchant.getValue());
+            gui.setItem(UNIQUE_BOOK_SLOT_1, existingBook);
+        } else {
+            // Slot vide comme avant
+            ItemStack slot1 = new ItemStack(Material.ITEM_FRAME);
+            ItemMeta meta1 = slot1.getItemMeta();
+            meta1.setDisplayName("§5📚 §lSlot Livre Unique");
+            meta1.setLore(List.of(
                     "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
-                    "§7Second slot pour livres d'enchantement",
-                    "§7unique (épées seulement).",
+                    "§7Glissez un livre d'enchantement unique",
+                    "§7ici pour l'appliquer à votre item.",
                     "",
                     "§e➤ Drag & Drop depuis votre inventaire!",
                     "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
             ));
-            slot2.setItemMeta(meta2);
-            gui.setItem(UNIQUE_BOOK_SLOT_2, slot2);
+            slot1.setItemMeta(meta1);
+            gui.setItem(UNIQUE_BOOK_SLOT_1, slot1);
+        }
+
+        // Deuxième slot uniquement pour les épées
+        if (isWeapon) {
+            if (enchantList.size() > 1) {
+                // NOUVEAU : Affiche le deuxième enchantement existant
+                Map.Entry<String, Integer> secondEnchant = enchantList.get(1);
+                ItemStack existingBook = createDisplayBook(secondEnchant.getKey(), secondEnchant.getValue());
+                gui.setItem(UNIQUE_BOOK_SLOT_2, existingBook);
+            } else {
+                // Slot vide comme avant
+                ItemStack slot2 = new ItemStack(Material.ITEM_FRAME);
+                ItemMeta meta2 = slot2.getItemMeta();
+                meta2.setDisplayName("§5📚 §lSlot Livre Unique #2");
+                meta2.setLore(List.of(
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+                        "§7Second slot pour livres d'enchantement",
+                        "§7unique (épées seulement).",
+                        "",
+                        "§e➤ Drag & Drop depuis votre inventaire!",
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+                ));
+                slot2.setItemMeta(meta2);
+                gui.setItem(UNIQUE_BOOK_SLOT_2, slot2);
+            }
+        }
+    }
+
+    /**
+     * NOUVEAU : Crée un livre d'affichage pour un enchantement existant
+     */
+    private ItemStack createDisplayBook(String enchantId, int level) {
+        WeaponArmorEnchantmentManager.UniqueEnchantment enchant =
+                plugin.getWeaponArmorEnchantmentManager().getEnchantment(enchantId);
+
+        if (enchant == null) return new ItemStack(Material.BARRIER);
+
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        ItemMeta meta = book.getItemMeta();
+
+        // Couleur selon le type
+        String typeColor = getEnchantmentColor(enchantId);
+        String levelStr = enchant.getMaxLevel() > 1 ? " " + toRoman(level) : "";
+        meta.setDisplayName(typeColor + "⚡ §l" + enchant.getName() + levelStr);
+
+        List<String> lore = new ArrayList<>();
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+        lore.add("§a✅ §lEnchantement Actif");
+        lore.add("");
+        lore.add("§6📖 §lEffet:");
+        lore.add("§7" + enchant.getDescription());
+        lore.add("");
+
+        if (enchant.getMaxLevel() > 1) {
+            lore.add("§e📊 §lNiveau: §7" + level + "/" + enchant.getMaxLevel());
+            if (level < enchant.getMaxLevel()) {
+                lore.add("§a▸ Peut être amélioré!");
+            } else {
+                lore.add("§6▸ Niveau maximum atteint!");
+            }
+        } else {
+            lore.add("§e📊 §lNiveau: §7Unique");
+        }
+
+        lore.add("");
+        lore.add("§e➤ Appliquez un livre pour améliorer!");
+        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        meta.setLore(lore);
+        book.setItemMeta(meta);
+        return book;
+    }
+
+    /**
+     * NOUVEAU : Méthode utilitaire pour récupérer la couleur d'un enchantement
+     */
+    private String getEnchantmentColor(String enchantId) {
+        switch (enchantId) {
+            case "tonnerre":
+            case "incassable":
+                return "§5"; // Violet pour universels
+            case "tornade":
+            case "repercussion":
+            case "behead":
+            case "chasseur":
+                return "§c"; // Rouge pour épées
+            default:
+                return "§5";
         }
     }
 
@@ -295,40 +368,6 @@ public class WeaponArmorEnchantGUI {
             item.addUnsafeEnchantment(Enchantment.UNBREAKING, 3); // Incassable III
         }
 
-        // CORRIGÉ : Restaurer les enchantements uniques après les vanilla
-        if (!uniqueEnchants.isEmpty()) {
-            ItemMeta meta = item.getItemMeta();
-            StringBuilder enchantData = new StringBuilder();
-            for (Map.Entry<String, Integer> entry : uniqueEnchants.entrySet()) {
-                if (enchantData.length() > 0) enchantData.append(";");
-                enchantData.append(entry.getKey()).append(":").append(entry.getValue());
-            }
-
-            meta.getPersistentDataContainer().set(
-                    new NamespacedKey(plugin, "unique_enchantments"),
-                    PersistentDataType.STRING,
-                    enchantData.toString()
-            );
-
-            // Mettre à jour le lore avec les enchantements uniques
-            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-            lore.removeIf(line -> line.startsWith("§5⚡"));
-
-            lore.add("");
-            lore.add("§5⚡ §lEnchantements Uniques:");
-            for (Map.Entry<String, Integer> entry : uniqueEnchants.entrySet()) {
-                WeaponArmorEnchantmentManager.UniqueEnchantment enchant =
-                        plugin.getWeaponArmorEnchantmentManager().getEnchantment(entry.getKey());
-                if (enchant != null) {
-                    String levelStr = enchant.getMaxLevel() > 1 ? " " + toRoman(entry.getValue()) : "";
-                    lore.add("§5⚡ " + enchant.getName() + levelStr);
-                }
-            }
-
-            meta.setLore(lore);
-            item.setItemMeta(meta);
-        }
-
         player.sendMessage("§a✅ Item enchanté au maximum vanilla!");
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
 
@@ -348,13 +387,13 @@ public class WeaponArmorEnchantGUI {
     public void applyUniqueBook(Player player, ItemStack book, int slot) {
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType() == Material.AIR) {
-            player.sendMessage("§cVous devez tenir l'item à enchanter!");
+            player.sendMessage("§c❌ Vous devez tenir l'item à enchanter!");
             return;
         }
 
         if (!book.hasItemMeta() || !book.getItemMeta().getPersistentDataContainer().has(
                 new NamespacedKey(plugin, "unique_enchant_book"), PersistentDataType.STRING)) {
-            player.sendMessage("§cCe n'est pas un livre d'enchantement unique valide!");
+            player.sendMessage("§c❌ Ce n'est pas un livre d'enchantement unique valide!");
             return;
         }
 
@@ -365,48 +404,97 @@ public class WeaponArmorEnchantGUI {
                 plugin.getWeaponArmorEnchantmentManager().getEnchantment(enchantId);
 
         if (enchant == null) {
-            player.sendMessage("§cEnchantement unique introuvable!");
+            player.sendMessage("§c❌ Enchantement unique introuvable: " + enchantId);
             return;
         }
 
         // Vérifier la compatibilité
         if (!plugin.getWeaponArmorEnchantmentManager().isCompatible(enchantId, item)) {
-            player.sendMessage("§cCet enchantement n'est pas compatible avec cet item!");
+            player.sendMessage("§c❌ Cet enchantement n'est pas compatible avec cet item!");
+            player.sendMessage("§7ℹ §e" + enchant.getName() + " §7fonctionne sur: " + getCompatibilityInfo(enchantId));
             return;
         }
 
-        // CORRIGÉ : Utilise la nouvelle méthode addEnchantment qui gère les améliorations et limites
+        // ÉTAT AVANT TENTATIVE
+        Map<String, Integer> beforeEnchants = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
+        int beforeCount = beforeEnchants.size();
+        int beforeLevel = beforeEnchants.getOrDefault(enchantId, 0);
+
+        // Tentative d'application
         boolean success = plugin.getWeaponArmorEnchantmentManager().addEnchantment(item, enchantId, 1);
 
         if (!success) {
-            // Vérifie pourquoi ça a échoué
+            // DIAGNOSTIC DÉTAILLÉ
             int currentLevel = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(item, enchantId);
             int maxLevel = enchant.getMaxLevel();
+            int currentCount = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantmentCount(item);
+            boolean isWeapon = isValidWeapon(item);
+            int maxCount = isWeapon ? 2 : 1;
+
+            player.sendMessage("§c❌ §lÉchec de l'application:");
 
             if (currentLevel >= maxLevel) {
-                player.sendMessage("§cCet enchantement est déjà au niveau maximum! (" + maxLevel + ")");
+                player.sendMessage("§7┃ §eRaison: §fNiveau maximum atteint");
+                player.sendMessage("§7┃ §eNiveau: §f" + currentLevel + "/" + maxLevel);
             } else {
-                int currentCount = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantmentCount(item);
-                int maxCount = isValidWeapon(item) ? 2 : 1;
-                player.sendMessage("§cNombre maximum d'enchantements uniques atteint! (" + maxCount + ")");
+                player.sendMessage("§7┃ §eRaison: §fLimite d'enchantements atteinte");
+                player.sendMessage("§7┃ §eActuel: §f" + currentCount + "/" + maxCount + " enchantements");
+                player.sendMessage("§7┃ §eType: §f" + (isWeapon ? "Épée (2 max)" : "Armure (1 max)"));
+
+                // Liste des enchantements présents
+                if (currentCount > 0) {
+                    player.sendMessage("§7┃ §eEnchantements présents:");
+                    Map<String, Integer> current = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
+                    for (Map.Entry<String, Integer> entry : current.entrySet()) {
+                        WeaponArmorEnchantmentManager.UniqueEnchantment existing =
+                                plugin.getWeaponArmorEnchantmentManager().getEnchantment(entry.getKey());
+                        if (existing != null) {
+                            String levelStr = existing.getMaxLevel() > 1 ? " " + toRoman(entry.getValue()) : "";
+                            player.sendMessage("§7┃   §5⚡ " + existing.getName() + levelStr);
+                        }
+                    }
+                }
             }
             return;
         }
 
-        // Succès - retirer le livre et informer le joueur
+        // SUCCÈS - Messages et effets
         book.setAmount(book.getAmount() - 1);
 
         int newLevel = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(item, enchantId);
+
         if (newLevel == 1) {
-            player.sendMessage("§a✅ Enchantement §e" + enchant.getName() + " §aappliqué!");
+            player.sendMessage("§a✅ §l" + enchant.getName() + " §aappliqué avec succès!");
+            player.sendMessage("§7✦ Votre " + item.getType().name().toLowerCase() + " brille d'une nouvelle puissance!");
         } else {
-            player.sendMessage("§a✅ Enchantement §e" + enchant.getName() + " §aamélioré au niveau " + newLevel + "!");
+            player.sendMessage("§a✅ §l" + enchant.getName() + " §aamélioré au niveau " + newLevel + "!");
+            player.sendMessage("§7✦ La puissance mystique s'intensifie!");
         }
 
+        // Effets visuels et sonores
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
 
-        // Refresh le GUI pour montrer les changements
+        // Refresh le GUI
         openEnchantMenu(player, item);
+    }
+
+    /**
+     * NOUVEAU : Information de compatibilité lisible
+     */
+    private String getCompatibilityInfo(String enchantId) {
+        switch (enchantId) {
+            case "tonnerre":
+                return "§eÉpées §7et §ePioches";
+            case "incassable":
+                return "§eÉpées§7, §ePioches §7et §eArmures";
+            case "tornade":
+            case "repercussion":
+            case "behead":
+            case "chasseur":
+                return "§eÉpées §7uniquement";
+            default:
+                return "§cType inconnu";
+        }
     }
 
     // Méthodes utilitaires

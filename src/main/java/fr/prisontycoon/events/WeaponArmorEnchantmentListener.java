@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
@@ -94,62 +95,72 @@ public class WeaponArmorEnchantmentListener implements Listener {
     }
 
     /**
-     * NOUVEAU : Gère l'application d'un livre en cliquant dessus (comme les cristaux)
+     * Gère l'application d'un livre d'enchantement (unique ou legacy) sur un item.
+     * VERSION CORRIGÉE ET UNIFIÉE
      */
     private void handleBookApplicationClick(Player player, ItemStack book) {
-        // Vérifie si c'est un livre d'enchantement unique (épée/armure)
-        if (isUniqueEnchantmentBook(book)) {
-            plugin.getWeaponArmorEnchantGUI().applyUniqueBook(player, book, 15); // Slot 15 par défaut
+        ItemMeta bookMeta = book.getItemMeta();
+        if (bookMeta == null) return;
+
+        // --- Étape 1: Extraire l'ID de l'enchantement de manière unifiée ---
+        String enchantId = null;
+        NamespacedKey uniqueKey = new NamespacedKey(plugin, "unique_enchant_book");
+        NamespacedKey legacyKey = new NamespacedKey(plugin, "enchant_book_id");
+
+        if (bookMeta.getPersistentDataContainer().has(uniqueKey, PersistentDataType.STRING)) {
+            enchantId = bookMeta.getPersistentDataContainer().get(uniqueKey, PersistentDataType.STRING);
+        } else if (bookMeta.getPersistentDataContainer().has(legacyKey, PersistentDataType.STRING)) {
+            enchantId = bookMeta.getPersistentDataContainer().get(legacyKey, PersistentDataType.STRING);
+        }
+
+        if (enchantId == null) {
             return;
         }
 
-        // Vérifie si c'est un livre de pioche existant (pour compatibilité)
-        if (isPickaxeEnchantmentBook(book)) {
-            // Applique le livre de pioche sur l'épée/armure si compatible
-            String bookId = book.getItemMeta().getPersistentDataContainer().get(
-                    new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING);
+        // --- Étape 2: Vérifications de base ---
+        WeaponArmorEnchantmentManager manager = plugin.getWeaponArmorEnchantmentManager();
+        WeaponArmorEnchantmentManager.UniqueEnchantment enchant = manager.getEnchantment(enchantId);
 
-            ItemStack item = player.getInventory().getItemInMainHand();
-            if (item != null && (bookId.equals("tonnerre") || bookId.equals("incassable"))) {
-                if (plugin.getWeaponArmorEnchantmentManager().isCompatible(bookId, item)) {
-                    // CORRIGÉ : Utilise la nouvelle logique d'amélioration
-                    boolean success = plugin.getWeaponArmorEnchantmentManager().addEnchantment(item, bookId, 1);
+        if (enchant == null) {
+            player.sendMessage("§cErreur: L'enchantement '" + enchantId + "' n'existe pas ou n'est plus supporté.");
+            return;
+        }
 
-                    if (success) {
-                        // Retirer le livre
-                        book.setAmount(book.getAmount() - 1);
+        ItemStack item = player.getInventory().getItemInMainHand();
 
-                        int newLevel = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(item, bookId);
-                        String enchantName = plugin.getWeaponArmorEnchantmentManager().getEnchantment(bookId).getName();
+        // --- Étape 3: Logique d'application et messages ---
+        if (!manager.isCompatible(enchantId, item)) {
+            player.sendMessage("§cCet enchantement n'est pas compatible avec cet item !");
+            return;
+        }
 
-                        if (newLevel == 1) {
-                            player.sendMessage("§a✅ Enchantement §e" + enchantName + " §aappliqué!");
-                        } else {
-                            player.sendMessage("§a✅ Enchantement §e" + enchantName + " §aamélioré au niveau " + newLevel + "!");
-                        }
+        boolean success = manager.addEnchantment(item, enchantId, 1);
 
-                        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
+        if (success) {
+            // Logique de succès (consommer le livre, son, message)
+            book.setAmount(book.getAmount() - 1);
+            int newLevel = manager.getEnchantmentLevel(item, enchantId);
 
-                        // Refresh le GUI
-                        plugin.getWeaponArmorEnchantGUI().openEnchantMenu(player, item);
-                    } else {
-                        // Vérifie pourquoi ça a échoué
-                        WeaponArmorEnchantmentManager.UniqueEnchantment enchant =
-                                plugin.getWeaponArmorEnchantmentManager().getEnchantment(bookId);
-                        int currentLevel = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(item, bookId);
+            if (newLevel == 1) {
+                player.sendMessage("§a✅ Enchantement §e" + enchant.getName() + " §aappliqué !");
+            } else {
+                player.sendMessage("§a✅ Enchantement §e" + enchant.getName() + " §aamélioré au niveau " + newLevel + " !");
+            }
 
-                        if (currentLevel >= enchant.getMaxLevel()) {
-                            player.sendMessage("§cCet enchantement est déjà au niveau maximum! (" + enchant.getMaxLevel() + ")");
-                        } else {
-                            int currentCount = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantmentCount(item);
-                            boolean isWeapon = item.getType().name().contains("SWORD");
-                            int maxCount = isWeapon ? 2 : 1;
-                            player.sendMessage("§cNombre maximum d'enchantements uniques atteint! (" + maxCount + ")");
-                        }
-                    }
-                } else {
-                    player.sendMessage("§cCet enchantement n'est pas compatible avec cet item!");
-                }
+            player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
+            plugin.getWeaponArmorEnchantGUI().openEnchantMenu(player, item); // Rafraîchir le GUI
+        } else {
+            // Logique d'échec (donner la bonne raison au joueur)
+            int currentLevel = manager.getEnchantmentLevel(item, enchantId);
+
+            if (currentLevel >= enchant.getMaxLevel()) {
+                player.sendMessage("§cCet enchantement est déjà au niveau maximum ! (" + enchant.getMaxLevel() + ")");
+            } else {
+                // La seule autre raison d'échec est que le nombre max d'enchantements est atteint.
+                int currentCount = manager.getUniqueEnchantmentCount(item);
+                int maxCount = manager.getMaxEnchantments(item); // On utilise notre nouvelle méthode fiable
+                player.sendMessage("§cNombre maximum d'enchantements uniques atteint ! (" + maxCount + ")");
+                player.sendMessage("§7Votre item a déjà " + currentCount + " enchantement(s) unique(s).");
             }
         }
     }

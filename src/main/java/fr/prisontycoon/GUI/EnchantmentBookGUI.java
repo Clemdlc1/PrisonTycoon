@@ -84,32 +84,50 @@ public class EnchantmentBookGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        // Titre avec état
+        // Titre avec état - UNIFORMISÉ
         String statusIcon = owned ? (isActive ? "§a✅" : "§c⭕") : "§8❌";
-        meta.setDisplayName(statusIcon + " §e§l" + book.getName());
+        meta.setDisplayName(statusIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        // Description avec emojis
-        lore.add("§6📖 Description:");
-        lore.add("§7▸ " + book.getDescription());
+        // NOUVEAU : Ajout de la compatibilité pour clarté
+        switch (book.getId()) {
+            case "tonnerre":
+                lore.add("§5⚡ §lCompatible: §7Pioches et Épées");
+                break;
+            case "incassable":
+                lore.add("§5⚡ §lCompatible: §7Pioches, Épées et Armures");
+                break;
+            default:
+                lore.add("§5⛏ §lCompatible: §7Pioches uniquement");
+                break;
+        }
         lore.add("");
 
-        // Informations détaillées
-        lore.add("§b⭐ Informations:");
+        // Description avec emojis - UNIFORMISÉ
+        lore.add("§6📖 §lDescription:"); // UNIFORMISÉ
+        lore.add("§7▸ " + book.getDescription()); // UNIFORMISÉ avec ▸
+        lore.add("");
+
+        // NOUVEAU : Ajout du pouvoir pour uniformité
+        lore.add("§e⚡ Pouvoir: §d" + getPickaxePowerDescription(book.getId()));
+        lore.add("");
+
+        // Informations détaillées - UNIFORMISÉ
+        lore.add("§e📊 §lInformations:"); // UNIFORMISÉ
         lore.add("§7▸ Niveau max: §e" + book.getMaxLevel());
 
         if (owned) {
             lore.add("§7▸ Votre niveau: §a" + level + "§7/§e" + book.getMaxLevel());
-            lore.add("§7▸ État: " + (isActive ? "§a✅ Actif" : "§c⭕ Inactif"));
+            lore.add("§7▸ Statut: " + (isActive ? "§a✅ Actif" : "§c⭕ Inactif"));
         } else {
             lore.add("§7▸ Statut: §c❌ Non possédé");
         }
         lore.add("");
 
-        // Actions possibles
-        lore.add("§e⚡ Actions:");
+        // Actions possibles - UNIFORMISÉ
+        lore.add("§a🎯 §lActions:"); // UNIFORMISÉ
         if (owned) {
             if (isActive) {
                 lore.add("§7▸ §c⇧ + Clic §7pour désactiver");
@@ -140,6 +158,36 @@ public class EnchantmentBookGUI {
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+     * NOUVEAU : Description du pouvoir pour les livres de pioche
+     */
+    private String getPickaxePowerDescription(String bookId) {
+        switch (bookId) {
+            case "tonnerre":
+                return "Foudroie les ennemis et les blocs";
+            case "incassable":
+                return "Durabilité infinie";
+            case "explosion":
+                return "Explosion de minage";
+            case "speed":
+                return "Vitesse de minage";
+            case "xp_boost":
+                return "Multiplicateur d'XP";
+            case "auto_sell":
+                return "Vente automatique";
+            case "fortune":
+                return "Multiplicateur de drops";
+            case "telekinesis":
+                return "Collecte magnétique";
+            case "beacon_finder":
+                return "Détection de beacons";
+            case "multiplier":
+                return "Multiplicateur de gains";
+            default:
+                return "Effet mystérieux";
+        }
     }
 
     /**
@@ -230,14 +278,14 @@ public class EnchantmentBookGUI {
             gui.setItem(pickaxeSlots[i], bookItem);
         }
 
-        // NOUVEAU : Livres d'enchantements épées/armures (ajout dans les slots libres)
-        String[] newEnchants = {"tornade", "repercussion", "behead", "chasseur"};
-        int[] newSlots = {30, 31, 32, 33}; // Utilise la ligne du bas
+        // NOUVEAU : Livres épées/armures uniquement (tonnerre/incassable restent dans la section pioche)
+        String[] weaponArmorEnchants = {"tornade", "repercussion", "behead", "chasseur"};
+        int[] weaponArmorSlots = {30, 31, 32, 33}; // Slots pour épées uniquement
 
-        for (int i = 0; i < Math.min(newEnchants.length, newSlots.length); i++) {
-            ItemStack newBook = plugin.getUniqueEnchantmentBookFactory().createShopItem(newEnchants[i]);
-            if (newBook != null) {
-                gui.setItem(newSlots[i], newBook);
+        for (int i = 0; i < Math.min(weaponArmorEnchants.length, weaponArmorSlots.length); i++) {
+            ItemStack weaponArmorBook = plugin.getUniqueEnchantmentBookFactory().createShopItem(weaponArmorEnchants[i]);
+            if (weaponArmorBook != null) {
+                gui.setItem(weaponArmorSlots[i], weaponArmorBook);
             }
         }
 
@@ -265,7 +313,7 @@ public class EnchantmentBookGUI {
     }
 
     /**
-     * AMÉLIORÉ : Crée l'item pour la boutique avec lore détaillé
+     * UNIFORMISÉ : Crée l'item pour la boutique avec lore uniforme
      */
     private ItemStack createShopBookItem(Player player, EnchantmentBookManager.EnchantmentBook book) {
         ItemStack item = new ItemStack(book.getDisplayMaterial());
@@ -278,7 +326,7 @@ public class EnchantmentBookGUI {
 
         // Titre avec indicateur de disponibilité
         String affordIcon = canAfford ? "§a💰" : "§c💸";
-        meta.setDisplayName(affordIcon + " §e§l" + book.getName());
+        meta.setDisplayName(affordIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         // ID du livre pour identification
         meta.getPersistentDataContainer().set(
@@ -289,17 +337,28 @@ public class EnchantmentBookGUI {
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§6📖 Description:");
-        lore.add("§7▸ " + book.getDescription());
+        lore.add("§e✨ §lEnchantement Unique Légendaire"); // UNIFORMISÉ
         lore.add("");
 
-        lore.add("§b⭐ Informations:");
+        // NOUVEAU : Ajout de la compatibilité pour les livres universels
+        addPickaxeCompatibilityInfo(lore, book.getId());
+
+        lore.add("");
+        lore.add("§6📖 §lDescription:"); // UNIFORMISÉ
+        lore.add("§7▸ " + book.getDescription()); // UNIFORMISÉ avec ▸
+        lore.add("");
+
+        lore.add("§e📊 §lInformations:"); // UNIFORMISÉ
         lore.add("§7▸ Niveau max: §e" + book.getMaxLevel());
         lore.add("§7▸ Votre niveau: §a" + currentLevel + "§7/§e" + book.getMaxLevel());
         lore.add("");
 
-        // Coût et affordabilité
-        lore.add("§e💰 Prix:");
+        // NOUVEAU : Ajout du pouvoir pour uniformité
+        lore.add("§e⚡ Pouvoir: §d" + getPickaxePowerDescription(book.getId()));
+        lore.add("");
+
+        // Coût et affordabilité - UNIFORMISÉ
+        lore.add("§6💰 §lPrix:"); // UNIFORMISÉ
         if (canAfford) {
             lore.add("§7▸ §a" + NumberFormatter.format(cost) + " beacons");
             lore.add("§7▸ §aVous pouvez acheter!");
@@ -309,11 +368,12 @@ public class EnchantmentBookGUI {
         }
         lore.add("");
 
-        // Type d'achat intelligent
-        lore.add("§e⚡ Achat intelligent:");
+        // Type d'achat intelligent - UNIFORMISÉ
+        lore.add("§a🎯 §lUtilisation:"); // UNIFORMISÉ
         if (player.getInventory().firstEmpty() != -1) {
             lore.add("§7▸ §a📚 Livre physique §7(inventaire libre)");
-            lore.add("§7  Peut être appliqué plus tard");
+            lore.add("§7  §6Cliquez dans le menu enchantements");
+            lore.add("§7  pour appliquer à votre pioche");
         } else {
             lore.add("§7▸ §6⚡ Application directe §7(inventaire plein)");
             lore.add("§7  Ajouté immédiatement à la pioche");
@@ -321,7 +381,7 @@ public class EnchantmentBookGUI {
         lore.add("");
 
         if (canAfford && currentLevel < book.getMaxLevel()) {
-            lore.add("§a➤ Cliquez pour acheter!");
+            lore.add("§e➤ Cliquez pour acheter le livre!"); // UNIFORMISÉ
         } else if (!canAfford) {
             lore.add("§c❌ Pas assez de beacons!");
         } else {
@@ -333,6 +393,23 @@ public class EnchantmentBookGUI {
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+     * NOUVEAU : Ajoute les informations de compatibilité pour les livres de pioche
+     */
+    private void addPickaxeCompatibilityInfo(List<String> lore, String bookId) {
+        switch (bookId) {
+            case "tonnerre":
+                lore.add("§5⚡ §lCompatible: §7Pioches et Épées");
+                break;
+            case "incassable":
+                lore.add("§5⚡ §lCompatible: §7Pioches, Épées et Armures");
+                break;
+            default:
+                lore.add("§5⛏ §lCompatible: §7Pioches uniquement");
+                break;
+        }
     }
 
     /**

@@ -42,18 +42,18 @@ public class UniqueEnchantmentBookFactory {
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§5✨ §lLivre d'Enchantement Unique");
+        lore.add("§e✨ §lEnchantement Unique Légendaire"); // UNIFORMISÉ
         lore.add("");
 
         // Type d'item compatible avec informations correctes
         addCompatibilityInfo(lore, enchantId);
 
         lore.add("");
-        lore.add("§6📖 §lDescription:");
-        lore.add("§7" + enchant.getDescription());
+        lore.add("§6📖 §lDescription:"); // UNIFORMISÉ
+        lore.add("§7▸ " + enchant.getDescription()); // UNIFORMISÉ avec ▸
         lore.add("");
 
-        // Niveau maximum
+        // Niveau maximum - UNIFORMISÉ
         if (enchant.getMaxLevel() > 1) {
             lore.add("§e📊 §lNiveaux: §71 à " + enchant.getMaxLevel());
         } else {
@@ -61,11 +61,14 @@ public class UniqueEnchantmentBookFactory {
         }
 
         lore.add("");
-        lore.add("§a🎯 §lUtilisation:");
-        lore.add("§7▸ Shift + Clic droit avec épée/armure");
-        lore.add("§7▸ Cliquez sur le livre dans votre inventaire");
+        lore.add("§a🎯 §lUtilisation:"); // UNIFORMISÉ
+        lore.add("§7▸ §6Cliquez dans le menu enchantements"); // UNIFORMISÉ
+        lore.add("§7  pour appliquer à votre item");
+        lore.add("§7▸ §aPeut être activé/désactivé");
         lore.add("§7▸ Maximum " + getMaxBooksPerItem(enchantId) + " livre(s) par item");
 
+        lore.add("");
+        lore.add("§e⚡ Pouvoir: §d" + getEnchantmentPowerDescription(enchantId)); // UNIFORMISÉ
         lore.add("");
         lore.add("§c⚠ §lAttention:");
         lore.add("§7Ce livre sera consommé lors de l'application!");
@@ -79,6 +82,25 @@ public class UniqueEnchantmentBookFactory {
 
         book.setItemMeta(meta);
         return book;
+    }
+
+    private String getEnchantmentPowerDescription(String enchantId) {
+        switch (enchantId) {
+            case "tonnerre":
+                return "Foudroie les ennemis et les blocs";
+            case "incassable":
+                return "Durabilité infinie";
+            case "tornade":
+                return "Tourbillon destructeur";
+            case "repercussion":
+                return "Explosion vengeresse";
+            case "behead":
+                return "Décapitation brutale";
+            case "chasseur":
+                return "Bonus contre les joueurs";
+            default:
+                return "Effet mystérieux";
+        }
     }
 
     /**
@@ -136,17 +158,15 @@ public class UniqueEnchantmentBookFactory {
     }
 
     /**
-     * Ajoute les informations de compatibilité selon l'enchantement
+     * CORRIGÉ : Ajoute les informations de compatibilité selon l'enchantement
      */
     private void addCompatibilityInfo(List<String> lore, String enchantId) {
         switch (enchantId) {
             case "tonnerre":
-                lore.add("§5⚡ §lCompatible: §7Pioches et Épées");
-                lore.add("§7(Livre partagé avec le système de pioche)");
+                lore.add("§5⚡ §lCompatible: §7Pioches et Épées"); // CORRIGÉ : pas armures
                 break;
             case "incassable":
-                lore.add("§5⚡ §lCompatible: §7Pioches, Épées et Armures");
-                lore.add("§7(Livre universel)");
+                lore.add("§5⚡ §lCompatible: §7Pioches, Épées et Armures"); // CORRIGÉ : toutes armures aussi
                 break;
             case "tornade":
             case "repercussion":
@@ -204,12 +224,17 @@ public class UniqueEnchantmentBookFactory {
      * Récupère le nombre maximum de livres par item
      */
     private String getMaxBooksPerItem(String enchantId) {
-        // Pour l'instant, même logique que les épées/armures standard
-        return "1-2";
+        switch (enchantId) {
+            case "tonnerre":
+            case "incassable":
+                return "1"; // Livres universels : 1 seul par item
+            default:
+                return "1-2"; // Épées peuvent avoir 2 enchantements uniques
+        }
     }
 
     /**
-     * Ajoute des détails spécifiques selon l'enchantement
+     * CORRIGÉ : Ajoute des détails spécifiques selon l'enchantement
      */
     private void addSpecificEnchantmentDetails(List<String> lore, String enchantId, WeaponArmorEnchantmentManager.UniqueEnchantment enchant) {
         switch (enchantId) {
@@ -219,7 +244,7 @@ public class UniqueEnchantmentBookFactory {
                 lore.add("§7▸ Dégâts: 0.5 à 2 cœurs");
                 lore.add("§7▸ Max niveau: " + enchant.getMaxLevel());
                 lore.add("§7▸ Fonctionne en minage ET combat");
-                lore.add("§a▸ Compatible: Pioches et Épées");
+                lore.add("§a▸ Compatible: Pioches et Épées"); // CORRIGÉ
                 break;
 
             case "incassable":
@@ -228,59 +253,46 @@ public class UniqueEnchantmentBookFactory {
                 lore.add("§7▸ Plus jamais d'usure");
                 lore.add("§7▸ Fonctionne sur tous les équipements");
                 lore.add("§7▸ Économisez vos réparations!");
-                lore.add("§a▸ Compatible: Pioches, Épées et Armures");
+                lore.add("§a▸ Compatible: Pioches, Épées et Armures"); // CORRIGÉ
                 break;
 
             case "tornade":
                 lore.add("§e🌪 §lEffets:");
-                lore.add("§7▸ Chance: 10% par attaque");
-                lore.add("§7▸ Animation spectaculaire de 3 secondes");
-                lore.add("§7▸ Aspiration puis propulsion des ennemis");
-                lore.add("§7▸ Dégâts légers continus pendant l'effet");
+                lore.add("§7▸ Tourbillon dévastateur");
+                lore.add("§7▸ Dégâts en zone");
+                lore.add("§7▸ Repousse les ennemis");
+                lore.add("§a▸ Compatible: Épées uniquement");
                 break;
 
             case "repercussion":
-                lore.add("§e⚖ §lEffets selon réputation:");
-                lore.add("§a▸ Rép. Positive: Conserve inventaire");
-                lore.add("§c▸ Rép. Négative: Vol de coins");
-                lore.add("§7▸ Max niveau: " + enchant.getMaxLevel());
-                lore.add("§7▸ Effet proportionnel à la réputation");
+                lore.add("§e💥 §lEffets:");
+                lore.add("§7▸ Explosion à la mort du tueur");
+                lore.add("§7▸ Vengeance posthume");
+                lore.add("§7▸ Dégâts aux alentours");
+                lore.add("§a▸ Compatible: Épées uniquement");
                 break;
 
             case "behead":
-                lore.add("§e💀 §lEffets:");
-                lore.add("§7▸ 10% chance de tête joueur/monstre");
-                lore.add("§7▸ Compatible: Zombie, Squelette, etc.");
-                lore.add("§7▸ Trophées de collection!");
-                lore.add("§7▸ Têtes spéciales pour boss rares");
+                lore.add("§e🗡 §lEffets:");
+                lore.add("§7▸ Décapitation brutale");
+                lore.add("§7▸ Chance de tête de joueur");
+                lore.add("§7▸ Effet psychologique");
+                lore.add("§a▸ Compatible: Épées uniquement");
                 break;
 
             case "chasseur":
-                lore.add("§e🏹 §lEffets:");
-                lore.add("§7▸ Bonus coins vs réputation opposée");
-                lore.add("§7▸ Calcul selon écart de réputation");
-                lore.add("§7▸ Max niveau: " + enchant.getMaxLevel());
-                lore.add("§7▸ Plus l'écart est grand, plus le gain");
+                lore.add("§e🎯 §lEffets:");
+                lore.add("§7▸ Bonus contre les joueurs");
+                lore.add("§7▸ Dégâts amplifiés en PvP");
+                lore.add("§7▸ Traque impitoyable");
+                lore.add("§a▸ Compatible: Épées uniquement");
+                break;
+
+            default:
+                lore.add("§e❓ §lEffets:");
+                lore.add("§7▸ Effet mystérieux");
+                lore.add("§7▸ Découvrez par vous-même!");
                 break;
         }
-    }
-
-    /**
-     * Vérifie si un item est un livre d'enchantement unique
-     */
-    public boolean isUniqueEnchantmentBook(ItemStack item) {
-        if (item == null || item.getType() != Material.ENCHANTED_BOOK) return false;
-        if (!item.hasItemMeta()) return false;
-
-        return item.getItemMeta().getPersistentDataContainer().has(uniqueBookKey, PersistentDataType.STRING);
-    }
-
-    /**
-     * Récupère l'ID de l'enchantement depuis un livre
-     */
-    public String getEnchantmentId(ItemStack book) {
-        if (!isUniqueEnchantmentBook(book)) return null;
-
-        return book.getItemMeta().getPersistentDataContainer().get(uniqueBookKey, PersistentDataType.STRING);
     }
 }
