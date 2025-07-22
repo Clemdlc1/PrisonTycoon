@@ -244,6 +244,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new ContainerListener(this), this);
         pluginManager.registerEvents(new CristalListener(this), this);
         pluginManager.registerEvents(new ChatListener(this), this);
+        pluginManager.registerEvents(new PNJInteract(this), this);
 
         logger.info("§aÉvénements enregistrés.");
     }
