@@ -206,22 +206,23 @@ public class GlobalBonusManager {
      */
     private double calculateTalentBonus(PrestigeTalent talent, int level, BonusType bonusType) {
         switch (talent) {
-            case PROFIT_AMELIORE:
-            case PROFIT_AMELIORE_II:
-                switch (bonusType) {
-                    case PRESTIGE_MONEY_GREED: return level * 3.0; // +3% par niveau
-                    case PRESTIGE_SELL_BONUS: return level * 3.0;  // +3% par niveau
-                    case PRESTIGE_OUTPOST_BONUS: return level * 3.0; // +3% par niveau
-                }
+            case MONEY_GREED_BONUS:
+                if (bonusType == BonusType.PRESTIGE_MONEY_GREED) return level * 3.0;
                 break;
-
-            case ECONOMIE_OPTIMISEE:
-            case ECONOMIE_OPTIMISEE_II:
-                switch (bonusType) {
-                    case PRESTIGE_TOKEN_GREED: return level * 3.0; // +3% par niveau
-                    case PRESTIGE_TAX_REDUCTION: return level * 1.0; // -1% par niveau
-                    case PRESTIGE_PVP_MERCHANT_REDUCTION: return level * 1.0; // -1% par niveau
-                }
+            case SELL_PRICE_BONUS:
+                if (bonusType == BonusType.PRESTIGE_SELL_BONUS) return level * 3.0;
+                break;
+            case OUTPOST_BONUS:
+                if (bonusType == BonusType.PRESTIGE_OUTPOST_BONUS) return level * 3.0;
+                break;
+            case TOKEN_GREED_BONUS:
+                if (bonusType == BonusType.PRESTIGE_TOKEN_GREED) return level * 3.0;
+                break;
+            case TAX_REDUCTION:
+                if (bonusType == BonusType.PRESTIGE_TAX_REDUCTION) return level * 1.0;
+                break;
+            case PVP_MERCHANT_REDUCTION:
+                if (bonusType == BonusType.PRESTIGE_PVP_MERCHANT_REDUCTION) return level * 1.0;
                 break;
         }
         return 0.0;

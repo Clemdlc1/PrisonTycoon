@@ -1,30 +1,24 @@
 package fr.prisontycoon.prestige;
 
 /**
- * Énumération des talents de prestige disponibles
+ * Énumération des bonus de prestige individuels (par colonne)
+ * Système simplifié avec cycle de 4 prestiges
  */
 public enum PrestigeTalent {
 
-    // Talents cycliques (se répètent selon le modulo)
-    PROFIT_AMELIORE("Profit Amélioré",
-            "§6+3% Money Greed\n§6+3% Prix de vente\n§6+3% Gain avant-poste",
-            1), // P1, P6, P11, etc.
+    // CYCLE 1 & 3 (P1, P3, P6, P8, P11, P13, etc.)
+    MONEY_GREED_BONUS("Money Greed", "§6+3% Money Greed", 1),
+    SELL_PRICE_BONUS("Prix de Vente", "§6+3% Prix de vente", 1),
+    OUTPOST_BONUS("Gain Avant-Poste", "§6+3% Gain avant-poste", 1),
 
-    ECONOMIE_OPTIMISEE("Économie Optimisée",
-            "§b+3% Token Greed\n§b-1% Taxe\n§b-1% Prix marchand PvP",
-            2), // P2, P7, P12, etc.
-
-    PROFIT_AMELIORE_II("Profit Amélioré II",
-            "§6+3% Effet Money Greed\n§6+3% Prix vente direct\n§6+3% Gain rinacoins avant-poste",
-            3), // P3, P8, P13, etc.
-
-    ECONOMIE_OPTIMISEE_II("Économie Optimisée II",
-            "§b+3% Effet Token Greed\n§b-1% Taux taxe final\n§b-1% Prix marchand PvP",
-            4); // P4, P9, P14, etc.
+    // CYCLE 2 & 4 (P2, P4, P7, P9, P12, P14, etc.)
+    TOKEN_GREED_BONUS("Token Greed", "§b+3% Token Greed", 2),
+    TAX_REDUCTION("Réduction Taxe", "§b-1% Taxe", 2),
+    PVP_MERCHANT_REDUCTION("Marchand PvP", "§b-1% Prix marchand PvP", 2);
 
     private final String displayName;
     private final String description;
-    private final int cycle; // 1-4 pour déterminer à quels prestiges ce talent est disponible
+    private final int cycle; // 1 ou 2 pour déterminer le cycle
 
     PrestigeTalent(String displayName, String description, int cycle) {
         this.displayName = displayName;
@@ -33,28 +27,35 @@ public enum PrestigeTalent {
     }
 
     /**
-     * Obtient le talent disponible pour un niveau de prestige donné
+     * Obtient tous les talents disponibles pour un niveau de prestige donné
      */
-    public static PrestigeTalent getTalentForPrestige(int prestigeLevel) {
-        for (PrestigeTalent talent : values()) {
-            if (talent.isAvailableForPrestige(prestigeLevel)) {
-                return talent;
-            }
+    public static PrestigeTalent[] getTalentsForPrestige(int prestigeLevel) {
+        if (prestigeLevel < 1 || prestigeLevel > 50) return new PrestigeTalent[0];
+
+        // Les talents spéciaux (P5, P10, etc.) n'utilisent pas les talents cycliques
+        if (prestigeLevel % 5 == 0) return new PrestigeTalent[0];
+
+        // Déterminer le cycle selon le modulo
+        int cycleType = ((prestigeLevel - 1) % 4) + 1;
+
+        if (cycleType == 1 || cycleType == 3) {
+            // Cycle Money/Sell/Outpost (P1, P3, P6, P8, etc.)
+            return new PrestigeTalent[]{MONEY_GREED_BONUS, SELL_PRICE_BONUS, OUTPOST_BONUS};
+        } else {
+            // Cycle Token/Tax/PvP (P2, P4, P7, P9, etc.)
+            return new PrestigeTalent[]{TOKEN_GREED_BONUS, TAX_REDUCTION, PVP_MERCHANT_REDUCTION};
         }
-        return null;
     }
 
     /**
-     * Calcule le niveau d'un talent basé sur le nombre de fois qu'il a été choisi
+     * Vérifie si ce talent est disponible pour un niveau de prestige donné
      */
-    public static int getTalentLevel(PrestigeTalent talent, int currentPrestige) {
-        int count = 0;
-        for (int p = 1; p <= currentPrestige; p++) {
-            if (talent.isAvailableForPrestige(p)) {
-                count++;
-            }
+    public boolean isAvailableForPrestige(int prestigeLevel) {
+        PrestigeTalent[] available = getTalentsForPrestige(prestigeLevel);
+        for (PrestigeTalent talent : available) {
+            if (talent == this) return true;
         }
-        return count;
+        return false;
     }
 
     public String getDisplayName() {
@@ -67,18 +68,5 @@ public enum PrestigeTalent {
 
     public int getCycle() {
         return cycle;
-    }
-
-    /**
-     * Détermine si ce talent est disponible pour un niveau de prestige donné
-     */
-    public boolean isAvailableForPrestige(int prestigeLevel) {
-        if (prestigeLevel < 1 || prestigeLevel > 50) return false;
-
-        // Les talents spéciaux (P5, P10, etc.) n'utilisent pas les talents cycliques
-        if (prestigeLevel % 5 == 0) return false;
-
-        // Vérifie si le prestige correspond au cycle de ce talent
-        return ((prestigeLevel - 1) % 4) + 1 == this.cycle;
     }
 }

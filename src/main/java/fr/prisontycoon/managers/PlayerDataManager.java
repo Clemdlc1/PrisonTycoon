@@ -228,79 +228,53 @@ public class PlayerDataManager {
                 }
             }
 
-            if (config.contains("prestige.talents")) {
-                ConfigurationSection talentsSection = config.getConfigurationSection("prestige.talents");
-                Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
+            ConfigurationSection columnsSection = config.getConfigurationSection("prestige.chosen-columns");
+            if (columnsSection != null) {
+                Map<Integer, PrestigeTalent> chosenColumns = new HashMap<>();
+                Map<PrestigeTalent, Integer> activeTalents = new HashMap<>();
 
-                for (String talentName : talentsSection.getKeys(false)) {
+                for (String key : columnsSection.getKeys(false)) {
                     try {
+                        int level = Integer.parseInt(key);
+                        String talentName = columnsSection.getString(key);
                         PrestigeTalent talent = PrestigeTalent.valueOf(talentName);
-                        int level = talentsSection.getInt(talentName, 0);
-                        if (level > 0) {
-                            prestigeTalents.put(talent, level);
-                        }
-                    } catch (IllegalArgumentException e) {
-                        plugin.getPluginLogger().warning("Talent de prestige invalide trouvé pour " + playerName + ": " + talentName);
+
+                        chosenColumns.put(level, talent);
+                        // Compter pour les bonus actifs
+                        activeTalents.put(talent, activeTalents.getOrDefault(talent, 0) + 1);
+
+                    } catch (Exception e) {
+                        plugin.getPluginLogger().warning("Choix de colonne invalide: " + key);
                     }
                 }
 
-                if (!prestigeTalents.isEmpty()) {
-                    data.setPrestigeTalents(prestigeTalents);
-                }
+                data.setChosenPrestigeColumns(chosenColumns);
+                data.setPrestigeTalents(activeTalents);
             }
 
-            // Talents choisis par niveau
-            if (config.contains("prestige.chosen-talents")) {
-                ConfigurationSection chosenTalentsSection = config.getConfigurationSection("prestige.chosen-talents");
-                Map<Integer, String> chosenTalents = new HashMap<>();
-
-                for (String levelStr : chosenTalentsSection.getKeys(false)) {
-                    try {
-                        int level = Integer.parseInt(levelStr);
-                        String talentName = chosenTalentsSection.getString(levelStr);
-                        if (talentName != null && !talentName.isEmpty()) {
-                            chosenTalents.put(level, talentName);
-                        }
-                    } catch (NumberFormatException e) {
-                        plugin.getPluginLogger().warning("Niveau de prestige invalide trouvé pour " + playerName + ": " + levelStr);
-                    }
-                }
-
-                if (!chosenTalents.isEmpty()) {
-                    data.setChosenPrestigeTalents(chosenTalents);
-                }
-            }
-
-            // Récompenses spéciales réclamées
-            if (config.contains("prestige.chosen-special-rewards")) {
-                List<String> chosenRewardsList = config.getStringList("prestige.chosen-special-rewards");
-                if (!chosenRewardsList.isEmpty()) {
-                    for (String rewardId : chosenRewardsList) {
-                        if (rewardId != null && !rewardId.isEmpty()) {
-                            data.addChosenSpecialReward(rewardId);
-                        }
-                    }
-
-                    plugin.getPluginLogger().debug("Chargé " + chosenRewardsList.size() + " récompenses spéciales pour " + playerName);
-                }
-            }
-
-            // Récompenses débloquées (statut)
-            if (config.contains("prestige.unlocked-rewards")) {
-                ConfigurationSection unlockedSection = config.getConfigurationSection("prestige.unlocked-rewards");
+            // Charger les choix de récompenses spéciales (nouveau système)
+            ConfigurationSection rewardsSection = config.getConfigurationSection("prestige.chosen-special-rewards");
+            if (rewardsSection != null) {
+                Map<Integer, String> chosenRewards = new HashMap<>();
                 Map<String, Boolean> unlockedRewards = new HashMap<>();
 
-                for (String rewardId : unlockedSection.getKeys(false)) {
-                    boolean unlocked = unlockedSection.getBoolean(rewardId, false);
-                    unlockedRewards.put(rewardId, unlocked);
+                for (String key : rewardsSection.getKeys(false)) {
+                    try {
+                        int level = Integer.parseInt(key);
+                        String rewardId = rewardsSection.getString(key);
+
+                        chosenRewards.put(level, rewardId);
+                        unlockedRewards.put(rewardId, true);
+                        data.markPrestigeLevelCompleted(level);
+
+                    } catch (Exception e) {
+                        plugin.getPluginLogger().warning("Choix de récompense invalide: " + key);
+                    }
                 }
 
-                if (!unlockedRewards.isEmpty()) {
-                    data.setUnlockedPrestigeRewards(unlockedRewards);
-                    plugin.getPluginLogger().debug("Chargé " + unlockedRewards.size() + " statuts de récompenses pour " + playerName);
-                }
+                data.setChosenSpecialRewards(chosenRewards);
+                data.setUnlockedPrestigeRewards(unlockedRewards);
             }
-
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -462,30 +436,18 @@ public class PlayerDataManager {
                 }
             }
 
-            Map<PrestigeTalent, Integer> prestigeTalents = data.getPrestigeTalents();
-            if (!prestigeTalents.isEmpty()) {
-                for (Map.Entry<PrestigeTalent, Integer> entry : prestigeTalents.entrySet()) {
-                    config.set("prestige.talents." + entry.getKey().name(), entry.getValue());
+            Map<Integer, PrestigeTalent> chosenColumns = data.getChosenPrestigeColumns();
+            if (!chosenColumns.isEmpty()) {
+                for (Map.Entry<Integer, PrestigeTalent> entry : chosenColumns.entrySet()) {
+                    config.set("prestige.chosen-columns." + entry.getKey(), entry.getValue().name());
                 }
             }
 
-            Map<Integer, String> chosenTalents = data.getChosenPrestigeTalents();
-            if (!chosenTalents.isEmpty()) {
-                for (Map.Entry<Integer, String> entry : chosenTalents.entrySet()) {
-                    config.set("prestige.chosen-talents." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            Set<String> chosenRewards = data.getChosenSpecialRewards();
+            // Nouveau système : Choix de récompenses spéciales (exclusif)
+            Map<Integer, String> chosenRewards = data.getChosenSpecialRewards();
             if (!chosenRewards.isEmpty()) {
-                config.set("prestige.chosen-special-rewards", new ArrayList<>(chosenRewards));
-            }
-
-            // Récompenses débloquées (statut)
-            Map<String, Boolean> unlockedRewards = data.getUnlockedPrestigeRewards();
-            if (!unlockedRewards.isEmpty()) {
-                for (Map.Entry<String, Boolean> entry : unlockedRewards.entrySet()) {
-                    config.set("prestige.unlocked-rewards." + entry.getKey(), entry.getValue());
+                for (Map.Entry<Integer, String> entry : chosenRewards.entrySet()) {
+                    config.set("prestige.chosen-special-rewards." + entry.getKey(), entry.getValue());
                 }
             }
 
@@ -865,6 +827,5 @@ public class PlayerDataManager {
         PlayerData data = getPlayerData(playerId);
         return data.hasCustomPermission(permission);
     }
-
 
 }

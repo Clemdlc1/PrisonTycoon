@@ -32,7 +32,7 @@ public class PlayerData {
     private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
     private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
     private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
-    private Set<String> chosenSpecialRewards = new HashSet<>();
+    private final Map<Integer, String> chosenSpecialRewards = new ConcurrentHashMap<>();
     private final Set<String> unlockedPrestigeMines = ConcurrentHashMap.newKeySet();
     // Économie TOTALE (toutes sources)
     private long coins;
@@ -86,6 +86,8 @@ public class PlayerData {
     private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private final Set<Integer> completedPrestigeLevels = new HashSet<>();
+    private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
+
 
 
 
@@ -1265,46 +1267,6 @@ public class PlayerData {
     }
 
     /**
-     * Vérifie si une récompense spéciale a été choisie
-     */
-    public boolean hasChosenSpecialReward(String rewardId) {
-        synchronized (dataLock) {
-            // Extraire le niveau depuis l'ID (format: "p5_autominer", "p10_title", etc.)
-            try {
-                String levelStr = rewardId.substring(1, rewardId.indexOf("_"));
-                int prestigeLevel = Integer.parseInt(levelStr);
-                return completedPrestigeLevels.contains(prestigeLevel);
-            } catch (Exception e) {
-                return false;
-            }
-        }
-    }
-
-// ==================== RÉCOMPENSES SPÉCIALES ====================
-
-    /**
-     * Obtient toutes les récompenses spéciales choisies
-     */
-    public Set<String> getChosenSpecialRewards() {
-        synchronized (dataLock) {
-            return new HashSet<>(chosenSpecialRewards);
-        }
-    }
-
-    /**
-     * Vérifie si le joueur peut choisir une récompense pour un niveau donné
-     */
-    public boolean canChooseRewardForPrestige(int prestigeLevel) {
-        synchronized (dataLock) {
-            if (prestigeLevel % 5 != 0) return false; // Seuls les paliers P5, P10, etc.
-
-            // Vérifier si une récompense pour ce niveau a déjà été choisie
-            String prefix = "p" + prestigeLevel + "_";
-            return chosenSpecialRewards.stream().noneMatch(reward -> reward.startsWith(prefix));
-        }
-    }
-
-    /**
      * Débloque une mine prestige
      */
     public void unlockPrestigeMine(String mineName) {
@@ -1354,13 +1316,8 @@ public class PlayerData {
             double bonus = 0.0;
 
             // Profit Amélioré : +3% par niveau
-            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE, 0);
+            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.MONEY_GREED_BONUS, 0);
             bonus += profitLevel * 0.03;
-
-            // Profit Amélioré II : +3% d'effet Money Greed (multiplicateur)
-            int profitLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE_II, 0);
-            bonus *= (1.0 + profitLevel2 * 0.03);
-
             return bonus;
         }
     }
@@ -1373,13 +1330,8 @@ public class PlayerData {
             double bonus = 0.0;
 
             // Économie Optimisée : +3% par niveau
-            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE, 0);
+            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.TOKEN_GREED_BONUS, 0);
             bonus += ecoLevel * 0.03;
-
-            // Économie Optimisée II : +3% d'effet Token Greed (multiplicateur)
-            int ecoLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE_II, 0);
-            bonus *= (1.0 + ecoLevel2 * 0.03);
-
             return bonus;
         }
     }
@@ -1394,13 +1346,8 @@ public class PlayerData {
             double reduction = 0.0;
 
             // Économie Optimisée : -1% par niveau
-            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE, 0);
+            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.TAX_REDUCTION, 0);
             reduction += ecoLevel * 0.01;
-
-            // Économie Optimisée II : -1% sur le taux final (multiplicateur)
-            int ecoLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.ECONOMIE_OPTIMISEE_II, 0);
-            reduction += ecoLevel2 * 0.01;
-
             return Math.min(reduction, 0.99); // Maximum 99% de réduction
         }
     }
@@ -1411,15 +1358,9 @@ public class PlayerData {
     public double getPrestigeSellBonus() {
         synchronized (dataLock) {
             double bonus = 0.0;
-
             // Profit Amélioré : +3% prix de vente
-            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE, 0);
+            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.SELL_PRICE_BONUS, 0);
             bonus += profitLevel * 0.03;
-
-            // Profit Amélioré II : +3% prix vente direct
-            int profitLevel2 = prestigeTalents.getOrDefault(PrestigeTalent.PROFIT_AMELIORE_II, 0);
-            bonus += profitLevel2 * 0.03;
-
             return bonus;
         }
     }
@@ -1511,17 +1452,6 @@ public class PlayerData {
         }
     }
 
-    /**
-     * Réinitialise les talents de prestige (mais garde les récompenses)
-     */
-    public void resetPrestigeTalents() {
-        synchronized (dataLock) {
-            prestigeTalents.clear();
-            chosenPrestigeTalents.clear();
-            // Les récompenses spéciales sont CONSERVÉES
-        }
-    }
-
     // Getters/Setters pour la sauvegarde
     public Map<String, Boolean> getUnlockedPrestigeRewards() {
         synchronized (dataLock) {
@@ -1563,6 +1493,111 @@ public class PlayerData {
     public Set<Integer> getCompletedPrestigeLevels() {
         synchronized (dataLock) {
             return new HashSet<>(completedPrestigeLevels);
+        }
+    }
+
+    /**
+     * Choisit un bonus spécifique (colonne) pour un niveau de prestige
+     */
+    public void choosePrestigeColumn(int prestigeLevel, PrestigeTalent talent) {
+        synchronized (dataLock) {
+            chosenPrestigeColumns.put(prestigeLevel, talent);
+            // Ajouter aussi aux talents actifs pour les calculs de bonus
+            prestigeTalents.put(talent, prestigeTalents.getOrDefault(talent, 0) + 1);
+        }
+    }
+
+    /**
+     * Obtient le bonus choisi pour un niveau de prestige
+     */
+    public PrestigeTalent getChosenPrestigeColumn(int prestigeLevel) {
+        synchronized (dataLock) {
+            return chosenPrestigeColumns.get(prestigeLevel);
+        }
+    }
+
+    /**
+     * Obtient tous les choix de colonnes
+     */
+    public Map<Integer, PrestigeTalent> getChosenPrestigeColumns() {
+        synchronized (dataLock) {
+            return new HashMap<>(chosenPrestigeColumns);
+        }
+    }
+
+    /**
+     * Définit les choix de colonnes (pour chargement)
+     */
+    public void setChosenPrestigeColumns(Map<Integer, PrestigeTalent> columns) {
+        synchronized (dataLock) {
+            this.chosenPrestigeColumns.clear();
+            this.chosenPrestigeColumns.putAll(columns);
+        }
+    }
+
+    /**
+     * Réinitialise les talents de prestige (NOUVELLE VERSION)
+     */
+    public void resetPrestigeTalents() {
+        synchronized (dataLock) {
+            prestigeTalents.clear();
+            chosenPrestigeColumns.clear();
+            // Supprimer l'ancienne Map aussi
+            chosenPrestigeTalents.clear();
+            // Les récompenses spéciales sont CONSERVÉES
+        }
+    }
+
+    /**
+     * Choisit une récompense spéciale spécifique pour un niveau de prestige
+     */
+    public void chooseSpecialReward(int prestigeLevel, String rewardId) {
+        synchronized (dataLock) {
+            chosenSpecialRewards.put(prestigeLevel, rewardId);
+            // Marquer aussi comme débloquée pour la compatibilité
+            unlockedPrestigeRewards.put(rewardId, true);
+            markPrestigeLevelCompleted(prestigeLevel);
+        }
+    }
+
+    /**
+     * Obtient la récompense choisie pour un niveau de prestige
+     */
+    public String getChosenSpecialReward(int prestigeLevel) {
+        synchronized (dataLock) {
+            return chosenSpecialRewards.get(prestigeLevel);
+        }
+    }
+
+    /**
+     * Vérifie si une récompense spéciale a été choisie (NOUVELLE VERSION EXCLUSIVE)
+     */
+    public boolean hasChosenSpecialReward(String rewardId) {
+        synchronized (dataLock) {
+            // Vérifier si cette récompense spécifique a été choisie
+            return chosenSpecialRewards.containsValue(rewardId);
+        }
+    }
+
+    /**
+     * Vérifie si un niveau de prestige a déjà un choix de récompense
+     */
+    public boolean hasRewardChoiceForLevel(int prestigeLevel) {
+        synchronized (dataLock) {
+            return chosenSpecialRewards.containsKey(prestigeLevel);
+        }
+    }
+
+    public Map<Integer, String> getChosenSpecialRewards() {
+        synchronized (dataLock) {
+            return new HashMap<>(chosenSpecialRewards);
+        }
+    }
+
+    public void setChosenSpecialRewards(Map<Integer, String> rewards) {
+        synchronized (dataLock) {
+            this.chosenSpecialRewards.clear();
+            this.chosenSpecialRewards.putAll(rewards);
         }
     }
 }
