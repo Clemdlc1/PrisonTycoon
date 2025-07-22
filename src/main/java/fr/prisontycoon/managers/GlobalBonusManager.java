@@ -321,15 +321,6 @@ public class GlobalBonusManager {
         return (multiplier - 1.0) * 100.0;
     }
 
-    /**
-     * Méthode pour gérer les futurs types de bonus
-     * (pets, équipements, événements temporaires, etc.)
-     */
-    private double getFutureBonuses(Player player, BonusType bonusType) {
-        double totalFutureBonus = 0.0;
-
-        return totalFutureBonus;
-    }
 
     /**
      * Méthode utilitaire pour les enchantements spéciaux qui ont leurs propres calculs

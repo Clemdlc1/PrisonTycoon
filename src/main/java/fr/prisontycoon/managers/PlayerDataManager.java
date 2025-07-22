@@ -275,6 +275,12 @@ public class PlayerDataManager {
                 data.setChosenSpecialRewards(chosenRewards);
                 data.setUnlockedPrestigeRewards(unlockedRewards);
             }
+
+            int savedReputation = config.getInt("reputation", 0);
+            if (savedReputation != 0) {
+                data.setReputation(savedReputation);
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -450,6 +456,8 @@ public class PlayerDataManager {
                     config.set("prestige.chosen-special-rewards." + entry.getKey(), entry.getValue());
                 }
             }
+
+            config.set("reputation", data.getReputation());
 
             // Statistiques complètes
             config.set("statistics.total-blocks-mined", data.getTotalBlocksMined());

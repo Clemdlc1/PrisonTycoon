@@ -306,6 +306,20 @@ commands:
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ livre ]
 
+  rep:
+    description: "Système de réputation"
+    usage: /rep [help|voir <joueur>|admin <args>]
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [ reputation, repute ]
+
+  fbm:
+    description: "Localiser le Black Market"
+    usage: /fbm [tp|open|info]
+    permission: specialmine.fbm
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [ findblackmarket, blackmarket, bm ]
+
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

@@ -39,6 +39,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private EnchantmentBookManager enchantmentBookManager;
     private ProfessionManager professionManager;
     private PrestigeManager prestigeManager; // NOUVEAU
+    private ReputationManager reputationManager;
+    private BlackMarketManager blackMarketManager;
 
 
     private Logger logger;
@@ -195,6 +197,8 @@ public final class PrisonTycoon extends JavaPlugin {
         enchantmentBookManager = new EnchantmentBookManager(this);
         professionManager = new ProfessionManager(this);
         prestigeManager = new PrestigeManager(this);
+        reputationManager = new ReputationManager(this);
+        blackMarketManager = new BlackMarketManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -291,6 +295,9 @@ public final class PrisonTycoon extends JavaPlugin {
 
         getCommand("prestige").setExecutor(new PrestigeCommand(this));
         getCommand("prestige").setTabCompleter(new PrestigeCommand(this));
+
+        getCommand("rep").setExecutor(new ReputationCommand(this));
+        getCommand("fbm").setExecutor(new BlackMarketCommand(this));
 
 
         logger.info("§aCommandes enregistrées.");
@@ -573,6 +580,14 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public PrestigeGUI getPrestigeGUI() {
         return prestigeGUI;
+    }
+
+    public ReputationManager getReputationManager() {
+        return reputationManager;
+    }
+
+    public BlackMarketManager getBlackMarketManager() {
+        return blackMarketManager;
     }
 }
 

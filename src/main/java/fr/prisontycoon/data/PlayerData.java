@@ -87,6 +87,7 @@ public class PlayerData {
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private final Set<Integer> completedPrestigeLevels = new HashSet<>();
     private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
+    private int reputation = 0;
 
 
 
@@ -1599,5 +1600,61 @@ public class PlayerData {
             this.chosenSpecialRewards.clear();
             this.chosenSpecialRewards.putAll(rewards);
         }
+    }
+
+    /**
+     * Obtient la réputation actuelle du joueur
+     * @return valeur de réputation entre -1000 et +1000
+     */
+    public int getReputation() {
+        return reputation;
+    }
+
+    /**
+     * Définit la réputation du joueur
+     * @param reputation nouvelle valeur (sera contrainte entre -1000 et +1000)
+     */
+    public void setReputation(int reputation) {
+        this.reputation = Math.max(-1000, Math.min(1000, reputation));
+    }
+
+    /**
+     * Ajoute de la réputation (peut être négatif pour diminuer)
+     * @param amount montant à ajouter
+     */
+    public void addReputation(int amount) {
+        setReputation(this.reputation + amount);
+    }
+
+    /**
+     * Retire de la réputation
+     * @param amount montant à retirer
+     */
+    public void removeReputation(int amount) {
+        setReputation(this.reputation - amount);
+    }
+
+    /**
+     * Vérifie si le joueur a une réputation positive
+     * @return true si réputation > 0
+     */
+    public boolean hasPositiveReputation() {
+        return reputation > 0;
+    }
+
+    /**
+     * Vérifie si le joueur a une réputation négative
+     * @return true si réputation < 0
+     */
+    public boolean hasNegativeReputation() {
+        return reputation < 0;
+    }
+
+    /**
+     * Vérifie si le joueur a une réputation neutre
+     * @return true si réputation == 0
+     */
+    public boolean hasNeutralReputation() {
+        return reputation == 0;
     }
 }
