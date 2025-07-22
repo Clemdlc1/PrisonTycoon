@@ -147,7 +147,7 @@ public class EnchantmentBookManager {
         playerData.removeBeacon(cost);
 
         // NOUVEAU : Création d'un item livre physique au lieu d'ajouter directement
-        ItemStack physicalBook = createPhysicalEnchantmentBook(book, currentLevel + 1);
+        ItemStack physicalBook = createPhysicalEnchantmentBook(book);
 
         // Tentative d'ajout à l'inventaire
         if (player.getInventory().firstEmpty() != -1) {
@@ -163,11 +163,11 @@ public class EnchantmentBookManager {
     /**
      * NOUVEAU : Crée un item livre physique
      */
-    private ItemStack createPhysicalEnchantmentBook(EnchantmentBook book, int level) {
+    private ItemStack createPhysicalEnchantmentBook(EnchantmentBook book) {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§5⚡ §l" + book.getName() + " §r§7(Niveau " + level + ")");
+        meta.setDisplayName("§5⚡ §l" + book.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -193,12 +193,6 @@ public class EnchantmentBookManager {
                 PersistentDataType.STRING,
                 book.getId()
         );
-        meta.getPersistentDataContainer().set(
-                new NamespacedKey(plugin, "enchant_book_level"),
-                PersistentDataType.INTEGER,
-                level
-        );
-
         item.setItemMeta(meta);
         return item;
     }

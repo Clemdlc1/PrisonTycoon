@@ -449,12 +449,54 @@ public class EnchantmentManager {
     }
 
     /**
-     * MODIFIÉ : Donne une clé aléatoire au joueur - Utilise les conteneurs en priorité
+     * Crée un ItemStack pour une clé d'un type donné.
+     * La couleur de la clé est déterminée automatiquement à partir de son type.
+     *
+     * @param keyType Le type de la clé (ex: "Cristal", "Légendaire").
+     * @return L'ItemStack de la clé configurée.
+     */
+    private ItemStack createKey(String keyType) {
+        String keyColor;
+
+        // Détermine la couleur en fonction du type de clé
+        switch (keyType) {
+            case "Cristal":
+                keyColor = "§d";
+                break;
+            case "Légendaire":
+                keyColor = "§6";
+                break;
+            case "Rare":
+                keyColor = "§5";
+                break;
+            case "Peu Commune":
+                keyColor = "§9";
+                break;
+            default: // "Commune" et tout autre cas
+                keyColor = "§f";
+                break;
+        }
+
+        ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
+        var meta = key.getItemMeta();
+
+        meta.setDisplayName(keyColor + "Clé " + keyType);
+        meta.setLore(Arrays.asList(
+                "§7Clé de coffre " + keyColor + keyType,
+                "§7Utilise cette clé pour ouvrir des coffres!"
+        ));
+
+        key.setItemMeta(meta);
+        return key;
+    }
+
+    /**
+     * MODIFIÉ : Donne une clé aléatoire au joueur en utilisant les conteneurs en priorité.
+     * La méthode détermine le type de clé, la crée via createKey(), puis la donne au joueur.
      */
     private void giveRandomKey(Player player) {
         double rand = ThreadLocalRandom.current().nextDouble();
         String keyType;
-        String keyColor;
 
         // CORRIGÉ : Création manuelle du Map au lieu d'utiliser getEnchantmentSetting avec Map
         Map<String, Double> keyProbabilities = new HashMap<>();
@@ -464,49 +506,38 @@ public class EnchantmentManager {
         keyProbabilities.put("peu-commune", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.peu-commune", 0.20));
         keyProbabilities.put("commune", plugin.getConfigManager().getEnchantmentSetting("keys.probabilities.commune", 0.70));
 
+        // Détermine le type de la clé à créer
         if (rand < keyProbabilities.get("cristal")) {
             keyType = "Cristal";
-            keyColor = "§d";
         } else if (rand < keyProbabilities.get("legendaire")) {
             keyType = "Légendaire";
-            keyColor = "§6";
         } else if (rand < keyProbabilities.get("rare")) {
             keyType = "Rare";
-            keyColor = "§5";
         } else if (rand < keyProbabilities.get("peu-commune")) {
             keyType = "Peu Commune";
-            keyColor = "§9";
         } else {
             keyType = "Commune";
-            keyColor = "§f";
         }
 
-        ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
-        var meta = key.getItemMeta();
-        meta.setDisplayName(keyColor + "Clé " + keyType);
-        meta.setLore(Arrays.asList(
-                "§7Clé de coffre " + keyColor + keyType,
-                "§7Utilise cette clé pour ouvrir des coffres!"
-        ));
-        key.setItemMeta(meta);
+        ItemStack key = createKey(keyType);
 
-        // NOUVEAU : Tente d'abord d'ajouter aux conteneurs
         boolean addedToContainer = plugin.getContainerManager().addItemToContainers(player, key);
 
         if (addedToContainer) {
-            player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §eajoutée à vos conteneurs!");
+            // Le nom de l'item contient déjà la couleur et le type
+            player.sendMessage("§e🗝️ " + key.getItemMeta().getDisplayName() + " §eajoutée à vos conteneurs!");
             player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.5f);
             plugin.getPluginLogger().debug("Clé " + keyType + " ajoutée au conteneur de " + player.getName());
         } else {
             // Pas de conteneur disponible, essaie l'inventaire normal
             if (player.getInventory().firstEmpty() != -1) {
                 player.getInventory().addItem(key);
-                player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §eobtenue!");
+                player.sendMessage("§e🗝️ " + key.getItemMeta().getDisplayName() + " §eobtenue!");
                 player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.5f);
             } else {
                 // Inventaire aussi plein, drop au sol
                 player.getWorld().dropItemNaturally(player.getLocation(), key);
-                player.sendMessage("§e🗝️ Clé " + keyColor + keyType + " §edroppée au sol (inventaire et conteneurs pleins)!");
+                player.sendMessage("§e🗝️ " + key.getItemMeta().getDisplayName() + " §edroppée au sol (inventaire et conteneurs pleins)!");
             }
         }
     }
