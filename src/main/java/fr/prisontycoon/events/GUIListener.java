@@ -114,6 +114,8 @@ public class GUIListener implements Listener {
             plugin.getProfessionRewardsGUI().handleRewardMenuClick(player, slot, item, clickType);
         } else if (title.contains("Prestige")) {
             plugin.getPrestigeGUI().handleClick(player, item, clickType);
+        } else if (title.contains("MARCHÉ NOIR")) {
+            plugin.getBlackMarketManager().handleBlackMarketClick(player, item);
         }
     }
 
@@ -186,6 +188,7 @@ public class GUIListener implements Listener {
                 title.contains("⭐") ||
                 title.contains("Changer de Métier") ||
                 title.contains("🎁") ||
-                title.contains("Prestige");
+                title.contains("Prestige") ||
+                (title.contains("MARCHÉ NOIR"));
     }
 }
