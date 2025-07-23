@@ -3,8 +3,6 @@ package fr.prisontycoon.events;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import io.papermc.paper.event.player.PlayerItemFrameChangeEvent;
-import net.kyori.adventure.text.Component;
-import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

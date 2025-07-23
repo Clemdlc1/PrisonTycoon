@@ -1,7 +1,6 @@
 package fr.prisontycoon.commands;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 import org.bukkit.Sound;

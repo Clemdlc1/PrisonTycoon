@@ -1,13 +1,14 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.cristaux.CristalType;
 import fr.prisontycoon.boosts.BoostType;
+import fr.prisontycoon.cristaux.CristalType;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Gestionnaire unifié des bonus (cristaux, talents, boosts)
@@ -19,78 +20,6 @@ public class GlobalBonusManager {
 
     public GlobalBonusManager(PrisonTycoon plugin) {
         this.plugin = plugin;
-    }
-
-    /**
-     * Types de bonus unifiés - Un seul type par finalité
-     */
-    public enum BonusCategory {
-        TOKEN_BONUS("Token Bonus", "💎", "§b", "Augmente les gains de tokens"),
-        MONEY_BONUS("Money Bonus", "💰", "§6", "Augmente les gains de coins"),
-        EXPERIENCE_BONUS("Experience Bonus", "⭐", "§a", "Augmente les gains d'expérience"),
-        SELL_BONUS("Sell Bonus", "💸", "§e", "Augmente les prix de vente"),
-        FORTUNE_BONUS("Fortune Bonus", "⛏️", "§9", "Augmente l'effet Fortune"),
-        JOB_XP_BONUS("Job XP Bonus", "🔨", "§d", "Augmente les gains d'XP métier"),
-
-        // Bonus spéciaux (sans équivalent boost)
-        BEACON_MULTIPLIER("Beacon Multiplier", "🔥", "§c", "Multiplicateur de beacons"),
-        TAX_REDUCTION("Tax Reduction", "💳", "§5", "Réduction des taxes"),
-        OUTPOST_BONUS("Outpost Bonus", "🏰", "§3", "Bonus des avant-postes"),
-        PVP_MERCHANT_REDUCTION("PvP Merchant Reduction", "⚔️", "§4", "Réduction prix marchand PvP");
-
-        private final String displayName;
-        private final String emoji;
-        private final String color;
-        private final String description;
-
-        BonusCategory(String displayName, String emoji, String color, String description) {
-            this.displayName = displayName;
-            this.emoji = emoji;
-            this.color = color;
-            this.description = description;
-        }
-
-        public String getDisplayName() { return displayName; }
-        public String getEmoji() { return emoji; }
-        public String getColor() { return color; }
-        public String getDescription() { return description; }
-        public String getFormattedName() { return color + emoji + " " + displayName; }
-    }
-
-    /**
-     * Détails des sources d'un bonus
-     */
-    public static class BonusSourceDetails {
-        private double cristalBonus = 0.0;
-        private double professionBonus = 0.0;
-        private double prestigeBonus = 0.0;
-        private double temporaryBoostBonus = 0.0;
-        private Map<String, Double> detailedSources = new HashMap<>();
-
-        public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus;
-        }
-
-        public double getTotalMultiplier() {
-            return 1.0 + (getTotalBonus() / 100.0);
-        }
-
-        // Getters
-        public double getCristalBonus() { return cristalBonus; }
-        public double getProfessionBonus() { return professionBonus; }
-        public double getPrestigeBonus() { return prestigeBonus; }
-        public double getTemporaryBoostBonus() { return temporaryBoostBonus; }
-        public Map<String, Double> getDetailedSources() { return detailedSources; }
-
-        // Setters
-        public void setCristalBonus(double cristalBonus) { this.cristalBonus = cristalBonus; }
-        public void setProfessionBonus(double professionBonus) { this.professionBonus = professionBonus; }
-        public void setPrestigeBonus(double prestigeBonus) { this.prestigeBonus = prestigeBonus; }
-        public void setTemporaryBoostBonus(double temporaryBoostBonus) { this.temporaryBoostBonus = temporaryBoostBonus; }
-
-        public void addDetailedSource(String source, double bonus) {
-            detailedSources.put(source, bonus);
-        }
     }
 
     /**
@@ -156,10 +85,6 @@ public class GlobalBonusManager {
         return bonuses;
     }
 
-    // ========================================
-    // MÉTHODES D'APPLICATION DES BONUS
-    // ========================================
-
     /**
      * Applique le bonus Token sur une valeur de base
      */
@@ -177,6 +102,10 @@ public class GlobalBonusManager {
         double multiplier = getTotalBonusMultiplier(player, BonusCategory.MONEY_BONUS);
         return Math.round(baseMoney * multiplier);
     }
+
+    // ========================================
+    // MÉTHODES D'APPLICATION DES BONUS
+    // ========================================
 
     /**
      * Applique le bonus Experience sur une valeur de base
@@ -221,10 +150,6 @@ public class GlobalBonusManager {
         double multiplier = getTotalBonusMultiplier(player, BonusCategory.BEACON_MULTIPLIER);
         return baseEfficiency * multiplier;
     }
-
-    // ========================================
-    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
-    // ========================================
 
     /**
      * Calcule le bonus des cristaux pour une catégorie
@@ -304,6 +229,10 @@ public class GlobalBonusManager {
         return bonus;
     }
 
+    // ========================================
+    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
+    // ========================================
+
     /**
      * Calcule le bonus des talents de prestige pour une catégorie
      */
@@ -358,10 +287,6 @@ public class GlobalBonusManager {
         return plugin.getBoostManager().getTotalBoostBonus(player, boostType);
     }
 
-    // ========================================
-    // MÉTHODES UTILITAIRES DE MAPPING
-    // ========================================
-
     /**
      * Mappe une catégorie de bonus vers un type de cristal
      */
@@ -391,6 +316,10 @@ public class GlobalBonusManager {
         };
     }
 
+    // ========================================
+    // MÉTHODES UTILITAIRES DE MAPPING
+    // ========================================
+
     /**
      * Obtient le nom du type de cristal pour l'affichage
      */
@@ -398,10 +327,6 @@ public class GlobalBonusManager {
         CristalType cristalType = getCristalTypeForCategory(category);
         return cristalType != null ? cristalType.name() : "Unknown";
     }
-
-    // ========================================
-    // MÉTHODES DE DEBUG
-    // ========================================
 
     /**
      * Debug: Affiche tous les bonus actifs pour un joueur
@@ -439,10 +364,6 @@ public class GlobalBonusManager {
         }
     }
 
-    // ========================================
-    // MÉTHODES UTILITAIRES MIGRÉES DE PLAYERDATA
-    // ========================================
-
     /**
      * NOUVEAU: Méthode utilitaire unifiée pour obtenir un bonus de prestige spécifique
      * Remplace les anciennes méthodes getPrestigeXxxBonus() de PlayerData
@@ -451,6 +372,10 @@ public class GlobalBonusManager {
         return getPrestigeTalentBonus(player, category);
     }
 
+    // ========================================
+    // MÉTHODES DE DEBUG
+    // ========================================
+
     /**
      * MIGRÉ: Calcule le bonus Money Greed total du prestige
      * Remplace PlayerData.getPrestigeMoneyGreedBonus()
@@ -458,6 +383,10 @@ public class GlobalBonusManager {
     public double getPrestigeMoneyGreedBonus(Player player) {
         return getPrestigeBonus(player, BonusCategory.MONEY_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
     }
+
+    // ========================================
+    // MÉTHODES UTILITAIRES MIGRÉES DE PLAYERDATA
+    // ========================================
 
     /**
      * MIGRÉ: Calcule le bonus Token Greed total du prestige
@@ -513,5 +442,116 @@ public class GlobalBonusManager {
         bonuses.put("pvp_merchant_reduction", getPrestigePvpMerchantReduction(player));
 
         return bonuses;
+    }
+
+    /**
+     * Types de bonus unifiés - Un seul type par finalité
+     */
+    public enum BonusCategory {
+        TOKEN_BONUS("Token Bonus", "💎", "§b", "Augmente les gains de tokens"),
+        MONEY_BONUS("Money Bonus", "💰", "§6", "Augmente les gains de coins"),
+        EXPERIENCE_BONUS("Experience Bonus", "⭐", "§a", "Augmente les gains d'expérience"),
+        SELL_BONUS("Sell Bonus", "💸", "§e", "Augmente les prix de vente"),
+        FORTUNE_BONUS("Fortune Bonus", "⛏️", "§9", "Augmente l'effet Fortune"),
+        JOB_XP_BONUS("Job XP Bonus", "🔨", "§d", "Augmente les gains d'XP métier"),
+
+        // Bonus spéciaux (sans équivalent boost)
+        BEACON_MULTIPLIER("Beacon Multiplier", "🔥", "§c", "Multiplicateur de beacons"),
+        TAX_REDUCTION("Tax Reduction", "💳", "§5", "Réduction des taxes"),
+        OUTPOST_BONUS("Outpost Bonus", "🏰", "§3", "Bonus des avant-postes"),
+        PVP_MERCHANT_REDUCTION("PvP Merchant Reduction", "⚔️", "§4", "Réduction prix marchand PvP");
+
+        private final String displayName;
+        private final String emoji;
+        private final String color;
+        private final String description;
+
+        BonusCategory(String displayName, String emoji, String color, String description) {
+            this.displayName = displayName;
+            this.emoji = emoji;
+            this.color = color;
+            this.description = description;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getEmoji() {
+            return emoji;
+        }
+
+        public String getColor() {
+            return color;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public String getFormattedName() {
+            return color + emoji + " " + displayName;
+        }
+    }
+
+    /**
+     * Détails des sources d'un bonus
+     */
+    public static class BonusSourceDetails {
+        private double cristalBonus = 0.0;
+        private double professionBonus = 0.0;
+        private double prestigeBonus = 0.0;
+        private double temporaryBoostBonus = 0.0;
+        private Map<String, Double> detailedSources = new HashMap<>();
+
+        public double getTotalBonus() {
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus;
+        }
+
+        public double getTotalMultiplier() {
+            return 1.0 + (getTotalBonus() / 100.0);
+        }
+
+        // Getters
+        public double getCristalBonus() {
+            return cristalBonus;
+        }
+
+        // Setters
+        public void setCristalBonus(double cristalBonus) {
+            this.cristalBonus = cristalBonus;
+        }
+
+        public double getProfessionBonus() {
+            return professionBonus;
+        }
+
+        public void setProfessionBonus(double professionBonus) {
+            this.professionBonus = professionBonus;
+        }
+
+        public double getPrestigeBonus() {
+            return prestigeBonus;
+        }
+
+        public void setPrestigeBonus(double prestigeBonus) {
+            this.prestigeBonus = prestigeBonus;
+        }
+
+        public double getTemporaryBoostBonus() {
+            return temporaryBoostBonus;
+        }
+
+        public void setTemporaryBoostBonus(double temporaryBoostBonus) {
+            this.temporaryBoostBonus = temporaryBoostBonus;
+        }
+
+        public Map<String, Double> getDetailedSources() {
+            return detailedSources;
+        }
+
+        public void addDetailedSource(String source, double bonus) {
+            detailedSources.put(source, bonus);
+        }
     }
 }

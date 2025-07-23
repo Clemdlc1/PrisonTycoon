@@ -46,6 +46,45 @@ public enum BoostType {
     }
 
     /**
+     * Formate le temps restant en format lisible
+     */
+    public static String formatTimeRemaining(long secondsLeft) {
+        if (secondsLeft <= 0) return "§cExpiré";
+
+        long hours = secondsLeft / 3600;
+        long minutes = (secondsLeft % 3600) / 60;
+        long seconds = secondsLeft % 60;
+
+        if (hours > 0) {
+            return String.format("§e%dh %02dm %02ds", hours, minutes, seconds);
+        } else if (minutes > 0) {
+            return String.format("§e%dm %02ds", minutes, seconds);
+        } else {
+            return String.format("§e%ds", seconds);
+        }
+    }
+
+    /**
+     * Parse un nom de boost en BoostType
+     */
+    public static BoostType fromString(String name) {
+        if (name == null) return null;
+
+        try {
+            return BoostType.valueOf(name.toUpperCase().replace(" ", "_").replace("-", "_"));
+        } catch (IllegalArgumentException e) {
+            // Essaie avec le display name
+            for (BoostType type : values()) {
+                if (type.displayName.equalsIgnoreCase(name) ||
+                        type.name().equalsIgnoreCase(name.replace(" ", "_"))) {
+                    return type;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
      * Retourne la couleur selon le type de boost
      */
     public String getColor() {
@@ -87,45 +126,6 @@ public enum BoostType {
      */
     public String getBonusDescription() {
         return getColor() + "+" + String.format("%.0f", bonusPercentage) + "%";
-    }
-
-    /**
-     * Formate le temps restant en format lisible
-     */
-    public static String formatTimeRemaining(long secondsLeft) {
-        if (secondsLeft <= 0) return "§cExpiré";
-
-        long hours = secondsLeft / 3600;
-        long minutes = (secondsLeft % 3600) / 60;
-        long seconds = secondsLeft % 60;
-
-        if (hours > 0) {
-            return String.format("§e%dh %02dm %02ds", hours, minutes, seconds);
-        } else if (minutes > 0) {
-            return String.format("§e%dm %02ds", minutes, seconds);
-        } else {
-            return String.format("§e%ds", seconds);
-        }
-    }
-
-    /**
-     * Parse un nom de boost en BoostType
-     */
-    public static BoostType fromString(String name) {
-        if (name == null) return null;
-
-        try {
-            return BoostType.valueOf(name.toUpperCase().replace(" ", "_").replace("-", "_"));
-        } catch (IllegalArgumentException e) {
-            // Essaie avec le display name
-            for (BoostType type : values()) {
-                if (type.displayName.equalsIgnoreCase(name) ||
-                        type.name().equalsIgnoreCase(name.replace(" ", "_"))) {
-                    return type;
-                }
-            }
-            return null;
-        }
     }
 
     // Getters

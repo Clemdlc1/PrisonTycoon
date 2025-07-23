@@ -19,10 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PrestigeCommand implements CommandExecutor, TabCompleter {
 
+    private static final long RESET_CONFIRMATION_TIMEOUT = 30000; // 30 secondes
     private final PrisonTycoon plugin;
     private final PrestigeGUI prestigeGUI;
     private final Map<UUID, Long> pendingResetConfirmations = new ConcurrentHashMap<>();
-    private static final long RESET_CONFIRMATION_TIMEOUT = 30000; // 30 secondes
 
     public PrestigeCommand(PrisonTycoon plugin) {
         this.plugin = plugin;

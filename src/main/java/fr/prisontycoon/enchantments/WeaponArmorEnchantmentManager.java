@@ -114,6 +114,7 @@ public class WeaponArmorEnchantmentManager {
 
     /**
      * Détermine le nombre maximum d'enchantements uniques pour un item.
+     *
      * @param item L'item à vérifier.
      * @return Le nombre maximum d'enchantements (2 pour les épées, 1 pour les armures/pioches).
      */
@@ -163,7 +164,8 @@ public class WeaponArmorEnchantmentManager {
                     if (enchantLevel > 0 && enchantments.containsKey(enchantId)) {
                         result.put(enchantId, enchantLevel);
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
 
@@ -394,9 +396,7 @@ public class WeaponArmorEnchantmentManager {
         PlayerData deadData = plugin.getPlayerDataManager().getPlayerData(dead.getUniqueId());
         PlayerData killerData = plugin.getPlayerDataManager().getPlayerData(killer.getUniqueId());
 
-        // Pour cet exemple, on utilise des valeurs simulées de réputation
-        // Vous pouvez les connecter à votre système de réputation existant
-        int deadRep = getPlayerReputation(dead);
+        int deadRep = deadData.getReputation();
 
         if (deadRep < 0) { // Répercussion positive
             int chanceKeepInv = Math.abs(deadRep) / 100;
@@ -422,9 +422,10 @@ public class WeaponArmorEnchantmentManager {
      */
     private void handleChasseur(Player dead, Player killer, int level) {
         PlayerData killerData = plugin.getPlayerDataManager().getPlayerData(killer.getUniqueId());
+        PlayerData victimData = plugin.getPlayerDataManager().getPlayerData(dead.getUniqueId());
 
-        int killerRep = getPlayerReputation(killer);
-        int victimRep = getPlayerReputation(dead);
+        int killerRep = killerData.getReputation();
+        int victimRep = victimData.getReputation();
 
         // Vérifier si les réputations sont opposées
         if ((killerRep > 0 && victimRep < 0) || (killerRep < 0 && victimRep > 0)) {
@@ -432,15 +433,6 @@ public class WeaponArmorEnchantmentManager {
             killerData.addCoins(coinsGain);
             killer.sendMessage("§6🏹 Chasseur: +" + NumberFormatter.format(coinsGain) + " coins!");
         }
-    }
-
-    /**
-     * Récupère la réputation d'un joueur (à connecter à votre système)
-     */
-    private int getPlayerReputation(Player player) {
-        // TODO: Connecter à votre système de réputation existant
-        // Pour l'instant, retourne une valeur simulée
-        return ThreadLocalRandom.current().nextInt(-100, 101);
     }
 
     // Méthodes utilitaires
@@ -503,16 +495,39 @@ public class WeaponArmorEnchantmentManager {
             this.armorOnly = armorOnly;
         }
 
-        public String getId() { return id; }
-        public String getName() { return name; }
-        public String getDescription() { return description; }
-        public int getMaxLevel() { return maxLevel; }
-        public long getCost() { return cost; }
-        public boolean isWeaponOnly() { return weaponOnly; }
-        public boolean isArmorOnly() { return armorOnly; }
+        public String getId() {
+            return id;
+        }
 
-        public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {}
-        public void onDefend(Player defender, Entity attacker, int level, PrisonTycoon plugin) {}
+        public String getName() {
+            return name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public int getMaxLevel() {
+            return maxLevel;
+        }
+
+        public long getCost() {
+            return cost;
+        }
+
+        public boolean isWeaponOnly() {
+            return weaponOnly;
+        }
+
+        public boolean isArmorOnly() {
+            return armorOnly;
+        }
+
+        public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
+        }
+
+        public void onDefend(Player defender, Entity attacker, int level, PrisonTycoon plugin) {
+        }
     }
 
     // Implémentations des enchantements
@@ -552,6 +567,11 @@ public class WeaponArmorEnchantmentManager {
             super("tornade", "Tornade", "Crée une tornade mobile qui aspire et projette les ennemis", 1, 5000, true, false);
         }
 
+        // Méthode pour que le Runnable puisse accéder à l'ensemble
+        public static Set<UUID> getActiveTornadoPlayers() {
+            return playersWithActiveTornado;
+        }
+
         @Override
         public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
             // 1 chance sur 10 de déclencher la tornade
@@ -570,11 +590,6 @@ public class WeaponArmorEnchantmentManager {
 
                 attacker.sendMessage("§7🌪 §lTornade Dévastatrice déclenchée !");
             }
-        }
-
-        // Méthode pour que le Runnable puisse accéder à l'ensemble
-        public static Set<UUID> getActiveTornadoPlayers() {
-            return playersWithActiveTornado;
         }
     }
 
@@ -656,7 +671,7 @@ public class WeaponArmorEnchantmentManager {
             Block groundBlock = center.clone().subtract(0, 1, 0).getBlock();
             if (!groundBlock.getType().isAir() && groundBlock.isSolid()) {
                 BlockData blockData = groundBlock.getBlockData();
-                for(int i = 0; i < 3; i++) {
+                for (int i = 0; i < 3; i++) {
                     double debrisRadius = radius * 0.7;
                     double angle = (ticks * 0.5) + (i * Math.PI / 1.5);
                     double x = debrisRadius * Math.cos(angle);

@@ -2,6 +2,7 @@ package fr.prisontycoon.data;
 
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
+import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 
 import java.util.*;
@@ -32,9 +33,12 @@ public class PlayerData {
     private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
     private final Map<String, Integer> kitLevels; // profession -> niveau du kit (1-10)
     private final Map<String, Set<Integer>> claimedProfessionRewards; // profession -> Set de niveaux réclamés
-    private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
     private final Map<Integer, String> chosenSpecialRewards = new ConcurrentHashMap<>();
     private final Set<String> unlockedPrestigeMines = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> completedPrestigeLevels = new HashSet<>();
+    private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
+    private final Map<String, PlayerBoost> activeBoosts = new HashMap<>();
+    private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -82,19 +86,26 @@ public class PlayerData {
     //prestige
     private int prestigeLevel = 0;
     private long lastPrestigeTime = 0; // Timestamp du dernier prestige
-
     // NOUVEAUX ajouts pour le système amélioré
     private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
-    private final Set<Integer> completedPrestigeLevels = new HashSet<>();
-    private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
     private int reputation = 0;
+    private Set<String> activeAutominers = new HashSet<>();
 
-    private final Map<String, PlayerBoost> activeBoosts = new HashMap<>();
+    // État de fonctionnement des automineurs
+    private boolean autominersRunning = false;
 
+    // Carburant (têtes de joueur/monstre)
+    private long autominerFuel = 0;
 
+    // Monde de minage actuel (A-Z)
+    private String autominerWorld = "A";
 
+    // Stockage des ressources minées
+    private Map<Material, Long> autominerStoredBlocks = new HashMap<>();
 
+    // Capacité de stockage (évolutive)
+    private long autominerStorageCapacity = 10000; // Démarre à 10k blocs
 
 
     public PlayerData(UUID playerId, String playerName) {
@@ -1354,17 +1365,6 @@ public class PlayerData {
         }
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    /**
-     * Classe interne pour représenter une sanction
-     *
-     * @param type MUTE, BAN
-     */
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
     /**
      * Débloque une récompense de prestige (action gratuite)
      */
@@ -1427,6 +1427,7 @@ public class PlayerData {
             this.chosenPrestigeTalents.putAll(talents);
         }
     }
+
     public void markPrestigeLevelCompleted(int prestigeLevel) {
         synchronized (dataLock) {
             completedPrestigeLevels.add(prestigeLevel);
@@ -1552,6 +1553,7 @@ public class PlayerData {
 
     /**
      * Obtient la réputation actuelle du joueur
+     *
      * @return valeur de réputation entre -1000 et +1000
      */
     public int getReputation() {
@@ -1560,6 +1562,7 @@ public class PlayerData {
 
     /**
      * Définit la réputation du joueur
+     *
      * @param reputation nouvelle valeur (sera contrainte entre -1000 et +1000)
      */
     public void setReputation(int reputation) {
@@ -1568,6 +1571,7 @@ public class PlayerData {
 
     /**
      * Ajoute de la réputation (peut être négatif pour diminuer)
+     *
      * @param amount montant à ajouter
      */
     public void addReputation(int amount) {
@@ -1576,6 +1580,7 @@ public class PlayerData {
 
     /**
      * Retire de la réputation
+     *
      * @param amount montant à retirer
      */
     public void removeReputation(int amount) {
@@ -1584,6 +1589,7 @@ public class PlayerData {
 
     /**
      * Vérifie si le joueur a une réputation positive
+     *
      * @return true si réputation > 0
      */
     public boolean hasPositiveReputation() {
@@ -1592,6 +1598,7 @@ public class PlayerData {
 
     /**
      * Vérifie si le joueur a une réputation négative
+     *
      * @return true si réputation < 0
      */
     public boolean hasNegativeReputation() {
@@ -1600,12 +1607,12 @@ public class PlayerData {
 
     /**
      * Vérifie si le joueur a une réputation neutre
+     *
      * @return true si réputation == 0
      */
     public boolean hasNeutralReputation() {
         return reputation == 0;
     }
-
 
     /**
      * Obtient les boosts actifs
@@ -1681,5 +1688,368 @@ public class PlayerData {
         synchronized (dataLock) {
             activeBoosts.entrySet().removeIf(entry -> !entry.getValue().isActive());
         }
+    }
+
+    /**
+     * Obtient les UUIDs des automineurs actifs
+     */
+    public Set<String> getActiveAutominers() {
+        return new HashSet<>(activeAutominers);
+    }
+
+    /**
+     * Définit les automineurs actifs
+     */
+    public void setActiveAutominers(Set<String> activeAutominers) {
+        this.activeAutominers = new HashSet<>(activeAutominers);
+    }
+
+    // ========================================
+//           GETTERS & SETTERS
+// ========================================
+
+    /**
+     * Ajoute un automineur actif
+     */
+    public boolean addActiveAutominer(String autominerUuid) {
+        if (activeAutominers.size() >= 2) {
+            return false; // Limite de 2 automineurs
+        }
+        return activeAutominers.add(autominerUuid);
+    }
+
+    /**
+     * Retire un automineur actif
+     */
+    public boolean removeActiveAutominer(String autominerUuid) {
+        return activeAutominers.remove(autominerUuid);
+    }
+
+    /**
+     * Vérifie si un automineur est actif
+     */
+    public boolean isAutominerActive(String autominerUuid) {
+        return activeAutominers.contains(autominerUuid);
+    }
+
+    /**
+     * Obtient l'état de fonctionnement des automineurs
+     */
+    public boolean isAutominersRunning() {
+        return autominersRunning;
+    }
+
+    /**
+     * Définit l'état de fonctionnement des automineurs
+     */
+    public void setAutominersRunning(boolean running) {
+        this.autominersRunning = running;
+    }
+
+    /**
+     * Obtient la quantité de carburant
+     */
+    public long getAutominerFuel() {
+        return autominerFuel;
+    }
+
+    /**
+     * Définit la quantité de carburant
+     */
+    public void setAutominerFuel(long fuel) {
+        this.autominerFuel = Math.max(0, fuel);
+    }
+
+    /**
+     * Ajoute du carburant
+     */
+    public void addAutominerFuel(long amount) {
+        this.autominerFuel += Math.max(0, amount);
+    }
+
+    /**
+     * Consomme du carburant
+     */
+    public boolean consumeAutominerFuel(long amount) {
+        if (autominerFuel >= amount) {
+            autominerFuel -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Obtient le monde de minage actuel
+     */
+    public String getAutominerWorld() {
+        return autominerWorld;
+    }
+
+    /**
+     * Définit le monde de minage
+     */
+    public void setAutominerWorld(String world) {
+        // Validation du monde (A-Z)
+        if (world != null && world.length() == 1 &&
+                world.charAt(0) >= 'A' && world.charAt(0) <= 'Z') {
+            this.autominerWorld = world;
+        }
+    }
+
+    /**
+     * Tire un monde aléatoire (A-Z, plus proche de Z = plus rare)
+     */
+    public String rollRandomWorld() {
+        Random rand = new Random();
+
+        // Distribution pondérée : A plus commun, Z plus rare
+        double[] weights = new double[26];
+        for (int i = 0; i < 26; i++) {
+            weights[i] = 1.0 / (i + 2); // A=1/2, B=1/3, ..., Z=1/27
+        }
+
+        // Sélection pondérée
+        double totalWeight = 0;
+        for (double weight : weights) {
+            totalWeight += weight;
+        }
+
+        double randomValue = rand.nextDouble() * totalWeight;
+        double cumulativeWeight = 0;
+
+        for (int i = 0; i < 26; i++) {
+            cumulativeWeight += weights[i];
+            if (randomValue <= cumulativeWeight) {
+                return String.valueOf((char) ('A' + i));
+            }
+        }
+
+        return "A"; // Fallback
+    }
+
+    /**
+     * Obtient les blocs stockés
+     */
+    public Map<Material, Long> getAutominerStoredBlocks() {
+        return autominerStoredBlocks;
+    }
+
+    /**
+     * Ajoute des blocs au stockage
+     */
+    public boolean addStoredBlocks(Material material, long amount) {
+        long currentTotal = autominerStoredBlocks.values().stream().mapToLong(Long::longValue).sum();
+
+        if (currentTotal + amount <= autominerStorageCapacity) {
+            autominerStoredBlocks.merge(material, amount, Long::sum);
+            return true;
+        }
+        return false; // Stockage plein
+    }
+
+    /**
+     * Retire des blocs du stockage
+     */
+    public boolean removeStoredBlocks(Material material, long amount) {
+        long current = autominerStoredBlocks.getOrDefault(material, 0L);
+        if (current >= amount) {
+            if (current == amount) {
+                autominerStoredBlocks.remove(material);
+            } else {
+                autominerStoredBlocks.put(material, current - amount);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Obtient la quantité stockée d'un matériau
+     */
+    public long getStoredBlockCount(Material material) {
+        return autominerStoredBlocks.getOrDefault(material, 0L);
+    }
+
+    /**
+     * Obtient le nombre total de blocs stockés
+     */
+    public long getTotalStoredBlocks() {
+        return autominerStoredBlocks.values().stream().mapToLong(Long::longValue).sum();
+    }
+
+    /**
+     * Vide complètement le stockage
+     */
+    public void clearStoredBlocks() {
+        autominerStoredBlocks.clear();
+    }
+
+    /**
+     * Obtient la capacité de stockage actuelle
+     */
+    public long getAutominerStorageCapacity() {
+        return autominerStorageCapacity;
+    }
+
+    /**
+     * Définit la capacité de stockage
+     */
+    public void setAutominerStorageCapacity(long capacity) {
+        this.autominerStorageCapacity = Math.max(10000, capacity); // Minimum 10k
+    }
+
+    /**
+     * Vérifie si le stockage est plein
+     */
+    public boolean isStorageFull() {
+        return getTotalStoredBlocks() >= autominerStorageCapacity;
+    }
+
+    /**
+     * Obtient le pourcentage de remplissage du stockage
+     */
+    public double getStorageUsagePercentage() {
+        if (autominerStorageCapacity == 0) return 0.0;
+        return (double) getTotalStoredBlocks() / autominerStorageCapacity * 100.0;
+    }
+
+    /**
+     * Obtient l'espace libre dans le stockage
+     */
+    public long getFreeStorageSpace() {
+        return Math.max(0, autominerStorageCapacity - getTotalStoredBlocks());
+    }
+
+    /**
+     * Sauvegarde les données des automineurs dans une map
+     */
+    public Map<String, Object> serializeAutominerData() {
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("activeAutominers", new ArrayList<>(activeAutominers));
+        data.put("autominersRunning", autominersRunning);
+        data.put("autominerFuel", autominerFuel);
+        data.put("autominerWorld", autominerWorld);
+        data.put("autominerStorageCapacity", autominerStorageCapacity);
+
+        // Sérialisation des blocs stockés
+        Map<String, Long> storedBlocksData = new HashMap<>();
+        for (Map.Entry<Material, Long> entry : autominerStoredBlocks.entrySet()) {
+            storedBlocksData.put(entry.getKey().name(), entry.getValue());
+        }
+        data.put("autominerStoredBlocks", storedBlocksData);
+
+        return data;
+    }
+
+    /**
+     * Charge les données des automineurs depuis une map
+     */
+    @SuppressWarnings("unchecked")
+    public void deserializeAutominerData(Map<String, Object> data) {
+        // Automineurs actifs
+        Object activeMinersObj = data.get("activeAutominers");
+        if (activeMinersObj instanceof List<?> list) {
+            this.activeAutominers = new HashSet<>();
+            for (Object obj : list) {
+                if (obj instanceof String str) {
+                    this.activeAutominers.add(str);
+                }
+            }
+        }
+
+        // État de fonctionnement
+        Object runningObj = data.get("autominersRunning");
+        if (runningObj instanceof Boolean bool) {
+            this.autominersRunning = bool;
+        }
+
+        // Carburant
+        Object fuelObj = data.get("autominerFuel");
+        if (fuelObj instanceof Number num) {
+            this.autominerFuel = num.longValue();
+        }
+
+        // Monde
+        Object worldObj = data.get("autominerWorld");
+        if (worldObj instanceof String world && world.length() == 1 &&
+                world.charAt(0) >= 'A' && world.charAt(0) <= 'Z') {
+            this.autominerWorld = world;
+        }
+
+        // Capacité de stockage
+        Object capacityObj = data.get("autominerStorageCapacity");
+        if (capacityObj instanceof Number num) {
+            this.autominerStorageCapacity = Math.max(10000, num.longValue());
+        }
+
+        // Blocs stockés
+        Object storedBlocksObj = data.get("autominerStoredBlocks");
+        if (storedBlocksObj instanceof Map<?, ?> storedData) {
+            this.autominerStoredBlocks = new HashMap<>();
+            for (Map.Entry<?, ?> entry : storedData.entrySet()) {
+                if (entry.getKey() instanceof String materialName &&
+                        entry.getValue() instanceof Number amount) {
+                    try {
+                        Material material = Material.valueOf(materialName);
+                        this.autominerStoredBlocks.put(material, amount.longValue());
+                    } catch (IllegalArgumentException e) {
+                        // Matériau invalide, ignoré
+                    }
+                }
+            }
+        }
+    }
+
+// ========================================
+//        MÉTHODES DE SÉRIALISATION
+// ========================================
+
+    /**
+     * Obtient un résumé des automineurs pour l'affichage
+     */
+    public String getAutominerSummary() {
+        StringBuilder summary = new StringBuilder();
+
+        summary.append("§6⚡ §lAUTOMINEURS\n");
+        summary.append("§7▸ Actifs: §e").append(activeAutominers.size()).append("§8/§e2\n");
+        summary.append("§7▸ État: ").append(autominersRunning ? "§a✅ En marche" : "§c❌ Arrêtés").append("\n");
+        summary.append("§7▸ Carburant: §e").append(autominerFuel).append(" têtes\n");
+        summary.append("§7▸ Monde: §e").append(autominerWorld).append("\n");
+
+        long totalStored = getTotalStoredBlocks();
+        double percentage = getStorageUsagePercentage();
+        summary.append("§7▸ Stockage: §e").append(NumberFormatter.format(totalStored))
+                .append("§8/§e").append(NumberFormatter.format(autominerStorageCapacity))
+                .append(" §7(").append(String.format("%.1f", percentage)).append("%)\n");
+
+        return summary.toString();
+    }
+
+    /**
+     * Remet à zéro toutes les données des automineurs
+     */
+    public void resetAutominerData() {
+        activeAutominers.clear();
+        autominersRunning = false;
+        autominerFuel = 0;
+        autominerWorld = "A";
+        autominerStoredBlocks.clear();
+        autominerStorageCapacity = 10000;
+    }
+
+// ========================================
+//           MÉTHODES UTILITAIRES
+// ========================================
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    /**
+     * Classe interne pour représenter une sanction
+     *
+     * @param type MUTE, BAN
+     */
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

@@ -9,7 +9,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -18,17 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ReputationManager {
 
-    private final PrisonTycoon plugin;
-
-    // Cache des réputations pour optimisation
-    private final Map<UUID, Integer> reputationCache;
-
-    // Historique récent des changements (pour /rep help)
-    private final Map<UUID, List<ReputationChange>> recentChanges;
-
     // Seuil d'érosion naturelle
     private static final int EROSION_THRESHOLD = 750;
     private static final int EROSION_AMOUNT = 1;
+    private final PrisonTycoon plugin;
+    // Cache des réputations pour optimisation
+    private final Map<UUID, Integer> reputationCache;
+    // Historique récent des changements (pour /rep help)
+    private final Map<UUID, List<ReputationChange>> recentChanges;
 
     public ReputationManager(PrisonTycoon plugin) {
         this.plugin = plugin;

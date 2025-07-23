@@ -120,6 +120,18 @@ public class GUIListener implements Listener {
             plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
         } else if (title.contains("Vos Boosts Actifs")) {
             plugin.getBoostGUI().handleClick(player, item);
+        } else if (title.contains("§6⚡ §lGESTION DES AUTOMINEURS")) {
+            plugin.getAutominerGUI().handleMainMenuClick(player, slot, item, clickType);
+        } else if (title.contains("AUTOMINEUR §6⚙️")) {
+            plugin.getAutominerGUI().handleAutominerManagementClick(player, slot, item, clickType);
+        } else if (title.contains("§e⛽ §lCARBURANT")) {
+            plugin.getAutominerGUI().handleFuelMenuClick(player, item, clickType);
+        } else if (title.contains("§b🌍 §lMONDE")) {
+            plugin.getAutominerGUI().handleWorldMenuClick(player, item);
+        } else if (title.contains("§d📦 §lSTOCKAGE")) {
+            plugin.getAutominerGUI().handleStorageMenuClick(player, item);
+        } else if (title.contains("§6⚡ §lCONDENSATION")) {
+            plugin.getAutominerGUI().handleCondenseMenuClick(player, item);
         }
     }
 
@@ -194,6 +206,13 @@ public class GUIListener implements Listener {
                 title.contains("🎁") ||
                 title.contains("Prestige") ||
                 title.contains("MARCHÉ NOIR") ||
-                title.contains("Vos Boosts Actifs");
+                title.contains("Vos Boosts Actifs") ||
+                title.contains("§6⚡ §lGESTION DES AUTOMINEURS") ||
+                title.contains("AUTOMINEUR §6⚙️") ||
+                title.contains("§e⛽ §lCARBURANT") ||
+                title.contains("§b🌍 §lMONDE") ||
+                title.contains("§d📦 §lSTOCKAGE") ||
+                title.contains("§6⚡ §lCONDENSATION") ||
+                title.contains("§c⚡ §lÉNERGIE");
     }
 }

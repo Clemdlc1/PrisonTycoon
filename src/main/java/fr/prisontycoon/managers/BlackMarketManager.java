@@ -6,13 +6,9 @@ import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.reputation.ReputationTier;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -27,48 +23,30 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class BlackMarketManager {
 
-    private final PrisonTycoon plugin;
-    private final ReputationManager reputationManager;
-
-    // PNJ du marché noir
-    private Villager blackMarketNPC;
-    private Location currentLocation;
-    private boolean isAvailable;
-    private MarketState currentState;
-
-    // Stock d'items actuels avec leurs types
-    private final Map<ItemStack, BlackMarketItem> currentStock;
-
-    // Système d'achat unique par joueur
-    private final Map<UUID, Set<String>> playerPurchases; // UUID joueur -> Set des IDs d'items achetés
-
-    // Emplacements possibles pour le marché noir (chargés depuis config)
-    private final List<BlackMarketLocation> possibleLocations;
-
     // Configuration des déplacements et événements
     private static final int RELOCATION_HOURS = 6; // Toutes les 6 heures
     private static final double RAID_CHANCE = 0.15; // 15% de chance de raid
     private static final double AMBUSH_CHANCE = 0.10; // 10% de chance d'embuscade
     private static final double SCAM_CHANCE = 0.05; // 5% de chance d'arnaque
     private static final int RAID_DURATION_HOURS = 2; // Durée d'un raid
-
     // Configuration des prix
     private static final int BASE_PRICE_CRISTAL = 50;
     private static final int BASE_PRICE_BOOK = 100;
     private static final int BASE_PRICE_CONTAINER = 25;
     private static final int BASE_PRICE_KEY = 15;
-
-    // États du marché
-    public enum MarketState {
-        AVAILABLE("§a✅ Disponible"),
-        RAIDED("§c🚨 Raid en cours"),
-        RELOCATING("§e⚡ Relocalisation"),
-        HIDDEN("§8👁 Caché");
-
-        private final String display;
-        MarketState(String display) { this.display = display; }
-        public String getDisplay() { return display; }
-    }
+    private final PrisonTycoon plugin;
+    private final ReputationManager reputationManager;
+    // Stock d'items actuels avec leurs types
+    private final Map<ItemStack, BlackMarketItem> currentStock;
+    // Système d'achat unique par joueur
+    private final Map<UUID, Set<String>> playerPurchases; // UUID joueur -> Set des IDs d'items achetés
+    // Emplacements possibles pour le marché noir (chargés depuis config)
+    private final List<BlackMarketLocation> possibleLocations;
+    // PNJ du marché noir
+    private Villager blackMarketNPC;
+    private Location currentLocation;
+    private boolean isAvailable;
+    private MarketState currentState;
 
     public BlackMarketManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -84,25 +62,6 @@ public class BlackMarketManager {
         startRelocationTask(); // Démarre les déplacements automatiques
 
         plugin.getPluginLogger().info("§aBlackMarketManager amélioré initialisé avec " + possibleLocations.size() + " emplacements possibles.");
-    }
-
-    /**
-     * Classe pour représenter un emplacement du marché noir
-     */
-    private static class BlackMarketLocation {
-        private final Location location;
-        private final String name;
-        private final double dangerLevel; // 0.0 à 1.0
-
-        public BlackMarketLocation(Location location, String name, double dangerLevel) {
-            this.location = location;
-            this.name = name;
-            this.dangerLevel = dangerLevel;
-        }
-
-        public Location getLocation() { return location.clone(); }
-        public String getName() { return name; }
-        public double getDangerLevel() { return dangerLevel; }
     }
 
     /**
@@ -317,6 +276,7 @@ public class BlackMarketManager {
                 // Animation de rotation lente
                 new BukkitRunnable() {
                     private int ticks = 0;
+
                     @Override
                     public void run() {
                         if (npc.isDead()) {
@@ -1008,6 +968,51 @@ public class BlackMarketManager {
         plugin.getPluginLogger().info("=== " + currentStock.size() + " items au total ===");
     }
 
+    // États du marché
+    public enum MarketState {
+        AVAILABLE("§a✅ Disponible"),
+        RAIDED("§c🚨 Raid en cours"),
+        RELOCATING("§e⚡ Relocalisation"),
+        HIDDEN("§8👁 Caché");
+
+        private final String display;
+
+        MarketState(String display) {
+            this.display = display;
+        }
+
+        public String getDisplay() {
+            return display;
+        }
+    }
+
+    /**
+     * Classe pour représenter un emplacement du marché noir
+     */
+    private static class BlackMarketLocation {
+        private final Location location;
+        private final String name;
+        private final double dangerLevel; // 0.0 à 1.0
+
+        public BlackMarketLocation(Location location, String name, double dangerLevel) {
+            this.location = location;
+            this.name = name;
+            this.dangerLevel = dangerLevel;
+        }
+
+        public Location getLocation() {
+            return location.clone();
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public double getDangerLevel() {
+            return dangerLevel;
+        }
+    }
+
     /**
      * Classe interne pour représenter un item du marché noir
      */
@@ -1024,10 +1029,21 @@ public class BlackMarketManager {
             this.requiredTiers = requiredTiers;
         }
 
-        public String getItemId() { return itemId; }
-        public int getBasePrice() { return basePrice; }
-        public String getCategory() { return category; }
-        public ReputationTier[] getRequiredTiers() { return requiredTiers; }
+        public String getItemId() {
+            return itemId;
+        }
+
+        public int getBasePrice() {
+            return basePrice;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public ReputationTier[] getRequiredTiers() {
+            return requiredTiers;
+        }
 
         public boolean canPlayerAccess(ReputationTier playerTier) {
             if (requiredTiers.length == 0) return true;

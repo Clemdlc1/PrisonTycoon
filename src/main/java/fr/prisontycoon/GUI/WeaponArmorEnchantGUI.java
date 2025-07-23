@@ -25,8 +25,6 @@ import java.util.Map;
  */
 public class WeaponArmorEnchantGUI {
 
-    private final PrisonTycoon plugin;
-
     // Slots du GUI
     private static final int ITEM_DISPLAY_SLOT = 4;
     private static final int VANILLA_ENCHANT_BUTTON = 13;
@@ -34,6 +32,7 @@ public class WeaponArmorEnchantGUI {
     private static final int UNIQUE_BOOK_SLOT_2 = 16; // Seulement pour épées
     private static final int SHOP_BUTTON_SLOT = 22;
     private static final int BACK_BUTTON_SLOT = 26;
+    private final PrisonTycoon plugin;
 
     public WeaponArmorEnchantGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -536,11 +535,16 @@ public class WeaponArmorEnchantGUI {
     private String getEnchantmentName(Enchantment enchant) {
         // Traduction simplifiée des enchantements
         switch (enchant.getKey().getKey()) {
-            case "sharpness": return "Tranchant";
-            case "unbreaking": return "Incassable";
-            case "fire_aspect": return "Flamme";
-            case "protection": return "Protection";
-            default: return enchant.getKey().getKey();
+            case "sharpness":
+                return "Tranchant";
+            case "unbreaking":
+                return "Incassable";
+            case "fire_aspect":
+                return "Flamme";
+            case "protection":
+                return "Protection";
+            default:
+                return enchant.getKey().getKey();
         }
     }
 }

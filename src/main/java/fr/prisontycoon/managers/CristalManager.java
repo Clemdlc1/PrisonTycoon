@@ -15,7 +15,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID; // Importation ajoutée
+import java.util.UUID;
 
 /**
  * Gestionnaire des cristaux - MODIFIÉ pour sauvegarder dans PlayerData

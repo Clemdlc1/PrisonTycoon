@@ -2,8 +2,8 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.utils.NumberFormatter;
 import fr.prisontycoon.events.ChatListener;
+import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;

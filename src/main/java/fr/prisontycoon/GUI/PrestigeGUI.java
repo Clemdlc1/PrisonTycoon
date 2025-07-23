@@ -49,14 +49,12 @@ public class PrestigeGUI {
     private static final int PREV_PAGE_SLOT = 45;
     private static final int NEXT_PAGE_SLOT = 53;
     private static final int BACK_SLOT = 49;
-
+    private static final long RESET_CONFIRMATION_TIMEOUT = 30000; // 30 secondes
     private final PrisonTycoon plugin;
     private final NamespacedKey actionKey;
     private final NamespacedKey prestigeLevelKey;
     private final NamespacedKey rewardIdKey;
     private final NamespacedKey talentKey;
-
-    private static final long RESET_CONFIRMATION_TIMEOUT = 30000; // 30 secondes
     private final Map<UUID, Integer> currentPages = new ConcurrentHashMap<>();
 
 
@@ -282,7 +280,6 @@ public class PrestigeGUI {
      * Crée un item de récompense amélioré
      */
     // ==================== DIFFÉRENCIATION VISUELLE DES TALENTS DANS LE MENU PROGRESSION ====================
-
     private void setupTalentRow(Inventory gui, Player player, int prestigeLevel, int baseSlot, boolean isUnlocked) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -864,12 +861,12 @@ public class PrestigeGUI {
                 double pvpReduction = calculateTotalColumnBonus(activeTalents, PrestigeTalent.PVP_MERCHANT_REDUCTION);
 
                 List<String> activeBonus = new ArrayList<>();
-                if (moneyGreed > 0) activeBonus.add("§6Money +" + (int)moneyGreed + "%");
-                if (tokenGreed > 0) activeBonus.add("§bToken +" + (int)tokenGreed + "%");
-                if (sellBonus > 0) activeBonus.add("§aVente +" + (int)sellBonus + "%");
-                if (outpostBonus > 0) activeBonus.add("§eAvant-poste +" + (int)outpostBonus + "%");
-                if (taxReduction > 0) activeBonus.add("§cTaxe -" + (int)taxReduction + "%");
-                if (pvpReduction > 0) activeBonus.add("§9PvP -" + (int)pvpReduction + "%");
+                if (moneyGreed > 0) activeBonus.add("§6Money +" + (int) moneyGreed + "%");
+                if (tokenGreed > 0) activeBonus.add("§bToken +" + (int) tokenGreed + "%");
+                if (sellBonus > 0) activeBonus.add("§aVente +" + (int) sellBonus + "%");
+                if (outpostBonus > 0) activeBonus.add("§eAvant-poste +" + (int) outpostBonus + "%");
+                if (taxReduction > 0) activeBonus.add("§cTaxe -" + (int) taxReduction + "%");
+                if (pvpReduction > 0) activeBonus.add("§9PvP -" + (int) pvpReduction + "%");
 
                 if (!activeBonus.isEmpty()) {
                     String bonusLine = String.join("§7, ", activeBonus);
@@ -1179,12 +1176,12 @@ public class PrestigeGUI {
                 double pvpReduction = calculateTotalColumnBonus(activeTalents, PrestigeTalent.PVP_MERCHANT_REDUCTION);
 
                 lore.add("§6📊 BONUS TOTAUX:");
-                if (moneyGreed > 0) lore.add("§6• Money Greed: +" + (int)moneyGreed + "%");
-                if (tokenGreed > 0) lore.add("§b• Token Greed: +" + (int)tokenGreed + "%");
-                if (sellBonus > 0) lore.add("§a• Prix de vente: +" + (int)sellBonus + "%");
-                if (outpostBonus > 0) lore.add("§e• Gain avant-poste: +" + (int)outpostBonus + "%");
-                if (taxReduction > 0) lore.add("§c• Réduction taxe: -" + (int)taxReduction + "%");
-                if (pvpReduction > 0) lore.add("§9• Prix marchand PvP: -" + (int)pvpReduction + "%");
+                if (moneyGreed > 0) lore.add("§6• Money Greed: +" + (int) moneyGreed + "%");
+                if (tokenGreed > 0) lore.add("§b• Token Greed: +" + (int) tokenGreed + "%");
+                if (sellBonus > 0) lore.add("§a• Prix de vente: +" + (int) sellBonus + "%");
+                if (outpostBonus > 0) lore.add("§e• Gain avant-poste: +" + (int) outpostBonus + "%");
+                if (taxReduction > 0) lore.add("§c• Réduction taxe: -" + (int) taxReduction + "%");
+                if (pvpReduction > 0) lore.add("§9• Prix marchand PvP: -" + (int) pvpReduction + "%");
             }
 
             lore.add("");

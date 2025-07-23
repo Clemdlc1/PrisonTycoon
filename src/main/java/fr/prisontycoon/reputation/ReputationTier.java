@@ -86,12 +86,29 @@ public enum ReputationTier {
     }
 
     // Getters
-    public int getMinReputation() { return minReputation; }
-    public int getMaxReputation() { return maxReputation; }
-    public String getTitle() { return title; }
-    public double getTaxModifier() { return taxModifier; }
-    public double getBlackMarketPriceModifier() { return blackMarketPriceModifier; }
-    public String getBlackMarketDescription() { return blackMarketDescription; }
+    public int getMinReputation() {
+        return minReputation;
+    }
+
+    public int getMaxReputation() {
+        return maxReputation;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public double getTaxModifier() {
+        return taxModifier;
+    }
+
+    public double getBlackMarketPriceModifier() {
+        return blackMarketPriceModifier;
+    }
+
+    public String getBlackMarketDescription() {
+        return blackMarketDescription;
+    }
 
     /**
      * Formatage coloré du titre selon le niveau
@@ -125,7 +142,7 @@ public enum ReputationTier {
 
         if (taxModifier != 0) {
             String sign = taxModifier > 0 ? "+" : "";
-            desc.append("§7Taxes: ").append(sign).append((int)(taxModifier * 100)).append("%");
+            desc.append("§7Taxes: ").append(sign).append((int) (taxModifier * 100)).append("%");
         } else {
             desc.append("§7Taxes: Aucun effet");
         }
@@ -134,7 +151,7 @@ public enum ReputationTier {
 
         if (blackMarketPriceModifier != 0) {
             String sign = blackMarketPriceModifier > 0 ? "+" : "";
-            desc.append(" (").append(sign).append((int)(blackMarketPriceModifier * 100)).append("% prix)");
+            desc.append(" (").append(sign).append((int) (blackMarketPriceModifier * 100)).append("% prix)");
         }
 
         return desc.toString();

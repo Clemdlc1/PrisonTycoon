@@ -19,6 +19,7 @@ public class PrestigeReward {
     private final RewardType type;
     private final Object value; // Peut être int, String, etc. selon le type
     private final ItemStack displayItem;
+
     public PrestigeReward(String id, String displayName, String description, RewardType type, Object value, Material displayMaterial) {
         this.id = id;
         this.displayName = displayName;
