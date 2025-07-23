@@ -63,9 +63,8 @@ public class AutominerCommand implements CommandExecutor, TabCompleter {
 
                 // Ouvre directement l'interface de gestion du carburant
                 player.sendMessage("§e⚡ Ouverture du menu carburant...");
-                // TODO: Implémenter openEnergyMenu() dans AutominerGUI
-                // plugin.getAutominerGUI().openEnergyMenu(player);
-                plugin.getAutominerGUI().openMainMenu(player);
+                plugin.getAutominerFuelGUI().openFuelMenu(player);
+
                 return true;
             }
             case "info" -> {

@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerData;
 import fr.prisontycoon.autominers.AutominerType;
+import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -36,7 +37,7 @@ public class AutominerManager {
         this.enchantKey = new NamespacedKey(plugin, "autominer_enchants");
         this.cristalKey = new NamespacedKey(plugin, "autominer_cristals");
 
-        startAutominerProcessing();
+//        startAutominerProcessing();
         plugin.getPluginLogger().info("§aAutominerManager initialisé.");
     }
 
@@ -248,31 +249,32 @@ public class AutominerManager {
     }
 
     /**
-     * Démarre le système de traitement des automineurs (toutes les minutes)
+     * Démarre le système de traitement des automineurs (toutes les secondes)
      */
-    private void startAutominerProcessing() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                processAllAutominers();
-            }
-        }.runTaskTimer(plugin, 1200L, 1200L); // Toutes les minutes (1200 ticks)
-    }
+//    private void startAutominerProcessing() {
+//        new BukkitRunnable() {
+//            @Override
+//            public void run() {
+//                processAllAutominers();
+//            }
+//        }.runTaskTimerAsynchronously(plugin, 20L, 20L); // Toutes les secondes (20 ticks)
+//    }
 
     /**
      * Traite tous les automineurs actifs
      */
-    private void processAllAutominers() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            processPlayerAutominers(player);
-        }
-    }
+//    private void processAllAutominers() {
+//        for (UUID playerUUID : plugin.getPlayerDataManager().getAllPlayerData().keySet()) {
+//            processPlayerAutominers(playerUUID);
+//        }
+//    }
 
     /**
      * Traite les automineurs d'un joueur spécifique
      */
-    private void processPlayerAutominers(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+    private void processPlayerAutominers(UUID playerUUID) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(playerUUID);
+        Player player = Bukkit.getPlayer(playerUUID); // Peut être null si offline
 
         // Vérification si les automineurs sont en marche
         if (!playerData.isAutominersRunning()) {
@@ -284,70 +286,90 @@ public class AutominerManager {
             return;
         }
 
-        // Calcul de la consommation totale de carburant
-        int totalFuelNeeded = 0;
+        // Récupération des données des automineurs depuis la PlayerData
+        // NOTE: This assumes you have a way to get AutominerData from PlayerData without the item.
+        // This part needs to be implemented based on your data storage.
+        // For now, we'll simulate it by looking for the items in the player's inventory if they are online.
+        // A better solution would be to store the full AutominerData in PlayerData.
         List<AutominerData> activeAutominersList = new ArrayList<>();
-
-        // Récupération des automineurs actifs depuis l'inventaire
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && isAutominer(item)) {
-                AutominerData data = AutominerData.fromItemStack(item, uuidKey, typeKey, enchantKey, cristalKey);
-                if (data != null && activeIds.contains(data.getUuid())) {
-                    activeAutominersList.add(data);
-                    totalFuelNeeded += data.getActualFuelConsumption();
+        if (player != null) {
+            for (ItemStack item : player.getInventory().getContents()) {
+                if (item != null && isAutominer(item)) {
+                    AutominerData data = AutominerData.fromItemStack(item, uuidKey, typeKey, enchantKey, cristalKey);
+                    if (data != null && activeIds.contains(data.getUuid())) {
+                        activeAutominersList.add(data);
+                    }
                 }
             }
+        } else {
+            // TODO: Implement a way to get AutominerData for offline players.
+            // This might involve storing a serialized version of the autominer in PlayerData.
+            return; // Cannot process offline players without this.
         }
 
+
+        // Calcul de la consommation totale de carburant
+        int totalFuelNeeded = 0;
+        for (AutominerData autominer : activeAutominersList) {
+            totalFuelNeeded += autominer.getActualFuelConsumption();
+        }
+
+
         // Vérification du carburant
-        long currentFuel = playerData.getAutominerFuel();
-        if (currentFuel < totalFuelNeeded) {
-            player.sendMessage("§c⚠️ Carburant insuffisant pour les automineurs! §7(" +
-                    currentFuel + "/" + totalFuelNeeded + " têtes)");
+        if (!playerData.consumeAutominerFuel(totalFuelNeeded)) {
+            if (player != null) {
+                player.sendMessage("§c⚠️ Carburant insuffisant pour les automineurs! §7(" +
+                        playerData.getAutominerFuel() + "/" + totalFuelNeeded + " têtes)");
+            }
             return;
         }
 
-        // Consommation du carburant
-        playerData.setAutominerFuel(currentFuel - totalFuelNeeded);
 
         // Traitement de chaque automineur
         for (AutominerData autominer : activeAutominersList) {
             processSingleAutominer(player, autominer, playerData);
         }
 
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        plugin.getPlayerDataManager().markDirty(playerUUID);
     }
 
     /**
      * Traite un automineur individuel (génère les ressources)
      */
     private void processSingleAutominer(Player player, AutominerData autominer, PlayerData playerData) {
-        String world = playerData.getAutominerWorld();
+        String worldName = "mine-" + playerData.getAutominerWorld().toLowerCase();
+        MineData mineData = plugin.getMineManager().getMine(worldName);
+        if (mineData == null) {
+            if (player != null) {
+                player.sendMessage("§cMonde d'autominer invalide: " + worldName);
+            }
+            return;
+        }
 
         // Génération des blocs minés selon l'efficacité
         int blocksMinedCount = Math.max(1, autominer.getTotalEfficiency() / 10);
 
         // Génération des ressources
-        Map<Material, Integer> minedBlocks = generateMinedBlocks(world, blocksMinedCount, autominer);
+        Map<Material, Integer> minedBlocks = generateMinedBlocks(mineData, blocksMinedCount, autominer);
 
         // Stockage des ressources
         for (Map.Entry<Material, Integer> entry : minedBlocks.entrySet()) {
-            addToStorage(playerData, entry.getKey(), entry.getValue());
+            playerData.addStoredBlocks(entry.getKey(), entry.getValue());
         }
 
-        // Génération des bonus (tokens, XP, money)
+        // Génération des bonus (tokens, XP, money, keys)
         generateBonusRewards(player, autominer, blocksMinedCount);
 
         // Messages de debug (optionnel)
-        if (plugin.getConfig().getBoolean("debug.autominers", false)) {
+        if (player != null && plugin.getConfig().getBoolean("debug.autominers", false)) {
             player.sendMessage("§7[DEBUG] " + autominer.getType().getDisplayName() +
-                    " a miné " + blocksMinedCount + " blocs dans le monde " + world);
+                    " a miné " + blocksMinedCount + " blocs dans le monde " + worldName);
         }
     }
 
     // Méthodes utilitaires
 
-    private boolean isAutominer(ItemStack item) {
+    public boolean isAutominer(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return false;
         return item.getItemMeta().getPersistentDataContainer().has(uuidKey, org.bukkit.persistence.PersistentDataType.STRING);
     }
@@ -392,15 +414,12 @@ public class AutominerManager {
         return String.valueOf(capacity);
     }
 
-    private Map<Material, Integer> generateMinedBlocks(String world, int blockCount, AutominerData autominer) {
+    private Map<Material, Integer> generateMinedBlocks(MineData mineData, int blockCount, AutominerData autominer) {
         Map<Material, Integer> result = new HashMap<>();
-
-        // Logique basique - à améliorer selon vos mines
-        Material[] possibleBlocks = {Material.STONE, Material.COAL_ORE, Material.IRON_ORE, Material.GOLD_ORE, Material.DIAMOND_ORE};
         Random rand = new Random();
 
         for (int i = 0; i < blockCount; i++) {
-            Material block = possibleBlocks[rand.nextInt(possibleBlocks.length)];
+            Material block = mineData.getRandomMaterial(rand);
 
             // Application de la Fortune
             int quantity = 1;
@@ -413,21 +432,6 @@ public class AutominerManager {
         }
 
         return result;
-    }
-
-    private void addToStorage(PlayerData playerData, Material material, int amount) {
-        // Logique d'ajout au stockage - à intégrer avec votre système
-        long currentStored = playerData.getAutominerStoredBlocks().getOrDefault(material, 0L);
-        long newAmount = currentStored + amount;
-
-        // Vérification de la capacité
-        long totalStored = playerData.getAutominerStoredBlocks().values().stream().mapToLong(Long::longValue).sum();
-        long capacity = playerData.getAutominerStorageCapacity();
-
-        if (totalStored + amount <= capacity) {
-            playerData.getAutominerStoredBlocks().put(material, newAmount);
-        }
-        // Sinon, stockage plein - pas d'ajout
     }
 
     private void generateBonusRewards(Player player, AutominerData autominer, int blocksMinedCount) {
@@ -445,7 +449,9 @@ public class AutominerManager {
         int expBonus = autominer.getTotalExpBonus();
         if (expBonus > 0 && rand.nextInt(100) < expBonus) {
             int expAmount = blocksMinedCount * (expBonus / 10 + 1);
-            player.giveExp(expAmount);
+            if (player != null) {
+                player.giveExp(expAmount);
+            }
         }
 
         // Bonus argent
@@ -454,6 +460,57 @@ public class AutominerManager {
             long moneyAmount = blocksMinedCount * (moneyBonus / 10 + 1);
             playerData.addCoins(moneyAmount);
         }
+
+        // Bonus clés
+        int keyGreedBonus = autominer.getTotalKeyGreedBonus();
+        if (keyGreedBonus > 0 && rand.nextInt(100) < keyGreedBonus) {
+            if (player != null) {
+                player.getInventory().addItem(createKey("Rare"));
+            }
+        }
+
+        // Bonus beacon finder
+        int beaconFinderBonus = autominer.getTotalBeaconFinderBonus();
+        if (beaconFinderBonus > 0 && rand.nextInt(100) < beaconFinderBonus) {
+            if (player != null) {
+                player.getInventory().addItem(new ItemStack(Material.BEACON));
+            }
+        }
+    }
+
+    public ItemStack createKey(String keyType) {
+        String keyColor;
+
+        // Détermine la couleur en fonction du type de clé
+        switch (keyType) {
+            case "Cristal":
+                keyColor = "§d";
+                break;
+            case "Légendaire":
+                keyColor = "§6";
+                break;
+            case "Rare":
+                keyColor = "§5";
+                break;
+            case "Peu Commune":
+                keyColor = "§9";
+                break;
+            default: // "Commune" et tout autre cas
+                keyColor = "§f";
+                break;
+        }
+
+        ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
+        var meta = key.getItemMeta();
+
+        meta.setDisplayName(keyColor + "Clé " + keyType);
+        meta.setLore(Arrays.asList(
+                "§7Clé de coffre " + keyColor + keyType,
+                "§7Utilise cette clé pour ouvrir des coffres!"
+        ));
+
+        key.setItemMeta(meta);
+        return key;
     }
 
     // Getters publics

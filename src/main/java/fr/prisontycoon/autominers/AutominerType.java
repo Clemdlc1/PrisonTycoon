@@ -8,22 +8,22 @@ import org.bukkit.Material;
 public enum AutominerType {
 
     PIERRE("Pierre", Material.COBBLESTONE, 60, 0.5,
-            10, 5, 0, 0, 0, 0, 0),
+            10, 5, 0, 0, 0, 0, 0, 0),
 
     FER("Fer", Material.IRON_INGOT, 30, 1.0,
-            25, 10, 10, 0, 0, 0, 0),
+            25, 10, 10, 0, 0, 0, 0, 0),
 
     OR("Or", Material.GOLD_INGOT, 15, 2.0,
-            100, 50, 25, 25, 25, 0, 0),
+            100, 50, 25, 25, 25, 0, 0, 0),
 
     DIAMANT("Diamant", Material.DIAMOND, 5, 4.0,
-            500, 250, 100, 100, 100, 2, 10),
+            500, 250, 100, 100, 100, 2, 10, 0),
 
     EMERAUDE("Émeraude", Material.EMERALD, 3, 7.5,
-            5000, 2000, 500, 500, 500, 1, 50),
+            5000, 2000, 500, 500, 500, 1, 50, 0),
 
     BEACON("Beacon", Material.BEACON, 1, 12.0,
-            Integer.MAX_VALUE, Integer.MAX_VALUE, 10000, 10000, 10000, 3, 100);
+            Integer.MAX_VALUE, Integer.MAX_VALUE, 10000, 10000, 10000, 3, 100, 1);
 
     private final String displayName;
     private final Material displayMaterial;
@@ -38,11 +38,12 @@ public enum AutominerType {
     private final int maxMoneyGreed;
     private final int maxKeyGreed;
     private final int maxFuelEfficiency;
+    private final int maxBeaconFinder;
 
     AutominerType(String displayName, Material displayMaterial, int fuelConsumptionMinutes,
                   double rarityCoefficient, int maxEfficiency, int maxFortune,
                   int maxTokenGreed, int maxExpGreed, int maxMoneyGreed,
-                  int maxKeyGreed, int maxFuelEfficiency) {
+                  int maxKeyGreed, int maxFuelEfficiency, int maxBeaconFinder) {
         this.displayName = displayName;
         this.displayMaterial = displayMaterial;
         this.fuelConsumptionMinutes = fuelConsumptionMinutes;
@@ -54,6 +55,7 @@ public enum AutominerType {
         this.maxMoneyGreed = maxMoneyGreed;
         this.maxKeyGreed = maxKeyGreed;
         this.maxFuelEfficiency = maxFuelEfficiency;
+        this.maxBeaconFinder = maxBeaconFinder;
     }
 
     public String getDisplayName() {
@@ -100,6 +102,10 @@ public enum AutominerType {
         return maxFuelEfficiency;
     }
 
+    public int getMaxBeaconFinder() {
+        return maxBeaconFinder;
+    }
+
     /**
      * Obtient le type suivant pour la condensation (9 → 1 niveau supérieur)
      */
@@ -143,7 +149,7 @@ public enum AutominerType {
             case "moneygreed" -> maxMoneyGreed;
             case "keygreed" -> maxKeyGreed;
             case "fuelefficiency" -> maxFuelEfficiency;
-            case "beaconfinder" -> this == BEACON ? 1 : 0;
+            case "beaconfinder" -> maxBeaconFinder;
             default -> 0;
         };
     }

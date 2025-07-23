@@ -47,6 +47,13 @@ public class GUIListener implements Listener {
             }
 
             ItemStack clickedItem = event.getCurrentItem();
+
+            if (clickedItem != null && plugin.getAutominerManager().isAutominer(clickedItem)) {
+                plugin.getAutominerGUI().openMainMenu(player);
+                event.setCancelled(true);
+                return;
+            }
+
             if (clickedItem != null && clickedItem.getType() == Material.ENCHANTED_BOOK &&
                     clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
                     new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING) && title.contains("Enchantements Uniques")) {
@@ -123,7 +130,7 @@ public class GUIListener implements Listener {
         } else if (title.contains("Automineurs - Menu")) {
             plugin.getAutominerGUI().handleMainMenuClick(player, slot, item, clickType);
         } else if (title.contains("⚡ Amélioration")) {
-            plugin.getAutominerEnchantGUI().handleClick(player, slot, item, clickType);
+            plugin.getAutominerEnchantGUI().handleMenuClick(player, slot, item, clickType);
         } else if (title.contains("Carburant Automineurs")) {
             plugin.getAutominerFuelGUI().handleFuelClick(player, slot, item, clickType);
         } else if (title.contains("Stockage Automineurs")) {

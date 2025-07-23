@@ -84,12 +84,23 @@ public class AutominerData {
             }
         }
 
-        // Cristaux (simplifiés pour l'instant)
+        // Cristaux
         List<Cristal> cristals = new ArrayList<>();
         String cristalData = container.get(cristalKey, PersistentDataType.STRING);
         if (cristalData != null && !cristalData.isEmpty()) {
-            // Parsing des cristaux sera implémenté selon votre système existant
-            // Format: "uuid:type:level,uuid:type:level"
+            String[] cristalArray = cristalData.split(",");
+            for (String c : cristalArray) {
+                String[] parts = c.split(":");
+                if (parts.length == 3) {
+                    try {
+                        String cristalUuid = parts[0];
+                        CristalType cristalType = CristalType.valueOf(parts[1]);
+                        int level = Integer.parseInt(parts[2]);
+                        cristals.add(new Cristal(cristalUuid, level, cristalType, false));
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
         }
 
         return new AutominerData(uuid, type, enchantments, cristals);
@@ -270,6 +281,20 @@ public class AutominerData {
     }
 
     /**
+     * Calcule le bonus de clés total
+     */
+    public int getTotalKeyGreedBonus() {
+        return getEnchantmentLevel("keygreed");
+    }
+
+    /**
+     * Calcule le bonus de beacon finder total
+     */
+    public int getTotalBeaconFinderBonus() {
+        return getEnchantmentLevel("beaconfinder");
+    }
+
+    /**
      * Convertit en ItemStack avec toutes les données stockées
      */
     public ItemStack toItemStack(NamespacedKey uuidKey, NamespacedKey typeKey,
@@ -339,7 +364,7 @@ public class AutominerData {
         lore.add("");
 
         // Bonus Greed
-        if (getTotalTokenBonus() > 0 || getTotalExpBonus() > 0 || getTotalMoneyBonus() > 0) {
+        if (getTotalTokenBonus() > 0 || getTotalExpBonus() > 0 || getTotalMoneyBonus() > 0 || getTotalKeyGreedBonus() > 0 || getTotalBeaconFinderBonus() > 0) {
             lore.add("§d💎 §lBONUS GREED");
             if (getTotalTokenBonus() > 0) {
                 lore.add("§7▸ Tokens: §a+" + getTotalTokenBonus() + "%");
@@ -350,8 +375,11 @@ public class AutominerData {
             if (getTotalMoneyBonus() > 0) {
                 lore.add("§7▸ Argent: §a+" + getTotalMoneyBonus() + "%");
             }
-            if (getEnchantmentLevel("keygreed") > 0) {
-                lore.add("§7▸ Clés: §a+" + getEnchantmentLevel("keygreed") + "%");
+            if (getTotalKeyGreedBonus() > 0) {
+                lore.add("§7▸ Clés: §a+" + getTotalKeyGreedBonus() + "%");
+            }
+            if (getTotalBeaconFinderBonus() > 0) {
+                lore.add("§7▸ Beacon Finder: §a+" + getTotalBeaconFinderBonus() + "%");
             }
             lore.add("");
         }
