@@ -338,12 +338,6 @@ commands:
     permission: specialmine.admin
     permission-message: "§cVous n'avez pas la permission d'utiliser cette commande!"
 
-  autominer:
-    description: Donne des items boost aux joueurs (admin)
-    usage: /<command>
-    permission: specialmine.admin
-    permission-message: "§cVous n'avez pas la permission d'utiliser cette commande!"
-
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

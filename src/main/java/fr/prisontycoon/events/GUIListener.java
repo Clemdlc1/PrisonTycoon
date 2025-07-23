@@ -47,13 +47,6 @@ public class GUIListener implements Listener {
             }
 
             ItemStack clickedItem = event.getCurrentItem();
-
-            if (clickedItem != null && plugin.getAutominerManager().isAutominer(clickedItem)) {
-                plugin.getAutominerGUI().openMainMenu(player);
-                event.setCancelled(true);
-                return;
-            }
-
             if (clickedItem != null && clickedItem.getType() == Material.ENCHANTED_BOOK &&
                     clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
                     new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING) && title.contains("Enchantements Uniques")) {
@@ -127,16 +120,6 @@ public class GUIListener implements Listener {
             plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
         } else if (title.contains("Vos Boosts Actifs")) {
             plugin.getBoostGUI().handleClick(player, item);
-        } else if (title.contains("Automineurs - Menu")) {
-            plugin.getAutominerGUI().handleMainMenuClick(player, slot, item, clickType);
-        } else if (title.contains("⚡ Amélioration")) {
-            plugin.getAutominerEnchantGUI().handleMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Carburant Automineurs")) {
-            plugin.getAutominerFuelGUI().handleFuelClick(player, slot, item, clickType);
-        } else if (title.contains("Stockage Automineurs")) {
-            plugin.getAutominerStorageGUI().handleStorageClick(player, slot, item, clickType);
-        } else if (title.contains("Condensation d'Automineurs")) {
-            plugin.getAutominerCondenseGUI().handleCondenseClick(player, slot, item, clickType);
         }
     }
 
@@ -212,10 +195,12 @@ public class GUIListener implements Listener {
                 title.contains("Prestige") ||
                 title.contains("MARCHÉ NOIR") ||
                 title.contains("Vos Boosts Actifs") ||
-                title.contains("Automineurs - Menu") ||
-                title.contains("⚡ Amélioration") ||
-                title.contains("Carburant Automineurs") ||
-                title.contains("Stockage Automineurs") ||
-                title.contains("Condensation d'Automineurs");
+                title.contains("§6⚡ §lGESTION DES AUTOMINEURS") ||
+                title.contains("AUTOMINEUR §6⚙️") ||
+                title.contains("§e⛽ §lCARBURANT") ||
+                title.contains("§b🌍 §lMONDE") ||
+                title.contains("§d📦 §lSTOCKAGE") ||
+                title.contains("§6⚡ §lCONDENSATION") ||
+                title.contains("§c⚡ §lÉNERGIE");
     }
 }

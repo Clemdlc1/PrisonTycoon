@@ -50,9 +50,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
     private VoucherManager voucherManager;
     private BoostManager boostManager;
-    private AutominerManager autominerManager;
-    private AutominerEnchantmentManager autominerEnchantmentManager;
-
 
     private Logger logger;
 
@@ -71,11 +68,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private PrestigeGUI prestigeGUI;
     private RankupCommand rankupCommand;
     private BoostGUI boostGUI;
-    private AutominerGUI autominerGUI;
-    private AutominerEnchantGUI autominerEnchantGUI;
-    private AutominerFuelGUI autominerFuelGUI;
-    private AutominerStorageGUI autominerStorageGUI;
-    private AutominerCondenseGUI autominerCondenseGUI;
 
     //cristaux
     private CristalManager cristalManager;
@@ -221,8 +213,6 @@ public final class PrisonTycoon extends JavaPlugin {
         uniqueEnchantmentBookFactory = new UniqueEnchantmentBookFactory(this);
         voucherManager = new VoucherManager(this);
         boostManager = new BoostManager(this);
-        autominerManager = new AutominerManager(this);
-        autominerEnchantmentManager = new AutominerEnchantmentManager(this);
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
@@ -246,11 +236,6 @@ public final class PrisonTycoon extends JavaPlugin {
         professionRewardsGUI = new ProfessionRewardsGUI(this);
         prestigeGUI = new PrestigeGUI(this);
         boostGUI = new BoostGUI(this);
-        autominerGUI = new AutominerGUI(this);
-        autominerEnchantGUI = new AutominerEnchantGUI(this);
-        autominerFuelGUI = new AutominerFuelGUI(this);
-        autominerStorageGUI = new AutominerStorageGUI(this);
-        autominerCondenseGUI = new AutominerCondenseGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -336,7 +321,6 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("voucher").setExecutor(new VoucherCommand(this));
         getCommand("giveboost").setExecutor(new GiveBoostCommand(this));
         getCommand("giveboost").setTabCompleter(new GiveBoostCommand(this));
-        getCommand("autominer").setExecutor(new AutominerCommand(this));
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -650,34 +634,6 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public BoostGUI getBoostGUI() {
         return boostGUI;
-    }
-
-    public AutominerManager getAutominerManager() {
-        return autominerManager;
-    }
-
-    public AutominerEnchantmentManager getAutominerEnchantmentManager() {
-        return autominerEnchantmentManager;
-    }
-
-    public AutominerGUI getAutominerGUI() {
-        return autominerGUI;
-    }
-
-    public AutominerEnchantGUI getAutominerEnchantGUI() {
-        return autominerEnchantGUI;
-    }
-
-    public AutominerFuelGUI getAutominerFuelGUI() {
-        return autominerFuelGUI;
-    }
-
-    public AutominerStorageGUI getAutominerStorageGUI() {
-        return autominerStorageGUI;
-    }
-
-    public AutominerCondenseGUI getAutominerCondenseGUI() {
-        return autominerCondenseGUI;
     }
 }
 
