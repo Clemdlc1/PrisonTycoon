@@ -386,18 +386,53 @@ public class AutominerCondenseGUI {
      */
     private void performCondensation(Player player) {
         Inventory inv = player.getOpenInventory().getTopInventory();
-        List<ItemStack> items = new ArrayList<>();
-        for (int slot : CONDENSE_SLOTS) {
-            ItemStack item = inv.getItem(slot);
-            if (item != null && !isPlaceholderItem(item)) {
-                items.add(item);
-            }
+        List<AutominerData> autominers = getAutominersFromGrid(inv);
+
+        // Vérifications
+        if (autominers.size() != 9) {
+            player.sendMessage("§c❌ Il faut exactement 9 automineurs pour la condensation!");
+            return;
         }
 
-        if (plugin.getAutominerManager().condenseAutominers(player, items)) {
-            clearGridItems(inv);
-            updateResultDisplay(inv);
+        if (!areAllSameType(autominers)) {
+            player.sendMessage("§c❌ Tous les automineurs doivent être du même type!");
+            return;
         }
+
+        AutominerType currentType = autominers.get(0).getType();
+        AutominerType nextType = getNextAutominerType(currentType);
+
+        if (nextType == null) {
+            player.sendMessage("§c❌ Ce type d'automineur ne peut pas être condensé davantage!");
+            return;
+        }
+
+        // Vérifier l'espace dans l'inventaire
+        if (player.getInventory().firstEmpty() == -1) {
+            player.sendMessage("§c❌ Inventaire plein! Libérez de l'espace d'abord.");
+            return;
+        }
+
+        // Effectuer la condensation
+        clearGridItems(inv);
+
+        // Créer le nouvel automineur
+        AutominerData newAutominer = new AutominerData(java.util.UUID.randomUUID().toString(), nextType);
+        ItemStack newAutominerItem = newAutominer.toItemStack(
+                plugin.getAutominerManager().getUuidKey(),
+                plugin.getAutominerManager().getTypeKey(),
+                plugin.getAutominerManager().getEnchantKey(),
+                plugin.getAutominerManager().getCristalKey()
+        );
+
+        // Donner au joueur
+        player.getInventory().addItem(newAutominerItem);
+
+        player.sendMessage("§a✅ Condensation réussie! Vous avez obtenu un automineur " + nextType.getColoredName() + "§a!");
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
+
+        // Mettre à jour l'affichage
+        updateResultDisplay(inv);
     }
 
     /**

@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerData;
 import fr.prisontycoon.autominers.AutominerType;
+import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -36,6 +37,7 @@ public class AutominerManager {
         this.enchantKey = new NamespacedKey(plugin, "autominer_enchants");
         this.cristalKey = new NamespacedKey(plugin, "autominer_cristals");
 
+        startAutominerProcessing();
         plugin.getPluginLogger().info("§aAutominerManager initialisé.");
     }
 
@@ -60,22 +62,33 @@ public class AutominerManager {
     /**
      * Place un automineur (l'active)
      */
-    public boolean placeAutominer(Player player, ItemStack autominerItem) {
-        AutominerData autominer = AutominerData.fromItemStack(autominerItem, uuidKey, typeKey, enchantKey, cristalKey);
-        if (autominer == null) {
-            player.sendMessage("§c❌ Cet item n'est pas un automineur valide.");
-            return false;
-        }
-
+    public boolean placeAutominer(Player player, AutominerData autominer) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        if (playerData.addActiveAutominer(autominer.getUuid())) {
-            player.sendMessage("§a✅ " + autominer.getType().getColoredName() + " §aAutomineur placé et activé!");
-            plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-            return true;
-        } else {
+        Set<String> currentActive = playerData.getActiveAutominers();
+
+        // Vérification limite de 2 automineurs actifs
+        if (currentActive.size() >= 2) {
             player.sendMessage("§c❌ Vous ne pouvez avoir que §e2 automineurs actifs §c simultanément!");
             return false;
         }
+
+        // Vérification que l'automineur n'est pas déjà actif
+        if (currentActive.contains(autominer.getUuid())) {
+            player.sendMessage("§c❌ Cet automineur est déjà actif!");
+            return false;
+        }
+
+        // Placement
+        currentActive.add(autominer.getUuid());
+        playerData.setActiveAutominers(currentActive);
+
+        // Cache pour optimisation
+        activeAutominers.computeIfAbsent(player.getUniqueId(), k -> ConcurrentHashMap.newKeySet())
+                .add(autominer.getUuid());
+
+        player.sendMessage("§a✅ " + autominer.getType().getColoredName() + " §aAutomineur placé et activé!");
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        return true;
     }
 
     /**
@@ -83,14 +96,26 @@ public class AutominerManager {
      */
     public boolean removeAutominer(Player player, String autominerUuid) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        if (playerData.removeActiveAutominer(autominerUuid)) {
-            player.sendMessage("§a✅ Automineur retiré et désactivé!");
-            plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-            return true;
-        } else {
+        Set<String> currentActive = playerData.getActiveAutominers();
+
+        if (!currentActive.contains(autominerUuid)) {
             player.sendMessage("§c❌ Cet automineur n'est pas actif!");
             return false;
         }
+
+        // Retrait
+        currentActive.remove(autominerUuid);
+        playerData.setActiveAutominers(currentActive);
+
+        // Mise à jour cache
+        Set<String> playerActive = activeAutominers.get(player.getUniqueId());
+        if (playerActive != null) {
+            playerActive.remove(autominerUuid);
+        }
+
+        player.sendMessage("§a✅ Automineur retiré et désactivé!");
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        return true;
     }
 
     /**
@@ -121,26 +146,24 @@ public class AutominerManager {
     /**
      * Change le monde de minage (avec coût en beacons)
      */
-    public boolean changeWorld(Player player) {
+    public boolean changeWorld(Player player, String newWorld) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String currentWorld = playerData.getAutominerWorld();
-        String newWorld = playerData.rollRandomWorld();
 
-        // Coût en beacons basé sur la "distance" du monde (a=1, b=2, ..., z=26)
-        int worldCost = (newWorld.charAt(0) - 'a' + 1) * 2;
+        // Coût en beacons basé sur la "distance" du monde (A=1, B=2, ..., Z=26)
+        int worldCost = calculateWorldCost(newWorld);
 
         // Vérification des beacons
-        if (playerData.getBeacons() < worldCost) {
+        if (!hasEnoughBeacons(player, worldCost)) {
             player.sendMessage("§c❌ Pas assez de beacons! Coût: §e" + worldCost + " beacons");
             return false;
         }
 
         // Consommation des beacons
-        playerData.removeBeacon(worldCost);
+        removeBeacons(player, worldCost);
 
         // Changement de monde
         playerData.setAutominerWorld(newWorld);
-        player.sendMessage("§a✅ Monde changé de " + currentWorld.toUpperCase() + " vers §e" + newWorld.toUpperCase() + " §7(-" + worldCost + " beacons)");
+        player.sendMessage("§a✅ Monde changé vers §e" + newWorld + " §7(-" + worldCost + " beacons)");
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
         return true;
     }
@@ -151,6 +174,8 @@ public class AutominerManager {
     public boolean upgradeStorage(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         long currentCapacity = playerData.getAutominerStorageCapacity();
+
+        // Prochaine amélioration
         long nextCapacity = getNextStorageCapacity(currentCapacity);
         int beaconCost = getStorageUpgradeCost(currentCapacity);
 
@@ -159,13 +184,13 @@ public class AutominerManager {
             return false;
         }
 
-        if (playerData.getBeacons() < beaconCost) {
+        if (!hasEnoughBeacons(player, beaconCost)) {
             player.sendMessage("§c❌ Pas assez de beacons! Coût: §e" + beaconCost + " beacons");
             return false;
         }
 
         // Amélioration
-        playerData.removeBeacon(beaconCost);
+        removeBeacons(player, beaconCost);
         playerData.setAutominerStorageCapacity(nextCapacity);
 
         String formatted = formatCapacity(nextCapacity);
@@ -177,25 +202,26 @@ public class AutominerManager {
     /**
      * Condense 9 automineurs en 1 de niveau supérieur
      */
-    public boolean condenseAutominers(Player player, List<ItemStack> items) {
-        if (items.size() != 9) {
-            player.sendMessage("§c❌ Vous devez placer exactement 9 automineurs.");
-            return false;
-        }
+    public boolean condenseAutominers(Player player, AutominerType type) {
+        // Compter les automineurs du type dans l'inventaire
+        int count = 0;
+        List<ItemStack> toRemove = new ArrayList<>();
 
-        AutominerData firstAutominer = AutominerData.fromItemStack(items.get(0), uuidKey, typeKey, enchantKey, cristalKey);
-        if (firstAutominer == null) {
-            player.sendMessage("§c❌ Item invalide dans la grille de condensation.");
-            return false;
-        }
-
-        AutominerType type = firstAutominer.getType();
-        for (ItemStack item : items) {
-            AutominerData data = AutominerData.fromItemStack(item, uuidKey, typeKey, enchantKey, cristalKey);
-            if (data == null || data.getType() != type) {
-                player.sendMessage("§c❌ Tous les automineurs doivent être du même type.");
-                return false;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && isAutominer(item)) {
+                AutominerData data = AutominerData.fromItemStack(item, uuidKey, typeKey, enchantKey, cristalKey);
+                if (data != null && data.getType() == type) {
+                    count++;
+                    toRemove.add(item);
+                    if (count >= 9) break;
+                }
             }
+        }
+
+        if (count < 9) {
+            player.sendMessage("§c❌ Vous avez besoin de §e9 " + type.getColoredName() +
+                    " §cAutomineurs! §7(Vous en avez " + count + ")");
+            return false;
         }
 
         AutominerType nextType = type.getNextTier();
@@ -204,9 +230,15 @@ public class AutominerManager {
             return false;
         }
 
+        // Vérification de place
         if (player.getInventory().firstEmpty() == -1) {
-            player.sendMessage("§c❌ Pas de place dans l'inventaire!");
+            player.sendMessage("§c❌ Pas assez de place dans l'inventaire!");
             return false;
+        }
+
+        // Suppression des 9 automineurs
+        for (int i = 0; i < 9; i++) {
+            toRemove.get(i).setAmount(0);
         }
 
         // Création du nouvel automineur
@@ -216,12 +248,144 @@ public class AutominerManager {
         return true;
     }
 
+    /**
+     * Démarre le système de traitement des automineurs (toutes les secondes)
+     */
+    private void startAutominerProcessing() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                processAllAutominers();
+            }
+        }.runTaskTimerAsynchronously(plugin, 20L, 20L); // Toutes les secondes (20 ticks)
+    }
+
+    /**
+     * Traite tous les automineurs actifs
+     */
+    private void processAllAutominers() {
+        for (UUID playerUUID : plugin.getPlayerDataManager().getAllPlayerData().keySet()) {
+            processPlayerAutominers(playerUUID);
+        }
+    }
+
+    /**
+     * Traite les automineurs d'un joueur spécifique
+     */
+    private void processPlayerAutominers(UUID playerUUID) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(playerUUID);
+        Player player = Bukkit.getPlayer(playerUUID); // Peut être null si offline
+
+        // Vérification si les automineurs sont en marche
+        if (!playerData.isAutominersRunning()) {
+            return;
+        }
+
+        Set<String> activeIds = playerData.getActiveAutominers();
+        if (activeIds.isEmpty()) {
+            return;
+        }
+
+        // Récupération des données des automineurs depuis la PlayerData
+        // NOTE: This assumes you have a way to get AutominerData from PlayerData without the item.
+        // This part needs to be implemented based on your data storage.
+        // For now, we'll simulate it by looking for the items in the player's inventory if they are online.
+        // A better solution would be to store the full AutominerData in PlayerData.
+        List<AutominerData> activeAutominersList = new ArrayList<>();
+        if (player != null) {
+            for (ItemStack item : player.getInventory().getContents()) {
+                if (item != null && isAutominer(item)) {
+                    AutominerData data = AutominerData.fromItemStack(item, uuidKey, typeKey, enchantKey, cristalKey);
+                    if (data != null && activeIds.contains(data.getUuid())) {
+                        activeAutominersList.add(data);
+                    }
+                }
+            }
+        } else {
+            // TODO: Implement a way to get AutominerData for offline players.
+            // This might involve storing a serialized version of the autominer in PlayerData.
+            return; // Cannot process offline players without this.
+        }
+
+
+        // Calcul de la consommation totale de carburant
+        int totalFuelNeeded = 0;
+        for (AutominerData autominer : activeAutominersList) {
+            totalFuelNeeded += autominer.getActualFuelConsumption();
+        }
+
+
+        // Vérification du carburant
+        if (!playerData.consumeAutominerFuel(totalFuelNeeded)) {
+            if (player != null) {
+                player.sendMessage("§c⚠️ Carburant insuffisant pour les automineurs! §7(" +
+                        playerData.getAutominerFuel() + "/" + totalFuelNeeded + " têtes)");
+            }
+            return;
+        }
+
+
+        // Traitement de chaque automineur
+        for (AutominerData autominer : activeAutominersList) {
+            processSingleAutominer(player, autominer, playerData);
+        }
+
+        plugin.getPlayerDataManager().markDirty(playerUUID);
+    }
+
+    /**
+     * Traite un automineur individuel (génère les ressources)
+     */
+    private void processSingleAutominer(Player player, AutominerData autominer, PlayerData playerData) {
+        String worldName = "mine-" + playerData.getAutominerWorld().toLowerCase();
+        MineData mineData = plugin.getMineManager().getMine(worldName);
+        if (mineData == null) {
+            if (player != null) {
+                player.sendMessage("§cMonde d'autominer invalide: " + worldName);
+            }
+            return;
+        }
+
+        // Génération des blocs minés selon l'efficacité
+        int blocksMinedCount = Math.max(1, autominer.getTotalEfficiency() / 10);
+
+        // Génération des ressources
+        Map<Material, Integer> minedBlocks = generateMinedBlocks(mineData, blocksMinedCount, autominer);
+
+        // Stockage des ressources
+        for (Map.Entry<Material, Integer> entry : minedBlocks.entrySet()) {
+            playerData.addStoredBlocks(entry.getKey(), entry.getValue());
+        }
+
+        // Génération des bonus (tokens, XP, money, keys)
+        generateBonusRewards(player, autominer, blocksMinedCount);
+
+        // Messages de debug (optionnel)
+        if (player != null && plugin.getConfig().getBoolean("debug.autominers", false)) {
+            player.sendMessage("§7[DEBUG] " + autominer.getType().getDisplayName() +
+                    " a miné " + blocksMinedCount + " blocs dans le monde " + worldName);
+        }
+    }
 
     // Méthodes utilitaires
 
     private boolean isAutominer(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return false;
         return item.getItemMeta().getPersistentDataContainer().has(uuidKey, org.bukkit.persistence.PersistentDataType.STRING);
+    }
+
+    private int calculateWorldCost(String world) {
+        if (world == null || world.length() != 1) return 1;
+        char worldChar = world.toUpperCase().charAt(0);
+        return Math.max(1, worldChar - 'A' + 1); // A=1, B=2, ..., Z=26
+    }
+
+    private boolean hasEnoughBeacons(Player player, int amount) {
+        return player.getInventory().contains(Material.BEACON, amount);
+    }
+
+    private void removeBeacons(Player player, int amount) {
+        player.getInventory().removeItem(new ItemStack(Material.BEACON, amount));
     }
 
     private long getNextStorageCapacity(long current) {
@@ -248,6 +412,105 @@ public class AutominerManager {
         if (capacity >= 1000000) return (capacity / 1000000) + "M";
         if (capacity >= 1000) return (capacity / 1000) + "k";
         return String.valueOf(capacity);
+    }
+
+    private Map<Material, Integer> generateMinedBlocks(MineData mineData, int blockCount, AutominerData autominer) {
+        Map<Material, Integer> result = new HashMap<>();
+        Random rand = new Random();
+
+        for (int i = 0; i < blockCount; i++) {
+            Material block = mineData.getRandomMaterial(rand);
+
+            // Application de la Fortune
+            int quantity = 1;
+            int fortune = autominer.getTotalFortune();
+            if (fortune > 0 && rand.nextInt(100) < (fortune * 2)) {
+                quantity += rand.nextInt(fortune / 10 + 1) + 1;
+            }
+
+            result.merge(block, quantity, Integer::sum);
+        }
+
+        return result;
+    }
+
+    private void generateBonusRewards(Player player, AutominerData autominer, int blocksMinedCount) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Random rand = new Random();
+
+        // Bonus tokens
+        int tokenBonus = autominer.getTotalTokenBonus();
+        if (tokenBonus > 0 && rand.nextInt(100) < tokenBonus) {
+            long tokenAmount = blocksMinedCount * (tokenBonus / 10 + 1);
+            playerData.addTokens(tokenAmount);
+        }
+
+        // Bonus XP
+        int expBonus = autominer.getTotalExpBonus();
+        if (expBonus > 0 && rand.nextInt(100) < expBonus) {
+            int expAmount = blocksMinedCount * (expBonus / 10 + 1);
+            if (player != null) {
+                player.giveExp(expAmount);
+            }
+        }
+
+        // Bonus argent
+        int moneyBonus = autominer.getTotalMoneyBonus();
+        if (moneyBonus > 0 && rand.nextInt(100) < moneyBonus) {
+            long moneyAmount = blocksMinedCount * (moneyBonus / 10 + 1);
+            playerData.addCoins(moneyAmount);
+        }
+
+        // Bonus clés
+        int keyGreedBonus = autominer.getTotalKeyGreedBonus();
+        if (keyGreedBonus > 0 && rand.nextInt(100) < keyGreedBonus) {
+            if (player != null) {
+                player.getInventory().addItem(createKey("Rare"));
+            }
+        }
+
+        // Bonus beacon finder
+        int beaconFinderBonus = autominer.getTotalBeaconFinderBonus();
+        if (beaconFinderBonus > 0 && rand.nextInt(100) < beaconFinderBonus) {
+            if (player != null) {
+                player.getInventory().addItem(new ItemStack(Material.BEACON));
+            }
+        }
+    }
+
+    public ItemStack createKey(String keyType) {
+        String keyColor;
+
+        // Détermine la couleur en fonction du type de clé
+        switch (keyType) {
+            case "Cristal":
+                keyColor = "§d";
+                break;
+            case "Légendaire":
+                keyColor = "§6";
+                break;
+            case "Rare":
+                keyColor = "§5";
+                break;
+            case "Peu Commune":
+                keyColor = "§9";
+                break;
+            default: // "Commune" et tout autre cas
+                keyColor = "§f";
+                break;
+        }
+
+        ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
+        var meta = key.getItemMeta();
+
+        meta.setDisplayName(keyColor + "Clé " + keyType);
+        meta.setLore(Arrays.asList(
+                "§7Clé de coffre " + keyColor + keyType,
+                "§7Utilise cette clé pour ouvrir des coffres!"
+        ));
+
+        key.setItemMeta(meta);
+        return key;
     }
 
     // Getters publics

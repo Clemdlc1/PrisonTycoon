@@ -88,13 +88,16 @@ public class AutominerData {
         List<Cristal> cristals = new ArrayList<>();
         String cristalData = container.get(cristalKey, PersistentDataType.STRING);
         if (cristalData != null && !cristalData.isEmpty()) {
-            String[] cristalsArray = cristalData.split(";");
-            for (String cristalStr : cristalsArray) {
-                String[] parts = cristalStr.split(":");
-                if (parts.length == 4) {
+            String[] cristalArray = cristalData.split(",");
+            for (String c : cristalArray) {
+                String[] parts = c.split(":");
+                if (parts.length == 3) {
                     try {
-                        cristals.add(new Cristal(parts[0], Integer.parseInt(parts[1]), CristalType.valueOf(parts[2]), Boolean.parseBoolean(parts[3])));
-                    } catch (IllegalArgumentException ignored) {
+                        String cristalUuid = parts[0];
+                        CristalType cristalType = CristalType.valueOf(parts[1]);
+                        int level = Integer.parseInt(parts[2]);
+                        cristals.add(new Cristal(cristalUuid, level, cristalType, false));
+                    } catch (Exception ignored) {
                     }
                 }
             }
@@ -278,6 +281,20 @@ public class AutominerData {
     }
 
     /**
+     * Calcule le bonus de clés total
+     */
+    public int getTotalKeyGreedBonus() {
+        return getEnchantmentLevel("keygreed");
+    }
+
+    /**
+     * Calcule le bonus de beacon finder total
+     */
+    public int getTotalBeaconFinderBonus() {
+        return getEnchantmentLevel("beaconfinder");
+    }
+
+    /**
      * Convertit en ItemStack avec toutes les données stockées
      */
     public ItemStack toItemStack(NamespacedKey uuidKey, NamespacedKey typeKey,
@@ -310,17 +327,14 @@ public class AutominerData {
                 container.set(enchantKey, PersistentDataType.STRING, enchantData.toString());
             }
 
-            // Cristaux appliqués (format: "uuid:level:type:vierge;...")
+            // Cristaux appliqués (format: "uuid:type:level,uuid:type:level")
             if (!appliedCristals.isEmpty()) {
                 StringBuilder cristalData = new StringBuilder();
                 for (Cristal cristal : appliedCristals) {
-                    if (cristalData.length() > 0) {
-                        cristalData.append(";");
-                    }
+                    if (cristalData.length() > 0) cristalData.append(",");
                     cristalData.append(cristal.getUuid()).append(":")
-                            .append(cristal.getNiveau()).append(":")
-                            .append(cristal.getType()).append(":")
-                            .append(cristal.isVierge());
+                            .append(cristal.getType().name()).append(":")
+                            .append(cristal.getNiveau());
                 }
                 container.set(cristalKey, PersistentDataType.STRING, cristalData.toString());
             }
@@ -350,7 +364,7 @@ public class AutominerData {
         lore.add("");
 
         // Bonus Greed
-        if (getTotalTokenBonus() > 0 || getTotalExpBonus() > 0 || getTotalMoneyBonus() > 0 || getEnchantmentLevel("keygreed") > 0) {
+        if (getTotalTokenBonus() > 0 || getTotalExpBonus() > 0 || getTotalMoneyBonus() > 0 || getTotalKeyGreedBonus() > 0 || getTotalBeaconFinderBonus() > 0) {
             lore.add("§d💎 §lBONUS GREED");
             if (getTotalTokenBonus() > 0) {
                 lore.add("§7▸ Tokens: §a+" + getTotalTokenBonus() + "%");
@@ -361,26 +375,26 @@ public class AutominerData {
             if (getTotalMoneyBonus() > 0) {
                 lore.add("§7▸ Argent: §a+" + getTotalMoneyBonus() + "%");
             }
-            if (getEnchantmentLevel("keygreed") > 0) {
-                lore.add("§7▸ Clés: §a+" + getEnchantmentLevel("keygreed") + "%");
+            if (getTotalKeyGreedBonus() > 0) {
+                lore.add("§7▸ Clés: §a+" + getTotalKeyGreedBonus() + "%");
+            }
+            if (getTotalBeaconFinderBonus() > 0) {
+                lore.add("§7▸ Beacon Finder: §a+" + getTotalBeaconFinderBonus() + "%");
             }
             lore.add("");
         }
 
         // Cristaux appliqués
-        lore.add("§d✨ §lCRISTAUX APPLIQUÉS §7(" + appliedCristals.size() + "/2)");
         if (!appliedCristals.isEmpty()) {
+            lore.add("§d✨ §lCRISTAUX APPLIQUÉS §7(" + appliedCristals.size() + "/2)");
             for (Cristal cristal : appliedCristals) {
                 lore.add("§8• §d" + cristal.getType().getDisplayName() + " " + cristal.getNiveau());
             }
-        } else {
-            lore.add("§8• §7Aucun cristal appliqué");
+            lore.add("");
         }
-        lore.add("");
-
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        lore.add("§a⚡ Cliquez dans votre inventaire pour placer l'autominer");
+        lore.add("§a⚡ Cliquez pour gérer cet automineur");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         return lore;

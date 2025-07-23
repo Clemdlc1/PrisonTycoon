@@ -351,39 +351,4 @@ public class CristalManager {
     public NamespacedKey getCristalViergeKey() {
         return cristalViergeKey;
     }
-
-    public ItemStack createKey(String keyType) {
-        String keyColor;
-
-        // Détermine la couleur en fonction du type de clé
-        switch (keyType) {
-            case "Cristal":
-                keyColor = "§d";
-                break;
-            case "Légendaire":
-                keyColor = "§6";
-                break;
-            case "Rare":
-                keyColor = "§5";
-                break;
-            case "Peu Commune":
-                keyColor = "§9";
-                break;
-            default: // "Commune" et tout autre cas
-                keyColor = "§f";
-                break;
-        }
-
-        ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
-        var meta = key.getItemMeta();
-
-        meta.setDisplayName(keyColor + "Clé " + keyType);
-        meta.setLore(java.util.Arrays.asList(
-                "§7Clé de coffre " + keyColor + keyType,
-                "§7Utilise cette clé pour ouvrir des coffres!"
-        ));
-
-        key.setItemMeta(meta);
-        return key;
-    }
 }
