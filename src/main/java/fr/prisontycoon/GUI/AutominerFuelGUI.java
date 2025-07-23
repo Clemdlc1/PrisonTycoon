@@ -1,6 +1,7 @@
 package fr.prisontycoon.GUI;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.autominers.AutominerData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
@@ -57,7 +58,7 @@ public class AutominerFuelGUI {
         fillBorders(inv);
 
         // Informations du carburant (slot 4)
-        inv.setItem(FUEL_INFO_SLOT, createFuelInfoItem(playerData));
+        inv.setItem(FUEL_INFO_SLOT, createFuelInfoItem(player, playerData));
 
         // Bouton de retour (slot 45)
         inv.setItem(BACK_BUTTON_SLOT, createBackButton());
@@ -75,7 +76,7 @@ public class AutominerFuelGUI {
     /**
      * Crée l'item d'information du carburant
      */
-    private ItemStack createFuelInfoItem(PlayerData playerData) {
+    private ItemStack createFuelInfoItem(Player player, PlayerData playerData) {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = item.getItemMeta();
 
@@ -90,7 +91,7 @@ public class AutominerFuelGUI {
         lore.add("");
 
         // Consommation des automineurs
-        int totalConsumption = calculateTotalFuelConsumption(playerData);
+        int totalConsumption = calculateTotalFuelConsumption(player, playerData);
         if (totalConsumption > 0) {
             lore.add("§7Consommation totale: §c" + totalConsumption + " têtes/heure");
 
@@ -378,24 +379,31 @@ public class AutominerFuelGUI {
         meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, value);
     }
 
-    private int calculateTotalFuelConsumption(PlayerData playerData) {
+    private int calculateTotalFuelConsumption(Player player, PlayerData playerData) {
         int totalConsumption = 0;
         for (String autominerUuid : playerData.getActiveAutominers()) {
-            // Récupérer les données de l'automineur pour calculer sa consommation
-            // Basé sur le type et les enchantements FuelEfficiency
-            totalConsumption += calculateAutominerFuelConsumption(autominerUuid);
+            AutominerData autominer = findAutominerDataByUuid(player, autominerUuid);
+            if (autominer != null) {
+                totalConsumption += autominer.getActualFuelConsumption();
+            }
         }
         return totalConsumption;
     }
 
-    private int calculateAutominerFuelConsumption(String autominerUuid) {
-        // Consommation de base selon le type d'automineur
-        // Pierre: 1 tête/60min, Fer: 1 tête/30min, Or: 1 tête/15min,
-        // Diamant: 1 tête/5min, Émeraude: 1 tête/3min, Beacon: 1 tête/1min
-
-        // Pour l'instant, retourne une valeur par défaut
-        // Dans une implémentation complète, il faudrait récupérer le type et les enchantements
-        return 1; // 1 tête par heure par défaut
+    private AutominerData findAutominerDataByUuid(Player player, String uuid) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null) {
+                AutominerData data = AutominerData.fromItemStack(item,
+                        plugin.getAutominerManager().getUuidKey(),
+                        plugin.getAutominerManager().getTypeKey(),
+                        plugin.getAutominerManager().getEnchantKey(),
+                        plugin.getAutominerManager().getCristalKey());
+                if (data != null && data.getUuid().equals(uuid)) {
+                    return data;
+                }
+            }
+        }
+        return null; // Autominer not found in inventory
     }
 
     private String formatTime(long minutes) {

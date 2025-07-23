@@ -320,6 +320,14 @@ public class PlayerDataManager {
             data.setTotalGreedTriggers(config.getLong("statistics.total-greed-triggers", 0));
             data.setTotalKeysObtained(config.getLong("statistics.total-keys-obtained", 0));
 
+            // Données autominer
+            if (config.contains("autominer")) {
+                ConfigurationSection autominerSection = config.getConfigurationSection("autominer");
+                if (autominerSection != null) {
+                    data.deserializeAutominerData(autominerSection.getValues(true));
+                }
+            }
+
             // Reset des stats de la dernière minute après chargement
             data.resetLastMinuteStats();
 
@@ -506,6 +514,9 @@ public class PlayerDataManager {
             config.set("statistics.total-blocks-destroyed", data.getTotalBlocksDestroyed());
             config.set("statistics.total-greed-triggers", data.getTotalGreedTriggers());
             config.set("statistics.total-keys-obtained", data.getTotalKeysObtained());
+
+            // Sauvegarde des données autominer
+            config.set("autominer", data.serializeAutominerData());
 
             // Sauvegarde le fichier
             config.save(playerFile);

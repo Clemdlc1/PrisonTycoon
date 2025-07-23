@@ -62,16 +62,16 @@ public class AutominerGUI {
         fillBorders(inv);
 
         // Informations du joueur (slot 4)
-        inv.setItem(PLAYER_INFO_SLOT, createPlayerInfoItem(playerData));
+        inv.setItem(PLAYER_INFO_SLOT, createPlayerInfoItem(player, playerData));
 
         // Bouton start/stop (slot 13)
         inv.setItem(START_STOP_SLOT, createStartStopButton(playerData));
 
         // Automineurs placés
-        populatePlacedAutominers(inv, playerData);
+        populatePlacedAutominers(player, inv, playerData);
 
         // Boutons de gestion
-        inv.setItem(FUEL_BUTTON_SLOT, createFuelButton(playerData));
+        inv.setItem(FUEL_BUTTON_SLOT, createFuelButton(player, playerData));
         inv.setItem(WORLD_BUTTON_SLOT, createWorldButton(playerData));
         inv.setItem(STORAGE_BUTTON_SLOT, createStorageButton(playerData));
         inv.setItem(CONDENSE_BUTTON_SLOT, createCondenseButton());
@@ -83,7 +83,7 @@ public class AutominerGUI {
     /**
      * Crée l'item d'information du joueur
      */
-    private ItemStack createPlayerInfoItem(PlayerData playerData) {
+    private ItemStack createPlayerInfoItem(Player player, PlayerData playerData) {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = item.getItemMeta();
 
@@ -108,7 +108,7 @@ public class AutominerGUI {
         lore.add("§7▸ Têtes disponibles: §f" + NumberFormatter.format(fuelAmount));
 
         if (isRunning && !playerData.getActiveAutominers().isEmpty()) {
-            int totalConsumption = calculateTotalFuelConsumption(playerData);
+            int totalConsumption = calculateTotalFuelConsumption(player, playerData);
             long remainingTime = totalConsumption > 0 ? (fuelAmount * 60) / totalConsumption : 0;
             lore.add("§7▸ Temps restant: §f" + formatTime(remainingTime) + " minutes");
         }
@@ -174,13 +174,13 @@ public class AutominerGUI {
     /**
      * Remplit les emplacements des automineurs placés
      */
-    private void populatePlacedAutominers(Inventory inv, PlayerData playerData) {
+    private void populatePlacedAutominers(Player player, Inventory inv, PlayerData playerData) {
         Set<String> activeAutominers = playerData.getActiveAutominers();
-        String[] autominerUuids = activeAutominers.toArray(new String[0]);
+        List<String> autominerUuids = new ArrayList<>(activeAutominers);
 
         // Emplacement 1
-        if (autominerUuids.length > 0) {
-            AutominerData autominer1 = findAutominerDataByUuid(autominerUuids[0]);
+        if (autominerUuids.size() > 0) {
+            AutominerData autominer1 = findAutominerDataByUuid(player, autominerUuids.get(0));
             if (autominer1 != null) {
                 inv.setItem(AUTOMINER_1_SLOT, createPlacedAutominerItem(autominer1, 1));
             } else {
@@ -191,8 +191,8 @@ public class AutominerGUI {
         }
 
         // Emplacement 2
-        if (autominerUuids.length > 1) {
-            AutominerData autominer2 = findAutominerDataByUuid(autominerUuids[1]);
+        if (autominerUuids.size() > 1) {
+            AutominerData autominer2 = findAutominerDataByUuid(player, autominerUuids.get(1));
             if (autominer2 != null) {
                 inv.setItem(AUTOMINER_2_SLOT, createPlacedAutominerItem(autominer2, 2));
             } else {
@@ -265,15 +265,10 @@ public class AutominerGUI {
         lore.add("§7Aucun automineur placé dans ce slot.");
         lore.add("");
         lore.add("§e📝 §lCOMMENT PLACER UN AUTOMINEUR:");
-        lore.add("§7▸ Tenez un automineur en main");
-        lore.add("§7▸ Cliquez sur cet emplacement");
-        lore.add("§7▸ L'automineur sera automatiquement placé");
-        lore.add("");
-        lore.add("§a🖱 §lCLIC: §aPlacer l'automineur en main");
+        lore.add("§7▸ Cliquez sur un automineur dans votre inventaire.");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
-        setItemAction(meta, "place_autominer", String.valueOf(slotNumber));
         item.setItemMeta(meta);
 
         return item;
@@ -282,7 +277,7 @@ public class AutominerGUI {
     /**
      * Crée le bouton de gestion du carburant
      */
-    private ItemStack createFuelButton(PlayerData playerData) {
+    private ItemStack createFuelButton(Player player, PlayerData playerData) {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = item.getItemMeta();
 
@@ -293,7 +288,7 @@ public class AutominerGUI {
         lore.add("§7Gérez le carburant de vos automineurs.");
         lore.add("");
         lore.add("§7Têtes disponibles: §f" + NumberFormatter.format(playerData.getAutominerFuel()));
-        lore.add("§7Consommation totale: §c" + calculateTotalFuelConsumption(playerData) + " têtes/heure");
+        lore.add("§7Consommation totale: §c" + calculateTotalFuelConsumption(player, playerData) + " têtes/heure");
         lore.add("");
         lore.add("§a🖱 §lCLIC: §aOuvrir le menu carburant");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -426,9 +421,6 @@ public class AutominerGUI {
                     plugin.getAutominerEnchantGUI().openEnchantMenu(player, value);
                 }
             }
-            case "place_autominer" -> {
-                placeAutominerFromHand(player, Integer.parseInt(value));
-            }
             case "upgrade_world" -> {
                 if (clickType.isShiftClick()) {
                     upgradeWorld(player);
@@ -446,66 +438,14 @@ public class AutominerGUI {
         }
     }
 
-    /**
-     * Place un automineur depuis la main du joueur
-     */
-    private void placeAutominerFromHand(Player player, int slotNumber) {
-        ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (handItem.getType() == Material.AIR) {
-            player.sendMessage("§c❌ Vous devez tenir un automineur en main!");
-            return;
-        }
-
-        AutominerData data = AutominerData.fromItemStack(handItem,
-                plugin.getAutominerManager().getUuidKey(),
-                plugin.getAutominerManager().getTypeKey(),
-                plugin.getAutominerManager().getEnchantKey(),
-                plugin.getAutominerManager().getCristalKey());
-
-        if (data == null) {
-            player.sendMessage("§c❌ Automineur invalide!");
-            return;
-        }
-
-        if (plugin.getAutominerManager().placeAutominer(player, data)) {
-            handItem.setAmount(handItem.getAmount() - 1); // Consommer l'item
-            openMainMenu(player); // Refresh
-        }
-    }
 
     /**
      * Améliore le monde de minage
      */
     private void upgradeWorld(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String currentWorld = playerData.getAutominerWorld();
-
-        // Calculer le coût d'amélioration
-        int upgradeCost = calculateWorldUpgradeCost(currentWorld);
-
-        if (playerData.getBeacons() < upgradeCost) {
-            player.sendMessage("§c❌ Pas assez de beacons! Coût: §6" + upgradeCost + " beacons");
-            return;
+        if (plugin.getAutominerManager().changeWorld(player)) {
+            openMainMenu(player);
         }
-
-        // Générer un nouveau monde aléatoire (plus proche de 'z' = plus rare)
-        String newWorld = generateRandomWorld(currentWorld);
-
-        if (newWorld.equals(currentWorld)) {
-            player.sendMessage("§c❌ Impossible d'améliorer davantage!");
-            return;
-        }
-
-        // Appliquer l'amélioration
-        playerData.removeBeacon(upgradeCost);
-        playerData.setAutominerWorld(newWorld);
-
-        player.sendMessage("§a✅ Monde amélioré de §e" + currentWorld.toUpperCase() + " §avers §e" + newWorld.toUpperCase() + "§a!");
-        player.sendMessage("§7Coût: §6" + upgradeCost + " beacons");
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
-
-        // Refresh du menu
-        openMainMenu(player);
     }
 
     // Méthodes utilitaires
@@ -534,15 +474,31 @@ public class AutominerGUI {
         meta.getPersistentDataContainer().set(valueKey, PersistentDataType.STRING, value);
     }
 
-    private int calculateTotalFuelConsumption(PlayerData playerData) {
+    private int calculateTotalFuelConsumption(Player player, PlayerData playerData) {
         int totalConsumption = 0;
         for (String autominerUuid : playerData.getActiveAutominers()) {
-            AutominerData autominer = findAutominerDataByUuid(autominerUuid);
+            AutominerData autominer = findAutominerDataByUuid(player, autominerUuid);
             if (autominer != null) {
                 totalConsumption += autominer.getActualFuelConsumption();
             }
         }
         return totalConsumption;
+    }
+
+    private AutominerData findAutominerDataByUuid(Player player, String uuid) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null) {
+                AutominerData data = AutominerData.fromItemStack(item,
+                        plugin.getAutominerManager().getUuidKey(),
+                        plugin.getAutominerManager().getTypeKey(),
+                        plugin.getAutominerManager().getEnchantKey(),
+                        plugin.getAutominerManager().getCristalKey());
+                if (data != null && data.getUuid().equals(uuid)) {
+                    return data;
+                }
+            }
+        }
+        return null; // Autominer not found in inventory
     }
 
     private String formatTime(long minutes) {
@@ -611,13 +567,5 @@ public class AutominerGUI {
         }
 
         return String.valueOf(newChar);
-    }
-
-    // Méthodes de recherche
-    private AutominerData findAutominerDataByUuid(String uuid) {
-        // Recherche dans l'inventaire du joueur actuel
-        // Cette méthode devrait être améliorée pour chercher directement dans la PlayerData
-        // ou dans un cache des automineurs
-        return null; // Placeholder - serait implémenté avec un système de cache
     }
 }

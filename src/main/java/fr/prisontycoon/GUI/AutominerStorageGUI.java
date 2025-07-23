@@ -309,12 +309,9 @@ public class AutominerStorageGUI {
         }
 
         lore.add("");
-        lore.add("§a🖱 §lCLIC: §aVendre tout (avec AutoSell)");
-        lore.add("§e⇧ §lSHIFT+CLIC: §eVendre la moitié");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
-        setItemAction(meta, "sell_blocks", material.name());
         item.setItemMeta(meta);
 
         return item;
@@ -362,11 +359,6 @@ public class AutominerStorageGUI {
             case "collect_keys" -> {
                 collectAllKeys(player);
             }
-            case "sell_blocks" -> {
-                Material material = Material.valueOf(value);
-                boolean sellHalf = clickType.isShiftClick();
-                sellStoredBlocks(player, material, sellHalf);
-            }
             case "back_to_main" -> {
                 plugin.getAutominerGUI().openMainMenu(player);
             }
@@ -377,33 +369,9 @@ public class AutominerStorageGUI {
      * Améliore la capacité de stockage
      */
     private void upgradeStorage(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        long currentCapacity = playerData.getAutominerStorageCapacity();
-        long nextCapacity = calculateNextStorageCapacity(currentCapacity);
-        int upgradeCost = calculateStorageUpgradeCost(currentCapacity);
-
-        if (nextCapacity <= currentCapacity) {
-            player.sendMessage("§c❌ Capacité de stockage déjà maximale!");
-            return;
+        if (plugin.getAutominerManager().upgradeStorage(player)) {
+            openStorageMenu(player);
         }
-
-        if (playerData.getBeacons() < upgradeCost) {
-            player.sendMessage("§c❌ Pas assez de beacons! Coût: §6" + upgradeCost + " beacons");
-            return;
-        }
-
-        // Appliquer l'amélioration
-        playerData.removeBeacon(upgradeCost);
-        playerData.setAutominerStorageCapacity(nextCapacity);
-
-        player.sendMessage("§a✅ Stockage amélioré de §e" + formatCapacity(currentCapacity) +
-                " §aà §e" + formatCapacity(nextCapacity) + "§a!");
-        player.sendMessage("§7Coût: §6" + upgradeCost + " beacons");
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
-
-        // Refresh du menu
-        openStorageMenu(player);
     }
 
     /**
@@ -471,50 +439,6 @@ public class AutominerStorageGUI {
         openStorageMenu(player);
     }
 
-    /**
-     * Vend des blocs stockés avec AutoSell
-     */
-    private void sellStoredBlocks(Player player, Material material, boolean sellHalf) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Map<Material, Long> storedBlocks = playerData.getAutominerStoredBlocks();
-
-        long currentQuantity = storedBlocks.getOrDefault(material, 0L);
-        if (currentQuantity <= 0) {
-            player.sendMessage("§c❌ Aucun bloc de ce type en stock!");
-            return;
-        }
-
-        long quantityToSell = sellHalf ? currentQuantity / 2 : currentQuantity;
-        if (quantityToSell <= 0) {
-            player.sendMessage("§c❌ Quantité insuffisante pour la vente!");
-            return;
-        }
-
-        // Utiliser le système AutoSell avec pénalité de 2%
-        plugin.getEnchantmentBookManager().processAutoSell(player, material, (int)quantityToSell);
-
-        // Retirer les blocs du stockage
-        long remainingQuantity = currentQuantity - quantityToSell;
-        if (remainingQuantity > 0) {
-            storedBlocks.put(material, remainingQuantity);
-        } else {
-            storedBlocks.remove(material);
-        }
-
-        // Calculer la valeur de vente (avec pénalité)
-        var blockValue = plugin.getConfigManager().getBlockValue(material);
-        if (blockValue != null) {
-            long sellValue = Math.round(blockValue.getCoins() * quantityToSell * 0.98);
-            player.sendMessage("§a✅ Vendu §e" + NumberFormatter.format(quantityToSell) + " " +
-                    material.name().toLowerCase() + " §apour §6" + NumberFormatter.format(sellValue) + " coins§a!");
-            player.sendMessage("§7(Pénalité AutoSell de 2% appliquée)");
-        }
-
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
-
-        // Refresh du menu
-        openStorageMenu(player);
-    }
 
     // Méthodes utilitaires
 

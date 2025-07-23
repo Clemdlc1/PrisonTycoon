@@ -79,7 +79,7 @@ public class AutominerEnchantGUI {
 
         // Boutons d'action
         inv.setItem(BACK_BUTTON_SLOT, createBackButton());
-        inv.setItem(APPLY_CRISTAL_SLOT, createApplyCristalButton());
+        inv.setItem(APPLY_CRISTAL_SLOT, createApplyCristalButton(autominer));
 
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
@@ -288,7 +288,7 @@ public class AutominerEnchantGUI {
     /**
      * Crée le bouton d'application de cristal
      */
-    private ItemStack createApplyCristalButton() {
+    private ItemStack createApplyCristalButton(AutominerData autominer) {
         ItemStack item = new ItemStack(Material.EMERALD);
         ItemMeta meta = item.getItemMeta();
 
@@ -309,7 +309,7 @@ public class AutominerEnchantGUI {
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
-        setItemAction(meta, "open_cristal_apply", "");
+        setItemAction(meta, "open_cristal_apply", autominer.getUuid());
         item.setItemMeta(meta);
 
         return item;
@@ -349,7 +349,7 @@ public class AutominerEnchantGUI {
                 plugin.getAutominerGUI().openMainMenu(player);
             }
             case "open_cristal_apply" -> {
-//                openCristalApplicationMenu(player, autominerUuid);
+                openCristalApplicationMenu(player, value);
             }
         }
     }

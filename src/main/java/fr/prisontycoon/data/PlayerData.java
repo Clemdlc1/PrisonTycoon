@@ -99,7 +99,7 @@ public class PlayerData {
     private long autominerFuel = 0;
 
     // Monde de minage actuel (A-Z)
-    private String autominerWorld = "A";
+    private String autominerWorld = "a";
 
     // Stockage des ressources minées
     private Map<Material, Long> autominerStoredBlocks = new HashMap<>();
@@ -1789,23 +1789,23 @@ public class PlayerData {
      * Définit le monde de minage
      */
     public void setAutominerWorld(String world) {
-        // Validation du monde (A-Z)
+        // Validation du monde (a-z)
         if (world != null && world.length() == 1 &&
-                world.charAt(0) >= 'A' && world.charAt(0) <= 'Z') {
+                world.charAt(0) >= 'a' && world.charAt(0) <= 'z') {
             this.autominerWorld = world;
         }
     }
 
     /**
-     * Tire un monde aléatoire (A-Z, plus proche de Z = plus rare)
+     * Tire un monde aléatoire (a-z, plus proche de z = plus rare)
      */
     public String rollRandomWorld() {
         Random rand = new Random();
 
-        // Distribution pondérée : A plus commun, Z plus rare
+        // Distribution pondérée : a plus commun, z plus rare
         double[] weights = new double[26];
         for (int i = 0; i < 26; i++) {
-            weights[i] = 1.0 / (i + 2); // A=1/2, B=1/3, ..., Z=1/27
+            weights[i] = 1.0 / (i + 2); // a=1/2, b=1/3, ..., z=1/27
         }
 
         // Sélection pondérée
@@ -1820,11 +1820,11 @@ public class PlayerData {
         for (int i = 0; i < 26; i++) {
             cumulativeWeight += weights[i];
             if (randomValue <= cumulativeWeight) {
-                return String.valueOf((char) ('A' + i));
+                return String.valueOf((char) ('a' + i));
             }
         }
 
-        return "A"; // Fallback
+        return "a"; // Fallback
     }
 
     /**
@@ -1973,7 +1973,7 @@ public class PlayerData {
         // Monde
         Object worldObj = data.get("autominerWorld");
         if (worldObj instanceof String world && world.length() == 1 &&
-                world.charAt(0) >= 'A' && world.charAt(0) <= 'Z') {
+                world.charAt(0) >= 'a' && world.charAt(0) <= 'z') {
             this.autominerWorld = world;
         }
 
@@ -2033,7 +2033,7 @@ public class PlayerData {
         activeAutominers.clear();
         autominersRunning = false;
         autominerFuel = 0;
-        autominerWorld = "A";
+        autominerWorld = "a";
         autominerStoredBlocks.clear();
         autominerStorageCapacity = 10000;
     }

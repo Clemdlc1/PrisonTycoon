@@ -46,6 +46,10 @@ public class GUIListener implements Listener {
                 handleCristalApplicationClick(player, event);
             }
 
+            if (title.contains("Automineurs - Menu")) {
+                handleAutominerPlacementClick(player, event);
+            }
+
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem != null && clickedItem.getType() == Material.ENCHANTED_BOOK &&
                     clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
@@ -169,6 +173,25 @@ public class GUIListener implements Listener {
             plugin.getCristalGUI().refreshCristalGUI(player);
         }
         // Si l'application échoue, les messages d'erreur sont déjà envoyés par applyCristalToPickaxe.
+    }
+
+    private void handleAutominerPlacementClick(Player player, InventoryClickEvent event) {
+        ItemStack clickedItem = event.getCurrentItem();
+
+        if (clickedItem == null || !isAutominer(clickedItem)) {
+            return;
+        }
+
+        event.setCancelled(true);
+
+        if (plugin.getAutominerManager().placeAutominer(player, clickedItem)) {
+            plugin.getAutominerGUI().openMainMenu(player);
+        }
+    }
+
+    private boolean isAutominer(ItemStack item) {
+        if (item == null || item.getItemMeta() == null) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(plugin.getAutominerManager().getUuidKey(), PersistentDataType.STRING);
     }
 
     /**

@@ -93,6 +93,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutoSaveTask autoSaveTask;
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
+    private AutominerTask autominerTask;
 
     public static PrisonTycoon getInstance() {
         return instance;
@@ -387,6 +388,10 @@ public final class PrisonTycoon extends JavaPlugin {
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
         logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
 
+        autominerTask = new AutominerTask(this, autominerManager);
+        autominerTask.runTaskTimerAsynchronously(this, 20L, 20L);
+        logger.info("§7- AutominerTask démarrée (toutes les 20 ticks)");
+
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
             if (moderationManager != null) {
                 moderationManager.cleanupExpiredSanctions();
@@ -434,6 +439,10 @@ public final class PrisonTycoon extends JavaPlugin {
         if (autoUpgradeTask != null) {
             autoUpgradeTask.cancel();
             logger.debug("AutoUpgradeTask arrêtée");
+        }
+        if (autominerTask != null) {
+            autominerTask.cancel();
+            logger.debug("AutominerTask arrêtée");
         }
         if (moderationManager != null) {
             moderationManager.cleanupExpiredSanctions();
@@ -678,6 +687,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public AutominerCondenseGUI getAutominerCondenseGUI() {
         return autominerCondenseGUI;
+    }
+
+    public AutominerTask getAutominerTask() {
+        return autominerTask;
     }
 }
 
