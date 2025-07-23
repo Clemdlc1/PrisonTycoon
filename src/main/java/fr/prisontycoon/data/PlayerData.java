@@ -90,23 +90,6 @@ public class PlayerData {
     private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private int reputation = 0;
-    private Set<String> activeAutominers = new HashSet<>();
-
-    // État de fonctionnement des automineurs
-    private boolean autominersRunning = false;
-
-    // Carburant (têtes de joueur/monstre)
-    private long autominerFuel = 0;
-
-    // Monde de minage actuel (A-Z)
-    private String autominerWorld = "A";
-
-    // Stockage des ressources minées
-    private Map<Material, Long> autominerStoredBlocks = new HashMap<>();
-
-    // Capacité de stockage (évolutive)
-    private long autominerStorageCapacity = 10000; // Démarre à 10k blocs
-
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
