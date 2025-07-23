@@ -2,8 +2,9 @@ package fr.prisontycoon.GUI;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerData;
-import fr.prisontycoon.autominers.AutominerType;
+import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.managers.AutominerManager;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -18,6 +19,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -174,30 +176,28 @@ public class AutominerGUI {
     /**
      * Remplit les emplacements des automineurs placés
      */
-    private void populatePlacedAutominers(Inventory inv, PlayerData playerData) {
-        Set<String> activeAutominers = playerData.getActiveAutominers();
-        String[] autominerUuids = activeAutominers.toArray(new String[0]);
+    private void populatePlacedAutominers(Inventory inv, PlayerData playerData, Player player) {
+        Set<String> activeUuids = playerData.getActiveAutominers();
+        List<AutominerData> activeAutominers = new ArrayList<>();
 
-        // Emplacement 1
-        if (autominerUuids.length > 0) {
-            AutominerData autominer1 = findAutominerDataByUuid(autominerUuids[0]);
-            if (autominer1 != null) {
-                inv.setItem(AUTOMINER_1_SLOT, createPlacedAutominerItem(autominer1, 1));
-            } else {
-                inv.setItem(AUTOMINER_1_SLOT, createEmptySlotItem(1));
+        // Find autominer data from player's inventory based on active UUIDs
+        for (String uuid : activeUuids) {
+            AutominerData data = findAutominerDataByUuid(player, uuid);
+            if (data != null) {
+                activeAutominers.add(data);
             }
+        }
+
+        // Slot 1
+        if (activeAutominers.size() > 0) {
+            inv.setItem(AUTOMINER_1_SLOT, createPlacedAutominerItem(activeAutominers.get(0), 1));
         } else {
             inv.setItem(AUTOMINER_1_SLOT, createEmptySlotItem(1));
         }
 
-        // Emplacement 2
-        if (autominerUuids.length > 1) {
-            AutominerData autominer2 = findAutominerDataByUuid(autominerUuids[1]);
-            if (autominer2 != null) {
-                inv.setItem(AUTOMINER_2_SLOT, createPlacedAutominerItem(autominer2, 2));
-            } else {
-                inv.setItem(AUTOMINER_2_SLOT, createEmptySlotItem(2));
-            }
+        // Slot 2
+        if (activeAutominers.size() > 1) {
+            inv.setItem(AUTOMINER_2_SLOT, createPlacedAutominerItem(activeAutominers.get(1), 2));
         } else {
             inv.setItem(AUTOMINER_2_SLOT, createEmptySlotItem(2));
         }
@@ -434,6 +434,14 @@ public class AutominerGUI {
                     upgradeWorld(player);
                 }
             }
+            case "manage_autominer" -> {
+                if (clickType.isShiftClick()) {
+                    plugin.getAutominerManager().removeAutominer(player, value);
+                    openMainMenu(player);
+                } else {
+                    plugin.getAutominerEnchantGUI().openEnchantMenu(player, value);
+                }
+            }
             case "open_fuel_menu" -> {
                 plugin.getAutominerFuelGUI().openFuelMenu(player);
             }
@@ -449,14 +457,14 @@ public class AutominerGUI {
     /**
      * Place un automineur depuis la main du joueur
      */
-    private void placeAutominerFromHand(Player player, int slotNumber) {
-        ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (handItem.getType() == Material.AIR) {
+    private void placeAutominerFromInventory(Player player, int slotNumber) {
+        ItemStack clickedItem = player.getOpenInventory().getCursor();
+        if (clickedItem == null || clickedItem.getType() == Material.AIR) {
             player.sendMessage("§c❌ Vous devez tenir un automineur en main!");
             return;
         }
 
-        AutominerData data = AutominerData.fromItemStack(handItem,
+        AutominerData data = AutominerData.fromItemStack(clickedItem,
                 plugin.getAutominerManager().getUuidKey(),
                 plugin.getAutominerManager().getTypeKey(),
                 plugin.getAutominerManager().getEnchantKey(),
@@ -468,7 +476,7 @@ public class AutominerGUI {
         }
 
         if (plugin.getAutominerManager().placeAutominer(player, data)) {
-            handItem.setAmount(handItem.getAmount() - 1); // Consommer l'item
+            clickedItem.setAmount(clickedItem.getAmount() - 1); // Consommer l'item
             openMainMenu(player); // Refresh
         }
     }
@@ -561,24 +569,15 @@ public class AutominerGUI {
     }
 
     private void addWorldBlocksToLore(List<String> lore, String worldName) {
-        // Utilise MineData pour obtenir les blocs du monde
-        try {
-            var mineData = plugin.getConfigManager().getMineData("mine-" + worldName);
-            if (mineData != null && mineData.getBlockComposition() != null) {
-                for (Material material : mineData.getBlockComposition().keySet()) {
-                    String blockName = material.name().toLowerCase().replace("_", " ");
-                    var blockValue = plugin.getConfigManager().getBlockValue(material);
-                    if (blockValue != null) {
-                        lore.add("§7▸ " + capitalize(blockName) + " (§6" + blockValue.getCoins() + " coins§7)");
-                    } else {
-                        lore.add("§7▸ " + capitalize(blockName));
-                    }
-                }
-            } else {
-                lore.add("§7▸ Informations non disponibles");
+        MineData mineData = plugin.getMineManager().getMine("mine-" + worldName.toLowerCase());
+        if (mineData != null) {
+            for (Map.Entry<Material, Double> entry : mineData.getBlockComposition().entrySet()) {
+                Material material = entry.getKey();
+                long sellPrice = plugin.getConfigManager().getSellPrice(material);
+                lore.add("§7- " + capitalize(material.name().replace("_", " ")) + " (§6" + sellPrice + " coins§7)");
             }
-        } catch (Exception e) {
-            lore.add("§7▸ Erreur lors du chargement");
+        } else {
+            lore.add("§cMonde invalide");
         }
     }
 
@@ -594,30 +593,22 @@ public class AutominerGUI {
     }
 
     private String generateRandomWorld(String currentWorld) {
-        char currentChar = currentWorld.charAt(0);
-        if (currentChar >= 'z') return currentWorld; // Déjà au maximum
-
-        // Plus c'est proche de 'z', plus c'est rare
-        double rarity = Math.random();
-        char newChar = currentChar;
-
-        // Probabilité décroissante d'obtenir des mondes plus avancés
-        for (char c = (char)(currentChar + 1); c <= 'z'; c++) {
-            double threshold = Math.pow(0.7, c - currentChar); // Probabilité décroissante
-            if (rarity < threshold) {
-                newChar = c;
-                break;
-            }
-        }
-
-        return String.valueOf(newChar);
+        Random rand = new Random();
+        char randomChar = (char) ('a' + rand.nextInt(26));
+        return String.valueOf(randomChar).toUpperCase();
     }
 
     // Méthodes de recherche
-    private AutominerData findAutominerDataByUuid(String uuid) {
-        // Recherche dans l'inventaire du joueur actuel
-        // Cette méthode devrait être améliorée pour chercher directement dans la PlayerData
-        // ou dans un cache des automineurs
-        return null; // Placeholder - serait implémenté avec un système de cache
+    private AutominerData findAutominerDataByUuid(Player player, String uuid) {
+        AutominerManager am = plugin.getAutominerManager();
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && am.isAutominer(item)) {
+                String itemUuid = item.getItemMeta().getPersistentDataContainer().get(am.getUuidKey(), PersistentDataType.STRING);
+                if (uuid.equals(itemUuid)) {
+                    return AutominerData.fromItemStack(item, am.getUuidKey(), am.getTypeKey(), am.getEnchantKey(), am.getCristalKey());
+                }
+            }
+        }
+        return null;
     }
 }
