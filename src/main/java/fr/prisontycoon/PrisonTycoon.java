@@ -72,6 +72,10 @@ public final class PrisonTycoon extends JavaPlugin {
     private RankupCommand rankupCommand;
     private BoostGUI boostGUI;
     private AutominerGUI autominerGUI;
+    private AutominerEnchantGUI autominerEnchantGUI;
+    private AutominerFuelGUI autominerFuelGUI;
+    private AutominerStorageGUI autominerStorageGUI;
+    private AutominerCondenseGUI autominerCondenseGUI;
 
     //cristaux
     private CristalManager cristalManager;
@@ -243,6 +247,10 @@ public final class PrisonTycoon extends JavaPlugin {
         prestigeGUI = new PrestigeGUI(this);
         boostGUI = new BoostGUI(this);
         autominerGUI = new AutominerGUI(this);
+        autominerEnchantGUI = new AutominerEnchantGUI(this);
+        autominerFuelGUI = new AutominerFuelGUI(this);
+        autominerStorageGUI = new AutominerStorageGUI(this);
+        autominerCondenseGUI = new AutominerCondenseGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -654,6 +662,22 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public AutominerGUI getAutominerGUI() {
         return autominerGUI;
+    }
+
+    public AutominerEnchantGUI getAutominerEnchantGUI() {
+        return autominerEnchantGUI;
+    }
+
+    public AutominerFuelGUI getAutominerFuelGUI() {
+        return autominerFuelGUI;
+    }
+
+    public AutominerStorageGUI getAutominerStorageGUI() {
+        return autominerStorageGUI;
+    }
+
+    public AutominerCondenseGUI getAutominerCondenseGUI() {
+        return autominerCondenseGUI;
     }
 }
 
