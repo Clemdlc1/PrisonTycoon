@@ -156,7 +156,7 @@ public class EnchantmentManager {
         int baseBonusBlocks = guaranteedBonus + extraBlocks;
 
         // MODIFIÉ: Applique le bonus du cristal MineralGreed
-        int finalBonusBlocks = plugin.getGlobalBonusManager().applyMineralGreedBonus(player, baseBonusBlocks);
+        int finalBonusBlocks = plugin.getGlobalBonusManager().applyFortuneBonus(player, baseBonusBlocks);
 
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
                 ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
@@ -287,7 +287,7 @@ public class EnchantmentManager {
 
         // MODIFIÉ: Utilise le GlobalBonusManager pour l'efficacité de combustion
         double baseCombustionMultiplier = playerData.getCombustionMultiplier();
-        double combustionMultiplier = plugin.getGlobalBonusManager().getCombustionEfficiency(player, baseCombustionMultiplier);
+        double combustionMultiplier = plugin.getCristalBonusHelper().applyCombustionEfficiency(player, baseCombustionMultiplier);
 
         double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
         BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
@@ -304,7 +304,7 @@ public class EnchantmentManager {
                 long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * combustionMultiplier * abundanceMultiplier);
 
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                long finalGains = plugin.getGlobalBonusManager().applyTokenGreedBonus(player, baseGains);
+                long finalGains = plugin.getGlobalBonusManager().applyTokenBonus(player, baseGains);
 
                 playerData.addTokensViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
@@ -324,7 +324,7 @@ public class EnchantmentManager {
                 long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
 
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                long finalGains = plugin.getGlobalBonusManager().applyExpGreedBonus(player, baseGains);
+                long finalGains = plugin.getGlobalBonusManager().applyExperienceBonus(player, baseGains);
 
                 playerData.addExperienceViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
@@ -346,7 +346,7 @@ public class EnchantmentManager {
                 long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
 
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                long finalGains = plugin.getGlobalBonusManager().applyMoneyGreedBonus(player, baseGains);
+                long finalGains = plugin.getGlobalBonusManager().applyMoneyBonus(player, baseGains);
 
                 playerData.addCoinsViaPickaxe(finalGains);
                 playerData.addGreedTrigger();
@@ -426,7 +426,7 @@ public class EnchantmentManager {
             long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * penaltyMultiplier);
 
             // MODIFIÉ: Utilise le GlobalBonusManager même avec la malus
-            long finalGains = plugin.getGlobalBonusManager().applyTokenGreedBonus(player, baseGains);
+            long finalGains = plugin.getGlobalBonusManager().applyTokenBonus(player, baseGains);
 
             plugin.getEconomyManager().addTokens(player, finalGains);
             playerData.addGreedTrigger();

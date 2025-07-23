@@ -1,6 +1,8 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.boosts.BoostType;
+import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.configuration.ConfigurationSection;
@@ -281,6 +283,34 @@ public class PlayerDataManager {
                 data.setReputation(savedReputation);
             }
 
+            if (config.contains("boosts")) {
+                Map<String, PlayerBoost> loadedBoosts = new HashMap<>();
+                for (String boostKey : config.getConfigurationSection("boosts").getKeys(false)) {
+                    try {
+                        String typeName = config.getString("boosts." + boostKey + ".type");
+                        long startTime = config.getLong("boosts." + boostKey + ".start-time");
+                        long endTime = config.getLong("boosts." + boostKey + ".end-time");
+                        double bonus = config.getDouble("boosts." + boostKey + ".bonus");
+
+                        BoostType type = BoostType.valueOf(typeName);
+                        PlayerBoost boost = new PlayerBoost(type, startTime, endTime, bonus);
+
+                        // Seulement charge les boosts encore actifs
+                        if (boost.isActive()) {
+                            loadedBoosts.put(boostKey, boost);
+                        }
+                    } catch (Exception e) {
+                        plugin.getPluginLogger().warning("Erreur chargement boost " + boostKey +
+                                " pour " + playerName + ": " + e.getMessage());
+                    }
+                }
+
+                if (!loadedBoosts.isEmpty()) {
+                    data.setActiveBoosts(loadedBoosts);
+                    plugin.getPluginLogger().debug("Boosts chargés pour " + playerName + ": " + loadedBoosts.size());
+                }
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -454,6 +484,18 @@ public class PlayerDataManager {
             if (!chosenRewards.isEmpty()) {
                 for (Map.Entry<Integer, String> entry : chosenRewards.entrySet()) {
                     config.set("prestige.chosen-special-rewards." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            Map<String, PlayerBoost> boosts = data.getActiveBoosts();
+            if (!boosts.isEmpty()) {
+                for (Map.Entry<String, PlayerBoost> entry : boosts.entrySet()) {
+                    PlayerBoost boost = entry.getValue();
+                    String path = "boosts." + entry.getKey();
+                    config.set(path + ".type", boost.getType().name());
+                    config.set(path + ".start-time", boost.getStartTime());
+                    config.set(path + ".end-time", boost.getEndTime());
+                    config.set(path + ".bonus", boost.getBonusPercentage());
                 }
             }
 

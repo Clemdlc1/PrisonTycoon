@@ -2,16 +2,16 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.cristaux.CristalType;
+import fr.prisontycoon.boosts.BoostType;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
- * Gestionnaire global des bonus pour tous les enchantements
- * Centralise le calcul des bonus venant de différentes sources (cristaux, futurs bonus, etc.)
+ * Gestionnaire unifié des bonus (cristaux, talents, boosts)
+ * Version refactorisée avec types de bonus simplifiés
  */
 public class GlobalBonusManager {
 
@@ -22,159 +22,280 @@ public class GlobalBonusManager {
     }
 
     /**
-     * Calcule le bonus total pour un type donné EN INCLUANT LES TALENTS DE MÉTIERS
-     * MODIFICATION de la méthode existante
+     * Types de bonus unifiés - Un seul type par finalité
      */
-    public double getTotalBonusMultiplier(Player player, BonusType bonusType) {
-        double totalBonus = 0.0;
+    public enum BonusCategory {
+        TOKEN_BONUS("Token Bonus", "💎", "§b", "Augmente les gains de tokens"),
+        MONEY_BONUS("Money Bonus", "💰", "§6", "Augmente les gains de coins"),
+        EXPERIENCE_BONUS("Experience Bonus", "⭐", "§a", "Augmente les gains d'expérience"),
+        SELL_BONUS("Sell Bonus", "💸", "§e", "Augmente les prix de vente"),
+        FORTUNE_BONUS("Fortune Bonus", "⛏️", "§9", "Augmente l'effet Fortune"),
+        JOB_XP_BONUS("Job XP Bonus", "🔨", "§d", "Augmente les gains d'XP métier"),
 
-        // 1. Bonus des cristaux (système existant)
-        if (bonusType.getAssociatedCristal() != null) {
-            totalBonus += plugin.getCristalManager().getTotalCristalBonus(player, bonusType.getAssociatedCristal());
+        // Bonus spéciaux (sans équivalent boost)
+        BEACON_MULTIPLIER("Beacon Multiplier", "🔥", "§c", "Multiplicateur de beacons"),
+        TAX_REDUCTION("Tax Reduction", "💳", "§5", "Réduction des taxes"),
+        OUTPOST_BONUS("Outpost Bonus", "🏰", "§3", "Bonus des avant-postes"),
+        PVP_MERCHANT_REDUCTION("PvP Merchant Reduction", "⚔️", "§4", "Réduction prix marchand PvP");
+
+        private final String displayName;
+        private final String emoji;
+        private final String color;
+        private final String description;
+
+        BonusCategory(String displayName, String emoji, String color, String description) {
+            this.displayName = displayName;
+            this.emoji = emoji;
+            this.color = color;
+            this.description = description;
+        }
+
+        public String getDisplayName() { return displayName; }
+        public String getEmoji() { return emoji; }
+        public String getColor() { return color; }
+        public String getDescription() { return description; }
+        public String getFormattedName() { return color + emoji + " " + displayName; }
+    }
+
+    /**
+     * Détails des sources d'un bonus
+     */
+    public static class BonusSourceDetails {
+        private double cristalBonus = 0.0;
+        private double professionBonus = 0.0;
+        private double prestigeBonus = 0.0;
+        private double temporaryBoostBonus = 0.0;
+        private Map<String, Double> detailedSources = new HashMap<>();
+
+        public double getTotalBonus() {
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus;
+        }
+
+        public double getTotalMultiplier() {
+            return 1.0 + (getTotalBonus() / 100.0);
+        }
+
+        // Getters
+        public double getCristalBonus() { return cristalBonus; }
+        public double getProfessionBonus() { return professionBonus; }
+        public double getPrestigeBonus() { return prestigeBonus; }
+        public double getTemporaryBoostBonus() { return temporaryBoostBonus; }
+        public Map<String, Double> getDetailedSources() { return detailedSources; }
+
+        // Setters
+        public void setCristalBonus(double cristalBonus) { this.cristalBonus = cristalBonus; }
+        public void setProfessionBonus(double professionBonus) { this.professionBonus = professionBonus; }
+        public void setPrestigeBonus(double prestigeBonus) { this.prestigeBonus = prestigeBonus; }
+        public void setTemporaryBoostBonus(double temporaryBoostBonus) { this.temporaryBoostBonus = temporaryBoostBonus; }
+
+        public void addDetailedSource(String source, double bonus) {
+            detailedSources.put(source, bonus);
+        }
+    }
+
+    /**
+     * MÉTHODE PRINCIPALE : Calcule le multiplicateur total pour une catégorie de bonus
+     */
+    public double getTotalBonusMultiplier(Player player, BonusCategory category) {
+        BonusSourceDetails details = getBonusSourcesDetails(player, category);
+        return details.getTotalMultiplier();
+    }
+
+    /**
+     * MÉTHODE UTILITAIRE : Obtient les détails complets des sources d'un bonus
+     * Cette méthode simplifie l'affichage dans BoostGUI
+     */
+    public BonusSourceDetails getBonusSourcesDetails(Player player, BonusCategory category) {
+        BonusSourceDetails details = new BonusSourceDetails();
+
+        // 1. Bonus des cristaux
+        double cristalBonus = getCristalBonus(player, category);
+        details.setCristalBonus(cristalBonus);
+        if (cristalBonus > 0) {
+            details.addDetailedSource("Cristaux " + getCristalTypeName(category), cristalBonus);
         }
 
         // 2. Bonus des talents de métiers
-        totalBonus += getProfessionTalentBonus(player, bonusType);
+        double professionBonus = getProfessionTalentBonus(player, category);
+        details.setProfessionBonus(professionBonus);
+        if (professionBonus > 0) {
+            String activeProfession = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()).getActiveProfession();
+            details.addDetailedSource("Talent " + (activeProfession != null ? activeProfession : "métier"), professionBonus);
+        }
 
-        // 3. NOUVEAU: Bonus des talents de prestige
-        totalBonus += getPrestigeTalentBonus(player, bonusType);
+        // 3. Bonus des talents de prestige
+        double prestigeBonus = getPrestigeTalentBonus(player, category);
+        details.setPrestigeBonus(prestigeBonus);
+        if (prestigeBonus > 0) {
+            details.addDetailedSource("Talent Prestige", prestigeBonus);
+        }
 
-        return 1.0 + (totalBonus / 100.0);
+        // 4. Bonus des boosts temporaires
+        double boostBonus = getTemporaryBoostBonus(player, category);
+        details.setTemporaryBoostBonus(boostBonus);
+        if (boostBonus > 0) {
+            details.addDetailedSource("Boosts Temporaires", boostBonus);
+        }
+
+        return details;
     }
 
     /**
-     * Applique le bonus TokenGreed sur une valeur de base
+     * Obtient tous les bonus actifs d'un joueur
      */
-    public long applyTokenGreedBonus(Player player, long baseTokens) {
-        if (baseTokens <= 0) return baseTokens;
+    public Map<BonusCategory, BonusSourceDetails> getAllActiveBonuses(Player player) {
+        Map<BonusCategory, BonusSourceDetails> bonuses = new HashMap<>();
 
-        double multiplier = getTotalBonusMultiplier(player, BonusType.TOKEN_GREED);
-        return Math.round(baseTokens * multiplier);
-    }
-
-    /**
-     * Applique le bonus MoneyGreed sur une valeur de base
-     */
-    public long applyMoneyGreedBonus(Player player, long baseMoney) {
-        if (baseMoney <= 0) return baseMoney;
-
-        double multiplier = getTotalBonusMultiplier(player, BonusType.MONEY_GREED);
-        return Math.round(baseMoney * multiplier);
-    }
-
-    /**
-     * Applique le bonus ExpGreed sur une valeur de base
-     */
-    public long applyExpGreedBonus(Player player, long baseExp) {
-        if (baseExp <= 0) return baseExp;
-
-        double multiplier = getTotalBonusMultiplier(player, BonusType.EXP_GREED);
-        return Math.round(baseExp * multiplier);
-    }
-
-    /**
-     * Applique le bonus SellBonus sur un prix de vente
-     */
-    public double applySellBonus(Player player, double basePrice) {
-        if (basePrice <= 0) return basePrice;
-
-        double multiplier = getTotalBonusMultiplier(player, BonusType.SELL_BONUS) + getTotalBonusMultiplier(player, BonusType.SELL_BOOST);
-        return basePrice * multiplier;
-    }
-
-    /**
-     * Applique le bonus MineralGreed (Fortune) sur une valeur
-     */
-    public int applyMineralGreedBonus(Player player, int baseFortune) {
-        if (baseFortune <= 0) return baseFortune;
-
-        double multiplier = getTotalBonusMultiplier(player, BonusType.MINERAL_GREED);
-        return Math.round(baseFortune * (float) multiplier);
-    }
-
-    /**
-     * Obtient les détails de tous les bonus actifs pour un joueur
-     */
-    public Map<BonusType, Double> getActiveBonuses(Player player) {
-        Map<BonusType, Double> bonuses = new HashMap<>();
-
-        for (BonusType bonusType : BonusType.values()) {
-            double multiplier = getTotalBonusMultiplier(player, bonusType);
-            if (multiplier > 1.0) {
-                bonuses.put(bonusType, multiplier);
+        for (BonusCategory category : BonusCategory.values()) {
+            BonusSourceDetails details = getBonusSourcesDetails(player, category);
+            if (details.getTotalBonus() > 0) {
+                bonuses.put(category, details);
             }
         }
 
         return bonuses;
     }
 
+    // ========================================
+    // MÉTHODES D'APPLICATION DES BONUS
+    // ========================================
+
     /**
-     * NOUVELLE MÉTHODE: Calcule le bonus des talents de métiers pour un type donné
+     * Applique le bonus Token sur une valeur de base
      */
-    private double getProfessionTalentBonus(Player player, BonusType bonusType) {
+    public long applyTokenBonus(Player player, long baseTokens) {
+        if (baseTokens <= 0) return baseTokens;
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.TOKEN_BONUS);
+        return Math.round(baseTokens * multiplier);
+    }
+
+    /**
+     * Applique le bonus Money sur une valeur de base
+     */
+    public long applyMoneyBonus(Player player, long baseMoney) {
+        if (baseMoney <= 0) return baseMoney;
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.MONEY_BONUS);
+        return Math.round(baseMoney * multiplier);
+    }
+
+    /**
+     * Applique le bonus Experience sur une valeur de base
+     */
+    public long applyExperienceBonus(Player player, long baseExp) {
+        if (baseExp <= 0) return baseExp;
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.EXPERIENCE_BONUS);
+        return Math.round(baseExp * multiplier);
+    }
+
+    /**
+     * Applique le bonus Sell sur un prix de vente
+     */
+    public double applySellBonus(Player player, double basePrice) {
+        if (basePrice <= 0) return basePrice;
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.SELL_BONUS);
+        return basePrice * multiplier;
+    }
+
+    /**
+     * Applique le bonus Fortune sur une valeur
+     */
+    public int applyFortuneBonus(Player player, int baseFortune) {
+        if (baseFortune <= 0) return baseFortune;
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.FORTUNE_BONUS);
+        return Math.round(baseFortune * (float) multiplier);
+    }
+
+    /**
+     * Applique le bonus Job XP sur les gains d'XP métier
+     */
+    public long applyJobXPBonus(Player player, long baseJobXP) {
+        if (baseJobXP <= 0) return baseJobXP;
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.JOB_XP_BONUS);
+        return Math.round(baseJobXP * multiplier);
+    }
+
+    /**
+     * Applique le multiplicateur de beacons
+     */
+    public double applyBeaconMultiplier(Player player, double baseEfficiency) {
+        double multiplier = getTotalBonusMultiplier(player, BonusCategory.BEACON_MULTIPLIER);
+        return baseEfficiency * multiplier;
+    }
+
+    // ========================================
+    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
+    // ========================================
+
+    /**
+     * Calcule le bonus des cristaux pour une catégorie
+     */
+    private double getCristalBonus(Player player, BonusCategory category) {
+        if (plugin.getCristalManager() == null) return 0.0;
+
+        CristalType cristalType = getCristalTypeForCategory(category);
+        if (cristalType == null) return 0.0;
+
+        return plugin.getCristalManager().getTotalCristalBonus(player, cristalType);
+    }
+
+    /**
+     * Calcule le bonus des talents de métiers pour une catégorie
+     */
+    private double getProfessionTalentBonus(Player player, BonusCategory category) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String activeProfession = playerData.getActiveProfession();
 
-        if (activeProfession == null) {
-            return 0.0;
-        }
+        if (activeProfession == null) return 0.0;
 
         double bonus = 0.0;
 
-        // Bonus selon le métier actif et le type de bonus
         switch (activeProfession) {
             case "mineur" -> {
-                switch (bonusType) {
-                    case EXP_GREED -> {
-                        int talentLevel = playerData.getTalentLevel("mineur", "exp_greed");
-                        if (talentLevel > 0) {
-                            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("mineur");
-                            ProfessionManager.ProfessionTalent talent = profession.getTalent("exp_greed");
-                            bonus += talent.getValueAtLevel(talentLevel);
-                        }
-                    }
-                    case TOKEN_GREED -> {
+                switch (category) {
+                    case TOKEN_BONUS -> {
                         int talentLevel = playerData.getTalentLevel("mineur", "token_greed");
                         if (talentLevel > 0) {
-                            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("mineur");
-                            ProfessionManager.ProfessionTalent talent = profession.getTalent("token_greed");
+                            var profession = plugin.getProfessionManager().getProfession("mineur");
+                            var talent = profession.getTalent("token_greed");
                             bonus += talent.getValueAtLevel(talentLevel);
                         }
                     }
-                    case MONEY_GREED -> {
+                    case EXPERIENCE_BONUS -> {
+                        int talentLevel = playerData.getTalentLevel("mineur", "exp_greed");
+                        if (talentLevel > 0) {
+                            var profession = plugin.getProfessionManager().getProfession("mineur");
+                            var talent = profession.getTalent("exp_greed");
+                            bonus += talent.getValueAtLevel(talentLevel);
+                        }
+                    }
+                    case MONEY_BONUS -> {
                         int talentLevel = playerData.getTalentLevel("mineur", "money_greed");
                         if (talentLevel > 0) {
-                            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("mineur");
-                            ProfessionManager.ProfessionTalent talent = profession.getTalent("money_greed");
+                            var profession = plugin.getProfessionManager().getProfession("mineur");
+                            var talent = profession.getTalent("money_greed");
                             bonus += talent.getValueAtLevel(talentLevel);
                         }
                     }
                 }
             }
             case "commercant" -> {
-                switch (bonusType) {
-                    case SELL_BOOST -> {
-                        int talentLevel = playerData.getTalentLevel("commercant", "sell_boost");
-                        if (talentLevel > 0) {
-                            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("commercant");
-                            ProfessionManager.ProfessionTalent talent = profession.getTalent("sell_boost");
-                            bonus += talent.getValueAtLevel(talentLevel);
-                        }
+                if (category == BonusCategory.SELL_BONUS) {
+                    int talentLevel = playerData.getTalentLevel("commercant", "sell_boost");
+                    if (talentLevel > 0) {
+                        var profession = plugin.getProfessionManager().getProfession("commercant");
+                        var talent = profession.getTalent("sell_boost");
+                        bonus += talent.getValueAtLevel(talentLevel);
                     }
-                    // Négociations et Vitrines sont gérées ailleurs car ce ne sont pas des multiplicateurs
                 }
             }
             case "guerrier" -> {
-                switch (bonusType) {
-                    case BEACON_MULTIPLIER -> {
-                        int talentLevel = playerData.getTalentLevel("guerrier", "beacon_multiplier");
-                        if (talentLevel > 0) {
-                            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("guerrier");
-                            ProfessionManager.ProfessionTalent talent = profession.getTalent("beacon_multiplier");
-                            int multiplierValue = talent.getValueAtLevel(talentLevel);
-                            // Convertit le multiplicateur en pourcentage de bonus
-                            bonus += (multiplierValue - 1) * 100; // x2 devient +100%, x3 devient +200%
-                        }
+                if (category == BonusCategory.BEACON_MULTIPLIER) {
+                    int talentLevel = playerData.getTalentLevel("guerrier", "beacon_multiplier");
+                    if (talentLevel > 0) {
+                        var profession = plugin.getProfessionManager().getProfession("guerrier");
+                        var talent = profession.getTalent("beacon_multiplier");
+                        int multiplierValue = talent.getValueAtLevel(talentLevel);
+                        bonus += (multiplierValue - 1) * 100; // x2 devient +100%
                     }
                 }
             }
@@ -183,18 +304,42 @@ public class GlobalBonusManager {
         return bonus;
     }
 
-    private double getPrestigeTalentBonus(Player player, BonusType bonusType) {
+    /**
+     * Calcule le bonus des talents de prestige pour une catégorie
+     */
+    private double getPrestigeTalentBonus(Player player, BonusCategory category) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        double bonus = 0.0;
 
+        // Utilise getPrestigeTalents() pour obtenir tous les talents actifs
         Map<PrestigeTalent, Integer> talents = playerData.getPrestigeTalents();
 
-        for (Map.Entry<PrestigeTalent, Integer> entry : talents.entrySet()) {
-            PrestigeTalent talent = entry.getKey();
-            int level = entry.getValue();
+        double bonus = 0.0;
 
-            if (level > 0) {
-                bonus += calculateTalentBonus(talent, level, bonusType);
+        // Calcule le bonus selon la catégorie demandée
+        switch (category) {
+            case MONEY_BONUS -> {
+                int level = talents.getOrDefault(PrestigeTalent.MONEY_GREED_BONUS, 0);
+                bonus = level * 3.0; // +3% par niveau
+            }
+            case TOKEN_BONUS -> {
+                int level = talents.getOrDefault(PrestigeTalent.TOKEN_GREED_BONUS, 0);
+                bonus = level * 3.0; // +3% par niveau
+            }
+            case SELL_BONUS -> {
+                int level = talents.getOrDefault(PrestigeTalent.SELL_PRICE_BONUS, 0);
+                bonus = level * 3.0; // +3% par niveau
+            }
+            case OUTPOST_BONUS -> {
+                int level = talents.getOrDefault(PrestigeTalent.OUTPOST_BONUS, 0);
+                bonus = level * 3.0; // +3% par niveau
+            }
+            case TAX_REDUCTION -> {
+                int level = talents.getOrDefault(PrestigeTalent.TAX_REDUCTION, 0);
+                bonus = level * 1.0; // -1% par niveau (réduction)
+            }
+            case PVP_MERCHANT_REDUCTION -> {
+                int level = talents.getOrDefault(PrestigeTalent.PVP_MERCHANT_REDUCTION, 0);
+                bonus = level * 1.0; // -1% par niveau (réduction)
             }
         }
 
@@ -202,141 +347,61 @@ public class GlobalBonusManager {
     }
 
     /**
-     * Calcule le bonus d'un talent spécifique pour un type de bonus
+     * Calcule le bonus des boosts temporaires pour une catégorie
      */
-    private double calculateTalentBonus(PrestigeTalent talent, int level, BonusType bonusType) {
-        switch (talent) {
-            case MONEY_GREED_BONUS:
-                if (bonusType == BonusType.PRESTIGE_MONEY_GREED) return level * 3.0;
-                break;
-            case SELL_PRICE_BONUS:
-                if (bonusType == BonusType.PRESTIGE_SELL_BONUS) return level * 3.0;
-                break;
-            case OUTPOST_BONUS:
-                if (bonusType == BonusType.PRESTIGE_OUTPOST_BONUS) return level * 3.0;
-                break;
-            case TOKEN_GREED_BONUS:
-                if (bonusType == BonusType.PRESTIGE_TOKEN_GREED) return level * 3.0;
-                break;
-            case TAX_REDUCTION:
-                if (bonusType == BonusType.PRESTIGE_TAX_REDUCTION) return level * 1.0;
-                break;
-            case PVP_MERCHANT_REDUCTION:
-                if (bonusType == BonusType.PRESTIGE_PVP_MERCHANT_REDUCTION) return level * 1.0;
-                break;
-        }
-        return 0.0;
+    private double getTemporaryBoostBonus(Player player, BonusCategory category) {
+        if (plugin.getBoostManager() == null) return 0.0;
+
+        BoostType boostType = getBoostTypeForCategory(category);
+        if (boostType == null) return 0.0;
+
+        return plugin.getBoostManager().getTotalBoostBonus(player, boostType);
     }
 
+    // ========================================
+    // MÉTHODES UTILITAIRES DE MAPPING
+    // ========================================
 
     /**
-     * NOUVELLE MÉTHODE: Obtient le bonus de négociations (générateurs) pour les commerçants
+     * Mappe une catégorie de bonus vers un type de cristal
      */
-    public double getNegotiationsBonus(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String activeProfession = playerData.getActiveProfession();
-
-        if (!"commercant".equals(activeProfession)) {
-            return 0.0;
-        }
-
-        int talentLevel = playerData.getTalentLevel("commercant", "negotiations");
-        if (talentLevel > 0) {
-            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("commercant");
-            ProfessionManager.ProfessionTalent talent = profession.getTalent("negotiations");
-            return talent.getValueAtLevel(talentLevel);
-        }
-
-        return 0.0;
+    private CristalType getCristalTypeForCategory(BonusCategory category) {
+        return switch (category) {
+            case TOKEN_BONUS -> CristalType.TOKEN_BOOST;
+            case MONEY_BONUS -> CristalType.MONEY_BOOST;
+            case EXPERIENCE_BONUS -> CristalType.XP_BOOST;
+            case SELL_BONUS -> CristalType.SELL_BOOST;
+            case FORTUNE_BONUS -> CristalType.MINERAL_GREED;
+            default -> null;
+        };
     }
 
     /**
-     * NOUVELLE MÉTHODE: Obtient le nombre de vitrines supplémentaires pour les commerçants
+     * Mappe une catégorie de bonus vers un type de boost
      */
-    public int getExtraShopSlots(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String activeProfession = playerData.getActiveProfession();
-
-        if (!"commercant".equals(activeProfession)) {
-            return 0;
-        }
-
-        int talentLevel = playerData.getTalentLevel("commercant", "vitrines_sup");
-        if (talentLevel > 0) {
-            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("commercant");
-            ProfessionManager.ProfessionTalent talent = profession.getTalent("vitrines_sup");
-            return talent.getValueAtLevel(talentLevel);
-        }
-
-        return 0;
+    private BoostType getBoostTypeForCategory(BonusCategory category) {
+        return switch (category) {
+            case TOKEN_BONUS -> BoostType.TOKEN_GREED;
+            case MONEY_BONUS -> BoostType.MONEY_GREED;
+            case EXPERIENCE_BONUS -> BoostType.EXP_GREED;
+            case SELL_BONUS -> BoostType.SELL_BOOST;
+            case FORTUNE_BONUS -> BoostType.MINERAL_GREED;
+            case JOB_XP_BONUS -> BoostType.JOB_XP_BOOST;
+            default -> null;
+        };
     }
 
     /**
-     * NOUVELLE MÉTHODE: Obtient la réduction de prix PvP pour les guerriers
+     * Obtient le nom du type de cristal pour l'affichage
      */
-    public double getPvPDiscountBonus(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String activeProfession = playerData.getActiveProfession();
-
-        if (!"guerrier".equals(activeProfession)) {
-            return 0.0;
-        }
-
-        int talentLevel = playerData.getTalentLevel("guerrier", "soldes");
-        if (talentLevel > 0) {
-            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("guerrier");
-            ProfessionManager.ProfessionTalent talent = profession.getTalent("soldes");
-            return talent.getValueAtLevel(talentLevel);
-        }
-
-        return 0.0;
+    private String getCristalTypeName(BonusCategory category) {
+        CristalType cristalType = getCristalTypeForCategory(category);
+        return cristalType != null ? cristalType.name() : "Unknown";
     }
 
-    /**
-     * NOUVELLE MÉTHODE: Obtient le bonus d'avant-poste pour les guerriers
-     */
-    public double getOutpostBonus(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String activeProfession = playerData.getActiveProfession();
-
-        if (!"guerrier".equals(activeProfession)) {
-            return 0.0;
-        }
-
-        int talentLevel = playerData.getTalentLevel("guerrier", "garde");
-        if (talentLevel > 0) {
-            ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession("guerrier");
-            ProfessionManager.ProfessionTalent talent = profession.getTalent("garde");
-            return talent.getValueAtLevel(talentLevel);
-        }
-
-        return 0.0;
-    }
-
-    /**
-     * Obtient le pourcentage de bonus pour un type donné
-     */
-    public double getBonusPercentage(Player player, BonusType bonusType) {
-        double multiplier = getTotalBonusMultiplier(player, bonusType);
-        return (multiplier - 1.0) * 100.0;
-    }
-
-
-    /**
-     * Méthode utilitaire pour les enchantements spéciaux qui ont leurs propres calculs
-     */
-    public int getAbondanceDuration(Player player, int baseDuration) {
-        // Délègue au système de cristaux existant pour maintenir la compatibilité
-        return plugin.getCristalBonusHelper().getAbondanceDuration(player, baseDuration);
-    }
-
-    /**
-     * Méthode utilitaire pour l'efficacité de combustion
-     */
-    public double getCombustionEfficiency(Player player, double baseEfficiency) {
-        // Délègue au système de cristaux existant pour maintenir la compatibilité
-        return plugin.getCristalBonusHelper().applyCombustionEfficiency(player, baseEfficiency);
-    }
+    // ========================================
+    // MÉTHODES DE DEBUG
+    // ========================================
 
     /**
      * Debug: Affiche tous les bonus actifs pour un joueur
@@ -344,54 +409,109 @@ public class GlobalBonusManager {
     public void debugBonuses(Player player) {
         plugin.getPluginLogger().info("=== Bonus Debug pour " + player.getName() + " ===");
 
-        Map<BonusType, Double> activeBonuses = getActiveBonuses(player);
+        Map<BonusCategory, BonusSourceDetails> activeBonuses = getAllActiveBonuses(player);
 
         if (activeBonuses.isEmpty()) {
             plugin.getPluginLogger().info("Aucun bonus actif");
         } else {
-            for (Map.Entry<BonusType, Double> entry : activeBonuses.entrySet()) {
-                double percentage = (entry.getValue() - 1.0) * 100.0;
-                plugin.getPluginLogger().info(entry.getKey().getDisplayName() + ": +" +
-                        String.format("%.1f", percentage) + "% (x" +
-                        String.format("%.3f", entry.getValue()) + ")");
+            for (Map.Entry<BonusCategory, BonusSourceDetails> entry : activeBonuses.entrySet()) {
+                BonusCategory category = entry.getKey();
+                BonusSourceDetails details = entry.getValue();
+
+                plugin.getPluginLogger().info(category.getDisplayName() + ": ×" +
+                        String.format("%.3f", details.getTotalMultiplier()) +
+                        " (+" + String.format("%.1f", details.getTotalBonus()) + "%)");
+
+                // Détails des sources
+                if (details.getCristalBonus() > 0) {
+                    plugin.getPluginLogger().info("  - Cristaux: +" + String.format("%.1f", details.getCristalBonus()) + "%");
+                }
+                if (details.getProfessionBonus() > 0) {
+                    plugin.getPluginLogger().info("  - Métiers: +" + String.format("%.1f", details.getProfessionBonus()) + "%");
+                }
+                if (details.getPrestigeBonus() > 0) {
+                    plugin.getPluginLogger().info("  - Prestige: +" + String.format("%.1f", details.getPrestigeBonus()) + "%");
+                }
+                if (details.getTemporaryBoostBonus() > 0) {
+                    plugin.getPluginLogger().info("  - Boosts: +" + String.format("%.1f", details.getTemporaryBoostBonus()) + "%");
+                }
             }
         }
     }
 
-    public enum BonusType {
-        // Types existants (cristaux)
-        TOKEN_GREED("TokenGreed", CristalType.TOKEN_BOOST),
-        MONEY_GREED("MoneyGreed", CristalType.MONEY_BOOST),
-        EXP_GREED("ExpGreed", CristalType.XP_BOOST),
-        SELL_BONUS("SellBonus", CristalType.SELL_BOOST),
-        MINERAL_GREED("MineralGreed", CristalType.MINERAL_GREED),
+    // ========================================
+    // MÉTHODES UTILITAIRES MIGRÉES DE PLAYERDATA
+    // ========================================
 
-        // NOUVEAUX types pour les métiers
-        SELL_BOOST("SellBoost", null),
-        BEACON_MULTIPLIER("BeaconMultiplier", null),
+    /**
+     * NOUVEAU: Méthode utilitaire unifiée pour obtenir un bonus de prestige spécifique
+     * Remplace les anciennes méthodes getPrestigeXxxBonus() de PlayerData
+     */
+    public double getPrestigeBonus(Player player, BonusCategory category) {
+        return getPrestigeTalentBonus(player, category);
+    }
 
-        // NOUVEAUX types pour le PRESTIGE
-        PRESTIGE_MONEY_GREED("PrestigeMoneyGreed", null),
-        PRESTIGE_TOKEN_GREED("PrestigeTokenGreed", null),
-        PRESTIGE_TAX_REDUCTION("PrestigeTaxReduction", null),
-        PRESTIGE_SELL_BONUS("PrestigeSellBonus", null),
-        PRESTIGE_OUTPOST_BONUS("PrestigeOutpostBonus", null),
-        PRESTIGE_PVP_MERCHANT_REDUCTION("PrestigePvpMerchantReduction", null);
+    /**
+     * MIGRÉ: Calcule le bonus Money Greed total du prestige
+     * Remplace PlayerData.getPrestigeMoneyGreedBonus()
+     */
+    public double getPrestigeMoneyGreedBonus(Player player) {
+        return getPrestigeBonus(player, BonusCategory.MONEY_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
+    }
 
-        private final String displayName;
-        private final CristalType associatedCristal;
+    /**
+     * MIGRÉ: Calcule le bonus Token Greed total du prestige
+     * Remplace PlayerData.getPrestigeTokenGreedBonus()
+     */
+    public double getPrestigeTokenGreedBonus(Player player) {
+        return getPrestigeBonus(player, BonusCategory.TOKEN_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
+    }
 
-        BonusType(String displayName, CristalType associatedCristal) {
-            this.displayName = displayName;
-            this.associatedCristal = associatedCristal;
-        }
+    /**
+     * MIGRÉ: Calcule la réduction de taxe du prestige
+     * Remplace PlayerData.getPrestigeTaxReduction()
+     */
+    public double getPrestigeTaxReduction(Player player) {
+        double reduction = getPrestigeBonus(player, BonusCategory.TAX_REDUCTION) / 100.0; // Retourne en multiplicateur (0.01 pour 1%)
+        return Math.min(reduction, 0.99); // Maximum 99% de réduction
+    }
 
-        public String getDisplayName() {
-            return displayName;
-        }
+    /**
+     * MIGRÉ: Calcule le bonus de prix de vente du prestige
+     * Remplace PlayerData.getPrestigeSellBonus()
+     */
+    public double getPrestigeSellBonus(Player player) {
+        return getPrestigeBonus(player, BonusCategory.SELL_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
+    }
 
-        public CristalType getAssociatedCristal() {
-            return associatedCristal;
-        }
+    /**
+     * NOUVEAU: Calcule le bonus d'avant-poste du prestige
+     */
+    public double getPrestigeOutpostBonus(Player player) {
+        return getPrestigeBonus(player, BonusCategory.OUTPOST_BONUS) / 100.0;
+    }
+
+    /**
+     * NOUVEAU: Calcule la réduction du marchand PvP du prestige
+     */
+    public double getPrestigePvpMerchantReduction(Player player) {
+        return getPrestigeBonus(player, BonusCategory.PVP_MERCHANT_REDUCTION) / 100.0;
+    }
+
+    /**
+     * NOUVEAU: Obtient tous les bonus de prestige d'un joueur
+     * Méthode de commodité pour obtenir tous les bonus en une fois
+     */
+    public Map<String, Double> getAllPrestigeBonuses(Player player) {
+        Map<String, Double> bonuses = new HashMap<>();
+
+        bonuses.put("money_greed", getPrestigeMoneyGreedBonus(player));
+        bonuses.put("token_greed", getPrestigeTokenGreedBonus(player));
+        bonuses.put("tax_reduction", getPrestigeTaxReduction(player));
+        bonuses.put("sell_bonus", getPrestigeSellBonus(player));
+        bonuses.put("outpost_bonus", getPrestigeOutpostBonus(player));
+        bonuses.put("pvp_merchant_reduction", getPrestigePvpMerchantReduction(player));
+
+        return bonuses;
     }
 }

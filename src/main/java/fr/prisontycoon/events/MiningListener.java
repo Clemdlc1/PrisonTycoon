@@ -111,7 +111,7 @@ public class MiningListener implements Listener {
                 plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !PickaxeManager.isPickaxeBroken(player)) {
 
             blockLocation.getBlock().setType(Material.AIR);
-            double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusType.BEACON_MULTIPLIER);
+            double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.BEACON_MULTIPLIER);
             int finalBeaconGain = (int) (1 * beaconBonus);
             playerData.addBeacons(finalBeaconGain);
 

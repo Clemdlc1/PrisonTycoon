@@ -118,6 +118,8 @@ public class GUIListener implements Listener {
             plugin.getBlackMarketManager().handleBlackMarketClick(player, item);
         } else if (title.contains("Enchantement d'Épée") || title.contains("Enchantement d'Armure")) {
             plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Vos Boosts Actifs")) {
+            plugin.getBoostGUI().handleClick(player, item);
         }
     }
 
@@ -191,6 +193,7 @@ public class GUIListener implements Listener {
                 title.contains("Changer de Métier") ||
                 title.contains("🎁") ||
                 title.contains("Prestige") ||
-                title.contains("MARCHÉ NOIR");
+                title.contains("MARCHÉ NOIR") ||
+                title.contains("Vos Boosts Actifs");
     }
 }

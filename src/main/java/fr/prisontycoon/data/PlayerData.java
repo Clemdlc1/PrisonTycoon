@@ -1,5 +1,6 @@
 package fr.prisontycoon.data;
 
+import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.Material;
 
@@ -88,6 +89,9 @@ public class PlayerData {
     private final Set<Integer> completedPrestigeLevels = new HashSet<>();
     private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
     private int reputation = 0;
+
+    private final Map<String, PlayerBoost> activeBoosts = new HashMap<>();
+
 
 
 
@@ -1309,62 +1313,6 @@ public class PlayerData {
         }
     }
 
-    /**
-     * Calcule le bonus Money Greed total du prestige
-     */
-    public double getPrestigeMoneyGreedBonus() {
-        synchronized (dataLock) {
-            double bonus = 0.0;
-
-            // Profit Amélioré : +3% par niveau
-            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.MONEY_GREED_BONUS, 0);
-            bonus += profitLevel * 0.03;
-            return bonus;
-        }
-    }
-
-    /**
-     * Calcule le bonus Token Greed total du prestige
-     */
-    public double getPrestigeTokenGreedBonus() {
-        synchronized (dataLock) {
-            double bonus = 0.0;
-
-            // Économie Optimisée : +3% par niveau
-            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.TOKEN_GREED_BONUS, 0);
-            bonus += ecoLevel * 0.03;
-            return bonus;
-        }
-    }
-
-// ==================== BONUS ET CALCULS ====================
-
-    /**
-     * Calcule la réduction de taxe du prestige
-     */
-    public double getPrestigeTaxReduction() {
-        synchronized (dataLock) {
-            double reduction = 0.0;
-
-            // Économie Optimisée : -1% par niveau
-            int ecoLevel = prestigeTalents.getOrDefault(PrestigeTalent.TAX_REDUCTION, 0);
-            reduction += ecoLevel * 0.01;
-            return Math.min(reduction, 0.99); // Maximum 99% de réduction
-        }
-    }
-
-    /**
-     * Calcule le bonus de prix de vente du prestige
-     */
-    public double getPrestigeSellBonus() {
-        synchronized (dataLock) {
-            double bonus = 0.0;
-            // Profit Amélioré : +3% prix de vente
-            int profitLevel = prestigeTalents.getOrDefault(PrestigeTalent.SELL_PRICE_BONUS, 0);
-            bonus += profitLevel * 0.03;
-            return bonus;
-        }
-    }
 
     /**
      * Obtient le temps du dernier prestige
@@ -1656,5 +1604,82 @@ public class PlayerData {
      */
     public boolean hasNeutralReputation() {
         return reputation == 0;
+    }
+
+
+    /**
+     * Obtient les boosts actifs
+     */
+    public Map<String, PlayerBoost> getActiveBoosts() {
+        synchronized (dataLock) {
+            // Nettoie les boosts expirés avant de retourner
+            activeBoosts.entrySet().removeIf(entry -> !entry.getValue().isActive());
+            return new HashMap<>(activeBoosts);
+        }
+    }
+
+    /**
+     * Définit les boosts actifs
+     */
+    public void setActiveBoosts(Map<String, PlayerBoost> boosts) {
+        synchronized (dataLock) {
+            this.activeBoosts.clear();
+            if (boosts != null) {
+                // Filtre seulement les boosts encore actifs
+                for (Map.Entry<String, PlayerBoost> entry : boosts.entrySet()) {
+                    if (entry.getValue().isActive()) {
+                        this.activeBoosts.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Ajoute un boost actif
+     */
+    public void addActiveBoost(String type, PlayerBoost boost) {
+        synchronized (dataLock) {
+            if (boost.isActive()) {
+                this.activeBoosts.put(type, boost);
+            }
+        }
+    }
+
+    /**
+     * Retire un boost actif
+     */
+    public void removeActiveBoost(String type) {
+        synchronized (dataLock) {
+            this.activeBoosts.remove(type);
+        }
+    }
+
+    /**
+     * Vide tous les boosts actifs
+     */
+    public void clearActiveBoosts() {
+        synchronized (dataLock) {
+            this.activeBoosts.clear();
+        }
+    }
+
+    /**
+     * Vérifie si un boost est actif
+     */
+    public boolean hasActiveBoost(String type) {
+        synchronized (dataLock) {
+            PlayerBoost boost = activeBoosts.get(type);
+            return boost != null && boost.isActive();
+        }
+    }
+
+    /**
+     * Nettoie les boosts expirés
+     */
+    public void cleanupExpiredBoosts() {
+        synchronized (dataLock) {
+            activeBoosts.entrySet().removeIf(entry -> !entry.getValue().isActive());
+        }
     }
 }

@@ -56,8 +56,6 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         long totalValue = 0;
         int totalItems = 0;
         Map<Material, Integer> soldItems = new HashMap<>();
-        double sellBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusType.SELL_BOOST);
-
         // MODIFIÉ: Passer la map pour récupérer les détails des conteneurs
         Map<Material, Integer> containerSoldItems = new HashMap<>();
         long containerValue = plugin.getContainerManager().sellAllContainerContents(player, containerSoldItems);
@@ -83,11 +81,10 @@ public class SellCommand implements CommandExecutor, TabCompleter {
             }
 
             long sellPrice = plugin.getConfigManager().getSellPrice(item.getType());
-            long finalSellPrice = (long) (sellPrice * sellBonus);
             if (sellPrice <= 0) continue;
 
             int amount = item.getAmount();
-            totalValue += finalSellPrice * amount;
+            totalValue += sellPrice * amount;
             totalItems += amount;
             soldItems.merge(item.getType(), amount, Integer::sum);
 

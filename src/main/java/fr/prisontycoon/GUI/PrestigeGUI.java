@@ -740,10 +740,10 @@ public class PrestigeGUI {
                 lore.add("§e⚡ Bonus actifs:");
 
                 // Calculer les bonus totaux
-                double moneyBonus = playerData.getPrestigeMoneyGreedBonus();
-                double tokenBonus = playerData.getPrestigeTokenGreedBonus();
-                double taxReduction = playerData.getPrestigeTaxReduction();
-                double sellBonus = playerData.getPrestigeSellBonus();
+                double moneyBonus = plugin.getGlobalBonusManager().getPrestigeMoneyGreedBonus(player);
+                double tokenBonus = plugin.getGlobalBonusManager().getPrestigeTokenGreedBonus(player);
+                double taxReduction = plugin.getGlobalBonusManager().getPrestigeTaxReduction(player);
+                double sellBonus = plugin.getGlobalBonusManager().getPrestigeSellBonus(player);
 
                 if (moneyBonus > 0) {
                     lore.add("§7  • §6Money Greed: §a+" + String.format("%.1f", moneyBonus * 100) + "%");

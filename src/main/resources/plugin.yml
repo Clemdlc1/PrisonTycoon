@@ -320,6 +320,24 @@ commands:
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ findblackmarket, blackmarket, bm ]
 
+  boost:
+    description: Affiche et gère les boosts temporaires
+    usage: /<command> [list|admin <type> <durée>]
+    permission: specialmine.basic
+    permission-message: "§cVous n'avez pas la permission d'utiliser cette commande!"
+
+  voucher:
+    description: Donne des vouchers aux joueurs (admin)
+    usage: /<command> <joueur> <type> <tier> [quantité]
+    permission: specialmine.admin
+    permission-message: "§cVous n'avez pas la permission d'utiliser cette commande!"
+
+  giveboost:
+    description: Donne des items boost aux joueurs (admin)
+    usage: /<command> <joueur> <type> <durée> [bonus] [quantité]
+    permission: specialmine.admin
+    permission-message: "§cVous n'avez pas la permission d'utiliser cette commande!"
+
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

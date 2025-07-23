@@ -1,6 +1,7 @@
 package fr.prisontycoon;
 
 import fr.prisontycoon.GUI.*;
+import fr.prisontycoon.boosts.BoostManager;
 import fr.prisontycoon.commands.*;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
@@ -12,6 +13,7 @@ import fr.prisontycoon.managers.*;
 import fr.prisontycoon.tasks.*;
 import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
+import fr.prisontycoon.vouchers.VoucherManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -46,6 +48,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private WeaponArmorEnchantmentManager weaponArmorEnchantmentManager;
     private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
     private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
+    private VoucherManager voucherManager;
+    private BoostManager boostManager;
 
 
     private Logger logger;
@@ -64,6 +68,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private ProfessionRewardsGUI professionRewardsGUI;
     private PrestigeGUI prestigeGUI;
     private RankupCommand rankupCommand;
+    private BoostGUI boostGUI;
 
     //cristaux
     private CristalManager cristalManager;
@@ -207,7 +212,8 @@ public final class PrisonTycoon extends JavaPlugin {
         weaponArmorEnchantmentManager = new WeaponArmorEnchantmentManager(this);
         weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
         uniqueEnchantmentBookFactory = new UniqueEnchantmentBookFactory(this);
-
+        voucherManager = new VoucherManager(this);
+        boostManager = new BoostManager(this);
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
@@ -230,7 +236,7 @@ public final class PrisonTycoon extends JavaPlugin {
         professionGUI = new ProfessionGUI(this);
         professionRewardsGUI = new ProfessionRewardsGUI(this);
         prestigeGUI = new PrestigeGUI(this);
-
+        boostGUI = new BoostGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -254,6 +260,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new ChatListener(this), this);
         pluginManager.registerEvents(new PNJInteract(this), this);
         pluginManager.registerEvents(new WeaponArmorEnchantmentListener(this), this);
+        pluginManager.registerEvents(new VoucherBoostListener(this), this);
 
 
         logger.info("§aÉvénements enregistrés.");
@@ -310,6 +317,11 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("rep").setExecutor(new ReputationCommand(this));
         getCommand("fbm").setExecutor(new BlackMarketCommand(this));
 
+        getCommand("boost").setExecutor(new BoostCommand(this));
+        getCommand("boost").setTabCompleter(new BoostCommand(this));
+        getCommand("voucher").setExecutor(new VoucherCommand(this));
+        getCommand("giveboost").setExecutor(new GiveBoostCommand(this));
+        getCommand("giveboost").setTabCompleter(new GiveBoostCommand(this));
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -611,6 +623,18 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() {
         return uniqueEnchantmentBookFactory;
+    }
+
+    public VoucherManager getVoucherManager() {
+        return voucherManager;
+    }
+
+    public BoostManager getBoostManager() {
+        return boostManager;
+    }
+
+    public BoostGUI getBoostGUI() {
+        return boostGUI;
     }
 }
 

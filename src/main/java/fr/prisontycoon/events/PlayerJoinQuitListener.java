@@ -53,6 +53,7 @@ public class PlayerJoinQuitListener implements Listener {
 
         // Charge les données du joueur
         plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        plugin.getBoostManager().loadPlayerBoosts(player);
 
         // NOUVEAU : Charge les enchantements uniques actifs du joueur
         plugin.getEnchantmentBookManager().loadActiveEnchantments(player);
@@ -127,6 +128,7 @@ public class PlayerJoinQuitListener implements Listener {
         if (plugin.getScoreboardTask() != null) {
             plugin.getScoreboardTask().removeScoreboard(player);
         }
+        plugin.getBoostManager().unloadPlayer(player);
 
         // NOUVEAU : Nettoie les notifications en attente
         plugin.getNotificationManager().cleanupPlayerData(player.getUniqueId());
