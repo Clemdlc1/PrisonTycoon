@@ -22,6 +22,7 @@ import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.milkbowl.vault.economy.Economy;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -387,7 +388,8 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
         getCommand("givetokens").setTabCompleter(new GiveTokensCommand(this));
-
+        getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
+        getCommand("prisontycoon").setTabCompleter(new PrisonTycoonCommand(this));
         getCommand("conteneur").setExecutor(new ContainerCommand(this));
         getCommand("conteneur").setTabCompleter(new ContainerCommand(this));
 

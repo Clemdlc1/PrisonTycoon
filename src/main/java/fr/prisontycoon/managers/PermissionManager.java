@@ -449,4 +449,7 @@ public class PermissionManager {
     public Set<String> getVipGroups() {
         return new HashSet<>(vipGroups);
     }
+
+    public void cleanup() {
+    }
 }

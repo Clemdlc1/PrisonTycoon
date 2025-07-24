@@ -467,10 +467,13 @@ public class VipManager {
      * Synchronise le statut VIP avec PlayerData
      */
     private void synchronizeWithPlayerData(@NotNull UUID uuid, boolean isVip) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
-        if (playerData.isVip() != isVip) {
-            playerData.setVip(isVip);
-            plugin.getPluginLogger().debug("PlayerData VIP synchronisé: " + uuid + " -> " + isVip);
+        Player player = plugin.getServer().getPlayer(uuid);
+        if (player != null) {
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+            if (playerData.isVip(player) != isVip) {
+                playerData.setVip(player, isVip);
+                plugin.getPluginLogger().debug("PlayerData VIP synchronisé: " + uuid + " -> " + isVip);
+            }
         }
     }
 
