@@ -114,7 +114,7 @@ public class BoostCommand implements CommandExecutor, TabCompleter {
                 }
                 progressBar.append("§7] ").append(String.format("%.1f%%", progress * 100));
 
-                player.sendMessage("         " + progressBar.toString());
+                player.sendMessage("         " + progressBar);
             }
         }
 
@@ -223,7 +223,7 @@ public class BoostCommand implements CommandExecutor, TabCompleter {
     private String getAvailableBoostTypes() {
         StringBuilder types = new StringBuilder();
         for (BoostType type : BoostType.values()) {
-            if (types.length() > 0) types.append(", ");
+            if (!types.isEmpty()) types.append(", ");
             types.append(type.name().toLowerCase().replace("_", "-"));
         }
         return types.toString();

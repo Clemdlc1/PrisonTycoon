@@ -342,6 +342,7 @@ commands:
     description: Menu principal des automineurs
     usage: /autominer [give <type>]
     permission: specialmine.basic
+
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

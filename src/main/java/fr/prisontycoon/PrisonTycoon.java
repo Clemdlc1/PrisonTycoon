@@ -1,6 +1,6 @@
 package fr.prisontycoon;
 
-import fr.prisontycoon.GUI.*;
+import fr.prisontycoon.gui.*;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
 import fr.prisontycoon.commands.*;
@@ -657,6 +657,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public BoostGUI getBoostGUI() {
         return boostGUI;
     }
+
     public AutominerManager getAutominerManager() {
         return autominerManager;
     }

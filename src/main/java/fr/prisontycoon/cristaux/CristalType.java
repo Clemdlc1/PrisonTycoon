@@ -47,23 +47,14 @@ public enum CristalType {
     public String getBonusDescription(int level) {
         double bonus = getBonus(level);
 
-        switch (this) {
-            case SELL_BOOST:
-                return "+" + String.format("%.1f", bonus) + "% prix de vente";
-            case XP_BOOST:
-            case MONEY_BOOST:
-            case TOKEN_BOOST:
-            case MINERAL_GREED:
-                return "+" + String.format("%.0f", bonus) + "% d'effet";
-            case ABONDANCE_CRISTAL:
-                return "+" + String.format("%.0f", bonus) + "s de durée (total: " + (60 + bonus) + "s)";
-            case COMBUSTION_CRISTAL:
-                return "+" + String.format("%.0f", bonus) + "% efficacité et -" + String.format("%.0f", bonus) + "% diminution";
-            case ECHO_CRISTAL:
-                return getEchoDescription(level);
-            default:
-                return "+" + String.format("%.1f", bonus) + "%";
-        }
+        return switch (this) {
+            case SELL_BOOST -> "+" + String.format("%.1f", bonus) + "% prix de vente";
+            case XP_BOOST, MONEY_BOOST, TOKEN_BOOST, MINERAL_GREED -> "+" + String.format("%.0f", bonus) + "% d'effet";
+            case ABONDANCE_CRISTAL -> "+" + String.format("%.0f", bonus) + "s de durée (total: " + (60 + bonus) + "s)";
+            case COMBUSTION_CRISTAL ->
+                    "+" + String.format("%.0f", bonus) + "% efficacité et -" + String.format("%.0f", bonus) + "% diminution";
+            case ECHO_CRISTAL -> getEchoDescription(level);
+        };
     }
 
     /**

@@ -65,7 +65,7 @@ public class NotificationManager {
         }
 
         long now = System.currentTimeMillis();
-        if (now > tempNotif.getExpiryTime()) {
+        if (now > tempNotif.expiryTime()) {
             // La notification a expiré, la supprime
             activeTemporaryNotifications.remove(playerId);
             return false;
@@ -86,13 +86,13 @@ public class NotificationManager {
         }
 
         long now = System.currentTimeMillis();
-        if (now > tempNotif.getExpiryTime()) {
+        if (now > tempNotif.expiryTime()) {
             // La notification a expiré, la supprime
             activeTemporaryNotifications.remove(playerId);
             return null;
         }
 
-        return tempNotif.getMessage();
+        return tempNotif.message();
     }
 
     /**
@@ -101,7 +101,7 @@ public class NotificationManager {
     public void cleanupExpiredTemporaryNotifications() {
         long now = System.currentTimeMillis();
         activeTemporaryNotifications.entrySet().removeIf(entry ->
-                now > entry.getValue().getExpiryTime());
+                now > entry.getValue().expiryTime());
     }
 
     /**
@@ -142,51 +142,15 @@ public class NotificationManager {
     }
 
     /**
-     * NOUVEAU : Classe pour les notifications temporaires avec durée
-     */
-    private static class TemporaryNotification {
-        private final String message;
-        private final long expiryTime;
-
-        public TemporaryNotification(String message, long expiryTime) {
-            this.message = message;
-            this.expiryTime = expiryTime;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public long getExpiryTime() {
-            return expiryTime;
-        }
+         * NOUVEAU : Classe pour les notifications temporaires avec durée
+         */
+        private record TemporaryNotification(String message, long expiryTime) {
     }
 
     /**
-     * Notification de jeu
-     */
-    public static class GameNotification {
-        private final NotificationType type;
-        private final String message;
-        private final NotificationPriority priority;
-
-        public GameNotification(NotificationType type, String message, NotificationPriority priority) {
-            this.type = type;
-            this.message = message;
-            this.priority = priority;
-        }
-
-        public NotificationType getType() {
-            return type;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public NotificationPriority getPriority() {
-            return priority;
-        }
+         * Notification de jeu
+         */
+        public record GameNotification(NotificationType type, String message, NotificationPriority priority) {
     }
 
     /**

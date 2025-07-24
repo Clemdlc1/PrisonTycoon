@@ -395,8 +395,7 @@ public class ContainerManager {
                 // Finalisation
                 dataOutput.flush();
                 byte[] rawData = bos.toByteArray();
-                String base64Result = Base64.getEncoder().encodeToString(rawData);
-                return base64Result;
+                return Base64.getEncoder().encodeToString(rawData);
             } catch (Exception streamException) {
                 streamException.printStackTrace();
                 throw streamException;

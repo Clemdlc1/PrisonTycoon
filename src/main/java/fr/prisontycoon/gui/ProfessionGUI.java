@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -105,7 +105,7 @@ public class ProfessionGUI {
         if (profession == null) return;
 
         String pageInfo = page == 0 ? " (Niv. 1-5)" : " (Niv. 6-10)";
-        Inventory gui = Bukkit.createInventory(null, 54, "§5⭐ " + profession.getDisplayName() + pageInfo);
+        Inventory gui = Bukkit.createInventory(null, 54, "§5⭐ " + profession.displayName() + pageInfo);
 
         fillWithGlass(gui);
         setupTalentsKitsMenu(gui, player, profession, page);
@@ -119,10 +119,10 @@ public class ProfessionGUI {
      */
     private void setupTalentsKitsMenu(Inventory gui, Player player, ProfessionManager.Profession profession, int page) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        List<ProfessionManager.ProfessionTalent> talents = profession.getTalents();
+        List<ProfessionManager.ProfessionTalent> talents = profession.talents();
 
         // Info au centre
-        gui.setItem(INFO_SLOT, createTalentsKitsInfoItem(player, profession.getId(), page));
+        gui.setItem(INFO_SLOT, createTalentsKitsInfoItem(player, profession.id(), page));
 
         // Calcul des niveaux pour cette page
         int startLevel = (page * 5) + 1; // Page 0: 1-5, Page 1: 6-10
@@ -137,12 +137,12 @@ public class ProfessionGUI {
             for (int i = 0; i < Math.min(3, talents.size()); i++) {
                 ProfessionManager.ProfessionTalent talent = talents.get(i);
                 int slot = baseSlot + (TALENT_1_COL - 9) + i; // Décalé selon la colonne
-                gui.setItem(slot, createLeveledTalentItem(player, profession.getId(), talent, level));
+                gui.setItem(slot, createLeveledTalentItem(player, profession.id(), talent, level));
             }
 
             // Kit en 6ème colonne
             int kitSlot = baseSlot + (KIT_COL - 9);
-            gui.setItem(kitSlot, createLeveledKitItem(player, profession.getId(), level));
+            gui.setItem(kitSlot, createLeveledKitItem(player, profession.id(), level));
         }
 
         // Navigation
@@ -150,10 +150,10 @@ public class ProfessionGUI {
 
         // Pagination
         if (page > 0) {
-            gui.setItem(PREV_PAGE_SLOT, createPageButton("prev", profession.getId()));
+            gui.setItem(PREV_PAGE_SLOT, createPageButton("prev", profession.id()));
         }
         if (page < 1) { // Max 2 pages (0 et 1)
-            gui.setItem(NEXT_PAGE_SLOT, createPageButton("next", profession.getId()));
+            gui.setItem(NEXT_PAGE_SLOT, createPageButton("next", profession.id()));
         }
     }
 
@@ -163,9 +163,9 @@ public class ProfessionGUI {
     private ItemStack createLeveledTalentItem(Player player, String professionId, ProfessionManager.ProfessionTalent talent, int targetLevel) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         int professionLevel = playerData.getProfessionLevel(professionId);
-        int currentTalentLevel = playerData.getTalentLevel(professionId, talent.getId());
+        int currentTalentLevel = playerData.getTalentLevel(professionId, talent.id());
 
-        Material material = getTalentMaterial(talent.getId());
+        Material material = getTalentMaterial(talent.id());
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
@@ -178,15 +178,15 @@ public class ProfessionGUI {
         // Nom avec couleur selon l'état
         String color = isActive ? "§a" : (canUpgrade ? "§e" : "§c");
         String status = isActive ? "✓" : (canUpgrade ? "⭘" : "✗");
-        meta.setDisplayName(color + status + " §f" + talent.getDisplayName() + " §7Niv." + targetLevel);
+        meta.setDisplayName(color + status + " §f" + talent.displayName() + " §7Niv." + targetLevel);
 
         List<String> lore = new ArrayList<>();
-        lore.add("§7" + talent.getDescription());
+        lore.add("§7" + talent.description());
         lore.add("");
 
         // Effet à ce niveau
         int value = talent.getValueAtLevel(targetLevel);
-        String suffix = talent.getId().contains("multiplier") ? "x" : "%";
+        String suffix = talent.id().contains("multiplier") ? "x" : "%";
         lore.add("§7Effet niveau " + targetLevel + ": §e+" + value + suffix);
         lore.add("");
 
@@ -211,7 +211,7 @@ public class ProfessionGUI {
         if (canUpgrade && !isActive) {
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "upgrade_talent_level");
             meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, professionId);
-            meta.getPersistentDataContainer().set(talentKey, PersistentDataType.STRING, talent.getId());
+            meta.getPersistentDataContainer().set(talentKey, PersistentDataType.STRING, talent.id());
             meta.getPersistentDataContainer().set(targetLevelKey, PersistentDataType.INTEGER, targetLevel);
         }
 
@@ -469,10 +469,10 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(profession.getDisplayName() + " §7(Actif)");
+        meta.setDisplayName(profession.displayName() + " §7(Actif)");
 
         List<String> lore = new ArrayList<>();
-        lore.add("§7" + profession.getDescription());
+        lore.add("§7" + profession.description());
         lore.add("");
         lore.add("§7Niveau: §e" + level + "§7/§e10");
         lore.add("§7XP: §e" + NumberFormatter.format(xp) + "§7/§e" + (level < 10 ? NumberFormatter.format(nextLevelXP) : "MAX"));
@@ -614,7 +614,7 @@ public class ProfessionGUI {
         ItemMeta meta = item.getItemMeta();
 
         meta.setDisplayName("§c✗ §lFermer");
-        meta.setLore(Arrays.asList("§7Ferme ce menu"));
+        meta.setLore(List.of("§7Ferme ce menu"));
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         item.setItemMeta(meta);
 
@@ -626,7 +626,7 @@ public class ProfessionGUI {
         ItemMeta meta = item.getItemMeta();
 
         meta.setDisplayName("§7← §lRetour");
-        meta.setLore(Arrays.asList("§7Retour au menu métiers"));
+        meta.setLore(List.of("§7Retour au menu métiers"));
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_to_main");
         item.setItemMeta(meta);
 
@@ -665,7 +665,7 @@ public class ProfessionGUI {
 
         List<String> infoLore = new ArrayList<>();
         infoLore.add("§7Métier actuel: §e" + (currentProfession != null ?
-                plugin.getProfessionManager().getProfession(currentProfession).getDisplayName() : "Aucun"));
+                plugin.getProfessionManager().getProfession(currentProfession).displayName() : "Aucun"));
         infoLore.add("");
         infoLore.add("§c💸 Coût: §e5000 beacons");
         infoLore.add("§c⏰ Cooldown: §e24 heures");
@@ -695,10 +695,10 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(profession.getDisplayName());
+        meta.setDisplayName(profession.displayName());
 
         List<String> lore = new ArrayList<>();
-        lore.add("§7" + profession.getDescription());
+        lore.add("§7" + profession.description());
         lore.add("");
         lore.add("§e▶ Cliquez pour choisir !");
         lore.add("§7(Premier choix gratuit)");
@@ -721,11 +721,11 @@ public class ProfessionGUI {
 
         boolean isCurrent = professionId.equals(currentProfession);
 
-        meta.setDisplayName((isCurrent ? "§e" : "§a") + profession.getDisplayName() +
+        meta.setDisplayName((isCurrent ? "§e" : "§a") + profession.displayName() +
                 (isCurrent ? " §7(Actuel)" : ""));
 
         List<String> lore = new ArrayList<>();
-        lore.add("§7" + profession.getDescription());
+        lore.add("§7" + profession.description());
         lore.add("");
 
         if (isCurrent) {

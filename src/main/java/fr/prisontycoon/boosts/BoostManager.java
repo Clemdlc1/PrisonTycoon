@@ -200,7 +200,7 @@ public class BoostManager {
         }
 
         // Bonus du boost global (s'applique à tous les types)
-        PlayerBoost globalBoost = null;
+        PlayerBoost globalBoost;
 
         // Global du joueur
         if (playerBoosts != null) {

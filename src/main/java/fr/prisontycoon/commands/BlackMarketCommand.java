@@ -314,7 +314,7 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7┃ §7Vous pouvez commercer avec le marchand noir");
         }
 
-        if (purchases.size() > 0) {
+        if (!purchases.isEmpty()) {
             player.sendMessage("");
             player.sendMessage("§e🛒 Historique récent:");
             player.sendMessage("§7┃ Vous avez acheté " + purchases.size() + " items uniques");

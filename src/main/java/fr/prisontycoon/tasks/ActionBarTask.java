@@ -65,7 +65,7 @@ public class ActionBarTask extends BukkitRunnable {
 
         // HARMONISATION : Priorité aux messages temporaires de changement d'état
         if (player.hasMetadata("pickaxe_just_broken")) {
-            long brokenTime = player.getMetadata("pickaxe_just_broken").get(0).asLong();
+            long brokenTime = player.getMetadata("pickaxe_just_broken").getFirst().asLong();
             if (System.currentTimeMillis() - brokenTime < 3000) {
                 return "§c💥 PIOCHE CASSÉE! Tous enchantements désactivés sauf Token Greed (90% malus)";
             } else {
@@ -74,7 +74,7 @@ public class ActionBarTask extends BukkitRunnable {
         }
 
         if (player.hasMetadata("pickaxe_just_repaired")) {
-            long repairedTime = player.getMetadata("pickaxe_just_repaired").get(0).asLong();
+            long repairedTime = player.getMetadata("pickaxe_just_repaired").getFirst().asLong();
             if (System.currentTimeMillis() - repairedTime < 3000) {
                 return "§a✅ Pioche réparée! Tous les enchantements sont actifs";
             } else {
@@ -94,13 +94,13 @@ public class ActionBarTask extends BukkitRunnable {
 
         // États spéciaux (combustion, abondance, etc.) - SEULEMENT quand le joueur mine
         if (playerData.getCombustionLevel() > 0) {
-            if (status.length() > 0) status.append(" §8| ");
+            if (!status.isEmpty()) status.append(" §8| ");
             double multiplier = playerData.getCombustionMultiplier();
             status.append("§c🔥 Combustion: §6x").append(String.format("%.2f", multiplier));
         }
 
         if (playerData.isAbundanceActive()) {
-            if (status.length() > 0) status.append(" §8| ");
+            if (!status.isEmpty()) status.append(" §8| ");
             status.append("§6⭐ Abondance: §aACTIVE");
         }
 

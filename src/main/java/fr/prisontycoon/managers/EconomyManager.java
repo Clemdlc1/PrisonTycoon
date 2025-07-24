@@ -243,7 +243,7 @@ public class EconomyManager {
         }
 
         return rankings.stream()
-                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .sorted((a, b) -> Long.compare(b.value(), a.value()))
                 .limit(limit)
                 .toList();
     }
@@ -326,39 +326,18 @@ public class EconomyManager {
     }
 
     /**
-     * Solde économique d'un joueur
-     */
-    public static class EconomicBalance {
-        private final long coins;
-        private final long tokens;
-        private final long experience;
-
-        public EconomicBalance(long coins, long tokens, long experience) {
-            this.coins = coins;
-            this.tokens = tokens;
-            this.experience = experience;
-        }
-
-        public long getCoins() {
-            return coins;
-        }
-
-        public long getTokens() {
-            return tokens;
-        }
-
-        public long getExperience() {
-            return experience;
-        }
+         * Solde économique d'un joueur
+         */
+        public record EconomicBalance(long coins, long tokens, long experience) {
 
         @Override
-        public String toString() {
-            return String.format("Balance{coins=%s, tokens=%s, exp=%s}",
-                    NumberFormatter.format(coins),
-                    NumberFormatter.format(tokens),
-                    NumberFormatter.format(experience));
+            public String toString() {
+                return String.format("Balance{coins=%s, tokens=%s, exp=%s}",
+                        NumberFormatter.format(coins),
+                        NumberFormatter.format(tokens),
+                        NumberFormatter.format(experience));
+            }
         }
-    }
 
     /**
      * Statistiques économiques d'un joueur
@@ -399,23 +378,8 @@ public class EconomyManager {
     }
 
     /**
-     * Classement économique
-     */
-    public static class EconomicRanking {
-        private final String playerName;
-        private final long value;
-
-        public EconomicRanking(String playerName, long value) {
-            this.playerName = playerName;
-            this.value = value;
-        }
-
-        public String getPlayerName() {
-            return playerName;
-        }
-
-        public long getValue() {
-            return value;
-        }
+         * Classement économique
+         */
+        public record EconomicRanking(String playerName, long value) {
     }
 }

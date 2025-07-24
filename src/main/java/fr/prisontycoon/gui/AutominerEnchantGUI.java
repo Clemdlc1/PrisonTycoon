@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
@@ -26,13 +26,11 @@ import java.util.Map;
 public class AutominerEnchantGUI {
 
     private final PrisonTycoon plugin;
-    private final NamespacedKey actionKey;
     private final NamespacedKey enchantKey;
     private final NamespacedKey slotKey;
 
     public AutominerEnchantGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.actionKey = new NamespacedKey(plugin, "autominer_action");
         this.enchantKey = new NamespacedKey(plugin, "enchant_name");
         this.slotKey = new NamespacedKey(plugin, "autominer_slot");
     }
@@ -328,7 +326,7 @@ public class AutominerEnchantGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        String slotNum = slotName.charAt(slotName.length()-1) + "";
+        String slotNum = slotName.charAt(slotName.length() - 1) + "";
         meta.setDisplayName("§d💎 Slot Cristal " + slotNum);
         List<String> lore = new ArrayList<>();
 
@@ -400,7 +398,7 @@ public class AutominerEnchantGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§cRetour");
-        meta.setLore(Arrays.asList("§7Retourner au menu principal"));
+        meta.setLore(List.of("§7Retourner au menu principal"));
         item.setItemMeta(meta);
         return item;
     }

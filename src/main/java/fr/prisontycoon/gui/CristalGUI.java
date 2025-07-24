@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.cristaux.Cristal;
@@ -374,9 +374,6 @@ public class CristalGUI {
         }
     }
 
-    /**
-     * Applique un cristal sur la pioche
-     */
     /**
      * Applique un cristal sur la pioche
      */

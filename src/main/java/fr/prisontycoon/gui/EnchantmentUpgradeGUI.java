@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -308,9 +308,7 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Bonus Pet XP: §e+" + NumberFormatter.format(fromBonus) +
                         " §7→ §a+" + NumberFormatter.format(toBonus));
             }
-            case "efficiency" -> {
-                lore.add("§7▸ Vitesse minage: §eFast+" + fromLevel + " §7→ §aFast+" + toLevel);
-            }
+            case "efficiency" -> lore.add("§7▸ Vitesse minage: §eFast+" + fromLevel + " §7→ §aFast+" + toLevel);
             case "fortune" -> {
                 double fromMult = 1.0 + (fromLevel * 0.2);
                 double toMult = 1.0 + (toLevel * 0.2);
@@ -330,15 +328,9 @@ public class EnchantmentUpgradeGUI {
                     lore.add("§7▸ Vision nocturne: §aActive");
                 }
             }
-            case "speed" -> {
-                lore.add("§7▸ Vitesse: §eSpeed " + fromLevel + " §7→ §aSpeed " + toLevel);
-            }
-            case "haste" -> {
-                lore.add("§7▸ Célérité: §eHaste " + fromLevel + " §7→ §aHaste " + toLevel);
-            }
-            case "jump_boost" -> {
-                lore.add("§7▸ Saut: §eJump " + fromLevel + " §7→ §aJump " + toLevel);
-            }
+            case "speed" -> lore.add("§7▸ Vitesse: §eSpeed " + fromLevel + " §7→ §aSpeed " + toLevel);
+            case "haste" -> lore.add("§7▸ Célérité: §eHaste " + fromLevel + " §7→ §aHaste " + toLevel);
+            case "jump_boost" -> lore.add("§7▸ Saut: §eJump " + fromLevel + " §7→ §aJump " + toLevel);
             case "escalator" -> {
                 if (fromLevel == 0 && toLevel == 1) {
                     lore.add("§7▸ Téléportation: §cInactive §7→ §aActive");
@@ -364,10 +356,8 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Chance explosion: §e" + String.format("%.2f%%", fromChance) +
                         " §7→ §a" + String.format("%.2f%%", toChance));
             }
-            default -> {
-                lore.add("§7▸ Amélioration de §2+" + (toLevel - fromLevel) + " niveau" +
-                        (toLevel - fromLevel > 1 ? "x" : ""));
-            }
+            default -> lore.add("§7▸ Amélioration de §2+" + (toLevel - fromLevel) + " niveau" +
+                    (toLevel - fromLevel > 1 ? "x" : ""));
         }
     }
 
@@ -564,16 +554,12 @@ public class EnchantmentUpgradeGUI {
                 playerData.setAutoUpgrade(enchantmentName, false);
                 if (!silent) {
                     player.sendMessage("§2🏆 " + enchantment.getDisplayName() + " §2niveau maximum atteint!");
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        plugin.getCategoryMenuGUI().openCategoryMenu(player, enchantment.getCategory());
-                    }, 10L);
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.getCategoryMenuGUI().openCategoryMenu(player, enchantment.getCategory()), 10L);
                 }
             } else if (!silent) {
                 openEnchantmentUpgradeMenu(player, enchantmentName);
             }
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                plugin.getPickaxeManager().updateMobilityEffects(player);
-            });
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getPickaxeManager().updateMobilityEffects(player));
             return true;
         } else {
             if (!silent) {
@@ -667,9 +653,7 @@ public class EnchantmentUpgradeGUI {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
         // Rouvre le menu immédiatement
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            openEnchantmentUpgradeMenu(player, enchantmentName);
-        }, 1L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> openEnchantmentUpgradeMenu(player, enchantmentName), 1L);
     }
 
     // Utilitaires...

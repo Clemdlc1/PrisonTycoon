@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
@@ -6,18 +6,17 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Interface graphique principale du système d'automineur
@@ -25,11 +24,9 @@ import java.util.Map;
 public class AutominerGUI {
 
     private final PrisonTycoon plugin;
-    private final NamespacedKey actionKey;
 
     public AutominerGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.actionKey = new NamespacedKey(plugin, "autominer_action");
     }
 
     /**
@@ -45,18 +42,10 @@ public class AutominerGUI {
         ItemStack slot2 = playerData.getActiveAutominerSlot2();
 
         // Slot 1
-        if (slot1 != null) {
-            inv.setItem(10, slot1);
-        } else {
-            inv.setItem(10, createEmptySlotItem("§7Slot 1 - Vide", "§eCliquez avec un automineur", "§epour l'activer!"));
-        }
+        inv.setItem(10, Objects.requireNonNullElseGet(slot1, () -> createEmptySlotItem("§7Slot 1 - Vide", "§eCliquez avec un automineur", "§epour l'activer!")));
 
         // Slot 2
-        if (slot2 != null) {
-            inv.setItem(16, slot2);
-        } else {
-            inv.setItem(16, createEmptySlotItem("§7Slot 2 - Vide", "§eCliquez avec un automineur", "§epour l'activer!"));
-        }
+        inv.setItem(16, Objects.requireNonNullElseGet(slot2, () -> createEmptySlotItem("§7Slot 2 - Vide", "§eCliquez avec un automineur", "§epour l'activer!")));
 
         // Item Monde
         inv.setItem(12, createWorldItem(playerData));
@@ -244,8 +233,8 @@ public class AutominerGUI {
 
                 var blockValue = plugin.getConfigManager().getBlockValue(entry.getKey());
                 if (blockValue != null) {
-                    blockCoins = blockValue.getCoins();
-                    blockTokens = blockValue.getTokens();
+                    blockCoins = blockValue.coins();
+                    blockTokens = blockValue.tokens();
                 }
 
                 String priceText = "";
@@ -323,7 +312,7 @@ public class AutominerGUI {
         List<String> lore = new ArrayList<>();
 
         double fuelReserve = playerData.getAutominerFuelReserve();
-        lore.add("§7Réserve: §f" + NumberFormatter.format((long)fuelReserve) + " têtes");
+        lore.add("§7Réserve: §f" + NumberFormatter.format((long) fuelReserve) + " têtes");
 
         // Calculer l'autonomie
         double totalConsumption = 0;

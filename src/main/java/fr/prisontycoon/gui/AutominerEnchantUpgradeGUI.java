@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
@@ -501,7 +501,7 @@ public class AutominerEnchantUpgradeGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§c« Retour");
-        meta.setLore(Arrays.asList("§7Retourner au menu d'amélioration"));
+        meta.setLore(List.of("§7Retourner au menu d'amélioration"));
         item.setItemMeta(meta);
         return item;
     }

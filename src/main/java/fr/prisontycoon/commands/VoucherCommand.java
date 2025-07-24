@@ -147,7 +147,7 @@ public class VoucherCommand implements CommandExecutor, TabCompleter {
     private String getAvailableVoucherTypes() {
         StringBuilder types = new StringBuilder();
         for (VoucherType type : VoucherType.values()) {
-            if (types.length() > 0) types.append(", ");
+            if (!types.isEmpty()) types.append(", ");
             types.append(type.name().toLowerCase());
         }
         return types.toString();

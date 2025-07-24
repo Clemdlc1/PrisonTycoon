@@ -1,7 +1,7 @@
 package fr.prisontycoon.autominers;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Types d'automineurs avec leurs caractéristiques
@@ -41,7 +41,7 @@ public enum AutominerType {
             "KEYGREED", 1,
             "FUELEFFICIENCY", 50
     )),
-    BEACON("BEACON", 1 * 60, 12.0, Map.of(
+    BEACON("BEACON", 60, 12.0, Map.of(
             "EFFICACITE", Integer.MAX_VALUE,
             "FORTUNE", Integer.MAX_VALUE,
             "TOKENGREED", 10000,
@@ -62,6 +62,15 @@ public enum AutominerType {
         this.baseFuelConsumption = baseFuelConsumption;
         this.rarityCoefficient = rarityCoefficient;
         this.enchantmentLimits = new HashMap<>(enchantmentLimits);
+    }
+
+    public static AutominerType fromString(String name) {
+        for (AutominerType type : values()) {
+            if (type.displayName.equalsIgnoreCase(name)) {
+                return type;
+            }
+        }
+        return null;
     }
 
     public String getDisplayName() {
@@ -126,15 +135,6 @@ public enum AutominerType {
         double baseConsumptionPerSecond = 1.0 / baseFuelConsumption;
         double reduction = fuelEfficiencyLevel * 0.01; // 1% de réduction par niveau
         return baseConsumptionPerSecond * (1.0 - Math.min(reduction, 0.9)); // Max 90% de réduction
-    }
-
-    public static AutominerType fromString(String name) {
-        for (AutominerType type : values()) {
-            if (type.displayName.equalsIgnoreCase(name)) {
-                return type;
-            }
-        }
-        return null;
     }
 
     /**

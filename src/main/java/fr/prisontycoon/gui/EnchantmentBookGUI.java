@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -17,6 +17,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -164,30 +165,19 @@ public class EnchantmentBookGUI {
      * NOUVEAU : Description du pouvoir pour les livres de pioche
      */
     private String getPickaxePowerDescription(String bookId) {
-        switch (bookId) {
-            case "tonnerre":
-                return "Foudroie les ennemis et les blocs";
-            case "incassable":
-                return "Durabilité infinie";
-            case "explosion":
-                return "Explosion de minage";
-            case "speed":
-                return "Vitesse de minage";
-            case "xp_boost":
-                return "Multiplicateur d'XP";
-            case "auto_sell":
-                return "Vente automatique";
-            case "fortune":
-                return "Multiplicateur de drops";
-            case "telekinesis":
-                return "Collecte magnétique";
-            case "beacon_finder":
-                return "Détection de beacons";
-            case "multiplier":
-                return "Multiplicateur de gains";
-            default:
-                return "Effet mystérieux";
-        }
+        return switch (bookId) {
+            case "tonnerre" -> "Foudroie les ennemis et les blocs";
+            case "incassable" -> "Durabilité infinie";
+            case "explosion" -> "Explosion de minage";
+            case "speed" -> "Vitesse de minage";
+            case "xp_boost" -> "Multiplicateur d'XP";
+            case "auto_sell" -> "Vente automatique";
+            case "fortune" -> "Multiplicateur de drops";
+            case "telekinesis" -> "Collecte magnétique";
+            case "beacon_finder" -> "Détection de beacons";
+            case "multiplier" -> "Multiplicateur de gains";
+            default -> "Effet mystérieux";
+        };
     }
 
     /**
@@ -637,9 +627,7 @@ public class EnchantmentBookGUI {
 
         // Split le message d'erreur sur plusieurs lignes
         String[] lines = errorMessage.split("\n");
-        for (String line : lines) {
-            errorLore.add(line);
-        }
+        Collections.addAll(errorLore, lines);
 
         errorLore.add("");
         errorLore.add("§7L'action n'a pas pu être effectuée.");

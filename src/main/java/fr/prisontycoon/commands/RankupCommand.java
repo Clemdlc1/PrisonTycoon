@@ -8,6 +8,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.util.StringUtil;
 
 import java.util.*;
@@ -142,7 +143,7 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
 
         // Cherche toutes les permissions de mine que le joueur possède
         Set<String> minePermissions = player.getEffectivePermissions().stream()
-                .map(perm -> perm.getPermission())
+                .map(PermissionAttachmentInfo::getPermission)
                 .filter(perm -> perm.startsWith("specialmine.mine."))
                 .collect(Collectors.toSet());
 
@@ -196,20 +197,10 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // CORRIGÉ : Utilise PlayerDataManager qui gère déjà la suppression des anciennes permissions
-        // et n'ajoute que la nouvelle permission
-        plugin.getPlayerDataManager().addMinePermissionToPlayer(player.getUniqueId(), targetRank);
+        plugin.getPermissionManager().attachPermission(player, targetRank);
 
         plugin.getPluginLogger().info("Permission de mine définie pour " + player.getName() + ": " + targetRank.toUpperCase() +
                 " (les permissions précédentes ont été supprimées)");
-    }
-
-    /**
-     * CORRIGÉ: Retire toutes les permissions de mine (plus de FREE)
-     */
-    private void clearAllMinePermissions(Player player) {
-        // Utilise la méthode du PlayerDataManager qui gère déjà la suppression
-        plugin.getPlayerDataManager().removeAllMinePermissionsFromPlayer(player.getUniqueId());
     }
 
     /**

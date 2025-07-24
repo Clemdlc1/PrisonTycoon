@@ -101,8 +101,8 @@ public class ProfessionManager {
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
             Profession prof = professions.get(professionId.toLowerCase());
-            player.sendMessage("§a✅ Vous avez choisi le métier §e" + prof.getDisplayName() + " §a!");
-            player.sendMessage("§7" + prof.getDescription());
+            player.sendMessage("§a✅ Vous avez choisi le métier §e" + prof.displayName() + " §a!");
+            player.sendMessage("§7" + prof.description());
             return true;
         }
 
@@ -157,7 +157,7 @@ public class ProfessionManager {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
         Profession prof = professions.get(professionId.toLowerCase());
-        player.sendMessage("§a✅ Métier changé vers §e" + prof.getDisplayName() + " §a!");
+        player.sendMessage("§a✅ Métier changé vers §e" + prof.displayName() + " §a!");
         player.sendMessage("§7Coût: §c-5000 beacons");
 
         return true;
@@ -233,7 +233,7 @@ public class ProfessionManager {
 
         player.sendMessage("");
         player.sendMessage("§e🎯 §lMétier: Niveau supérieur !");
-        player.sendMessage("§7" + profession.getDisplayName() + " §7→ §eNiveau " + newLevel);
+        player.sendMessage("§7" + profession.displayName() + " §7→ §eNiveau " + newLevel);
 
         // Récompenses selon le métier et niveau (à implémenter plus tard)
         giveRewardsForLevel(player, professionId, newLevel);
@@ -312,7 +312,7 @@ public class ProfessionManager {
         playerData.setTalentLevel(activeProfession, talentId, level);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-        player.sendMessage("§a✅ Talent activé: §e" + talent.getDisplayName() + " §7niveau §e" + level);
+        player.sendMessage("§a✅ Talent activé: §e" + talent.displayName() + " §7niveau §e" + level);
         player.sendMessage("§7Coût: §c-" + NumberFormatter.format(cost) + " XP");
 
         return true;
@@ -402,83 +402,26 @@ public class ProfessionManager {
     // Classes internes
 
     /**
-     * Représente un métier
-     */
-    public static class Profession {
-        private final String id;
-        private final String displayName;
-        private final String title;
-        private final String description;
-        private final List<ProfessionTalent> talents;
-
-        public Profession(String id, String displayName, String title, String description, List<ProfessionTalent> talents) {
-            this.id = id;
-            this.displayName = displayName;
-            this.title = title;
-            this.description = description;
-            this.talents = talents;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public List<ProfessionTalent> getTalents() {
-            return talents;
-        }
+         * Représente un métier
+         */
+        public record Profession(String id, String displayName, String title, String description,
+                                 List<ProfessionTalent> talents) {
 
         public ProfessionTalent getTalent(String talentId) {
-            return talents.stream().filter(t -> t.getId().equals(talentId)).findFirst().orElse(null);
+                return talents.stream().filter(t -> t.id().equals(talentId)).findFirst().orElse(null);
+            }
         }
-    }
 
     /**
      * Représente un talent de métier
+     *
+     * @param values Valeurs pour les niveaux 1-10
      */
-    public static class ProfessionTalent {
-        private final String id;
-        private final String displayName;
-        private final String description;
-        private final int[] values; // Valeurs pour les niveaux 1-10
-
-        public ProfessionTalent(String id, String displayName, String description, int[] values) {
-            this.id = id;
-            this.displayName = displayName;
-            this.description = description;
-            this.values = values;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public int[] getValues() {
-            return values;
-        }
+        public record ProfessionTalent(String id, String displayName, String description, int[] values) {
 
         public int getValueAtLevel(int level) {
-            if (level < 1 || level > values.length) return 0;
-            return values[level - 1];
+                if (level < 1 || level > values.length) return 0;
+                return values[level - 1];
+            }
         }
-    }
 }

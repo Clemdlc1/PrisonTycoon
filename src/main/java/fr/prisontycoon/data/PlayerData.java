@@ -2,7 +2,6 @@ package fr.prisontycoon.data;
 
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
-import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -25,7 +24,6 @@ public class PlayerData {
     // Enchantements mobilité désactivés
     private final Set<String> mobilityEnchantmentsDisabled;
     private final Map<Material, Long> blocksMinedByType;
-    private final Set<String> minePermissions;
     // Données thread-safe
     private final Object dataLock = new Object();
     private final List<SanctionData> sanctionHistory;
@@ -39,7 +37,9 @@ public class PlayerData {
     private final Set<Integer> completedPrestigeLevels = new HashSet<>();
     private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
     private final Map<String, PlayerBoost> activeBoosts = new HashMap<>();
-    private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
+    private final Map<Material, Long> autominerStorageContents;
+    private final Map<String, Integer> autominerStoredKeys;
+    private final Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -78,32 +78,25 @@ public class PlayerData {
     private long lastMinuteGreedTriggers;
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
-    private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
+    private Set<String> customPermissions;
     private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
     private Set<String> activeEnchantmentBooks = new HashSet<>();
     // Système de métiers
     private String activeProfession; // null si aucun métier choisi
     private long lastProfessionChange; // Timestamp du dernier changement
     //prestige
-    private int prestigeLevel = 0;
-    private long lastPrestigeTime = 0; // Timestamp du dernier prestige
+    private final int prestigeLevel = 0;
     // NOUVEAUX ajouts pour le système amélioré
-    private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
-    private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
+    private final Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
+    private final Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private int reputation = 0;
-
     private ItemStack activeAutominerSlot1;
     private ItemStack activeAutominerSlot2;
-
     // Carburant et monde
     private double autominerFuelReserve;
     private String autominerCurrentWorld;
-
     // Stockage
     private int autominerStorageLevel;
-    private final Map<Material, Long> autominerStorageContents;
-    private final Map<String, Integer> autominerStoredKeys;
-
     // Gains en attente (greed et beacons)
     private long autominerPendingCoins;
     private long autominerPendingTokens;
@@ -138,8 +131,6 @@ public class PlayerData {
         this.totalBlocksDestroyed = 0;
         this.totalGreedTriggers = 0;
         this.totalKeysObtained = 0;
-
-        this.minePermissions = ConcurrentHashMap.newKeySet();
 
         this.pickaxeCristals = new ConcurrentHashMap<>(); // NOUVEAU
         this.sanctionHistory = new ArrayList<>();
@@ -473,136 +464,6 @@ public class PlayerData {
     public List<AutoUpgradeDetail> getLastMinuteAutoUpgradeDetails() {
         synchronized (dataLock) {
             return new ArrayList<>(lastMinuteAutoUpgradeDetails);
-        }
-    }
-
-    /**
-     * NOUVEAU: Ajoute une permission de mine au joueur (maintenant via bukkit)
-     */
-    public void addMinePermission(String mineName) {
-        synchronized (dataLock) {
-            // Ancienne logique (gardée pour compatibilité)
-            minePermissions.add(mineName.toLowerCase());
-
-            // NOUVEAU: Ajoute aussi la permission bukkit
-            String bukkitPermission = "specialmine.mine." + mineName.toLowerCase();
-            addPermission(bukkitPermission);
-        }
-    }
-
-    /**
-     * NOUVEAU: Supprime une permission de mine du joueur (maintenant via bukkit)
-     */
-    public void removeMinePermission(String mineName) {
-        synchronized (dataLock) {
-            // Ancienne logique (gardée pour compatibilité)
-            minePermissions.remove(mineName.toLowerCase());
-
-            // NOUVEAU: Retire aussi la permission bukkit
-            String bukkitPermission = "specialmine.mine." + mineName.toLowerCase();
-            removePermission(bukkitPermission);
-        }
-    }
-
-    public boolean hasMinePermission(String mineName) {
-        if (mineName == null || mineName.isEmpty()) {
-            return false;
-        }
-
-        // Normalise le nom de la mine (retire les préfixes)
-        String targetMine = mineName.toLowerCase();
-        if (targetMine.startsWith("mine-")) {
-            targetMine = targetMine.substring(5);
-        }
-
-        // Rang A par défaut (toujours accessible)
-        if (targetMine.equals("a")) {
-            return true;
-        }
-
-        // Trouve la permission la plus élevée du joueur
-        String highestRank = getHighestMineRank();
-        if (highestRank == null) {
-            return false; // Aucune permission
-        }
-
-        // LOGIQUE HIÉRARCHIQUE: compare les rangs
-        // Si j'ai rang 'c', je peux miner dans 'a', 'b', et 'c'
-        char playerRank = highestRank.charAt(0);
-        char targetRank = targetMine.charAt(0);
-
-        return targetRank <= playerRank;
-    }
-
-    /**
-     * NOUVEAU: Obtient le rang de mine le plus élevé (pas la permission complète)
-     */
-    public String getHighestMineRank() {
-        synchronized (dataLock) {
-            String highestRank = null;
-
-            // Cherche dans les permissions bukkit
-            for (String permission : customPermissions) {
-                if (permission.startsWith("specialmine.mine.")) {
-                    String rank = permission.substring("specialmine.mine.".length());
-                    if (rank.length() == 1) { // Valide seulement les rangs d'une lettre
-                        if (highestRank == null || rank.compareTo(highestRank) > 0) {
-                            highestRank = rank;
-                        }
-                    }
-                }
-            }
-
-            return highestRank;
-        }
-    }
-
-    /**
-     * CORRIGÉ: Retourne la plus haute permission de mine (compatibilité)
-     */
-    public String getHighestMinePermission() {
-        synchronized (dataLock) {
-            String highestRank = getHighestMineRank();
-            if (highestRank != null) {
-                return "specialmine.mine." + highestRank;
-            }
-
-            // Fallback vers l'ancienne logique
-            return minePermissions.stream()
-                    .max(String::compareTo)
-                    .orElse(null);
-        }
-    }
-
-    /**
-     * NOUVEAU: Liste toutes les mines accessibles avec le rang actuel
-     */
-    public Set<String> getAccessibleMines() {
-        synchronized (dataLock) {
-            Set<String> accessibleMines = new HashSet<>();
-
-            String highestRank = getHighestMineRank();
-            if (highestRank == null) {
-                accessibleMines.add("a"); // Rang par défaut
-                return accessibleMines;
-            }
-
-            // Ajoute toutes les mines de A jusqu'au rang actuel
-            char maxRank = highestRank.charAt(0);
-            for (char c = 'a'; c <= maxRank; c++) {
-                accessibleMines.add(String.valueOf(c));
-            }
-
-            return accessibleMines;
-        }
-    }
-
-    /**
-     * Efface toutes les permissions de mine
-     */
-    public void clearMinePermissions() {
-        synchronized (dataLock) {
-            minePermissions.clear();
         }
     }
 
@@ -1189,7 +1050,7 @@ public class PlayerData {
                         if (prestigeLevel > highestPrestige) {
                             highestPrestige = prestigeLevel;
                         }
-                    } catch (NumberFormatException e) {
+                    } catch (NumberFormatException ignored) {
                     }
                 }
             }
@@ -1223,11 +1084,6 @@ public class PlayerData {
             if (validLevel > 0) {
                 String newPrestigePermission = "specialmine.prestige." + validLevel;
                 customPermissions.add(newPrestigePermission);
-            }
-
-            // Mettre à jour le timestamp du dernier prestige si c'est un niveau valide
-            if (validLevel > 0) {
-                this.lastPrestigeTime = System.currentTimeMillis();
             }
         }
     }
@@ -1339,85 +1195,13 @@ public class PlayerData {
 
 
     /**
-     * Obtient le temps du dernier prestige
-     */
-    public long getLastPrestigeTime() {
-        synchronized (dataLock) {
-            return lastPrestigeTime;
-        }
-    }
-
-    /**
      * Obtient le nom affiché du prestige
      */
     public String getPrestigeDisplayName() {
         synchronized (dataLock) {
-            int currentLevel = getPrestigeLevel(); // Utilise les permissions
+            int currentLevel = getPrestigeLevel();
             if (currentLevel == 0) return "§7Aucun";
             return "§6§lP" + currentLevel;
-        }
-    }
-
-// ==================== INFORMATIONS ====================
-
-    /**
-     * Vérifie si le joueur a atteint un prestige spécifique
-     */
-    public boolean hasReachedPrestige(int level) {
-        synchronized (dataLock) {
-            return prestigeLevel >= level;
-        }
-    }
-
-    /**
-     * Obtient le pourcentage de progression vers le prestige maximum
-     */
-    public double getPrestigeProgress() {
-        synchronized (dataLock) {
-            return (double) prestigeLevel / 50.0 * 100.0;
-        }
-    }
-
-    /**
-     * Débloque une récompense de prestige (action gratuite)
-     */
-    public void unlockPrestigeReward(String rewardId) {
-        synchronized (dataLock) {
-            unlockedPrestigeRewards.put(rewardId, true);
-        }
-    }
-
-    /**
-     * Vérifie si une récompense de prestige est débloquée
-     */
-    public boolean isPrestigeRewardUnlocked(String rewardId) {
-        synchronized (dataLock) {
-            return unlockedPrestigeRewards.getOrDefault(rewardId, false);
-        }
-    }
-
-    /**
-     * Choisit un talent pour un niveau de prestige donné (un seul par niveau)
-     */
-    public void choosePrestigeTalent(int prestigeLevel, String talentName) {
-        synchronized (dataLock) {
-            chosenPrestigeTalents.put(prestigeLevel, talentName);
-        }
-    }
-
-    /**
-     * Obtient le talent choisi pour un niveau de prestige
-     */
-    public String getChosenPrestigeTalent(int prestigeLevel) {
-        synchronized (dataLock) {
-            return chosenPrestigeTalents.get(prestigeLevel);
-        }
-    }
-
-    // Getters/Setters pour la sauvegarde
-    public Map<String, Boolean> getUnlockedPrestigeRewards() {
-        synchronized (dataLock) {
-            return new HashMap<>(unlockedPrestigeRewards);
         }
     }
 
@@ -1428,34 +1212,9 @@ public class PlayerData {
         }
     }
 
-    public Map<Integer, String> getChosenPrestigeTalents() {
-        synchronized (dataLock) {
-            return new HashMap<>(chosenPrestigeTalents);
-        }
-    }
-
-    public void setChosenPrestigeTalents(Map<Integer, String> talents) {
-        synchronized (dataLock) {
-            this.chosenPrestigeTalents.clear();
-            this.chosenPrestigeTalents.putAll(talents);
-        }
-    }
-
     public void markPrestigeLevelCompleted(int prestigeLevel) {
         synchronized (dataLock) {
             completedPrestigeLevels.add(prestigeLevel);
-        }
-    }
-
-    public boolean isPrestigeLevelCompleted(int prestigeLevel) {
-        synchronized (dataLock) {
-            return completedPrestigeLevels.contains(prestigeLevel);
-        }
-    }
-
-    public Set<Integer> getCompletedPrestigeLevels() {
-        synchronized (dataLock) {
-            return new HashSet<>(completedPrestigeLevels);
         }
     }
 
@@ -1533,16 +1292,6 @@ public class PlayerData {
     }
 
     /**
-     * Vérifie si une récompense spéciale a été choisie (NOUVELLE VERSION EXCLUSIVE)
-     */
-    public boolean hasChosenSpecialReward(String rewardId) {
-        synchronized (dataLock) {
-            // Vérifier si cette récompense spécifique a été choisie
-            return chosenSpecialRewards.containsValue(rewardId);
-        }
-    }
-
-    /**
      * Vérifie si un niveau de prestige a déjà un choix de récompense
      */
     public boolean hasRewardChoiceForLevel(int prestigeLevel) {
@@ -1583,51 +1332,6 @@ public class PlayerData {
     }
 
     /**
-     * Ajoute de la réputation (peut être négatif pour diminuer)
-     *
-     * @param amount montant à ajouter
-     */
-    public void addReputation(int amount) {
-        setReputation(this.reputation + amount);
-    }
-
-    /**
-     * Retire de la réputation
-     *
-     * @param amount montant à retirer
-     */
-    public void removeReputation(int amount) {
-        setReputation(this.reputation - amount);
-    }
-
-    /**
-     * Vérifie si le joueur a une réputation positive
-     *
-     * @return true si réputation > 0
-     */
-    public boolean hasPositiveReputation() {
-        return reputation > 0;
-    }
-
-    /**
-     * Vérifie si le joueur a une réputation négative
-     *
-     * @return true si réputation < 0
-     */
-    public boolean hasNegativeReputation() {
-        return reputation < 0;
-    }
-
-    /**
-     * Vérifie si le joueur a une réputation neutre
-     *
-     * @return true si réputation == 0
-     */
-    public boolean hasNeutralReputation() {
-        return reputation == 0;
-    }
-
-    /**
      * Obtient les boosts actifs
      */
     public Map<String, PlayerBoost> getActiveBoosts() {
@@ -1655,25 +1359,6 @@ public class PlayerData {
         }
     }
 
-    /**
-     * Ajoute un boost actif
-     */
-    public void addActiveBoost(String type, PlayerBoost boost) {
-        synchronized (dataLock) {
-            if (boost.isActive()) {
-                this.activeBoosts.put(type, boost);
-            }
-        }
-    }
-
-    /**
-     * Retire un boost actif
-     */
-    public void removeActiveBoost(String type) {
-        synchronized (dataLock) {
-            this.activeBoosts.remove(type);
-        }
-    }
 
     /**
      * Vide tous les boosts actifs
@@ -1703,12 +1388,6 @@ public class PlayerData {
         }
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
     // Automineurs actifs
     public ItemStack getActiveAutominerSlot1() {
         return activeAutominerSlot1;
@@ -1733,14 +1412,6 @@ public class PlayerData {
 
     public void setAutominerFuelReserve(double autominerFuelReserve) {
         this.autominerFuelReserve = Math.max(0, autominerFuelReserve);
-    }
-
-    public void addAutominerFuel(double amount) {
-        this.autominerFuelReserve += Math.max(0, amount);
-    }
-
-    public void removeAutominerFuel(double amount) {
-        this.autominerFuelReserve = Math.max(0, this.autominerFuelReserve - Math.max(0, amount));
     }
 
     // Monde de minage
@@ -1772,25 +1443,6 @@ public class PlayerData {
         }
     }
 
-    public void addToAutominerStorage(Material material, long amount) {
-        if (amount > 0) {
-            this.autominerStorageContents.put(material,
-                    this.autominerStorageContents.getOrDefault(material, 0L) + amount);
-        }
-    }
-
-    public void removeFromAutominerStorage(Material material, long amount) {
-        if (amount > 0) {
-            long current = this.autominerStorageContents.getOrDefault(material, 0L);
-            long newAmount = Math.max(0, current - amount);
-            if (newAmount == 0) {
-                this.autominerStorageContents.remove(material);
-            } else {
-                this.autominerStorageContents.put(material, newAmount);
-            }
-        }
-    }
-
     // Clés stockées
     public Map<String, Integer> getAutominerStoredKeys() {
         return new HashMap<>(autominerStoredKeys);
@@ -1800,25 +1452,6 @@ public class PlayerData {
         this.autominerStoredKeys.clear();
         if (keys != null) {
             this.autominerStoredKeys.putAll(keys);
-        }
-    }
-
-    public void addAutominerKey(String keyType, int amount) {
-        if (amount > 0) {
-            this.autominerStoredKeys.put(keyType,
-                    this.autominerStoredKeys.getOrDefault(keyType, 0) + amount);
-        }
-    }
-
-    public void removeAutominerKey(String keyType, int amount) {
-        if (amount > 0) {
-            int current = this.autominerStoredKeys.getOrDefault(keyType, 0);
-            int newAmount = Math.max(0, current - amount);
-            if (newAmount == 0) {
-                this.autominerStoredKeys.remove(keyType);
-            } else {
-                this.autominerStoredKeys.put(keyType, newAmount);
-            }
         }
     }
 
@@ -1901,5 +1534,11 @@ public class PlayerData {
         long amount = this.autominerPendingBeacons;
         this.autominerPendingBeacons = 0;
         return amount;
+    }
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

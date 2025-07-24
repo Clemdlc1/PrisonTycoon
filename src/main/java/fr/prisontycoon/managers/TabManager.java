@@ -107,7 +107,7 @@ public class TabManager {
         String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
 
         return separator + "\n" +
-                ChatColor.GOLD.toString() + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
+                ChatColor.GOLD + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
                 ChatColor.GRAY + "Serveur de minage et de progression\n" +
                 ChatColor.YELLOW + "📊 Joueurs connectés: " + ChatColor.GREEN + onlinePlayers + ChatColor.GRAY + "/" + ChatColor.GREEN + maxPlayers + "\n" +
                 separator;

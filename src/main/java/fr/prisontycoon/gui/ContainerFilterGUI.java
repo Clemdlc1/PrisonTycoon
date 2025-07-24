@@ -1,10 +1,9 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.ContainerData;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -22,13 +21,11 @@ import java.util.Set;
 public class ContainerFilterGUI {
 
     private final PrisonTycoon plugin;
-    private final NamespacedKey containerUUIDKey;
     // Map pour associer les inventaires ouverts aux UUIDs des conteneurs
     private final Map<String, String> activeFilterGUIs = new HashMap<>();
 
     public ContainerFilterGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.containerUUIDKey = new NamespacedKey(plugin, "filter_container_uuid");
     }
 
     /**

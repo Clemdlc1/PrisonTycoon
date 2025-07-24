@@ -201,23 +201,9 @@ public class ChatLogger {
     }
 
     /**
-     * Classe pour représenter une entrée de log
-     */
-    private static class LogEntry {
-        final long timestamp;
-        final LogType type;
-        final String playerName;
-        final String uuid;
-        final String rawMessage;
-        final String formattedMessage;
-
-        LogEntry(long timestamp, LogType type, String playerName, String uuid, String rawMessage, String formattedMessage) {
-            this.timestamp = timestamp;
-            this.type = type;
-            this.playerName = playerName;
-            this.uuid = uuid;
-            this.rawMessage = rawMessage;
-            this.formattedMessage = formattedMessage;
-        }
+         * Classe pour représenter une entrée de log
+         */
+        private record LogEntry(long timestamp, LogType type, String playerName, String uuid, String rawMessage,
+                                String formattedMessage) {
     }
 }

@@ -203,13 +203,12 @@ public class MiningListener implements Listener {
         ItemMeta meta = pickaxe.getItemMeta();
 
         // Vérifie si l'item peut prendre des dégâts en testant si son meta est une instance de Damageable
-        if (!(meta instanceof Damageable)) {
+        if (!(meta instanceof Damageable damageableMeta)) {
             // L'item ne peut pas subir de dégâts, on arrête donc la fonction ici.
             return;
         }
 
         // À ce stade, on sait que le cast est sûr
-        Damageable damageableMeta = (Damageable) meta;
 
         UUID playerId = player.getUniqueId();
 

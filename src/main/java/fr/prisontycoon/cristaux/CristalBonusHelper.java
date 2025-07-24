@@ -126,8 +126,8 @@ public class CristalBonusHelper {
                 double[] chances = cristal.getType().getEchoChances(cristal.getNiveau());
 
                 // Vérifie chaque niveau d'écho
-                for (int i = 0; i < chances.length; i++) {
-                    if (random.nextDouble() * 100.0 < chances[i]) {
+                for (double chance : chances) {
+                    if (random.nextDouble() * 100.0 < chance) {
                         return true; // Au moins un écho se déclenche
                     }
                 }

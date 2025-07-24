@@ -502,7 +502,7 @@ public class GlobalBonusManager {
         private double professionBonus = 0.0;
         private double prestigeBonus = 0.0;
         private double temporaryBoostBonus = 0.0;
-        private Map<String, Double> detailedSources = new HashMap<>();
+        private final Map<String, Double> detailedSources = new HashMap<>();
 
         public double getTotalBonus() {
             return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus;

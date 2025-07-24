@@ -1,6 +1,6 @@
 package fr.prisontycoon.commands;
 
-import fr.prisontycoon.GUI.PrestigeGUI;
+import fr.prisontycoon.gui.PrestigeGUI;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import org.bukkit.command.Command;

@@ -97,12 +97,12 @@ public class AutominerTask extends BukkitRunnable {
         // Debug amélioré avec détails Fortune et Greed
         if (plugin.getConfig().getBoolean("debug", false)) {
             plugin.getPluginLogger().info("§7Automineur " + slotName + " de " + player.getName() +
-                    " a miné " + result.getQuantity() + "x " + result.getMinedBlock().name() +
-                    " (Fortune: " + result.getQuantity() + " blocs)" +
-                    " → Gains: " + result.getCoins() + " coins, " + result.getTokens() + " tokens, " +
-                    result.getExperience() + " exp" +
-                    (result.getKeys() > 0 ? ", " + result.getKeys() + " clés" : "") +
-                    (result.isBeaconFound() ? ", 1 beacon" : ""));
+                    " a miné " + result.quantity() + "x " + result.minedBlock().name() +
+                    " (Fortune: " + result.quantity() + " blocs)" +
+                    " → Gains: " + result.coins() + " coins, " + result.tokens() + " tokens, " +
+                    result.experience() + " exp" +
+                    (result.keys() > 0 ? ", " + result.keys() + " clés" : "") +
+                    (result.beaconFound() ? ", 1 beacon" : ""));
         }
     }
 
@@ -111,21 +111,21 @@ public class AutominerTask extends BukkitRunnable {
      */
     private void applyMiningResults(Player player, PlayerData playerData, AutominerManager.AutominerMiningResult result) {
         // Stocker les blocs minés
-        addToStorage(playerData, result.getMinedBlock(), result.getQuantity());
+        addToStorage(playerData, result.minedBlock(), result.quantity());
 
         // NOUVEAU: Accumuler les gains greed dans les "pending" au lieu de les donner directement
-        if (result.getCoins() > 0) {
-            playerData.addAutominerPendingCoins(result.getCoins());
+        if (result.coins() > 0) {
+            playerData.addAutominerPendingCoins(result.coins());
         }
-        if (result.getTokens() > 0) {
-            playerData.addAutominerPendingTokens(result.getTokens());
+        if (result.tokens() > 0) {
+            playerData.addAutominerPendingTokens(result.tokens());
         }
-        if (result.getExperience() > 0) {
-            playerData.addAutominerPendingExperience(result.getExperience());
+        if (result.experience() > 0) {
+            playerData.addAutominerPendingExperience(result.experience());
         }
 
         // Générer des clés si nécessaire
-        if (result.getKeys() > 0) {
+        if (result.keys() > 0) {
             AutominerType type = autominerManager.getAutominerType(playerData.getActiveAutominerSlot1());
             if (type == null) {
                 type = autominerManager.getAutominerType(playerData.getActiveAutominerSlot2());
@@ -136,13 +136,13 @@ public class AutominerTask extends BukkitRunnable {
                 String keyType = getKeyTypeFromItem(key);
 
                 Map<String, Integer> storedKeys = playerData.getAutominerStoredKeys();
-                storedKeys.put(keyType, storedKeys.getOrDefault(keyType, 0) + result.getKeys());
+                storedKeys.put(keyType, storedKeys.getOrDefault(keyType, 0) + result.keys());
                 playerData.setAutominerStoredKeys(storedKeys);
             }
         }
 
         // Accumuler les beacons dans les "pending"
-        if (result.isBeaconFound()) {
+        if (result.beaconFound()) {
             playerData.addAutominerPendingBeacons(1);
 
             // Notification synchrone

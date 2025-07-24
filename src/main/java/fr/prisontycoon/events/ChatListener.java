@@ -52,7 +52,7 @@ public class ChatListener implements Listener {
             var muteData = plugin.getModerationManager().getMuteData(player.getUniqueId());
             if (muteData != null) {
                 player.sendMessage(ChatColor.RED + "🔇 Vous êtes muté!");
-                player.sendMessage(ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + muteData.getReason());
+                player.sendMessage(ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + muteData.reason());
                 if (!muteData.isPermanent()) {
                     long remaining = muteData.getRemainingTime();
                     player.sendMessage(ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining));
@@ -72,9 +72,7 @@ public class ChatListener implements Listener {
         TextComponent formattedMessage = createFormattedMessage(player, processedMessage);
 
         // Diffuse le message à tous les joueurs en ligne
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            broadcastMessage(formattedMessage, player);
-        });
+        plugin.getServer().getScheduler().runTask(plugin, () -> broadcastMessage(formattedMessage, player));
 
         // Log le message
         String rawLogMessage = getPlayerPrefix(player) + " " + player.getName() + ": " + message;
@@ -95,7 +93,7 @@ public class ChatListener implements Listener {
             if (banData != null) {
                 String kickMessage = ChatColor.RED.toString() + ChatColor.BOLD + "=== BANNISSEMENT ===\n\n" +
                         ChatColor.RED + "Vous êtes banni du serveur\n" +
-                        ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + banData.getReason() + "\n";
+                        ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + banData.reason() + "\n";
 
                 if (!banData.isPermanent()) {
                     long remaining = banData.getRemainingTime();

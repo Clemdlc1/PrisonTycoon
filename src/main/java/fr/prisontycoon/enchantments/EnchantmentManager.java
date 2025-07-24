@@ -228,7 +228,7 @@ public class EnchantmentManager {
 
                 // Message d'avertissement moins fréquent pour l'inventaire plein
                 if (!player.hasMetadata("inventory_full_warning") ||
-                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").get(0).asLong() > 30000) {
+                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
 
                     int droppedCount = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
                     player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items droppés au sol.");
@@ -300,7 +300,7 @@ public class EnchantmentManager {
             double totalChance = baseChance + luckBonus;
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                long blockTokens = blockValue.getTokens();
+                long blockTokens = blockValue.tokens();
                 long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * combustionMultiplier * abundanceMultiplier);
 
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
@@ -320,7 +320,7 @@ public class EnchantmentManager {
             double totalChance = baseChance + luckBonus;
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                long blockExp = blockValue.getExperience();
+                long blockExp = blockValue.experience();
                 long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
 
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
@@ -342,7 +342,7 @@ public class EnchantmentManager {
             double totalChance = baseChance + luckBonus;
 
             if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                long blockCoins = blockValue.getCoins();
+                long blockCoins = blockValue.coins();
                 long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
 
                 // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
@@ -422,7 +422,7 @@ public class EnchantmentManager {
 
         if (ThreadLocalRandom.current().nextDouble() < chance) {
             BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
-            long blockTokens = blockValue.getTokens();
+            long blockTokens = blockValue.tokens();
             long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * penaltyMultiplier);
 
             // MODIFIÉ: Utilise le GlobalBonusManager même avec la malus
@@ -456,26 +456,16 @@ public class EnchantmentManager {
      * @return L'ItemStack de la clé configurée.
      */
     public ItemStack createKey(String keyType) {
-        String keyColor;
+        String keyColor = switch (keyType) {
+            case "Cristal" -> "§d";
+            case "Légendaire" -> "§6";
+            case "Rare" -> "§5";
+            case "Peu Commune" -> "§9";
+            default -> // "Commune" et tout autre cas
+                    "§f";
+        };
 
         // Détermine la couleur en fonction du type de clé
-        switch (keyType) {
-            case "Cristal":
-                keyColor = "§d";
-                break;
-            case "Légendaire":
-                keyColor = "§6";
-                break;
-            case "Rare":
-                keyColor = "§5";
-                break;
-            case "Peu Commune":
-                keyColor = "§9";
-                break;
-            default: // "Commune" et tout autre cas
-                keyColor = "§f";
-                break;
-        }
 
         ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
         var meta = key.getItemMeta();

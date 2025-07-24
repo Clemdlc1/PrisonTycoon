@@ -34,15 +34,11 @@ public class PrestigeManager {
         }
 
         // Vérifier le niveau de prestige maximum
-        if (playerData.getPrestigeLevel() >= 50) {
-            return false;
-        }
+        return playerData.getPrestigeLevel() < 50;
 
         // TODO: Vérifier pas d'épargne active en banque
         // TODO: Vérifier pas d'investissement actif
         // TODO: Vérifier ne pas être en challenge
-
-        return true;
     }
 
     /**
@@ -133,7 +129,7 @@ public class PrestigeManager {
         clearAllMinePermissions(player);
 
         // Remettre uniquement la permission de base (rang A) via PermissionManager
-        plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), "specialmine.mine.a");
+        plugin.getPermissionManager().attachPermission(player, "specialmine.mine.a");
 
         // Reset des coins
         playerData.setCoins(0);
@@ -147,16 +143,12 @@ public class PrestigeManager {
     private void clearAllMinePermissions(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Retirer toutes les permissions de mine a-z via PermissionManager
         for (char c = 'a'; c <= 'z'; c++) {
             String minePermission = "specialmine.mine." + c;
             if (playerData.hasCustomPermission(minePermission)) {
-                plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), minePermission);
+                plugin.getPermissionManager().detachPermission(player, minePermission);
             }
         }
-
-        // Ancienne logique pour compatibilité
-        playerData.clearMinePermissions();
     }
 
     /**
@@ -171,21 +163,11 @@ public class PrestigeManager {
 
         // Récompenses automatiques selon le niveau
         switch (prestigeLevel) {
-            case 1 -> {
-                player.sendMessage("§a🎉 Premier prestige! Bonus de vitesse permanente débloqué!");
-            }
-            case 5 -> {
-                player.sendMessage("§b🎁 P5 atteint! Bonus d'efficacité de minage débloqué!");
-            }
-            case 10 -> {
-                player.sendMessage("§d🏆 P10 atteint! Accès aux mines de prestige débloqué!");
-            }
-            case 25 -> {
-                player.sendMessage("§6👑 P25 atteint! Bonus de multiplicateur de coins débloqué!");
-            }
-            case 50 -> {
-                player.sendMessage("§c🌟 P50 atteint! Rang LÉGENDE débloqué! Félicitations!");
-            }
+            case 1 -> player.sendMessage("§a🎉 Premier prestige! Bonus de vitesse permanente débloqué!");
+            case 5 -> player.sendMessage("§b🎁 P5 atteint! Bonus d'efficacité de minage débloqué!");
+            case 10 -> player.sendMessage("§d🏆 P10 atteint! Accès aux mines de prestige débloqué!");
+            case 25 -> player.sendMessage("§6👑 P25 atteint! Bonus de multiplicateur de coins débloqué!");
+            case 50 -> player.sendMessage("§c🌟 P50 atteint! Rang LÉGENDE débloqué! Félicitations!");
         }
     }
 
@@ -279,8 +261,6 @@ public class PrestigeManager {
 
     /**
      * NOUVEAU: Affiche les informations de prestige du joueur
-     *
-     * @return
      */
     public String showPrestigeInfo(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());

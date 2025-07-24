@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
@@ -9,7 +9,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -61,7 +60,7 @@ public class AutominerCondHeadGUI {
         }
 
         // Vérifier que tous sont des automineurs du même type
-        AutominerType firstType = plugin.getAutominerManager().getAutominerType(autominers.get(0));
+        AutominerType firstType = plugin.getAutominerManager().getAutominerType(autominers.getFirst());
         if (firstType == null) {
             player.sendMessage("§cLe premier item n'est pas un automineur!");
             returnItemsToPlayer(player, autominers);
@@ -146,7 +145,7 @@ public class AutominerCondHeadGUI {
             playerData.setAutominerFuelReserve(playerData.getAutominerFuelReserve() + totalFuelAdded);
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-            player.sendMessage("§a✓ " + NumberFormatter.format((long)totalFuelAdded) + " têtes ajoutées au réservoir!");
+            player.sendMessage("§a✓ " + NumberFormatter.format((long) totalFuelAdded) + " têtes ajoutées au réservoir!");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
 
@@ -189,8 +188,8 @@ public class AutominerCondHeadGUI {
 
             var blockValue = plugin.getConfigManager().getBlockValue(entry.getKey());
             if (blockValue != null) {
-                blockCoins = blockValue.getCoins();
-                blockTokens = blockValue.getTokens();
+                blockCoins = blockValue.coins();
+                blockTokens = blockValue.tokens();
             }
 
             // Utiliser sellPrice en priorité, sinon blockValue, sinon défaut
@@ -299,7 +298,7 @@ public class AutominerCondHeadGUI {
         ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta backMeta = back.getItemMeta();
         backMeta.setDisplayName("§cRetour");
-        backMeta.setLore(Arrays.asList("§7Retourner au menu principal"));
+        backMeta.setLore(List.of("§7Retourner au menu principal"));
         back.setItemMeta(backMeta);
         inv.setItem(lastRow + 8, back);
 
@@ -372,7 +371,7 @@ public class AutominerCondHeadGUI {
                 // Essayer getBlockValue
                 var blockValue = plugin.getConfigManager().getBlockValue(material);
                 if (blockValue != null) {
-                    itemValue = Math.max(blockValue.getCoins(), blockValue.getTokens());
+                    itemValue = Math.max(blockValue.coins(), blockValue.tokens());
                 }
             }
 
@@ -569,11 +568,11 @@ public class AutominerCondHeadGUI {
             // Essayer getBlockValue pour coins et tokens
             var blockValue = plugin.getConfigManager().getBlockValue(material);
             if (blockValue != null) {
-                if (coinsValue == 0 && blockValue.getCoins() > 0) {
-                    coinsValue = blockValue.getCoins();
+                if (coinsValue == 0 && blockValue.coins() > 0) {
+                    coinsValue = blockValue.coins();
                 }
-                if (blockValue.getTokens() > 0) {
-                    tokensValue = blockValue.getTokens();
+                if (blockValue.tokens() > 0) {
+                    tokensValue = blockValue.tokens();
                 }
             }
 
@@ -642,7 +641,7 @@ public class AutominerCondHeadGUI {
             player.sendMessage("§cAucun minerai vendable trouvé!");
 
             // Debug : afficher les 3 premiers minerais pour diagnostiquer
-            if (storage.size() > 0) {
+            if (!storage.isEmpty()) {
                 player.sendMessage("§7Debug - Premiers minerais:");
                 int count = 0;
                 for (Map.Entry<Material, Long> entry : storage.entrySet()) {
@@ -654,7 +653,7 @@ public class AutominerCondHeadGUI {
                     long defaultPrice = getDefaultSellPrice(material);
 
                     player.sendMessage("§8- " + material.name() + ": sellPrice=" + sellPrice +
-                            ", blockCoins=" + (blockValue != null ? blockValue.getCoins() : 0) +
+                            ", blockCoins=" + (blockValue != null ? blockValue.coins() : 0) +
                             ", default=" + defaultPrice);
                     count++;
                 }

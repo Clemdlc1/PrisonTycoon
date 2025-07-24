@@ -96,7 +96,6 @@ public class EnchantmentBookManager {
             player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.8f, 1.2f);
             saveActiveEnchantments(player);
             plugin.getPickaxeManager().updatePlayerPickaxe(player);
-            return true;
         } else {
             // Vérification de la limite (4 max)
             if (playerActiveEnchants.size() >= 4) {
@@ -118,8 +117,8 @@ public class EnchantmentBookManager {
 
             player.sendMessage("§a✅ Enchantement §e" + enchantmentBooks.get(bookId).getName() + " §aactivé pour §b" + xpCost + " XP§a!");
             player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
-            return true;
         }
+        return true;
     }
 
     /**
@@ -216,30 +215,19 @@ public class EnchantmentBookManager {
      * NOUVEAU : Retourne une description du pouvoir de l'enchantement
      */
     private String getEnchantmentPowerDescription(String bookId) {
-        switch (bookId) {
-            case "bomber":
-                return "Explosion destructrice";
-            case "autosell":
-                return "Vente automatique";
-            case "beaconbreaker":
-                return "Briseur de beacons";
-            case "excavation":
-                return "Minage en zone 3x3";
-            case "incassable":
-                return "Durabilité infinie";
-            case "tunnel":
-                return "Perceur de tunnels";
-            case "plusvalue":
-                return "Gains financiers améliorés";
-            case "tonnerre":
-                return "Foudre dévastatrice";
-            case "veinminer":
-                return "Extraction de veines";
-            case "chaos":
-                return "Effet chaotique aléatoire";
-            default:
-                return "Pouvoir mystérieux";
-        }
+        return switch (bookId) {
+            case "bomber" -> "Explosion destructrice";
+            case "autosell" -> "Vente automatique";
+            case "beaconbreaker" -> "Briseur de beacons";
+            case "excavation" -> "Minage en zone 3x3";
+            case "incassable" -> "Durabilité infinie";
+            case "tunnel" -> "Perceur de tunnels";
+            case "plusvalue" -> "Gains financiers améliorés";
+            case "tonnerre" -> "Foudre dévastatrice";
+            case "veinminer" -> "Extraction de veines";
+            case "chaos" -> "Effet chaotique aléatoire";
+            default -> "Pouvoir mystérieux";
+        };
     }
 
     /**
@@ -317,12 +305,12 @@ public class EnchantmentBookManager {
         BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
 
         // Vérifie si le bloc a une valeur monétaire
-        if (blockValue == null || blockValue.getCoins() <= 0) {
+        if (blockValue == null || blockValue.coins() <= 0) {
             return;
         }
 
         // Applique la pénalité de 2%
-        long basePrice = blockValue.getCoins();
+        long basePrice = blockValue.coins();
         long sellPrice = Math.round(basePrice * quantity * 0.98);
 
         // Ajoute l'argent au joueur
@@ -357,8 +345,8 @@ public class EnchantmentBookManager {
         // Itère sur les blocs de la mine pour trouver celui avec la plus grande valeur
         for (Material material : blockComposition.keySet()) {
             BlockValueData blockValue = configManager.getBlockValue(material);
-            if (blockValue != null && blockValue.getCoins() > maxCoins) {
-                maxCoins = blockValue.getCoins();
+            if (blockValue != null && blockValue.coins() > maxCoins) {
+                maxCoins = blockValue.coins();
                 highestValueBlock = material;
             }
         }
@@ -916,7 +904,7 @@ public class EnchantmentBookManager {
             Set<Location> vein = findConnectedBlocks(start, targetMaterial, 100);
 
             new BukkitRunnable() {
-                Iterator<Location> iterator = vein.iterator();
+                final Iterator<Location> iterator = vein.iterator();
                 int count = 0;
 
                 @Override

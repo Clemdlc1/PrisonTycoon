@@ -140,7 +140,7 @@ public class ConfigManager {
         if (world == null) {
             plugin.getPluginLogger().warning("§cMonde '" + worldName + "' introuvable pour la mine " + name +
                     ", utilisation du monde principal");
-            world = plugin.getServer().getWorlds().get(0);
+            world = plugin.getServer().getWorlds().getFirst();
         }
 
         // Lecture des coordonnées avec valeurs par défaut

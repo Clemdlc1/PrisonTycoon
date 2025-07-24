@@ -114,24 +114,16 @@ public enum ReputationTier {
      * Formatage coloré du titre selon le niveau
      */
     public String getColoredTitle() {
-        switch (this) {
-            case EXEMPLAIRE:
-                return "§a§l" + title;
-            case HONORABLE:
-                return "§2" + title;
-            case RESPECTE:
-                return "§a" + title;
-            case ORDINAIRE:
-                return "§7" + title;
-            case SUSPECT:
-                return "§6" + title;
-            case CRIMINEL:
-                return "§c" + title;
-            case INFAME:
-                return "§4§l" + title;
-            default:
-                return "§7" + title;
-        }
+        return switch (this) {
+            case EXEMPLAIRE -> "§a§l" + title;
+            case HONORABLE -> "§2" + title;
+            case RESPECTE -> "§a" + title;
+            case ORDINAIRE -> "§7" + title;
+            case SUSPECT -> "§6" + title;
+            case CRIMINEL -> "§c" + title;
+            case INFAME -> "§4§l" + title;
+            default -> "§7" + title;
+        };
     }
 
     /**

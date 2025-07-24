@@ -84,10 +84,10 @@ public class VipManager {
     /**
      * SIMPLIFIÉ: Ajoute un joueur VIP (donne la permission)
      */
-    public void addVip(UUID uuid, String playerName, String addedBy) {
+    public void addVip(UUID uuid, Player target, Player addedBy) {
         // Enregistre dans le fichier pour historique/logs
         String path = "vips." + uuid + ".";
-        vipConfig.set(path + "playerName", playerName);
+        vipConfig.set(path + "playerName", target);
         vipConfig.set(path + "addedBy", addedBy);
         vipConfig.set(path + "addedAt", System.currentTimeMillis());
         saveVips();
@@ -95,30 +95,29 @@ public class VipManager {
         // Ajoute au cache
         vipCache.add(uuid);
 
-        // NOUVEAU: Ajoute la permission directement dans PlayerData
-        plugin.getPlayerDataManager().addPermissionToPlayer(uuid, "specialmine.vip");
+        plugin.getPermissionManager().attachPermission(target, "specialmine.vip");
 
         // Log
-        plugin.getPluginLogger().info("VIP ajouté: " + playerName + " (" + uuid + ") par " + addedBy);
+        plugin.getPluginLogger().info("VIP ajouté: " + target + " (" + uuid + ") par " + addedBy);
         plugin.getPluginLogger().info("Permission specialmine.vip accordée automatiquement");
     }
 
     /**
      * NOUVEAU: Retire un joueur VIP (retire la permission directement)
      */
-    public void removeVip(UUID uuid, String removedBy) {
-        String playerName = vipConfig.getString("vips." + uuid + ".playerName", "Inconnu");
+    public void removeVip(Player player, String removedBy) {
+        String playerName = vipConfig.getString("vips." + player + ".playerName", "Inconnu");
 
         // Retire du fichier et cache
-        vipCache.remove(uuid);
-        vipConfig.set("vips." + uuid, null);
+        vipCache.remove(player.getUniqueId());
+        vipConfig.set("vips." + player, null);
         saveVips();
 
         // NOUVEAU: Retire la permission directement de PlayerData
-        plugin.getPlayerDataManager().removePermissionFromPlayer(uuid, "specialmine.vip");
+        plugin.getPermissionManager().detachPermission(player, "specialmine.vip");
 
         // Log
-        plugin.getPluginLogger().info("VIP retiré: " + playerName + " (" + uuid + ") par " + removedBy);
+        plugin.getPluginLogger().info("VIP retiré: " + playerName + " (" + player + ") par " + removedBy);
         plugin.getPluginLogger().info("Permission specialmine.vip retirée automatiquement");
     }
 
@@ -127,13 +126,9 @@ public class VipManager {
      */
     public boolean isVip(UUID uuid) {
         Player player = plugin.getServer().getPlayer(uuid);
-        if (player != null && player.isOnline()) {
-            // Pour joueurs en ligne: vérifier permission Bukkit (plus fiable)
-            return player.hasPermission("specialmine.vip");
-        }
 
         // Pour joueurs hors ligne: vérifier données stockées
-        return plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
+        return plugin.getPermissionManager().hasPermission(player, "specialmine.vip");
     }
 
     /**
@@ -142,7 +137,7 @@ public class VipManager {
     public boolean checkVipConsistency(Player player) {
         UUID uuid = player.getUniqueId();
         boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
-        boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
+        boolean hasPermissionData = plugin.getPermissionManager().hasPermission(player, "specialmine.vip");
         boolean inCache = vipCache.contains(uuid);
 
         boolean consistent = hasPermissionBukkit == hasPermissionData && hasPermissionData == inCache;
@@ -166,29 +161,28 @@ public class VipManager {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
             boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
-            boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
+            boolean hasPermissionData = plugin.getPermissionManager().hasPermission(player, "specialmine.vip");
             boolean inCache = vipCache.contains(uuid);
 
             // Source de vérité = données stockées (PlayerData)
-            boolean shouldBeVip = hasPermissionData;
 
             // Synchronise le cache
-            if (shouldBeVip && !inCache) {
+            if (hasPermissionData && !inCache) {
                 vipCache.add(uuid);
                 plugin.getPluginLogger().info("§7Ajouté au cache VIP: " + player.getName());
                 synced++;
-            } else if (!shouldBeVip && inCache) {
+            } else if (!hasPermissionData && inCache) {
                 vipCache.remove(uuid);
                 plugin.getPluginLogger().info("§7Retiré du cache VIP: " + player.getName());
                 synced++;
             }
 
             // Synchronise les permissions Bukkit
-            if (shouldBeVip && !hasPermissionBukkit) {
+            if (hasPermissionData && !hasPermissionBukkit) {
                 plugin.getPermissionManager().attachPermission(player, "specialmine.vip");
                 plugin.getPluginLogger().info("§7Permission attachée: " + player.getName());
                 synced++;
-            } else if (!shouldBeVip && hasPermissionBukkit) {
+            } else if (!hasPermissionData && hasPermissionBukkit) {
                 plugin.getPermissionManager().detachPermission(player, "specialmine.vip");
                 plugin.getPluginLogger().info("§7Permission détachée: " + player.getName());
                 synced++;
@@ -211,7 +205,7 @@ public class VipManager {
                 vipConfig.getString("vips." + uuid + ".playerName", "Inconnu");
 
         boolean hasPermissionBukkit = player != null && player.hasPermission("specialmine.vip");
-        boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
+        boolean hasPermissionData = plugin.getPermissionManager().hasPermission(player, "specialmine.vip");
         boolean inCache = vipCache.contains(uuid);
 
         return String.format("§e%s §7- Bukkit: %s§7, Données: %s§7, Cache: %s",
@@ -227,7 +221,7 @@ public class VipManager {
     public void forcePlayerSync(Player player) {
         UUID uuid = player.getUniqueId();
 
-        boolean shouldBeVip = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
+        boolean shouldBeVip = plugin.getPermissionManager().hasPermission(player, "specialmine.vip");
 
         boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
 
@@ -292,35 +286,8 @@ public class VipManager {
     }
 
     /**
-     * Classe pour stocker les données VIP
-     */
-    public static class VipData {
-        private final UUID uuid;
-        private final String playerName;
-        private final String addedBy;
-        private final long addedAt;
-
-        public VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
-            this.uuid = uuid;
-            this.playerName = playerName;
-            this.addedBy = addedBy;
-            this.addedAt = addedAt;
-        }
-
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        public String getPlayerName() {
-            return playerName;
-        }
-
-        public String getAddedBy() {
-            return addedBy;
-        }
-
-        public long getAddedAt() {
-            return addedAt;
-        }
+         * Classe pour stocker les données VIP
+         */
+        public record VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
     }
 }

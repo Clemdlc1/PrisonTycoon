@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -38,9 +38,6 @@ public class WeaponArmorEnchantGUI {
         this.plugin = plugin;
     }
 
-    /**
-     * Ouvre le menu d'enchantement pour épée/armure
-     */
     /**
      * CORRIGÉ : Méthode openEnchantMenu mise à jour pour passer l'item à setupUniqueBookSlots
      */
@@ -160,7 +157,7 @@ public class WeaponArmorEnchantGUI {
         // Premier slot de livre unique (épée et armure)
         if (!enchantList.isEmpty()) {
             // NOUVEAU : Affiche le premier enchantement existant
-            Map.Entry<String, Integer> firstEnchant = enchantList.get(0);
+            Map.Entry<String, Integer> firstEnchant = enchantList.getFirst();
             ItemStack existingBook = createDisplayBook(firstEnchant.getKey(), firstEnchant.getValue());
             gui.setItem(UNIQUE_BOOK_SLOT_1, existingBook);
         } else {
@@ -255,18 +252,11 @@ public class WeaponArmorEnchantGUI {
      * NOUVEAU : Méthode utilitaire pour récupérer la couleur d'un enchantement
      */
     private String getEnchantmentColor(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-            case "incassable":
-                return "§5"; // Violet pour universels
-            case "tornade":
-            case "repercussion":
-            case "behead":
-            case "chasseur":
-                return "§c"; // Rouge pour épées
-            default:
-                return "§5";
-        }
+        return switch (enchantId) {
+            case "tonnerre", "incassable" -> "§5"; // Violet pour universels
+            case "tornade", "repercussion", "behead", "chasseur" -> "§c"; // Rouge pour épées
+            default -> "§5";
+        };
     }
 
     /**
@@ -316,7 +306,6 @@ public class WeaponArmorEnchantGUI {
         // Bouton enchantement vanilla
         if (slot == VANILLA_ENCHANT_BUTTON) {
             handleVanillaEnchant(player);
-            return;
         }
 
         // Slots de livres uniques - géré via drag & drop dans le listener
@@ -481,19 +470,12 @@ public class WeaponArmorEnchantGUI {
      * NOUVEAU : Information de compatibilité lisible
      */
     private String getCompatibilityInfo(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-                return "§eÉpées §7et §ePioches";
-            case "incassable":
-                return "§eÉpées§7, §ePioches §7et §eArmures";
-            case "tornade":
-            case "repercussion":
-            case "behead":
-            case "chasseur":
-                return "§eÉpées §7uniquement";
-            default:
-                return "§cType inconnu";
-        }
+        return switch (enchantId) {
+            case "tonnerre" -> "§eÉpées §7et §ePioches";
+            case "incassable" -> "§eÉpées§7, §ePioches §7et §eArmures";
+            case "tornade", "repercussion", "behead", "chasseur" -> "§eÉpées §7uniquement";
+            default -> "§cType inconnu";
+        };
     }
 
     // Méthodes utilitaires
@@ -534,17 +516,12 @@ public class WeaponArmorEnchantGUI {
 
     private String getEnchantmentName(Enchantment enchant) {
         // Traduction simplifiée des enchantements
-        switch (enchant.getKey().getKey()) {
-            case "sharpness":
-                return "Tranchant";
-            case "unbreaking":
-                return "Incassable";
-            case "fire_aspect":
-                return "Flamme";
-            case "protection":
-                return "Protection";
-            default:
-                return enchant.getKey().getKey();
-        }
+        return switch (enchant.getKey().getKey()) {
+            case "sharpness" -> "Tranchant";
+            case "unbreaking" -> "Incassable";
+            case "fire_aspect" -> "Flamme";
+            case "protection" -> "Protection";
+            default -> enchant.getKey().getKey();
+        };
     }
 }

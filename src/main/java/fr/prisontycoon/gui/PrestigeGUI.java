@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.commands.PrestigeCommand;
@@ -167,7 +167,7 @@ public class PrestigeGUI {
 
         if (rewards.size() == 1) {
             // Récompense unique (P10, P20, etc.) - centrer sur la colonne du milieu
-            PrestigeReward reward = rewards.get(0);
+            PrestigeReward reward = rewards.getFirst();
             boolean isChosen = reward.getId().equals(chosenRewardId);
             gui.setItem(baseSlot + 1, createExclusiveRewardItem(player, reward, prestigeLevel, isUnlocked, isChosen, hasChoice));
         } else {
@@ -872,7 +872,7 @@ public class PrestigeGUI {
                     String bonusLine = String.join("§7, ", activeBonus);
                     // Couper la ligne si elle est trop longue
                     if (bonusLine.length() > 40) {
-                        lore.add("§7  Actifs: " + activeBonus.get(0) + "§7...");
+                        lore.add("§7  Actifs: " + activeBonus.getFirst() + "§7...");
                     } else {
                         lore.add("§7  Actifs: " + bonusLine);
                     }

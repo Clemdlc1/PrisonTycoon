@@ -85,22 +85,15 @@ public class UniqueEnchantmentBookFactory {
     }
 
     private String getEnchantmentPowerDescription(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-                return "Foudroie les ennemis et les blocs";
-            case "incassable":
-                return "Durabilité infinie";
-            case "tornade":
-                return "Tourbillon destructeur";
-            case "repercussion":
-                return "Explosion vengeresse";
-            case "behead":
-                return "Décapitation brutale";
-            case "chasseur":
-                return "Bonus contre les joueurs";
-            default:
-                return "Effet mystérieux";
-        }
+        return switch (enchantId) {
+            case "tonnerre" -> "Foudroie les ennemis et les blocs";
+            case "incassable" -> "Durabilité infinie";
+            case "tornade" -> "Tourbillon destructeur";
+            case "repercussion" -> "Explosion vengeresse";
+            case "behead" -> "Décapitation brutale";
+            case "chasseur" -> "Bonus contre les joueurs";
+            default -> "Effet mystérieux";
+        };
     }
 
     /**
@@ -184,53 +177,36 @@ public class UniqueEnchantmentBookFactory {
      * Récupère la couleur selon le type d'enchantement
      */
     private String getEnchantmentColor(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-            case "incassable":
-                return "§5"; // Violet pour universels
-            case "tornade":
-            case "repercussion":
-            case "behead":
-            case "chasseur":
-                return "§c"; // Rouge pour épées
-            default:
-                return "§5";
-        }
+        return switch (enchantId) {
+            case "tonnerre", "incassable" -> "§5"; // Violet pour universels
+            case "tornade", "repercussion", "behead", "chasseur" -> "§c"; // Rouge pour épées
+            default -> "§5";
+        };
     }
 
     /**
      * Récupère le matériau d'affichage dans la boutique
      */
     private Material getShopMaterial(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-                return Material.TRIDENT; // Pour représenter la foudre
-            case "incassable":
-                return Material.ANVIL; // Pour représenter la résistance
-            case "tornade":
-                return Material.NETHERITE_SWORD;
-            case "repercussion":
-                return Material.DIAMOND_SWORD;
-            case "behead":
-                return Material.IRON_SWORD;
-            case "chasseur":
-                return Material.GOLDEN_SWORD;
-            default:
-                return Material.ENCHANTED_BOOK;
-        }
+        return switch (enchantId) {
+            case "tonnerre" -> Material.TRIDENT; // Pour représenter la foudre
+            case "incassable" -> Material.ANVIL; // Pour représenter la résistance
+            case "tornade" -> Material.NETHERITE_SWORD;
+            case "repercussion" -> Material.DIAMOND_SWORD;
+            case "behead" -> Material.IRON_SWORD;
+            case "chasseur" -> Material.GOLDEN_SWORD;
+            default -> Material.ENCHANTED_BOOK;
+        };
     }
 
     /**
      * Récupère le nombre maximum de livres par item
      */
     private String getMaxBooksPerItem(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-            case "incassable":
-                return "1"; // Livres universels : 1 seul par item
-            default:
-                return "1-2"; // Épées peuvent avoir 2 enchantements uniques
-        }
+        return switch (enchantId) {
+            case "tonnerre", "incassable" -> "1"; // Livres universels : 1 seul par item
+            default -> "1-2"; // Épées peuvent avoir 2 enchantements uniques
+        };
     }
 
     /**

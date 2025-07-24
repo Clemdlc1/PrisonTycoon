@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -474,19 +474,8 @@ public class PickaxeRepairGUI {
     }
 
     /**
-     * NOUVEAU : Classe pour stocker le résultat de la réparation maximale
-     */
-    private static class MaxRepairResult {
-        final int repairPoints;
-        final long cost;
-        final double repairPercent;
-        final double finalHealthPercent;
-
-        MaxRepairResult(int repairPoints, long cost, double repairPercent, double finalHealthPercent) {
-            this.repairPoints = repairPoints;
-            this.cost = cost;
-            this.repairPercent = repairPercent;
-            this.finalHealthPercent = finalHealthPercent;
-        }
+         * NOUVEAU : Classe pour stocker le résultat de la réparation maximale
+         */
+        private record MaxRepairResult(int repairPoints, long cost, double repairPercent, double finalHealthPercent) {
     }
 }

@@ -222,7 +222,7 @@ public class BlackMarketManager {
         BlackMarketLocation chosenLocation = possibleLocations.get(
                 ThreadLocalRandom.current().nextInt(possibleLocations.size())
         );
-        currentLocation = chosenLocation.getLocation();
+        currentLocation = chosenLocation.location();
         isAvailable = true;
         currentState = MarketState.AVAILABLE;
 
@@ -232,13 +232,13 @@ public class BlackMarketManager {
         // Rafraîchit le stock avec les nouveaux items spécialisés
         refreshStock();
 
-        plugin.getPluginLogger().info("Black Market relocalisé: " + chosenLocation.getName() +
+        plugin.getPluginLogger().info("Black Market relocalisé: " + chosenLocation.name() +
                 " [" + (int) currentLocation.getX() + ", " + (int) currentLocation.getY() +
                 ", " + (int) currentLocation.getZ() + "]");
 
         // Notifie les joueurs proches
         notifyPlayersNearby("§8§l[MARKET] §7Un marchand mystérieux s'est installé près de " +
-                chosenLocation.getName() + "...");
+                chosenLocation.name() + "...");
     }
 
     /**
@@ -258,7 +258,7 @@ public class BlackMarketManager {
         // Animation d'apparition
         playNPCAnimation(blackMarketNPC, "appear");
 
-        plugin.getPluginLogger().debug("PNJ du marché noir créé à " + location.getName());
+        plugin.getPluginLogger().debug("PNJ du marché noir créé à " + location.name());
     }
 
     /**
@@ -571,7 +571,7 @@ public class BlackMarketManager {
             if (!marketItem.canPlayerAccess(playerReputation)) continue;
 
             // Vérifie si le joueur a déjà acheté cet item
-            boolean alreadyPurchased = playerPurchasedItems.contains(marketItem.getItemId());
+            boolean alreadyPurchased = playerPurchasedItems.contains(marketItem.itemId());
 
             // Clone l'item pour l'affichage
             ItemStack displayItem = item.clone();
@@ -581,7 +581,7 @@ public class BlackMarketManager {
                 List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
                 lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
                 lore.add("§6💰 Prix: §e" + calculateFinalPrice(marketItem, playerReputation) + " beacons");
-                lore.add("§7Catégorie: §f" + marketItem.getCategory());
+                lore.add("§7Catégorie: §f" + marketItem.category());
 
                 if (alreadyPurchased) {
                     lore.add("§c⚠ §lDÉJÀ ACHETÉ!");
@@ -643,7 +643,7 @@ public class BlackMarketManager {
      */
     private int calculateFinalPrice(BlackMarketItem item, ReputationTier reputation) {
         double modifier = reputation.getBlackMarketPriceModifier();
-        return Math.max(1, (int) Math.round(item.getBasePrice() * (1.0 + modifier)));
+        return Math.max(1, (int) Math.round(item.basePrice() * (1.0 + modifier)));
     }
 
     /**
@@ -704,7 +704,7 @@ public class BlackMarketManager {
 
         // Vérifie si le joueur a déjà acheté cet item
         Set<String> playerPurchasedItems = playerPurchases.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>());
-        if (playerPurchasedItems.contains(marketItem.getItemId())) {
+        if (playerPurchasedItems.contains(marketItem.itemId())) {
             player.sendMessage("§c§l❌ ERREUR! §7Vous avez déjà acheté cet item!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
             return;
@@ -713,7 +713,7 @@ public class BlackMarketManager {
         // Tentative d'achat
         if (purchaseItem(player, clicked, marketItem)) {
             // Marque l'item comme acheté par ce joueur
-            playerPurchasedItems.add(marketItem.getItemId());
+            playerPurchasedItems.add(marketItem.itemId());
 
             // Retire l'item du stock pour tout le monde
             removeItemFromStock(clicked);
@@ -768,7 +768,7 @@ public class BlackMarketManager {
                         }
                     }
                     // Pour les cristaux et autres items
-                    else if (marketName != null && clickedName != null && marketName.equals(clickedName)) {
+                    else if (marketName != null && marketName.equals(clickedName)) {
                         return entry.getValue();
                     }
                 }
@@ -963,7 +963,7 @@ public class BlackMarketManager {
         for (Map.Entry<ItemStack, BlackMarketItem> entry : currentStock.entrySet()) {
             BlackMarketItem item = entry.getValue();
             plugin.getPluginLogger().info("- " + entry.getKey().getItemMeta().getDisplayName() +
-                    " [" + item.getCategory() + "] : " + item.getBasePrice() + " beacons (ID: " + item.getItemId() + ")");
+                    " [" + item.category() + "] : " + item.basePrice() + " beacons (ID: " + item.itemId() + ")");
         }
         plugin.getPluginLogger().info("=== " + currentStock.size() + " items au total ===");
     }
@@ -988,82 +988,43 @@ public class BlackMarketManager {
 
     /**
      * Classe pour représenter un emplacement du marché noir
+     *
+     * @param dangerLevel 0.0 à 1.0
      */
-    private static class BlackMarketLocation {
-        private final Location location;
-        private final String name;
-        private final double dangerLevel; // 0.0 à 1.0
+        private record BlackMarketLocation(Location location, String name, double dangerLevel) {
 
-        public BlackMarketLocation(Location location, String name, double dangerLevel) {
-            this.location = location;
-            this.name = name;
-            this.dangerLevel = dangerLevel;
+        @Override
+        public Location location() {
+                return location.clone();
+            }
         }
-
-        public Location getLocation() {
-            return location.clone();
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public double getDangerLevel() {
-            return dangerLevel;
-        }
-    }
 
     /**
      * Classe interne pour représenter un item du marché noir
+     *
+     * @param itemId ID unique pour chaque item
      */
-    private static class BlackMarketItem {
-        private final String itemId; // ID unique pour chaque item
-        private final int basePrice;
-        private final String category;
-        private final ReputationTier[] requiredTiers;
-
-        public BlackMarketItem(String itemId, int basePrice, String category, ReputationTier... requiredTiers) {
-            this.itemId = itemId;
-            this.basePrice = basePrice;
-            this.category = category;
-            this.requiredTiers = requiredTiers;
-        }
-
-        public String getItemId() {
-            return itemId;
-        }
-
-        public int getBasePrice() {
-            return basePrice;
-        }
-
-        public String getCategory() {
-            return category;
-        }
-
-        public ReputationTier[] getRequiredTiers() {
-            return requiredTiers;
-        }
+        private record BlackMarketItem(String itemId, int basePrice, String category, ReputationTier... requiredTiers) {
 
         public boolean canPlayerAccess(ReputationTier playerTier) {
-            if (requiredTiers.length == 0) return true;
-            for (ReputationTier tier : requiredTiers) {
-                if (tier == playerTier) return true;
+                if (requiredTiers.length == 0) return true;
+                for (ReputationTier tier : requiredTiers) {
+                    if (tier == playerTier) return true;
+                }
+                return false;
             }
-            return false;
-        }
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
-            BlackMarketItem that = (BlackMarketItem) obj;
-            return Objects.equals(itemId, that.itemId);
-        }
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj) return true;
+                if (obj == null || getClass() != obj.getClass()) return false;
+                BlackMarketItem that = (BlackMarketItem) obj;
+                return Objects.equals(itemId, that.itemId);
+            }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(itemId);
+            @Override
+            public int hashCode() {
+                return Objects.hash(itemId);
+            }
         }
-    }
 }

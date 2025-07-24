@@ -6,6 +6,7 @@ import fr.prisontycoon.data.PlayerData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -112,9 +113,7 @@ public class MineManager {
                             final int finalX = x, finalY = y, finalZ = z;
                             final Material finalMaterial = material;
 
-                            Bukkit.getScheduler().runTask(plugin, () -> {
-                                world.getBlockAt(finalX, finalY, finalZ).setType(finalMaterial);
-                            });
+                            Bukkit.getScheduler().runTask(plugin, () -> world.getBlockAt(finalX, finalY, finalZ).setType(finalMaterial));
 
                             blocksGenerated++;
                         }
@@ -425,7 +424,7 @@ public class MineManager {
 
         // Cherche toutes les permissions de mine que le joueur possède
         Set<String> minePermissions = player.getEffectivePermissions().stream()
-                .map(perm -> perm.getPermission())
+                .map(PermissionAttachmentInfo::getPermission)
                 .filter(perm -> perm.startsWith("specialmine.mine."))
                 .collect(Collectors.toSet());
 

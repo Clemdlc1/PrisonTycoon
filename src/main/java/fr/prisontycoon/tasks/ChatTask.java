@@ -220,7 +220,7 @@ public class ChatTask extends BukkitRunnable {
 
             if (upgradeDetails.size() == 1) {
                 // Un seul enchantement amélioré - Affichage compact sur une ligne
-                PlayerData.AutoUpgradeDetail detail = upgradeDetails.get(0);
+                PlayerData.AutoUpgradeDetail detail = upgradeDetails.getFirst();
                 summary.append("§d").append(detail.displayName())
                         .append(" §7(§a+").append(detail.levelsGained()).append("§7) ")
                         .append("§8→ §eNiv. ").append(detail.newLevel());

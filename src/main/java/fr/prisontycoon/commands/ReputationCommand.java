@@ -33,12 +33,10 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être utilisée que par un joueur!");
             return true;
         }
-
-        Player player = (Player) sender;
 
         if (args.length == 0) {
             // /rep - Affiche sa propre réputation
@@ -139,7 +137,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
             if (shown >= 5) break; // Limite à 5 entrées
 
             player.sendMessage("§8• §7" + change.getFormattedTime() + " §8| " +
-                    change.getChangeDisplay() + " §8| §7" + change.reason);
+                    change.getChangeDisplay() + " §8| §7" + change.reason());
             shown++;
         }
 

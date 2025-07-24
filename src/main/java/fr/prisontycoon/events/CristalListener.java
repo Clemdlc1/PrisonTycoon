@@ -102,7 +102,7 @@ public class CristalListener implements Listener {
         if (cristalsForFusion.size() == 9) {
             // Vérifier que tous les cristaux sont du même niveau et type (si révélés)
             boolean canFuse = true;
-            int baseLevel = cristalsForFusion.get(0).getNiveau();
+            int baseLevel = cristalsForFusion.getFirst().getNiveau();
 
             for (Cristal cristal : cristalsForFusion) {
                 if (cristal.getNiveau() != baseLevel) {

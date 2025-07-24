@@ -40,7 +40,7 @@ public class PlayerJoinQuitListener implements Listener {
 
                         // Log l'attempt de connexion
                         plugin.getPluginLogger().info("Joueur banni refusé: " + player.getName() +
-                                " (Raison: " + banData.getReason() + ")");
+                                " (Raison: " + banData.reason() + ")");
                     }
                 }, 5L);
 
@@ -182,8 +182,8 @@ public class PlayerJoinQuitListener implements Listener {
         message.append("§c§l=== VOUS ÊTES BANNI ===\n\n");
         message.append("§cVous avez été banni du serveur\n\n");
 
-        message.append("§7Raison: §e").append(banData.getReason()).append("\n");
-        message.append("§7Banni par: §e").append(banData.getModerator()).append("\n");
+        message.append("§7Raison: §e").append(banData.reason()).append("\n");
+        message.append("§7Banni par: §e").append(banData.moderator()).append("\n");
 
         if (banData.isPermanent()) {
             message.append("§7Durée: §cPermanent\n");
@@ -193,7 +193,7 @@ public class PlayerJoinQuitListener implements Listener {
                 message.append("§7Temps restant: §e").append(formatDuration(remaining)).append("\n");
             } else {
                 // Ban expiré, on le retire automatiquement
-                plugin.getModerationManager().unbanPlayer(banData.getUuid(), "SYSTÈME");
+                plugin.getModerationManager().unbanPlayer(banData.uuid(), "SYSTÈME");
                 return null; // Permet la connexion
             }
         }

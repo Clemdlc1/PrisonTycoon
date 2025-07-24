@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -85,15 +85,12 @@ public class CategoryMenuGUI {
                     if (currentLevel > 0) { // Seulement si l'enchantement est acheté
                         toggleMobilityEnchantment(player, targetEnchantment.getName(), playerData);
                         // Rouvre le menu pour actualiser l'affichage
-                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                            openCategoryMenu(player, targetEnchantment.getCategory());
-                        }, 1L);
-                        return;
+                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> openCategoryMenu(player, targetEnchantment.getCategory()), 1L);
                     } else {
                         player.sendMessage("§c❌ Vous devez d'abord acheter cet enchantement!");
                         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                        return;
                     }
+                    return;
                 }
 
                 if (currentLevel >= targetEnchantment.getMaxLevel()) {
@@ -322,9 +319,7 @@ public class CategoryMenuGUI {
                 lore.add("§7▸ §dTéléportation vers la surface");
                 lore.add("§7▸ §7Shift + clic droit avec la pioche");
             }
-            default -> {
-                lore.add("§7▸ §7Effet de niveau " + level + " actif");
-            }
+            default -> lore.add("§7▸ §7Effet de niveau " + level + " actif");
         }
     }
 

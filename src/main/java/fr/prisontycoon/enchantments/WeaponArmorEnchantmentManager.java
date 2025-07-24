@@ -98,7 +98,7 @@ public class WeaponArmorEnchantmentManager {
         StringBuilder enchantData = new StringBuilder();
         for (Map.Entry<String, Integer> entry : currentEnchants.entrySet()) {
             if (entry.getValue() > 0) { // Seulement les niveaux > 0
-                if (enchantData.length() > 0) enchantData.append(";");
+                if (!enchantData.isEmpty()) enchantData.append(";");
                 enchantData.append(entry.getKey()).append(":").append(entry.getValue());
             }
         }
@@ -316,22 +316,15 @@ public class WeaponArmorEnchantmentManager {
      * CORRIGÉ : Couleurs distinctes pour chaque enchantement
      */
     private String getEnchantColor(String enchantId) {
-        switch (enchantId) {
-            case "tonnerre":
-                return "§e"; // Jaune électrique
-            case "incassable":
-                return "§b"; // Bleu cyan
-            case "tornade":
-                return "§a"; // Vert
-            case "repercussion":
-                return "§c"; // Rouge
-            case "behead":
-                return "§4"; // Rouge foncé
-            case "chasseur":
-                return "§6"; // Orange
-            default:
-                return "§5"; // Violet
-        }
+        return switch (enchantId) {
+            case "tonnerre" -> "§e"; // Jaune électrique
+            case "incassable" -> "§b"; // Bleu cyan
+            case "tornade" -> "§a"; // Vert
+            case "repercussion" -> "§c"; // Rouge
+            case "behead" -> "§4"; // Rouge foncé
+            case "chasseur" -> "§6"; // Orange
+            default -> "§5"; // Violet
+        };
     }
 
     /**
@@ -771,23 +764,14 @@ public class WeaponArmorEnchantmentManager {
                     // TODO: Configurer la tête du joueur
                 } else {
                     // Têtes de monstres basiques
-                    switch (victim.getType()) {
-                        case ZOMBIE:
-                            head = new ItemStack(Material.ZOMBIE_HEAD);
-                            break;
-                        case SKELETON:
-                            head = new ItemStack(Material.SKELETON_SKULL);
-                            break;
-                        case CREEPER:
-                            head = new ItemStack(Material.CREEPER_HEAD);
-                            break;
-                        case WITHER_SKELETON:
-                            head = new ItemStack(Material.WITHER_SKELETON_SKULL);
-                            break;
-                        case ENDER_DRAGON:
-                            head = new ItemStack(Material.DRAGON_HEAD);
-                            break;
-                    }
+                    head = switch (victim.getType()) {
+                        case ZOMBIE -> new ItemStack(Material.ZOMBIE_HEAD);
+                        case SKELETON -> new ItemStack(Material.SKELETON_SKULL);
+                        case CREEPER -> new ItemStack(Material.CREEPER_HEAD);
+                        case WITHER_SKELETON -> new ItemStack(Material.WITHER_SKELETON_SKULL);
+                        case ENDER_DRAGON -> new ItemStack(Material.DRAGON_HEAD);
+                        default -> head;
+                    };
                 }
 
                 if (head != null) {

@@ -448,7 +448,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         // Recherche partielle
         List<MineData> matches = plugin.getMineManager().searchMines(mineName);
         if (!matches.isEmpty()) {
-            return matches.get(0).getId(); // Retourne le premier match
+            return matches.getFirst().getId(); // Retourne le premier match
         }
 
         return null;
@@ -568,7 +568,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
                     List<String> mineNames = new ArrayList<>();
 
                     if (sender instanceof Player player) {
-                        if (args[0].toLowerCase().equals("tp")) {
+                        if (args[0].equalsIgnoreCase("tp")) {
                             // Pour tp, seulement les mines accessibles
                             mineNames = plugin.getMineManager().getAccessibleMines(player).stream()
                                     .map(MineData::getId)
@@ -584,7 +584,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
                     StringUtil.copyPartialMatches(args[1], mineNames, completions);
 
                     // Ajouter "all" pour generate
-                    if (args[0].toLowerCase().equals("generate") && sender.hasPermission("specialmine.admin")) {
+                    if (args[0].equalsIgnoreCase("generate") && sender.hasPermission("specialmine.admin")) {
                         StringUtil.copyPartialMatches(args[1], List.of("all"), completions);
                     }
                 }

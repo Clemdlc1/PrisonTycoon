@@ -130,16 +130,27 @@ public class ModerationManager {
         moderationConfig.set(path + "endTime", endTime);
         moderationConfig.set(path + "reason", reason);
         moderationConfig.set(path + "moderator", moderator);
-        moderationConfig.set(path + "startTime", muteData.getStartTime());
+        moderationConfig.set(path + "startTime", muteData.startTime());
 
         saveModeration();
 
         // NOUVEAU: Ajoute aussi à l'historique du joueur
-        plugin.getPlayerDataManager().addSanctionToPlayer(
-                uuid, "MUTE", reason, moderator, muteData.getStartTime(), endTime
+        addSanctionToPlayer(
+                uuid, "MUTE", reason, moderator, muteData.startTime(), endTime
         );
 
         plugin.getPluginLogger().info("Joueur muté: " + playerName + " par " + moderator + " (ajouté à l'historique)");
+    }
+
+    /**
+     * Ajoute une sanction à l'historique d'un joueur
+     */
+    public void addSanctionToPlayer(UUID playerId, String type, String reason, String moderator, long startTime, long endTime) {
+        PlayerData data = plugin.getPlayerDataManager().getPlayerData(playerId);
+        data.addSanction(type, reason, moderator, startTime, endTime);
+        plugin.getPlayerDataManager().markDirty(playerId);
+
+        plugin.getPluginLogger().info("Sanction ajoutée à " + data.getPlayerName() + ": " + type + " par " + moderator);
     }
 
     /**
@@ -166,13 +177,13 @@ public class ModerationManager {
         moderationConfig.set(path + "endTime", endTime);
         moderationConfig.set(path + "reason", reason);
         moderationConfig.set(path + "moderator", moderator);
-        moderationConfig.set(path + "startTime", banData.getStartTime());
+        moderationConfig.set(path + "startTime", banData.startTime());
 
         saveModeration();
 
         // NOUVEAU: Ajoute aussi à l'historique du joueur
-        plugin.getPlayerDataManager().addSanctionToPlayer(
-                uuid, "BAN", reason, moderator, banData.getStartTime(), endTime
+        addSanctionToPlayer(
+                uuid, "BAN", reason, moderator, banData.startTime(), endTime
         );
 
         plugin.getPluginLogger().info("Joueur banni: " + playerName + " par " + moderator + " (ajouté à l'historique)");
@@ -197,7 +208,7 @@ public class ModerationManager {
         if (muteData == null) return false;
 
         // Vérifie si le mute a expiré
-        if (muteData.getEndTime() != 0 && System.currentTimeMillis() > muteData.getEndTime()) {
+        if (muteData.endTime() != 0 && System.currentTimeMillis() > muteData.endTime()) {
             unmutePlayer(uuid, "SYSTÈME");
             return false;
         }
@@ -213,7 +224,7 @@ public class ModerationManager {
         if (banData == null) return false;
 
         // Vérifie si le ban a expiré
-        if (banData.getEndTime() != 0 && System.currentTimeMillis() > banData.getEndTime()) {
+        if (banData.endTime() != 0 && System.currentTimeMillis() > banData.endTime()) {
             unbanPlayer(uuid, "SYSTÈME");
             return false;
         }
@@ -244,7 +255,7 @@ public class ModerationManager {
         // Nettoie les mutes expirés avant de compter
         muteCache.entrySet().removeIf(entry -> {
             ModerationData data = entry.getValue();
-            return data.getEndTime() != 0 && System.currentTimeMillis() > data.getEndTime();
+            return data.endTime() != 0 && System.currentTimeMillis() > data.endTime();
         });
         return muteCache.size();
     }
@@ -256,7 +267,7 @@ public class ModerationManager {
         // Nettoie les bans expirés avant de compter
         banCache.entrySet().removeIf(entry -> {
             ModerationData data = entry.getValue();
-            return data.getEndTime() != 0 && System.currentTimeMillis() > data.getEndTime();
+            return data.endTime() != 0 && System.currentTimeMillis() > data.endTime();
         });
         return banCache.size();
     }
@@ -284,7 +295,7 @@ public class ModerationManager {
             Map.Entry<UUID, ModerationData> entry = muteIterator.next();
             ModerationData data = entry.getValue();
 
-            if (data.getEndTime() != 0 && currentTime > data.getEndTime()) {
+            if (data.endTime() != 0 && currentTime > data.endTime()) {
                 muteIterator.remove();
                 moderationConfig.set("mutes." + entry.getKey(), null);
                 cleanedMutes++;
@@ -297,7 +308,7 @@ public class ModerationManager {
             Map.Entry<UUID, ModerationData> entry = banIterator.next();
             ModerationData data = entry.getValue();
 
-            if (data.getEndTime() != 0 && currentTime > data.getEndTime()) {
+            if (data.endTime() != 0 && currentTime > data.endTime()) {
                 banIterator.remove();
                 moderationConfig.set("bans." + entry.getKey(), null);
                 cleanedBans++;
@@ -325,56 +336,18 @@ public class ModerationManager {
     }
 
     /**
-     * Classe pour stocker les données de modération
-     */
-    public static class ModerationData {
-        private final UUID uuid;
-        private final String playerName;
-        private final long endTime;
-        private final String reason;
-        private final String moderator;
-        private final long startTime;
-
-        public ModerationData(UUID uuid, String playerName, long endTime, String reason, String moderator, long startTime) {
-            this.uuid = uuid;
-            this.playerName = playerName;
-            this.endTime = endTime;
-            this.reason = reason;
-            this.moderator = moderator;
-            this.startTime = startTime;
-        }
-
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        public String getPlayerName() {
-            return playerName;
-        }
-
-        public long getEndTime() {
-            return endTime;
-        }
-
-        public String getReason() {
-            return reason;
-        }
-
-        public String getModerator() {
-            return moderator;
-        }
-
-        public long getStartTime() {
-            return startTime;
-        }
+         * Classe pour stocker les données de modération
+         */
+        public record ModerationData(UUID uuid, String playerName, long endTime, String reason, String moderator,
+                                     long startTime) {
 
         public boolean isPermanent() {
-            return endTime == 0;
-        }
+                return endTime == 0;
+            }
 
-        public long getRemainingTime() {
-            if (isPermanent()) return -1;
-            return Math.max(0, endTime - System.currentTimeMillis());
+            public long getRemainingTime() {
+                if (isPermanent()) return -1;
+                return Math.max(0, endTime - System.currentTimeMillis());
+            }
         }
-    }
 }

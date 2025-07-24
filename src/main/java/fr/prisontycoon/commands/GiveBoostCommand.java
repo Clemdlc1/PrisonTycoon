@@ -45,7 +45,7 @@ public class GiveBoostCommand implements CommandExecutor, TabCompleter {
         String playerName = args[0];
         String typeStr = args[1];
         String durationStr = args[2];
-        double bonus = 0.0; // Sera défini par défaut selon le type
+        double bonus; // Sera défini par défaut selon le type
         int amount = 1;
 
         // Trouve le joueur
@@ -168,7 +168,7 @@ public class GiveBoostCommand implements CommandExecutor, TabCompleter {
     private String getAvailableBoostTypes() {
         StringBuilder types = new StringBuilder();
         for (BoostType type : BoostType.values()) {
-            if (types.length() > 0) types.append(", ");
+            if (!types.isEmpty()) types.append(", ");
             types.append(type.name().toLowerCase().replace("_", "-"));
         }
         return types.toString();

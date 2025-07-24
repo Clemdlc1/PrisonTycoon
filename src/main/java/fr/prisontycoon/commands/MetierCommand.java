@@ -149,8 +149,8 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("");
 
         // Informations principales
-        player.sendMessage("§6✦ §lMétier: " + profession.getDisplayName());
-        player.sendMessage("§7" + profession.getDescription());
+        player.sendMessage("§6✦ §lMétier: " + profession.displayName());
+        player.sendMessage("§7" + profession.description());
         player.sendMessage("");
 
         // Progression
@@ -179,14 +179,14 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("");
 
         // Talents et kit
-        List<ProfessionManager.ProfessionTalent> talents = profession.getTalents();
+        List<ProfessionManager.ProfessionTalent> talents = profession.talents();
         int kitLevel = playerData.getKitLevel(activeProfession);
 
         player.sendMessage("§5⭐ §lTalents & Kit:");
         int talentCount = 0;
         for (ProfessionManager.ProfessionTalent talent : talents) {
-            int talentLevel = playerData.getTalentLevel(activeProfession, talent.getId());
-            player.sendMessage("§7• " + talent.getDisplayName() + ": §e" + talentLevel + "§7/§e10");
+            int talentLevel = playerData.getTalentLevel(activeProfession, talent.id());
+            player.sendMessage("§7• " + talent.displayName() + ": §e" + talentLevel + "§7/§e10");
             talentCount++;
             if (talentCount >= 3) break; // Limite à 3 talents affichés
         }

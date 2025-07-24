@@ -1,4 +1,4 @@
-package fr.prisontycoon.GUI;
+package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
@@ -48,7 +48,7 @@ public class ProfessionRewardsGUI {
         ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession(professionId);
         if (profession == null) return;
 
-        Inventory gui = Bukkit.createInventory(null, 36, "§6🎁 " + profession.getDisplayName() + " - Récompenses");
+        Inventory gui = Bukkit.createInventory(null, 36, "§6🎁 " + profession.displayName() + " - Récompenses");
 
         fillWithGlass(gui);
         setupRewardsMenu(gui, player, profession);
@@ -121,18 +121,18 @@ public class ProfessionRewardsGUI {
      */
     private ItemStack createInfoItem(Player player, ProfessionManager.Profession profession) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int professionLevel = playerData.getProfessionLevel(profession.getId());
+        int professionLevel = playerData.getProfessionLevel(profession.id());
 
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6📋 §lRécompenses " + profession.getDisplayName());
+        meta.setDisplayName("§6📋 §lRécompenses " + profession.displayName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Réclamez vos récompenses de niveau !");
         lore.add("");
         lore.add("§7Votre niveau actuel: §e" + professionLevel + "/10");
-        lore.add("§7Récompenses disponibles: §a" + getAvailableRewards(player, profession.getId()));
+        lore.add("§7Récompenses disponibles: §a" + getAvailableRewards(player, profession.id()));
         lore.add("");
         lore.add("§7Les récompenses ne peuvent être");
         lore.add("§7réclamées qu'une seule fois.");
@@ -148,9 +148,9 @@ public class ProfessionRewardsGUI {
      */
     private ItemStack createRewardItem(Player player, ProfessionManager.Profession profession, int level) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int professionLevel = playerData.getProfessionLevel(profession.getId());
+        int professionLevel = playerData.getProfessionLevel(profession.id());
         boolean hasLevel = professionLevel >= level;
-        boolean isClaimed = playerData.hasProfessionRewardClaimed(profession.getId(), level);
+        boolean isClaimed = playerData.hasProfessionRewardClaimed(profession.id(), level);
 
         // Matériau selon l'état
         Material material;
@@ -194,7 +194,7 @@ public class ProfessionRewardsGUI {
         // Données pour le clic
         if (hasLevel && !isClaimed) {
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "claim_reward");
-            meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, profession.getId());
+            meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, profession.id());
             meta.getPersistentDataContainer().set(levelKey, PersistentDataType.INTEGER, level);
         }
 
@@ -300,10 +300,8 @@ public class ProfessionRewardsGUI {
                     openRewardsMenu(player, professionId);
                 }
             }
-            case "back_to_professions" -> {
-                // Retour au menu principal des métiers
-                plugin.getProfessionGUI().openProfessionMenu(player);
-            }
+            case "back_to_professions" -> // Retour au menu principal des métiers
+                    plugin.getProfessionGUI().openProfessionMenu(player);
         }
     }
 

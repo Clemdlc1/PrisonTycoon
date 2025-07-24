@@ -122,9 +122,9 @@ public class PrisonTycoonCommand implements CommandExecutor, TabCompleter {
         var balance = plugin.getEconomyManager().getBalance(player);
 
         player.sendMessage("§e📊 Vos statistiques:");
-        player.sendMessage("§7Coins: §6" + NumberFormatter.format(balance.getCoins()));
-        player.sendMessage("§7Tokens: §e" + NumberFormatter.format(balance.getTokens()));
-        player.sendMessage("§7Expérience: §a" + NumberFormatter.format(balance.getExperience()));
+        player.sendMessage("§7Coins: §6" + NumberFormatter.format(balance.coins()));
+        player.sendMessage("§7Tokens: §e" + NumberFormatter.format(balance.tokens()));
+        player.sendMessage("§7Expérience: §a" + NumberFormatter.format(balance.experience()));
         player.sendMessage("§7Blocs minés: §b" + NumberFormatter.format(playerData.getTotalBlocksMined()));
 
         // Enchantements actifs
@@ -202,8 +202,8 @@ public class PrisonTycoonCommand implements CommandExecutor, TabCompleter {
                 default -> "§7" + (i + 1) + ".";
             };
 
-            sender.sendMessage(medal + " §e" + ranking.getPlayerName() +
-                    " §7- §a" + NumberFormatter.format(ranking.getValue()));
+            sender.sendMessage(medal + " §e" + ranking.playerName() +
+                    " §7- §a" + NumberFormatter.format(ranking.value()));
         }
     }
 

@@ -140,9 +140,7 @@ public class PickaxeProtectionListener implements Listener {
                     player.sendMessage("§c❌ La pioche légendaire doit rester dans le slot 1!");
 
                     // Force le retour au slot 0
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        plugin.getPickaxeManager().enforcePickaxeSlot(player);
-                    }, 1L);
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.getPickaxeManager().enforcePickaxeSlot(player), 1L);
 
                     plugin.getPluginLogger().debug("Mouvement pioche hors slot 0 bloqué");
                     return;
@@ -356,9 +354,7 @@ public class PickaxeProtectionListener implements Listener {
                     player.sendMessage("§c❌ Cette commande est bloquée pour protéger votre pioche légendaire!");
                 } else {
                     // Même pour les admins, s'assure que la pioche reste au slot 0
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        plugin.getPickaxeManager().enforcePickaxeSlot(player);
-                    }, 5L);
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.getPickaxeManager().enforcePickaxeSlot(player), 5L);
                 }
             }
         }

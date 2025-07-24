@@ -142,7 +142,7 @@ public class ReputationManager {
                 newReputation
         );
 
-        history.add(0, change); // Ajoute au début
+        history.addFirst(change); // Ajoute au début
 
         // Garde seulement les 10 derniers changements
         if (history.size() > 10) {
@@ -236,10 +236,6 @@ public class ReputationManager {
     }
 
     /**
-     * Méthodes spécifiques pour les événements
-     */
-
-    /**
      * Gère la participation à "Contenir la Brèche" (événement coopératif)
      */
     public void handleBreachContainmentParticipation(UUID playerId, boolean isTop3) {
@@ -282,16 +278,12 @@ public class ReputationManager {
             return 0.95; // -5%
         } else {
             // Réputation négative: -10% à -30%
-            switch (tier) {
-                case SUSPECT:
-                    return 0.90; // -10%
-                case CRIMINEL:
-                    return 0.80; // -20%
-                case INFAME:
-                    return 0.70; // -30%
-                default:
-                    return 0.95;
-            }
+            return switch (tier) {
+                case SUSPECT -> 0.90; // -10%
+                case CRIMINEL -> 0.80; // -20%
+                case INFAME -> 0.70; // -30%
+                default -> 0.95;
+            };
         }
     }
 
@@ -307,16 +299,12 @@ public class ReputationManager {
             return 0.90; // -10%
         } else {
             // Réputation positive: -20% à -50%
-            switch (tier) {
-                case RESPECTE:
-                    return 0.80; // -20%
-                case HONORABLE:
-                    return 0.65; // -35%
-                case EXEMPLAIRE:
-                    return 0.50; // -50%
-                default:
-                    return 0.90;
-            }
+            return switch (tier) {
+                case RESPECTE -> 0.80; // -20%
+                case HONORABLE -> 0.65; // -35%
+                case EXEMPLAIRE -> 0.50; // -50%
+                default -> 0.90;
+            };
         }
     }
 
@@ -336,35 +324,20 @@ public class ReputationManager {
     }
 
     /**
-     * Classe interne pour représenter un changement de réputation
-     */
-    public static class ReputationChange {
-        public final long timestamp;
-        public final int originalChange;
-        public final int appliedChange;
-        public final String reason;
-        public final int oldReputation;
-        public final int newReputation;
-
-        public ReputationChange(long timestamp, int originalChange, int appliedChange,
-                                String reason, int oldReputation, int newReputation) {
-            this.timestamp = timestamp;
-            this.originalChange = originalChange;
-            this.appliedChange = appliedChange;
-            this.reason = reason;
-            this.oldReputation = oldReputation;
-            this.newReputation = newReputation;
-        }
+         * Classe interne pour représenter un changement de réputation
+         */
+        public record ReputationChange(long timestamp, int originalChange, int appliedChange, String reason,
+                                       int oldReputation, int newReputation) {
 
         public String getFormattedTime() {
-            LocalDateTime dateTime = LocalDateTime.ofEpochSecond(timestamp / 1000, 0,
-                    java.time.ZoneOffset.systemDefault().getRules().getOffset(java.time.Instant.ofEpochMilli(timestamp)));
-            return dateTime.format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
-        }
+                LocalDateTime dateTime = LocalDateTime.ofEpochSecond(timestamp / 1000, 0,
+                        java.time.ZoneOffset.systemDefault().getRules().getOffset(java.time.Instant.ofEpochMilli(timestamp)));
+                return dateTime.format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
+            }
 
-        public String getChangeDisplay() {
-            String color = appliedChange >= 0 ? "§a+" : "§c";
-            return color + appliedChange;
+            public String getChangeDisplay() {
+                String color = appliedChange >= 0 ? "§a+" : "§c";
+                return color + appliedChange;
+            }
         }
-    }
 }
