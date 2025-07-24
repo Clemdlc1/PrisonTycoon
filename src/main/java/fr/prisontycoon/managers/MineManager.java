@@ -700,4 +700,94 @@ public class MineManager {
         teleportingPlayers.clear();
         lastResetTime.clear();
     }
+
+    public List<MineData> getMinesByType(MineData.MineType type) {
+        List<MineData> result = new ArrayList<>();
+        for (MineData mineData : mines.values()) {
+            if (mineData.getType() == type) {
+                result.add(mineData);
+            }
+        }
+        return result;
+    }
+
+    public Collection<MineData> getAllMines() {
+        return mines.values();
+    }
+
+    public List<MineData> searchMines(String query) {
+        List<MineData> result = new ArrayList<>();
+        for (MineData mineData : mines.values()) {
+            if (mineData.getName().toLowerCase().contains(query.toLowerCase())) {
+                result.add(mineData);
+            }
+        }
+        return result;
+    }
+
+    public MineData getMine(String name) {
+        return getMineData(name);
+    }
+
+    public String getMineInfo(MineData mineData) {
+        return mineData.getDetailedInfo();
+    }
+
+    public void resetAllMines() {
+        for (String mineName : mines.keySet()) {
+            resetMine(mineName, false);
+        }
+    }
+
+    public boolean isMineGenerating(String mineName) {
+        return false;
+    }
+
+    public void generateMine(String mineName) {
+        resetMine(mineName, false);
+    }
+
+    public String getCurrentRank(Player player) {
+        for (char c = 'z'; c >= 'a'; c--) {
+            if (plugin.getPermissionManager().hasPermission(player, "specialmine.mine." + c)) {
+                return String.valueOf(c);
+            }
+        }
+        return "a";
+    }
+
+    public String getRankColor(String rank) {
+        // This is just a placeholder. I will need to implement this properly.
+        return "§f";
+    }
+
+    public String[] getRankAndColor(Player player) {
+        String rank = getCurrentRank(player);
+        String color = getRankColor(rank);
+        return new String[]{rank, color};
+    }
+
+    public List<MineData> getAccessibleMines(Player player) {
+        List<MineData> result = new ArrayList<>();
+        String rank = getCurrentRank(player);
+        for (char c = 'a'; c <= rank.charAt(0); c++) {
+            MineData mineData = getMineData(String.valueOf(c));
+            if (mineData != null) {
+                result.add(mineData);
+            }
+        }
+        return result;
+    }
+
+    public String getMinesStatistics() {
+        return "";
+    }
+
+    public MineData getPlayerCurrentMine(Player player) {
+        return null;
+    }
+
+    public boolean mineExists(String name) {
+        return mines.containsKey(name.toLowerCase());
+    }
 }

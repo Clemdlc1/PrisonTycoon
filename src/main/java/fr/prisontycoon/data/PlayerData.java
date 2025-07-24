@@ -1059,27 +1059,16 @@ public class PlayerData {
     /**
      * Obtient le niveau de prestige du joueur
      */
-    public int getPrestigeLevel() {
-        synchronized (dataLock) {
-            int highestPrestige = 0;
-
-            // Parcourt toutes les permissions du joueur
-            for (String permission : customPermissions) {
-                if (permission.startsWith("specialmine.prestige.")) {
-                    try {
-                        String prestigeStr = permission.substring("specialmine.prestige.".length());
-                        int prestigeLevel = Integer.parseInt(prestigeStr);
-
-                        if (prestigeLevel > highestPrestige) {
-                            highestPrestige = prestigeLevel;
-                        }
-                    } catch (NumberFormatException e) {
-                    }
-                }
-            }
-
-            return highestPrestige;
+    public int getPrestigeLevel(Player player) {
+        if (player == null) {
+            return 0;
         }
+        for (int i = 50; i >= 1; i--) {
+            if (PrisonTycoon.getInstance().getPermissionManager().hasPermission(player, "specialmine.prestige." + i)) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     /**
