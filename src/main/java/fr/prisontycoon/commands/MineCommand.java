@@ -269,7 +269,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e📊 Votre accès:");
         String currentRank = plugin.getMineManager().getCurrentRank(player);
         player.sendMessage("§7• Rang actuel: " + plugin.getMineManager().getRankColor(currentRank) + currentRank.toUpperCase());
-        player.sendMessage("§7• Prestige: " + playerData.getPrestigeDisplayName());
+        player.sendMessage("§7• Prestige: " + playerData.getPrestigeDisplayName(player));
         player.sendMessage("§7• VIP: " + (player.hasPermission("specialmine.vip") ? "§a✅" : "§c❌"));
     }
 
@@ -349,7 +349,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7• Mines accessibles: §6" + plugin.getMineManager().getAccessibleMines(player).size());
         player.sendMessage("§7• Rang: " + plugin.getMineManager().getRankColor(plugin.getMineManager().getCurrentRank(player)) +
                 plugin.getMineManager().getCurrentRank(player).toUpperCase());
-        player.sendMessage("§7• Prestige: " + playerData.getPrestigeDisplayName());
+        player.sendMessage("§7• Prestige: " + playerData.getPrestigeDisplayName(player));
     }
 
     /**

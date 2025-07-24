@@ -89,7 +89,7 @@ public class EnchantmentMenu {
             case UNIQUE_ENCHANTS_SLOT -> plugin.getEnchantmentBookGUI().openEnchantmentBookMenu(player);
             case PETS_SLOT -> plugin.getPetsMenuGUI().openPetsMenu(player);
             case MAIN_MENU_SLOT -> plugin.getMainMenuGUI().openGeneralMainMenu(player);
-            case REPAIR_PICKAXE_SLOT -> plugin.getPickaxeRepairMenu().openRepairGUI(player);
+            case REPAIR_PICKAXE_SLOT -> plugin.getPickaxeRepairGUI().openRepairGUI(player);
 
             // Catégories d'enchantements
             case ECONOMIC_SLOT -> plugin.getCategoryMenuGUI().openCategoryMenu(player, EnchantmentCategory.ECONOMIC);

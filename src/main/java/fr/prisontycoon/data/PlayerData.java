@@ -1,8 +1,10 @@
 package fr.prisontycoon.data;
 
+import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
@@ -132,11 +134,8 @@ public class PlayerData {
         this.totalGreedTriggers = 0;
         this.totalKeysObtained = 0;
 
-        this.minePermissions = ConcurrentHashMap.newKeySet();
-
         this.pickaxeCristals = new ConcurrentHashMap<>(); // NOUVEAU
         this.sanctionHistory = new ArrayList<>();
-        this.customPermissions = new HashSet<>(); // NOUVEAU
 
         // Dans le constructeur existant de PlayerData, ajouter:
         this.activeProfession = null;
@@ -1072,40 +1071,6 @@ public class PlayerData {
     }
 
     /**
-     * Définit le niveau de prestige du joueur
-     */
-    public void setPrestigeLevel(int level) {
-        synchronized (dataLock) {
-            // Valider le niveau (0-50)
-            int validLevel = Math.max(0, Math.min(50, level));
-
-            // Retirer toutes les anciennes permissions de prestige
-            Set<String> prestigePermissionsToRemove = new HashSet<>();
-            for (String permission : customPermissions) {
-                if (permission.startsWith("specialmine.prestige.")) {
-                    prestigePermissionsToRemove.add(permission);
-                }
-            }
-
-            // Supprimer les anciennes permissions
-            for (String permission : prestigePermissionsToRemove) {
-                customPermissions.remove(permission);
-            }
-
-            // Ajouter la nouvelle permission si le niveau est supérieur à 0
-            if (validLevel > 0) {
-                String newPrestigePermission = "specialmine.prestige." + validLevel;
-                customPermissions.add(newPrestigePermission);
-            }
-
-            // Mettre à jour le timestamp du dernier prestige si c'est un niveau valide
-            if (validLevel > 0) {
-                this.lastPrestigeTime = System.currentTimeMillis();
-            }
-        }
-    }
-
-    /**
      * Ajoute un talent de prestige
      */
     public void addPrestigeTalent(PrestigeTalent talent) {
@@ -1223,9 +1188,9 @@ public class PlayerData {
     /**
      * Obtient le nom affiché du prestige
      */
-    public String getPrestigeDisplayName() {
+    public String getPrestigeDisplayName(Player player) {
         synchronized (dataLock) {
-            int currentLevel = getPrestigeLevel(); // Utilise les permissions
+            int currentLevel = getPrestigeLevel(player); // Utilise les permissions
             if (currentLevel == 0) return "§7Aucun";
             return "§6§lP" + currentLevel;
         }
