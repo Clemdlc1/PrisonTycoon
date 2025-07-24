@@ -127,6 +127,12 @@ public class ChatListener implements Listener {
      * Format: [TYPE] [P{niveau}] [RANG] pour chat/tab
      */
     public String getPlayerPrefix(Player player) {
+        if (plugin.isLuckPermsEnabled()) {
+            String prefix = plugin.getPermissionManager().getPrefix(player);
+            if (prefix != null) {
+                return prefix;
+            }
+        }
         // Détermine le type de joueur et sa couleur de base
         String playerType;
         String playerTypeColor;
@@ -168,6 +174,16 @@ public class ChatListener implements Listener {
         return prefix.toString();
     }
 
+    public String getPlayerSuffix(Player player) {
+        if (plugin.isLuckPermsEnabled()) {
+            String suffix = plugin.getPermissionManager().getSuffix(player);
+            if (suffix != null) {
+                return suffix;
+            }
+        }
+        return "";
+    }
+
     /**
      * NOUVELLE MÉTHODE COMMUNE - Obtient la couleur selon le niveau de prestige
      */
@@ -192,7 +208,15 @@ public class ChatListener implements Listener {
         finalMessage.addExtra(new TextComponent(prefix + " "));
 
         // Ajoute le nom en blanc suivi de ": "
-        finalMessage.addExtra(new TextComponent("§f" + player.getName() + ": "));
+        finalMessage.addExtra(new TextComponent("§f" + player.getName()));
+
+        // Ajoute le suffixe
+        String suffix = getPlayerSuffix(player);
+        if (!suffix.isEmpty()) {
+            finalMessage.addExtra(new TextComponent(" " + suffix));
+        }
+
+        finalMessage.addExtra(new TextComponent(": "));
 
         // Traitement des placeholders [hand] et [inv]
         if (processedMessage.contains("[hand]") || processedMessage.contains("[inv]")) {

@@ -231,6 +231,41 @@ public class MineData {
         return id;
     }
 
+    public World getWorld() {
+        return minCorner != null ? minCorner.getWorld() : null;
+    }
+
+    public Location getCorner1() {
+        return getMinCorner();
+    }
+
+    public Location getCorner2() {
+        return getMaxCorner();
+    }
+
+    public int getResetTime() {
+        // This is not in the config, so return a default value
+        return 60;
+    }
+
+    public int getRequiredPrestigeLevel() {
+        return getRequiredPrestige();
+    }
+
+    public long getRequiredBlocksMined() {
+        // This is not in the config, so return a default value
+        return 0;
+    }
+
+    public Map<Material, Double> getComposition() {
+        return getBlockComposition();
+    }
+
+    public Location getSpawn() {
+        // This is not in the config, so return a default value
+        return getCenterLocation(getWorld());
+    }
+
     // ==================== GETTERS ====================
 
     public String getName() {

@@ -330,6 +330,52 @@ public class PermissionManager {
     }
 
     /**
+     * Obtient le préfixe d'un joueur
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    public String getPrefix(@NotNull Player player) {
+        if (!plugin.isLuckPermsEnabled()) return null;
+
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+            User user = userManager.getUser(player.getUniqueId());
+
+            if (user != null) {
+                net.luckperms.api.cacheddata.CachedMetaData metaData = user.getCachedData().getMetaData();
+                return metaData.getPrefix();
+            }
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur obtention préfixe " + player.getName() + ": " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtient le suffixe d'un joueur
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    public String getSuffix(@NotNull Player player) {
+        if (!plugin.isLuckPermsEnabled()) return null;
+
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+            User user = userManager.getUser(player.getUniqueId());
+
+            if (user != null) {
+                net.luckperms.api.cacheddata.CachedMetaData metaData = user.getCachedData().getMetaData();
+                return metaData.getSuffix();
+            }
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur obtention suffixe " + player.getName() + ": " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
      * Obtient le groupe principal d'un joueur
      * INTÉGRATION NATIVE avec LuckPerms
      */

@@ -24,7 +24,6 @@ public class PlayerData {
     // Enchantements mobilité désactivés
     private final Set<String> mobilityEnchantmentsDisabled;
     private final Map<Material, Long> blocksMinedByType;
-    private final Set<String> minePermissions;
     // Données thread-safe
     private final Object dataLock = new Object();
     private final List<SanctionData> sanctionHistory;
@@ -79,7 +78,6 @@ public class PlayerData {
     private long lastMinuteGreedTriggers;
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
-    private Set<String> customPermissions; // NOUVEAU: permissions custom du plugin
     private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
     private Set<String> activeEnchantmentBooks = new HashSet<>();
     // Système de métiers
@@ -471,35 +469,8 @@ public class PlayerData {
         }
     }
 
-    /**
-     * NOUVEAU: Ajoute une permission de mine au joueur (maintenant via bukkit)
-     */
-    public void addMinePermission(String mineName) {
-        synchronized (dataLock) {
-            // Ancienne logique (gardée pour compatibilité)
-            minePermissions.add(mineName.toLowerCase());
 
-            // NOUVEAU: Ajoute aussi la permission bukkit
-            String bukkitPermission = "specialmine.mine." + mineName.toLowerCase();
-            addPermission(bukkitPermission);
-        }
-    }
-
-    /**
-     * NOUVEAU: Supprime une permission de mine du joueur (maintenant via bukkit)
-     */
-    public void removeMinePermission(String mineName) {
-        synchronized (dataLock) {
-            // Ancienne logique (gardée pour compatibilité)
-            minePermissions.remove(mineName.toLowerCase());
-
-            // NOUVEAU: Retire aussi la permission bukkit
-            String bukkitPermission = "specialmine.mine." + mineName.toLowerCase();
-            removePermission(bukkitPermission);
-        }
-    }
-
-    public boolean hasMinePermission(String mineName) {
+    public boolean hasMinePermission(Player player, String mineName) {
         if (mineName == null || mineName.isEmpty()) {
             return false;
         }
@@ -515,36 +486,19 @@ public class PlayerData {
             return true;
         }
 
-        // Trouve la permission la plus élevée du joueur
-        String highestRank = getHighestMineRank();
-        if (highestRank == null) {
-            return false; // Aucune permission
-        }
-
-        // LOGIQUE HIÉRARCHIQUE: compare les rangs
-        // Si j'ai rang 'c', je peux miner dans 'a', 'b', et 'c'
-        char playerRank = highestRank.charAt(0);
-        char targetRank = targetMine.charAt(0);
-
-        return targetRank <= playerRank;
+        return PrisonTycoon.getInstance().getPermissionManager().hasPermission(player, "specialmine.mine." + targetMine);
     }
 
     /**
      * NOUVEAU: Obtient le rang de mine le plus élevé (pas la permission complète)
      */
-    public String getHighestMineRank() {
+    public String getHighestMineRank(Player player) {
         synchronized (dataLock) {
             String highestRank = null;
 
-            // Cherche dans les permissions bukkit
-            for (String permission : customPermissions) {
-                if (permission.startsWith("specialmine.mine.")) {
-                    String rank = permission.substring("specialmine.mine.".length());
-                    if (rank.length() == 1) { // Valide seulement les rangs d'une lettre
-                        if (highestRank == null || rank.compareTo(highestRank) > 0) {
-                            highestRank = rank;
-                        }
-                    }
+            for (char rank = 'a'; rank <= 'z'; rank++) {
+                if (PrisonTycoon.getInstance().getPermissionManager().hasPermission(player, "specialmine.mine." + rank)) {
+                    highestRank = String.valueOf(rank);
                 }
             }
 
@@ -555,28 +509,24 @@ public class PlayerData {
     /**
      * CORRIGÉ: Retourne la plus haute permission de mine (compatibilité)
      */
-    public String getHighestMinePermission() {
+    public String getHighestMinePermission(Player player) {
         synchronized (dataLock) {
-            String highestRank = getHighestMineRank();
+            String highestRank = getHighestMineRank(player);
             if (highestRank != null) {
                 return "specialmine.mine." + highestRank;
             }
-
-            // Fallback vers l'ancienne logique
-            return minePermissions.stream()
-                    .max(String::compareTo)
-                    .orElse(null);
+            return null;
         }
     }
 
     /**
      * NOUVEAU: Liste toutes les mines accessibles avec le rang actuel
      */
-    public Set<String> getAccessibleMines() {
+    public Set<String> getAccessibleMines(Player player) {
         synchronized (dataLock) {
             Set<String> accessibleMines = new HashSet<>();
 
-            String highestRank = getHighestMineRank();
+            String highestRank = getHighestMineRank(player);
             if (highestRank == null) {
                 accessibleMines.add("a"); // Rang par défaut
                 return accessibleMines;
@@ -589,15 +539,6 @@ public class PlayerData {
             }
 
             return accessibleMines;
-        }
-    }
-
-    /**
-     * Efface toutes les permissions de mine
-     */
-    public void clearMinePermissions() {
-        synchronized (dataLock) {
-            minePermissions.clear();
         }
     }
 
@@ -918,58 +859,6 @@ public class PlayerData {
         }
     }
 
-    /**
-     * NOUVEAU: Ajoute une permission custom
-     */
-    public void addPermission(String permission) {
-        customPermissions.add(permission);
-    }
-
-    /**
-     * NOUVEAU: Retire une permission custom
-     */
-    public void removePermission(String permission) {
-        customPermissions.remove(permission);
-    }
-
-    /**
-     * NOUVEAU: Vérifie si a une permission custom
-     */
-    public boolean hasCustomPermission(String permission) {
-        return customPermissions.contains(permission);
-    }
-
-    /**
-     * NOUVEAU: Obtient toutes les permissions custom
-     */
-    public Set<String> getCustomPermissions() {
-        return new HashSet<>(customPermissions);
-    }
-
-    /**
-     * NOUVEAU: Définit toutes les permissions (pour chargement)
-     */
-    public void setCustomPermissions(Set<String> permissions) {
-        this.customPermissions = new HashSet<>(permissions);
-    }
-
-    /**
-     * NOUVEAU: Vérifie si est VIP via permission stockée
-     */
-    public boolean isVip() {
-        return hasCustomPermission("specialmine.vip");
-    }
-
-    /**
-     * NOUVEAU: Définit le statut VIP
-     */
-    public void setVip(boolean vip) {
-        if (vip) {
-            addPermission("specialmine.vip");
-        } else {
-            removePermission("specialmine.vip");
-        }
-    }
 
     public void addPickaxeEnchantmentBook(String bookId) {
         pickaxeEnchantmentBooks.add(bookId);

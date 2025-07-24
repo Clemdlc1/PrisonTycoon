@@ -323,6 +323,13 @@ public class ConfigManager {
     }
 
     /**
+     * Retourne les noms de toutes les mines configurées
+     */
+    public Set<String> getAllMineNames() {
+        return minesData.keySet();
+    }
+
+    /**
      * Retourne les valeurs économiques d'un bloc
      */
     public BlockValueData getBlockValue(Material material) {
