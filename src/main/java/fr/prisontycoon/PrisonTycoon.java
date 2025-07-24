@@ -1,7 +1,6 @@
 package fr.prisontycoon;
 
 import com.earth2me.essentials.Essentials;
-import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import fr.prisontycoon.GUI.*;
 import fr.prisontycoon.autominers.AutominerTask;
@@ -114,6 +113,11 @@ public final class PrisonTycoon extends JavaPlugin {
 
     // Métriques bStats
     private Metrics metrics;
+
+    // === GETTERS STATIQUES ===
+    public static PrisonTycoon getInstance() {
+        return instance;
+    }
 
     @Override
     public void onEnable() {
@@ -562,70 +566,219 @@ public final class PrisonTycoon extends JavaPlugin {
         essentialsAPI = null;
     }
 
-    // === GETTERS STATIQUES ===
-    public static PrisonTycoon getInstance() {
-        return instance;
+    // === GETTERS INTÉGRATIONS NATIVES ===
+    public LuckPerms getLuckPermsAPI() {
+        return luckPermsAPI;
     }
 
-    // === GETTERS INTÉGRATIONS NATIVES ===
-    public LuckPerms getLuckPermsAPI() { return luckPermsAPI; }
-    public Economy getVaultEconomy() { return vaultEconomy; }
-    public WorldGuardPlugin getWorldGuardPlugin() { return worldGuardPlugin; }
-    public IEssentials getEssentialsAPI() { return essentialsAPI; }
+    public Economy getVaultEconomy() {
+        return vaultEconomy;
+    }
 
-    public boolean isLuckPermsEnabled() { return luckPermsEnabled; }
-    public boolean isVaultEnabled() { return vaultEnabled; }
-    public boolean isWorldGuardEnabled() { return worldGuardEnabled; }
-    public boolean isEssentialsEnabled() { return essentialsEnabled; }
+    public WorldGuardPlugin getWorldGuardPlugin() {
+        return worldGuardPlugin;
+    }
+
+    public IEssentials getEssentialsAPI() {
+        return essentialsAPI;
+    }
+
+    public boolean isLuckPermsEnabled() {
+        return luckPermsEnabled;
+    }
+
+    public boolean isVaultEnabled() {
+        return vaultEnabled;
+    }
+
+    public boolean isWorldGuardEnabled() {
+        return worldGuardEnabled;
+    }
+
+    public boolean isEssentialsEnabled() {
+        return essentialsEnabled;
+    }
 
     // === GETTERS MANAGERS (conservés pour compatibilité) ===
-    public Logger getPluginLogger() { return pluginLogger; }
-    public ChatLogger getChatLogger() { return chatLogger; }
-    public ConfigManager getConfigManager() { return configManager; }
-    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
-    public MineManager getMineManager() { return mineManager; }
-    public EnchantmentManager getEnchantmentManager() { return enchantmentManager; }
-    public PickaxeManager getPickaxeManager() { return pickaxeManager; }
-    public EconomyManager getEconomyManager() { return economyManager; }
-    public NotificationManager getNotificationManager() { return notificationManager; }
-    public ContainerManager getContainerManager() { return containerManager; }
-    public GlobalBonusManager getGlobalBonusManager() { return globalBonusManager; }
-    public TabManager getTabManager() { return tabManager; }
-    public ModerationManager getModerationManager() { return moderationManager; }
-    public VipManager getVipManager() { return vipManager; }
-    public PermissionManager getPermissionManager() { return permissionManager; }
-    public EnchantmentBookManager getEnchantmentBookManager() { return enchantmentBookManager; }
-    public ProfessionManager getProfessionManager() { return professionManager; }
-    public PrestigeManager getPrestigeManager() { return prestigeManager; }
-    public ReputationManager getReputationManager() { return reputationManager; }
-    public BlackMarketManager getBlackMarketManager() { return blackMarketManager; }
-    public CristalManager getCristalManager() { return cristalManager; }
-    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() { return weaponArmorEnchantmentManager; }
-    public VoucherManager getVoucherManager() { return voucherManager; }
-    public BoostManager getBoostManager() { return boostManager; }
-    public AutominerManager getAutominerManager() { return autominerManager; }
+    public Logger getPluginLogger() {
+        return pluginLogger;
+    }
+
+    public ChatLogger getChatLogger() {
+        return chatLogger;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public PlayerDataManager getPlayerDataManager() {
+        return playerDataManager;
+    }
+
+    public MineManager getMineManager() {
+        return mineManager;
+    }
+
+    public EnchantmentManager getEnchantmentManager() {
+        return enchantmentManager;
+    }
+
+    public PickaxeManager getPickaxeManager() {
+        return pickaxeManager;
+    }
+
+    public EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+
+    public NotificationManager getNotificationManager() {
+        return notificationManager;
+    }
+
+    public ContainerManager getContainerManager() {
+        return containerManager;
+    }
+
+    public GlobalBonusManager getGlobalBonusManager() {
+        return globalBonusManager;
+    }
+
+    public TabManager getTabManager() {
+        return tabManager;
+    }
+
+    public ModerationManager getModerationManager() {
+        return moderationManager;
+    }
+
+    public VipManager getVipManager() {
+        return vipManager;
+    }
+
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+
+    public EnchantmentBookManager getEnchantmentBookManager() {
+        return enchantmentBookManager;
+    }
+
+    public ProfessionManager getProfessionManager() {
+        return professionManager;
+    }
+
+    public PrestigeManager getPrestigeManager() {
+        return prestigeManager;
+    }
+
+    public ReputationManager getReputationManager() {
+        return reputationManager;
+    }
+
+    public BlackMarketManager getBlackMarketManager() {
+        return blackMarketManager;
+    }
+
+    public CristalManager getCristalManager() {
+        return cristalManager;
+    }
+
+    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() {
+        return weaponArmorEnchantmentManager;
+    }
+
+    public VoucherManager getVoucherManager() {
+        return voucherManager;
+    }
+
+    public BoostManager getBoostManager() {
+        return boostManager;
+    }
+
+    public AutominerManager getAutominerManager() {
+        return autominerManager;
+    }
 
     // === GETTERS UTILITAIRES ===
-    public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
-    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() { return uniqueEnchantmentBookFactory; }
+    public CristalBonusHelper getCristalBonusHelper() {
+        return cristalBonusHelper;
+    }
+
+    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() {
+        return uniqueEnchantmentBookFactory;
+    }
 
     // === GETTERS GUI ===
-    public EnchantmentMenu getMainMenuGUI() { return mainMenuGUI; }
-    public CategoryMenuGUI getCategoryMenuGUI() { return categoryMenuGUI; }
-    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
-    public CristalGUI getCristalGUI() { return cristalGUI; }
-    public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
-    public PetsMenuGUI getPetsMenuGUI() { return petsMenuGUI; }
-    public PickaxeRepairGUI getPickaxeRepairGUI() { return pickaxeRepairGUI; }
-    public ContainerGUI getContainerGUI() { return containerGUI; }
-    public ContainerFilterGUI getContainerFilterGUI() { return containerFilterGUI; }
-    public ProfessionGUI getProfessionGUI() { return professionGUI; }
-    public ProfessionRewardsGUI getProfessionRewardsGUI() { return professionRewardsGUI; }
-    public PrestigeGUI getPrestigeGUI() { return prestigeGUI; }
-    public BoostGUI getBoostGUI() { return boostGUI; }
-    public AutominerGUI getAutominerGUI() { return autominerGUI; }
-    public AutominerEnchantGUI getAutominerEnchantGUI() { return autominerEnchantGUI; }
-    public AutominerCondHeadGUI getAutominerCondHeadGUI() { return autominerCondHeadGUI; }
-    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() { return autominerEnchantUpgradeGUI; }
-    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
+    public EnchantmentMenu getMainMenuGUI() {
+        return mainMenuGUI;
+    }
+
+    public CategoryMenuGUI getCategoryMenuGUI() {
+        return categoryMenuGUI;
+    }
+
+    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() {
+        return enchantmentUpgradeGUI;
+    }
+
+    public CristalGUI getCristalGUI() {
+        return cristalGUI;
+    }
+
+    public EnchantmentBookGUI getEnchantmentBookGUI() {
+        return enchantmentBookGUI;
+    }
+
+    public PetsMenuGUI getPetsMenuGUI() {
+        return petsMenuGUI;
+    }
+
+    public PickaxeRepairGUI getPickaxeRepairGUI() {
+        return pickaxeRepairGUI;
+    }
+
+    public ContainerGUI getContainerGUI() {
+        return containerGUI;
+    }
+
+    public ContainerFilterGUI getContainerFilterGUI() {
+        return containerFilterGUI;
+    }
+
+    public ProfessionGUI getProfessionGUI() {
+        return professionGUI;
+    }
+
+    public ProfessionRewardsGUI getProfessionRewardsGUI() {
+        return professionRewardsGUI;
+    }
+
+    public PrestigeGUI getPrestigeGUI() {
+        return prestigeGUI;
+    }
+
+    public BoostGUI getBoostGUI() {
+        return boostGUI;
+    }
+
+    public AutominerGUI getAutominerGUI() {
+        return autominerGUI;
+    }
+
+    public AutominerEnchantGUI getAutominerEnchantGUI() {
+        return autominerEnchantGUI;
+    }
+
+    public AutominerCondHeadGUI getAutominerCondHeadGUI() {
+        return autominerCondHeadGUI;
+    }
+
+    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
+        return autominerEnchantUpgradeGUI;
+    }
+
+    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() {
+        return weaponArmorEnchantGUI;
+    }
 }

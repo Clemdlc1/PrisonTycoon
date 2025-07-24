@@ -9,7 +9,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -146,7 +145,7 @@ public class AutominerCondHeadGUI {
             playerData.setAutominerFuelReserve(playerData.getAutominerFuelReserve() + totalFuelAdded);
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
-            player.sendMessage("§a✓ " + NumberFormatter.format((long)totalFuelAdded) + " têtes ajoutées au réservoir!");
+            player.sendMessage("§a✓ " + NumberFormatter.format((long) totalFuelAdded) + " têtes ajoutées au réservoir!");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
 

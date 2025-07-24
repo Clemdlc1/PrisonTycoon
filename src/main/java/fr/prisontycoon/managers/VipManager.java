@@ -1,44 +1,120 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.PlayerData;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.model.user.UserManager;
+import net.luckperms.api.node.types.InheritanceNode;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Gestionnaire pour les joueurs VIP
+ * Gestionnaire VIP intégré avec LuckPerms
+ * INTÉGRATION NATIVE - Remplace l'ancien VipManager
+ * <p>
+ * Fonctionnalités intégrées:
+ * - Gestion complète avec LuckPerms (groupes, permissions)
+ * - Fallback vers fichier YAML si LuckPerms indisponible
+ * - VIP temporaires avec expiration automatique
+ * - Synchronisation bidirectionnelle
+ * - Avantages VIP automatiques
  */
 public class VipManager {
 
     private final PrisonTycoon plugin;
     private final File vipFile;
-    // Cache des VIP pour les performances
-    private final Set<UUID> vipCache = ConcurrentHashMap.newKeySet();
+    // Groupes VIP configurés (depuis config.yml)
+    private final Set<String> vipGroups;
+    private final String defaultVipGroup;
+    // Cache local pour les performances (fallback)
+    private final Map<UUID, VipData> vipCache = new ConcurrentHashMap<>();
+    // Avantages VIP configurés
+    private final Map<String, Object> vipBenefits;
     private FileConfiguration vipConfig;
 
     public VipManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.vipFile = new File(plugin.getDataFolder(), "vips.yml");
+
+        // Charge les groupes VIP depuis la config
+        this.vipGroups = new HashSet<>(plugin.getConfig().getStringList("hooks.luckperms.vip-groups"));
+        if (vipGroups.isEmpty()) {
+            // Valeurs par défaut
+            vipGroups.addAll(List.of("vip", "vip+", "mvp", "mvp+", "premium", "elite"));
+        }
+
+        this.defaultVipGroup = plugin.getConfig().getString("hooks.luckperms.default-vip-group", "vip");
+
+        // Charge les avantages VIP
+        this.vipBenefits = loadVipBenefits();
+
+        // Initialise le fichier fallback
         initializeFile();
+
+        // Charge les VIP existants
         loadVips();
+
+        // Démarre les tâches de maintenance
+        startMaintenanceTasks();
+
+        plugin.getPluginLogger().info("VipManager intégré initialisé:");
+        plugin.getPluginLogger().info("- Groupes VIP: " + vipGroups);
+        plugin.getPluginLogger().info("- Groupe par défaut: " + defaultVipGroup);
+        plugin.getPluginLogger().info("- LuckPerms: " + plugin.isLuckPermsEnabled());
     }
 
     /**
-     * Initialise le fichier VIP
+     * Charge les avantages VIP depuis la configuration
+     */
+    private Map<String, Object> loadVipBenefits() {
+        Map<String, Object> benefits = new HashMap<>();
+
+        // Avantages économiques
+        benefits.put("coin_multiplier", plugin.getConfig().getDouble("vip.benefits.coin_multiplier", 1.5));
+        benefits.put("token_multiplier", plugin.getConfig().getDouble("vip.benefits.token_multiplier", 2.0));
+        benefits.put("xp_multiplier", plugin.getConfig().getDouble("vip.benefits.xp_multiplier", 1.3));
+
+        // Avantages fonctionnels
+        benefits.put("max_homes", plugin.getConfig().getInt("vip.benefits.max_homes", 10));
+        benefits.put("max_autominers", plugin.getConfig().getInt("vip.benefits.max_autominers", 5));
+        benefits.put("daily_bonus", plugin.getConfig().getLong("vip.benefits.daily_bonus", 10000));
+
+        // Permissions spéciales
+        List<String> permissions = plugin.getConfig().getStringList("vip.benefits.permissions");
+        if (permissions.isEmpty()) {
+            permissions = List.of(
+                    "prisontycoon.vip",
+                    "prisontycoon.boost",
+                    "prisontycoon.premium",
+                    "prisontycoon.autoupgrade",
+                    "prisontycoon.blackmarket"
+            );
+        }
+        benefits.put("permissions", permissions);
+
+        return benefits;
+    }
+
+    /**
+     * Initialise le fichier VIP fallback
      */
     private void initializeFile() {
         if (!vipFile.exists()) {
             try {
                 vipFile.getParentFile().mkdirs();
                 vipFile.createNewFile();
-                plugin.getPluginLogger().info("Fichier VIP créé: " + vipFile.getName());
+                plugin.getPluginLogger().info("Fichier VIP fallback créé: " + vipFile.getName());
             } catch (IOException e) {
                 plugin.getPluginLogger().severe("Impossible de créer le fichier VIP: " + e.getMessage());
                 e.printStackTrace();
@@ -48,279 +124,530 @@ public class VipManager {
     }
 
     /**
-     * Charge tous les VIP depuis le fichier
+     * Charge tous les VIP existants
      */
     private void loadVips() {
         vipCache.clear();
 
-        if (vipConfig.contains("vips")) {
-            for (String uuidString : vipConfig.getConfigurationSection("vips").getKeys(false)) {
-                try {
-                    UUID uuid = UUID.fromString(uuidString);
-                    vipCache.add(uuid);
-                } catch (IllegalArgumentException e) {
-                    plugin.getPluginLogger().warning("UUID VIP invalide: " + uuidString);
-                }
-            }
+        if (plugin.isLuckPermsEnabled()) {
+            // Charge depuis LuckPerms
+            loadVipsFromLuckPerms();
+        } else {
+            // Charge depuis le fichier fallback
+            loadVipsFromFile();
         }
 
         plugin.getPluginLogger().info("VIP chargés: " + vipCache.size() + " joueurs");
     }
 
     /**
-     * Sauvegarde les VIP dans le fichier
+     * Charge les VIP depuis LuckPerms
+     * INTÉGRATION NATIVE LUCKPERMS
      */
-    private void saveVips() {
+    private void loadVipsFromLuckPerms() {
+        if (!plugin.isLuckPermsEnabled()) return;
+
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+
+            // Charge tous les utilisateurs en ligne et synchronise
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                User user = userManager.getUser(player.getUniqueId());
+                if (user != null) {
+                    boolean isVip = user.getNodes().stream()
+                            .filter(node -> node instanceof InheritanceNode)
+                            .map(node -> ((InheritanceNode) node).getGroupName())
+                            .anyMatch(group -> vipGroups.contains(group.toLowerCase()));
+
+                    if (isVip) {
+                        String group = user.getPrimaryGroup();
+                        Instant expiry = user.getNodes().stream()
+                                .filter(node -> node instanceof InheritanceNode)
+                                .filter(node -> vipGroups.contains(((InheritanceNode) node).getGroupName().toLowerCase()))
+                                .map(node -> node.getExpiry())
+                                .filter(Objects::nonNull)
+                                .findFirst()
+                                .orElse(null);
+
+                        VipData vipData = new VipData(player.getName(), group, expiry, "LuckPerms", Instant.now());
+                        vipCache.put(player.getUniqueId(), vipData);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Erreur chargement VIP depuis LuckPerms: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Charge les VIP depuis le fichier fallback
+     */
+    private void loadVipsFromFile() {
+        if (!vipConfig.contains("vips")) return;
+
+        for (String uuidString : vipConfig.getConfigurationSection("vips").getKeys(false)) {
+            try {
+                UUID uuid = UUID.fromString(uuidString);
+                String path = "vips." + uuidString + ".";
+
+                String playerName = vipConfig.getString(path + "name", "Unknown");
+                String group = vipConfig.getString(path + "group", defaultVipGroup);
+                String addedBy = vipConfig.getString(path + "added_by", "Unknown");
+
+                Instant addedTime = Instant.ofEpochMilli(vipConfig.getLong(path + "added_time", System.currentTimeMillis()));
+
+                Instant expiry = null;
+                if (vipConfig.contains(path + "expiry")) {
+                    expiry = Instant.ofEpochMilli(vipConfig.getLong(path + "expiry"));
+                }
+
+                VipData vipData = new VipData(playerName, group, expiry, addedBy, addedTime);
+                vipCache.put(uuid, vipData);
+
+            } catch (IllegalArgumentException e) {
+                plugin.getPluginLogger().warning("UUID VIP invalide: " + uuidString);
+            }
+        }
+    }
+
+    /**
+     * Vérifie si un joueur est VIP
+     * INTÉGRATION NATIVE
+     */
+    public boolean isVip(@NotNull Player player) {
+        return isVip(player.getUniqueId());
+    }
+
+    /**
+     * Vérifie si un UUID est VIP
+     */
+    public boolean isVip(@NotNull UUID uuid) {
+        if (plugin.isLuckPermsEnabled()) {
+            // INTÉGRATION LUCKPERMS NATIVE
+            return isVipInLuckPerms(uuid);
+        } else {
+            // FALLBACK vers cache local
+            VipData vipData = vipCache.get(uuid);
+            return vipData != null && !vipData.isExpired();
+        }
+    }
+
+    /**
+     * Vérifie VIP dans LuckPerms
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    private boolean isVipInLuckPerms(@NotNull UUID uuid) {
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+            User user = userManager.getUser(uuid);
+
+            if (user != null) {
+                // Vérifie les groupes
+                boolean hasVipGroup = user.getNodes().stream()
+                        .filter(node -> node instanceof InheritanceNode)
+                        .map(node -> ((InheritanceNode) node).getGroupName())
+                        .anyMatch(group -> vipGroups.contains(group.toLowerCase()));
+
+                // Vérifie les permissions directes
+                boolean hasVipPermission = user.getCachedData().getPermissionData()
+                        .checkPermission("prisontycoon.vip").asBoolean();
+
+                return hasVipGroup || hasVipPermission;
+            }
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur vérification VIP LuckPerms " + uuid + ": " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Ajoute un joueur VIP
+     * INTÉGRATION NATIVE
+     */
+    public CompletableFuture<Boolean> addVip(@NotNull UUID uuid, @NotNull String playerName, @NotNull String addedBy) {
+        return addVip(uuid, playerName, addedBy, null, defaultVipGroup);
+    }
+
+    /**
+     * Ajoute un joueur VIP temporaire
+     */
+    public CompletableFuture<Boolean> addTemporaryVip(@NotNull UUID uuid, @NotNull String playerName,
+                                                      @NotNull String addedBy, @NotNull Duration duration) {
+        Instant expiry = Instant.now().plus(duration);
+        return addVip(uuid, playerName, addedBy, expiry, defaultVipGroup);
+    }
+
+    /**
+     * Ajoute un joueur VIP avec groupe spécifique
+     */
+    public CompletableFuture<Boolean> addVip(@NotNull UUID uuid, @NotNull String playerName, @NotNull String addedBy,
+                                             Instant expiry, @NotNull String group) {
+
+        if (plugin.isLuckPermsEnabled()) {
+            // INTÉGRATION LUCKPERMS NATIVE
+            return addVipInLuckPerms(uuid, group, expiry).thenApply(success -> {
+                if (success) {
+                    // Met à jour le cache local
+                    VipData vipData = new VipData(playerName, group, expiry, addedBy, Instant.now());
+                    vipCache.put(uuid, vipData);
+
+                    // Synchronise avec PlayerData
+                    synchronizeWithPlayerData(uuid, true);
+
+                    // Applique les avantages VIP
+                    Player player = plugin.getServer().getPlayer(uuid);
+                    if (player != null) {
+                        applyVipBenefits(player);
+                    }
+
+                    String expiryText = expiry != null ? " (expire: " + expiry + ")" : " (permanent)";
+                    plugin.getPluginLogger().info("VIP ajouté (LuckPerms): " + playerName + " -> " + group + expiryText);
+                }
+                return success;
+            });
+        } else {
+            // FALLBACK vers fichier
+            return CompletableFuture.supplyAsync(() -> {
+                VipData vipData = new VipData(playerName, group, expiry, addedBy, Instant.now());
+                vipCache.put(uuid, vipData);
+
+                // Sauvegarde dans le fichier
+                saveVipToFile(uuid, vipData);
+
+                // Synchronise avec PlayerData
+                synchronizeWithPlayerData(uuid, true);
+
+                // Applique les avantages VIP
+                Player player = plugin.getServer().getPlayer(uuid);
+                if (player != null) {
+                    applyVipBenefits(player);
+                }
+
+                String expiryText = expiry != null ? " (expire: " + expiry + ")" : " (permanent)";
+                plugin.getPluginLogger().info("VIP ajouté (fichier): " + playerName + " -> " + group + expiryText);
+
+                return true;
+            });
+        }
+    }
+
+    /**
+     * Ajoute VIP dans LuckPerms
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    private CompletableFuture<Boolean> addVipInLuckPerms(@NotNull UUID uuid, @NotNull String group, Instant expiry) {
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+
+            return userManager.loadUser(uuid).thenCompose(user -> {
+                if (user == null) return CompletableFuture.completedFuture(false);
+
+                // Crée le nœud de groupe
+                InheritanceNode.Builder nodeBuilder = InheritanceNode.builder(group);
+                if (expiry != null) {
+                    nodeBuilder.expiry(expiry);
+                }
+                InheritanceNode node = nodeBuilder.build();
+
+                // Ajoute le nœud
+                user.data().add(node);
+
+                // Ajoute aussi les permissions VIP
+                @SuppressWarnings("unchecked")
+                List<String> vipPermissions = (List<String>) vipBenefits.get("permissions");
+                for (String permission : vipPermissions) {
+                    var permNode = net.luckperms.api.node.types.PermissionNode.builder(permission);
+                    if (expiry != null) {
+                        permNode.expiry(expiry);
+                    }
+                    user.data().add(permNode.build());
+                }
+
+                // Sauvegarde
+                return userManager.saveUser(user).thenApply(v -> true);
+            });
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("Erreur ajout VIP LuckPerms:");
+            e.printStackTrace();
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    /**
+     * Retire le statut VIP d'un joueur
+     */
+    public CompletableFuture<Boolean> removeVip(@NotNull UUID uuid) {
+        if (plugin.isLuckPermsEnabled()) {
+            // INTÉGRATION LUCKPERMS NATIVE
+            return removeVipFromLuckPerms(uuid).thenApply(success -> {
+                if (success) {
+                    vipCache.remove(uuid);
+                    synchronizeWithPlayerData(uuid, false);
+
+                    Player player = plugin.getServer().getPlayer(uuid);
+                    if (player != null) {
+                        removeVipBenefits(player);
+                        plugin.getPluginLogger().info("VIP retiré (LuckPerms): " + player.getName());
+                    }
+                }
+                return success;
+            });
+        } else {
+            // FALLBACK vers fichier
+            return CompletableFuture.supplyAsync(() -> {
+                VipData removed = vipCache.remove(uuid);
+                if (removed != null) {
+                    removeVipFromFile(uuid);
+                    synchronizeWithPlayerData(uuid, false);
+
+                    Player player = plugin.getServer().getPlayer(uuid);
+                    if (player != null) {
+                        removeVipBenefits(player);
+                        plugin.getPluginLogger().info("VIP retiré (fichier): " + player.getName());
+                    }
+                    return true;
+                }
+                return false;
+            });
+        }
+    }
+
+    /**
+     * Retire VIP de LuckPerms
+     */
+    private CompletableFuture<Boolean> removeVipFromLuckPerms(@NotNull UUID uuid) {
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+
+            return userManager.loadUser(uuid).thenCompose(user -> {
+                if (user == null) return CompletableFuture.completedFuture(false);
+
+                boolean changed = false;
+
+                // Retire tous les groupes VIP
+                for (String vipGroup : vipGroups) {
+                    InheritanceNode node = InheritanceNode.builder(vipGroup).build();
+                    if (user.data().remove(node).wasSuccessful()) {
+                        changed = true;
+                    }
+                }
+
+                // Retire les permissions VIP
+                @SuppressWarnings("unchecked")
+                List<String> vipPermissions = (List<String>) vipBenefits.get("permissions");
+                for (String permission : vipPermissions) {
+                    var permNode = net.luckperms.api.node.types.PermissionNode.builder(permission).build();
+                    if (user.data().remove(permNode).wasSuccessful()) {
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    return userManager.saveUser(user).thenApply(v -> true);
+                } else {
+                    return CompletableFuture.completedFuture(false);
+                }
+            });
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("Erreur retrait VIP LuckPerms:");
+            e.printStackTrace();
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    /**
+     * Synchronise le statut VIP avec PlayerData
+     */
+    private void synchronizeWithPlayerData(@NotNull UUID uuid, boolean isVip) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        if (playerData.isVip() != isVip) {
+            playerData.setVip(isVip);
+            plugin.getPluginLogger().debug("PlayerData VIP synchronisé: " + uuid + " -> " + isVip);
+        }
+    }
+
+    /**
+     * Applique les avantages VIP à un joueur
+     */
+    public void applyVipBenefits(@NotNull Player player) {
+        if (!isVip(player)) return;
+
+        try {
+            // Applique les permissions via PermissionManager
+            @SuppressWarnings("unchecked")
+            List<String> permissions = (List<String>) vipBenefits.get("permissions");
+            for (String permission : permissions) {
+                plugin.getPermissionManager().attachPermission(player, permission);
+            }
+
+            // Met à jour le tab
+            plugin.getTabManager().updatePlayerTab(player);
+
+            // Notifications
+            player.sendMessage("§6✨ Avantages VIP activés!");
+            player.sendMessage("§7- Multiplicateur coins: §6×" + vipBenefits.get("coin_multiplier"));
+            player.sendMessage("§7- Multiplicateur tokens: §b×" + vipBenefits.get("token_multiplier"));
+            player.sendMessage("§7- Multiplicateur XP: §a×" + vipBenefits.get("xp_multiplier"));
+
+            plugin.getPluginLogger().debug("Avantages VIP appliqués à " + player.getName());
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Erreur application avantages VIP " + player.getName() + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Retire les avantages VIP d'un joueur
+     */
+    public void removeVipBenefits(@NotNull Player player) {
+        try {
+            // Retire les permissions via PermissionManager
+            @SuppressWarnings("unchecked")
+            List<String> permissions = (List<String>) vipBenefits.get("permissions");
+            for (String permission : permissions) {
+                plugin.getPermissionManager().removePermission(player, permission);
+            }
+
+            // Met à jour le tab
+            plugin.getTabManager().updatePlayerTab(player);
+
+            player.sendMessage("§cStatut VIP expiré.");
+
+            plugin.getPluginLogger().debug("Avantages VIP retirés de " + player.getName());
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Erreur retrait avantages VIP " + player.getName() + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sauvegarde un VIP dans le fichier fallback
+     */
+    private void saveVipToFile(@NotNull UUID uuid, @NotNull VipData vipData) {
+        String path = "vips." + uuid + ".";
+
+        vipConfig.set(path + "name", vipData.playerName);
+        vipConfig.set(path + "group", vipData.group);
+        vipConfig.set(path + "added_by", vipData.addedBy);
+        vipConfig.set(path + "added_time", vipData.addedTime.toEpochMilli());
+
+        if (vipData.expiry != null) {
+            vipConfig.set(path + "expiry", vipData.expiry.toEpochMilli());
+        }
+
         try {
             vipConfig.save(vipFile);
         } catch (IOException e) {
-            plugin.getPluginLogger().severe("Erreur lors de la sauvegarde des VIP: " + e.getMessage());
-            e.printStackTrace();
+            plugin.getPluginLogger().severe("Erreur sauvegarde VIP: " + e.getMessage());
         }
     }
 
-    // CORRECTION: VipManager.java - VIP = Permission uniquement
-
     /**
-     * SIMPLIFIÉ: Ajoute un joueur VIP (donne la permission)
+     * Retire un VIP du fichier fallback
      */
-    public void addVip(UUID uuid, String playerName, String addedBy) {
-        // Enregistre dans le fichier pour historique/logs
-        String path = "vips." + uuid + ".";
-        vipConfig.set(path + "playerName", playerName);
-        vipConfig.set(path + "addedBy", addedBy);
-        vipConfig.set(path + "addedAt", System.currentTimeMillis());
-        saveVips();
-
-        // Ajoute au cache
-        vipCache.add(uuid);
-
-        // NOUVEAU: Ajoute la permission directement dans PlayerData
-        plugin.getPlayerDataManager().addPermissionToPlayer(uuid, "specialmine.vip");
-
-        // Log
-        plugin.getPluginLogger().info("VIP ajouté: " + playerName + " (" + uuid + ") par " + addedBy);
-        plugin.getPluginLogger().info("Permission specialmine.vip accordée automatiquement");
-    }
-
-    /**
-     * NOUVEAU: Retire un joueur VIP (retire la permission directement)
-     */
-    public void removeVip(UUID uuid, String removedBy) {
-        String playerName = vipConfig.getString("vips." + uuid + ".playerName", "Inconnu");
-
-        // Retire du fichier et cache
-        vipCache.remove(uuid);
+    private void removeVipFromFile(@NotNull UUID uuid) {
         vipConfig.set("vips." + uuid, null);
-        saveVips();
 
-        // NOUVEAU: Retire la permission directement de PlayerData
-        plugin.getPlayerDataManager().removePermissionFromPlayer(uuid, "specialmine.vip");
-
-        // Log
-        plugin.getPluginLogger().info("VIP retiré: " + playerName + " (" + uuid + ") par " + removedBy);
-        plugin.getPluginLogger().info("Permission specialmine.vip retirée automatiquement");
-    }
-
-    /**
-     * NOUVEAU: Vérifie si un joueur est VIP (via permission Bukkit + données)
-     */
-    public boolean isVip(UUID uuid) {
-        Player player = plugin.getServer().getPlayer(uuid);
-        if (player != null && player.isOnline()) {
-            // Pour joueurs en ligne: vérifier permission Bukkit (plus fiable)
-            return player.hasPermission("specialmine.vip");
+        try {
+            vipConfig.save(vipFile);
+        } catch (IOException e) {
+            plugin.getPluginLogger().severe("Erreur suppression VIP: " + e.getMessage());
         }
-
-        // Pour joueurs hors ligne: vérifier données stockées
-        return plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
     }
 
     /**
-     * NOUVEAU: Vérifie la cohérence permission/cache/données pour un joueur en ligne
+     * Démarre les tâches de maintenance
      */
-    public boolean checkVipConsistency(Player player) {
-        UUID uuid = player.getUniqueId();
-        boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
-        boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
-        boolean inCache = vipCache.contains(uuid);
-
-        boolean consistent = hasPermissionBukkit == hasPermissionData && hasPermissionData == inCache;
-
-        if (!consistent) {
-            plugin.getPluginLogger().warning("§c⚠️ INCOHÉRENCE VIP pour " + player.getName() +
-                    " - Bukkit: " + hasPermissionBukkit +
-                    ", Données: " + hasPermissionData +
-                    ", Cache: " + inCache);
-        }
-
-        return consistent;
+    private void startMaintenanceTasks() {
+        // Vérifie les VIP expirés toutes les 10 minutes
+        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            checkExpiredVips();
+        }, 12000L, 12000L); // 10 minutes
     }
 
     /**
-     * NOUVEAU: Synchronise tout (cache, données, permissions Bukkit)
+     * Vérifie et retire les VIP expirés
      */
-    public void syncAllVipData() {
-        int synced = 0;
+    private void checkExpiredVips() {
+        List<UUID> expiredVips = new ArrayList<>();
 
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            UUID uuid = player.getUniqueId();
-            boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
-            boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
-            boolean inCache = vipCache.contains(uuid);
-
-            // Source de vérité = données stockées (PlayerData)
-            boolean shouldBeVip = hasPermissionData;
-
-            // Synchronise le cache
-            if (shouldBeVip && !inCache) {
-                vipCache.add(uuid);
-                plugin.getPluginLogger().info("§7Ajouté au cache VIP: " + player.getName());
-                synced++;
-            } else if (!shouldBeVip && inCache) {
-                vipCache.remove(uuid);
-                plugin.getPluginLogger().info("§7Retiré du cache VIP: " + player.getName());
-                synced++;
-            }
-
-            // Synchronise les permissions Bukkit
-            if (shouldBeVip && !hasPermissionBukkit) {
-                plugin.getPermissionManager().attachPermission(player, "specialmine.vip");
-                plugin.getPluginLogger().info("§7Permission attachée: " + player.getName());
-                synced++;
-            } else if (!shouldBeVip && hasPermissionBukkit) {
-                plugin.getPermissionManager().detachPermission(player, "specialmine.vip");
-                plugin.getPluginLogger().info("§7Permission détachée: " + player.getName());
-                synced++;
+        for (Map.Entry<UUID, VipData> entry : vipCache.entrySet()) {
+            if (entry.getValue().isExpired()) {
+                expiredVips.add(entry.getKey());
             }
         }
 
-        if (synced > 0) {
-            plugin.getPluginLogger().info("§aSynchronisation VIP complète: " + synced + " éléments mis à jour");
-        } else {
-            plugin.getPluginLogger().info("§aTout est synchronisé, aucune correction nécessaire");
+        for (UUID uuid : expiredVips) {
+            removeVip(uuid).thenAccept(success -> {
+                if (success) {
+                    Player player = plugin.getServer().getPlayer(uuid);
+                    if (player != null) {
+                        player.sendMessage("§c⏰ Votre statut VIP a expiré!");
+                    }
+                    plugin.getPluginLogger().info("VIP expiré automatiquement: " + uuid);
+                }
+            });
+        }
+
+        if (!expiredVips.isEmpty()) {
+            plugin.getPluginLogger().info("VIP expirés nettoyés: " + expiredVips.size());
         }
     }
 
     /**
-     * NOUVEAU: Obtient le statut VIP détaillé (debug)
+     * Obtient les informations VIP d'un joueur
      */
-    public String getVipStatusDetailed(UUID uuid) {
-        Player player = plugin.getServer().getPlayer(uuid);
-        String playerName = player != null ? player.getName() :
-                vipConfig.getString("vips." + uuid + ".playerName", "Inconnu");
-
-        boolean hasPermissionBukkit = player != null && player.hasPermission("specialmine.vip");
-        boolean hasPermissionData = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
-        boolean inCache = vipCache.contains(uuid);
-
-        return String.format("§e%s §7- Bukkit: %s§7, Données: %s§7, Cache: %s",
-                playerName,
-                hasPermissionBukkit ? "§aOUI" : "§cNON",
-                hasPermissionData ? "§aOUI" : "§cNON",
-                inCache ? "§aOUI" : "§cNON");
+    public VipData getVipData(@NotNull UUID uuid) {
+        return vipCache.get(uuid);
     }
 
     /**
-     * NOUVEAU: Force la synchronisation d'un joueur spécifique
+     * Obtient tous les VIP
      */
-    public void forcePlayerSync(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        boolean shouldBeVip = plugin.getPlayerDataManager().hasPlayerPermission(uuid, "specialmine.vip");
-
-        boolean hasPermissionBukkit = player.hasPermission("specialmine.vip");
-
-        if (shouldBeVip != hasPermissionBukkit) {
-            plugin.getPermissionManager().reloadPlayerPermissions(player);
-            plugin.getPluginLogger().info("Permissions rechargées pour " + player.getName() + " (VIP: " + shouldBeVip + ")");
-        }
-
-        // Met à jour le cache
-        if (shouldBeVip) {
-            vipCache.add(uuid);
-        } else {
-            vipCache.remove(uuid);
-        }
-
-        // Validation finale
-        boolean finalCheck = player.hasPermission("specialmine.vip");
-        if (finalCheck != shouldBeVip) {
-            plugin.getPluginLogger().warning("⚠️ Échec de synchronisation pour " + player.getName() +
-                    " - Attendu: " + shouldBeVip + ", Actuel: " + finalCheck);
-        } else {
-            plugin.getPluginLogger().info("✅ Synchronisation réussie pour " + player.getName() + " (VIP: " + shouldBeVip + ")");
-        }
+    public Map<UUID, VipData> getAllVips() {
+        return new HashMap<>(vipCache);
     }
 
     /**
-     * Obtient les informations d'un VIP
-     */
-    public VipData getVipData(UUID uuid) {
-        if (!isVip(uuid)) return null;
-
-        String path = "vips." + uuid + ".";
-        return new VipData(
-                uuid,
-                vipConfig.getString(path + "playerName"),
-                vipConfig.getString(path + "addedBy"),
-                vipConfig.getLong(path + "addedAt")
-        );
-    }
-
-    /**
-     * Obtient le nombre de VIP
-     */
-    public int getVipCount() {
-        return vipCache.size();
-    }
-
-    /**
-     * Obtient tous les UUID des VIP
-     */
-    public Set<UUID> getAllVips() {
-        return new HashSet<>(vipCache);
-    }
-
-    /**
-     * Recharge le système VIP
+     * Recharge les VIP
      */
     public void reload() {
-        vipConfig = YamlConfiguration.loadConfiguration(vipFile);
         loadVips();
-        plugin.getPluginLogger().info("Système VIP rechargé");
+        plugin.getPluginLogger().info("VipManager rechargé");
     }
 
     /**
      * Classe pour stocker les données VIP
      */
     public static class VipData {
-        private final UUID uuid;
-        private final String playerName;
-        private final String addedBy;
-        private final long addedAt;
+        public final String playerName;
+        public final String group;
+        public final Instant expiry; // null = permanent
+        public final String addedBy;
+        public final Instant addedTime;
 
-        public VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
-            this.uuid = uuid;
+        public VipData(String playerName, String group, Instant expiry, String addedBy, Instant addedTime) {
             this.playerName = playerName;
+            this.group = group;
+            this.expiry = expiry;
             this.addedBy = addedBy;
-            this.addedAt = addedAt;
+            this.addedTime = addedTime;
         }
 
-        public UUID getUuid() {
-            return uuid;
+        public boolean isExpired() {
+            return expiry != null && Instant.now().isAfter(expiry);
         }
 
-        public String getPlayerName() {
-            return playerName;
-        }
-
-        public String getAddedBy() {
-            return addedBy;
-        }
-
-        public long getAddedAt() {
-            return addedAt;
+        public boolean isPermanent() {
+            return expiry == null;
         }
     }
 }

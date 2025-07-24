@@ -16,7 +16,9 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -24,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * Hook optimisé pour LuckPerms
  * Remplace complètement l'ancien PermissionManager
- *
+ * <p>
  * Fonctionnalités:
  * - Gestion des groupes et permissions
  * - Cache intelligent avec invalidation automatique
@@ -34,24 +36,20 @@ import java.util.stream.Collectors;
  */
 public class LuckPermsHook {
 
-    private final PrisonTycoon plugin;
-    private LuckPerms luckPermsAPI;
-    private UserManager userManager;
-
-    // Cache des données utilisateur pour les performances
-    private final Map<UUID, CachedUserData> userCache = new ConcurrentHashMap<>();
-
-    // Contexte par défaut pour les requêtes
-    private final ImmutableContextSet defaultContext;
-
-    // Groupes VIP configurés
-    private final Set<String> vipGroups = Set.of("vip", "vip+");
-
     // Permissions clés du plugin
     public static final String ADMIN_PERMISSION = "prisontycoon.admin";
     public static final String VIP_PERMISSION = "prisontycoon.vip";
     public static final String MODERATOR_PERMISSION = "prisontycoon.moderator";
     public static final String BYPASS_PERMISSION = "prisontycoon.bypass";
+    private final PrisonTycoon plugin;
+    // Cache des données utilisateur pour les performances
+    private final Map<UUID, CachedUserData> userCache = new ConcurrentHashMap<>();
+    // Contexte par défaut pour les requêtes
+    private final ImmutableContextSet defaultContext;
+    // Groupes VIP configurés
+    private final Set<String> vipGroups = Set.of("vip", "vip+");
+    private LuckPerms luckPermsAPI;
+    private UserManager userManager;
 
     public LuckPermsHook(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -477,10 +475,21 @@ public class LuckPermsHook {
             this.cacheTime = System.currentTimeMillis();
         }
 
-        public String getPrimaryGroup() { return primaryGroup; }
-        public Set<String> getGroups() { return groups; }
-        public String getPrefix() { return prefix; }
-        public String getSuffix() { return suffix; }
+        public String getPrimaryGroup() {
+            return primaryGroup;
+        }
+
+        public Set<String> getGroups() {
+            return groups;
+        }
+
+        public String getPrefix() {
+            return prefix;
+        }
+
+        public String getSuffix() {
+            return suffix;
+        }
 
         public boolean hasPermission(String permission) {
             return permissions.getOrDefault(permission, false);

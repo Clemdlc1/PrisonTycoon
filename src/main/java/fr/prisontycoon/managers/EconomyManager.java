@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Gestionnaire économique intégré avec Vault et EssentialsX
  * INTÉGRATION NATIVE - Remplace l'ancien EconomyManager
- *
+ * <p>
  * Système économique hybride:
  * - Économie interne du plugin (coins/tokens)
  * - Intégration Vault (synchronisation bidirectionnelle)
@@ -28,21 +28,18 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class EconomyManager {
 
+    // Constantes pour l'expérience
+    private static final int BASE_XP_PER_LEVEL = 1000;
+    private static final double XP_MULTIPLIER = 1.5;
     private final PrisonTycoon plugin;
-
     // Configuration de synchronisation depuis config.yml
     private final boolean vaultSyncEnabled;
     private final boolean essentialsSyncEnabled;
     private final double vaultConversionRate;
     private final double essentialsMultiplier;
-
     // Cache des dernières synchronisations pour éviter le spam
     private final ConcurrentMap<String, Long> lastVaultSync = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Long> lastEssentialsSync = new ConcurrentHashMap<>();
-
-    // Constantes pour l'expérience
-    private static final int BASE_XP_PER_LEVEL = 1000;
-    private static final double XP_MULTIPLIER = 1.5;
 
     public EconomyManager(PrisonTycoon plugin) {
         this.plugin = plugin;

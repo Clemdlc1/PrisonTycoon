@@ -1,5 +1,7 @@
 package fr.prisontycoon.managers;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
 import fr.prisontycoon.data.MineData;
@@ -11,8 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -112,7 +112,8 @@ public class AutominerManager {
         String enchantsJson = item.getItemMeta().getPersistentDataContainer().get(enchantsKey, PersistentDataType.STRING);
         if (enchantsJson == null) return new HashMap<>();
 
-        Type type = new TypeToken<Map<String, Integer>>(){}.getType();
+        Type type = new TypeToken<Map<String, Integer>>() {
+        }.getType();
         return gson.fromJson(enchantsJson, type);
     }
 
@@ -124,7 +125,8 @@ public class AutominerManager {
         String crystalsJson = item.getItemMeta().getPersistentDataContainer().get(crystalsKey, PersistentDataType.STRING);
         if (crystalsJson == null) return Map.of("slot_1", null, "slot_2", null);
 
-        Type type = new TypeToken<Map<String, String>>(){}.getType();
+        Type type = new TypeToken<Map<String, String>>() {
+        }.getType();
         return gson.fromJson(crystalsJson, type);
     }
 
@@ -203,10 +205,10 @@ public class AutominerManager {
             String crystal = entry.getValue();
 
             if (crystal != null && !crystal.equals("null")) {
-                lore.add("§a• Slot " + slot.charAt(slot.length()-1) + ": §f" + crystal);
+                lore.add("§a• Slot " + slot.charAt(slot.length() - 1) + ": §f" + crystal);
                 crystalCount++;
             } else {
-                lore.add("§8• Slot " + slot.charAt(slot.length()-1) + ": §7Vide");
+                lore.add("§8• Slot " + slot.charAt(slot.length() - 1) + ": §7Vide");
             }
         }
 
@@ -445,176 +447,196 @@ public class AutominerManager {
                 beaconFound = true;
             }
         }
-    // Retourner le premier bloc miné pour l'affichage, mais les gains sont la somme
-    Material displayBlock = selectRandomBlock(mineData.getBlockComposition());
+        // Retourner le premier bloc miné pour l'affichage, mais les gains sont la somme
+        Material displayBlock = selectRandomBlock(mineData.getBlockComposition());
 
         return new AutominerMiningResult(displayBlock, blocksToMine, totalCoins, totalTokens,
-                                         totalExperience, totalKeys, beaconFound);
+                totalExperience, totalKeys, beaconFound);
     }
 
-/**
- * Calcule la consommation de carburant d'un automineur
- */
-public double calculateFuelConsumption(ItemStack autominer) {
-    if (!isAutominer(autominer)) return 0;
+    /**
+     * Calcule la consommation de carburant d'un automineur
+     */
+    public double calculateFuelConsumption(ItemStack autominer) {
+        if (!isAutominer(autominer)) return 0;
 
-    AutominerType type = getAutominerType(autominer);
-    Map<String, Integer> enchantments = getAutominerEnchantments(autominer);
+        AutominerType type = getAutominerType(autominer);
+        Map<String, Integer> enchantments = getAutominerEnchantments(autominer);
 
-    int fuelEfficiencyLevel = enchantments.getOrDefault("FUELEFFICIENCY", 0);
+        int fuelEfficiencyLevel = enchantments.getOrDefault("FUELEFFICIENCY", 0);
 
-    // Nouvelle logique : niveau 100 = réduction par 2
-    double reductionFactor = Math.min(fuelEfficiencyLevel / 100.0, 0.9); // Max 90% de réduction
-    double baseConsumptionPerSecond = 1.0 / type.getBaseFuelConsumption();
+        // Nouvelle logique : niveau 100 = réduction par 2
+        double reductionFactor = Math.min(fuelEfficiencyLevel / 100.0, 0.9); // Max 90% de réduction
+        double baseConsumptionPerSecond = 1.0 / type.getBaseFuelConsumption();
 
-    return baseConsumptionPerSecond * (1.0 - reductionFactor);
-}
+        return baseConsumptionPerSecond * (1.0 - reductionFactor);
+    }
 
 // ==================== NOUVELLES MÉTHODES POUR EFFICACITÉ ====================
 
-/**
- * Calcule le nombre de blocs minés selon le niveau d'Efficacité
- */
-private int calculateEfficiencyBlocks(int efficaciteLevel) {
-    if (efficaciteLevel == 0) return 1;
+    /**
+     * Calcule le nombre de blocs minés selon le niveau d'Efficacité
+     */
+    private int calculateEfficiencyBlocks(int efficaciteLevel) {
+        if (efficaciteLevel == 0) return 1;
 
-    // Logique :
-    // - Niveau 1-1499 : toujours 1 bloc, mais fréquence augmente
-    // - Niveau 1500+ : chance de miner un 2ème bloc
-    int baseBlocks = 1;
+        // Logique :
+        // - Niveau 1-1499 : toujours 1 bloc, mais fréquence augmente
+        // - Niveau 1500+ : chance de miner un 2ème bloc
+        int baseBlocks = 1;
 
-    if (efficaciteLevel >= 1500) {
-        // 50% de chance d'un 2ème bloc au niveau 1500, puis +10% par 100 niveaux
-        double chanceSecondBlock = 0.5 + ((efficaciteLevel - 1500) / 1000.0);
-        chanceSecondBlock = Math.min(chanceSecondBlock, 1.0); // Max 100%
+        if (efficaciteLevel >= 1500) {
+            // 50% de chance d'un 2ème bloc au niveau 1500, puis +10% par 100 niveaux
+            double chanceSecondBlock = 0.5 + ((efficaciteLevel - 1500) / 1000.0);
+            chanceSecondBlock = Math.min(chanceSecondBlock, 1.0); // Max 100%
 
-        if (ThreadLocalRandom.current().nextDouble() < chanceSecondBlock) {
-            baseBlocks = 2;
+            if (ThreadLocalRandom.current().nextDouble() < chanceSecondBlock) {
+                baseBlocks = 2;
+            }
         }
-    }
 
-    return baseBlocks;
-}
+        return baseBlocks;
+    }
 
 // ==================== MÉTHODES UTILITAIRES ====================
 
-private String formatTime(int seconds) {
-    if (seconds >= 3600) {
-        return (seconds / 3600) + "h";
-    } else if (seconds >= 60) {
-        return (seconds / 60) + "min";
-    } else {
-        return seconds + "s";
-    }
-}
-
-private Material selectRandomBlock(Map<Material, Double> composition) {
-    double random = ThreadLocalRandom.current().nextDouble();
-    double cumulative = 0.0;
-
-    for (Map.Entry<Material, Double> entry : composition.entrySet()) {
-        cumulative += entry.getValue();
-        if (random <= cumulative) {
-            return entry.getKey();
+    private String formatTime(int seconds) {
+        if (seconds >= 3600) {
+            return (seconds / 3600) + "h";
+        } else if (seconds >= 60) {
+            return (seconds / 60) + "min";
+        } else {
+            return seconds + "s";
         }
     }
 
-    // Retour de secours
-    return composition.keySet().iterator().next();
-}
+    private Material selectRandomBlock(Map<Material, Double> composition) {
+        double random = ThreadLocalRandom.current().nextDouble();
+        double cumulative = 0.0;
 
-private int calculateFortuneQuantity(int baseQuantity, int fortuneLevel) {
-    if (fortuneLevel <= 0) return baseQuantity;
+        for (Map.Entry<Material, Double> entry : composition.entrySet()) {
+            cumulative += entry.getValue();
+            if (random <= cumulative) {
+                return entry.getKey();
+            }
+        }
 
-    // Fortune multiplie vraiment le nombre de blocs obtenus
-    // Formule : base + (base * niveau * 0.01) avec chance aléatoire
-    double multiplier = 1.0 + (fortuneLevel * 0.01); // 1% par niveau
-
-    // Partie entière garantie + chance pour le reste
-    int guaranteedQuantity = (int) multiplier;
-    double fractionalPart = multiplier - guaranteedQuantity;
-
-    int finalQuantity = guaranteedQuantity;
-    if (ThreadLocalRandom.current().nextDouble() < fractionalPart) {
-        finalQuantity++;
+        // Retour de secours
+        return composition.keySet().iterator().next();
     }
 
-    return Math.max(baseQuantity, finalQuantity);
-}
+    private int calculateFortuneQuantity(int baseQuantity, int fortuneLevel) {
+        if (fortuneLevel <= 0) return baseQuantity;
 
-private long applyGreedBonus(long baseValue, int greedLevel) {
-    if (greedLevel <= 0) return baseValue;
+        // Fortune multiplie vraiment le nombre de blocs obtenus
+        // Formule : base + (base * niveau * 0.01) avec chance aléatoire
+        double multiplier = 1.0 + (fortuneLevel * 0.01); // 1% par niveau
 
-    double bonus = greedLevel * 0.01; // 1% par niveau
-    return Math.round(baseValue * (1 + bonus));
-}
+        // Partie entière garantie + chance pour le reste
+        int guaranteedQuantity = (int) multiplier;
+        double fractionalPart = multiplier - guaranteedQuantity;
 
-/**
- * Crée une clé selon le type d'automineur
- */
-public ItemStack createKey(AutominerType type) {
-    String keyType = switch (type) {
-        case PIERRE, FER -> "Commune";
-        case OR -> "Peu Commune";
-        case DIAMANT -> "Rare";
-        case EMERAUDE -> "Légendaire";
-        case BEACON -> "Cristal";
-    };
+        int finalQuantity = guaranteedQuantity;
+        if (ThreadLocalRandom.current().nextDouble() < fractionalPart) {
+            finalQuantity++;
+        }
 
-    return createKey(keyType);
-}
-
-public ItemStack createKey(String keyType) {
-    String keyColor = switch (keyType) {
-        case "Cristal" -> "§d";
-        case "Légendaire" -> "§6";
-        case "Rare" -> "§5";
-        case "Peu Commune" -> "§9";
-        default -> "§f"; // "Commune" et autres cas
-    };
-
-    ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
-    var meta = key.getItemMeta();
-
-    meta.setDisplayName(keyColor + "Clé " + keyType);
-    meta.setLore(Arrays.asList(
-            "§7Clé de coffre " + keyColor + keyType,
-            "§7Utilise cette clé pour ouvrir des coffres!"
-    ));
-
-    key.setItemMeta(meta);
-    return key;
-}
-
-/**
- * Résultat d'une simulation de minage
- */
-public static class AutominerMiningResult {
-    private final Material minedBlock;
-    private final int quantity;
-    private final long coins;
-    private final long tokens;
-    private final long experience;
-    private final int keys;
-    private final boolean beaconFound;
-
-    public AutominerMiningResult(Material minedBlock, int quantity, long coins, long tokens, long experience, int keys, boolean beaconFound) {
-        this.minedBlock = minedBlock;
-        this.quantity = quantity;
-        this.coins = coins;
-        this.tokens = tokens;
-        this.experience = experience;
-        this.keys = keys;
-        this.beaconFound = beaconFound;
+        return Math.max(baseQuantity, finalQuantity);
     }
 
-    // Getters
-    public Material getMinedBlock() { return minedBlock; }
-    public int getQuantity() { return quantity; }
-    public long getCoins() { return coins; }
-    public long getTokens() { return tokens; }
-    public long getExperience() { return experience; }
-    public int getKeys() { return keys; }
-    public boolean isBeaconFound() { return beaconFound; }
-}
+    private long applyGreedBonus(long baseValue, int greedLevel) {
+        if (greedLevel <= 0) return baseValue;
+
+        double bonus = greedLevel * 0.01; // 1% par niveau
+        return Math.round(baseValue * (1 + bonus));
+    }
+
+    /**
+     * Crée une clé selon le type d'automineur
+     */
+    public ItemStack createKey(AutominerType type) {
+        String keyType = switch (type) {
+            case PIERRE, FER -> "Commune";
+            case OR -> "Peu Commune";
+            case DIAMANT -> "Rare";
+            case EMERAUDE -> "Légendaire";
+            case BEACON -> "Cristal";
+        };
+
+        return createKey(keyType);
+    }
+
+    public ItemStack createKey(String keyType) {
+        String keyColor = switch (keyType) {
+            case "Cristal" -> "§d";
+            case "Légendaire" -> "§6";
+            case "Rare" -> "§5";
+            case "Peu Commune" -> "§9";
+            default -> "§f"; // "Commune" et autres cas
+        };
+
+        ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
+        var meta = key.getItemMeta();
+
+        meta.setDisplayName(keyColor + "Clé " + keyType);
+        meta.setLore(Arrays.asList(
+                "§7Clé de coffre " + keyColor + keyType,
+                "§7Utilise cette clé pour ouvrir des coffres!"
+        ));
+
+        key.setItemMeta(meta);
+        return key;
+    }
+
+    /**
+     * Résultat d'une simulation de minage
+     */
+    public static class AutominerMiningResult {
+        private final Material minedBlock;
+        private final int quantity;
+        private final long coins;
+        private final long tokens;
+        private final long experience;
+        private final int keys;
+        private final boolean beaconFound;
+
+        public AutominerMiningResult(Material minedBlock, int quantity, long coins, long tokens, long experience, int keys, boolean beaconFound) {
+            this.minedBlock = minedBlock;
+            this.quantity = quantity;
+            this.coins = coins;
+            this.tokens = tokens;
+            this.experience = experience;
+            this.keys = keys;
+            this.beaconFound = beaconFound;
+        }
+
+        // Getters
+        public Material getMinedBlock() {
+            return minedBlock;
+        }
+
+        public int getQuantity() {
+            return quantity;
+        }
+
+        public long getCoins() {
+            return coins;
+        }
+
+        public long getTokens() {
+            return tokens;
+        }
+
+        public long getExperience() {
+            return experience;
+        }
+
+        public int getKeys() {
+            return keys;
+        }
+
+        public boolean isBeaconFound() {
+            return beaconFound;
+        }
+    }
 }

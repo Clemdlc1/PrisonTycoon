@@ -17,14 +17,17 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * Hook optimisé pour WorldGuard
  * Gestion avancée des régions et permissions pour le plugin prison
- *
+ * <p>
  * Fonctionnalités:
  * - Vérification des permissions de minage par région
  * - Intégration avec les mines du plugin
@@ -35,23 +38,19 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class WorldGuardHook {
 
-    private final PrisonTycoon plugin;
-    private WorldGuardPlugin worldGuardPlugin;
-    private RegionContainer regionContainer;
-
-    // Cache des régions pour éviter les requêtes répétées
-    private final ConcurrentMap<String, CachedRegionData> regionCache = new ConcurrentHashMap<>();
-
     // Flags personnalisés pour le plugin
     public static final String PRISON_MINING_FLAG = "prison-mining";
     public static final String PRISON_TELEPORT_FLAG = "prison-teleport";
     public static final String PRISON_ENCHANT_FLAG = "prison-enchant";
-
+    private final PrisonTycoon plugin;
+    // Cache des régions pour éviter les requêtes répétées
+    private final ConcurrentMap<String, CachedRegionData> regionCache = new ConcurrentHashMap<>();
     // Régions spéciales à protéger automatiquement
     private final Set<String> protectedRegionNames = Set.of(
             "spawn", "shop", "admin", "staff", "market", "auction"
     );
-
+    private WorldGuardPlugin worldGuardPlugin;
+    private RegionContainer regionContainer;
     // État du hook
     private boolean initialized = false;
 
@@ -471,10 +470,21 @@ public class WorldGuardHook {
             this.cacheTime = System.currentTimeMillis();
         }
 
-        public String getRegionId() { return regionId; }
-        public BlockVector3 getMinPoint() { return minPoint; }
-        public BlockVector3 getMaxPoint() { return maxPoint; }
-        public Map<String, Object> getFlags() { return flags; }
+        public String getRegionId() {
+            return regionId;
+        }
+
+        public BlockVector3 getMinPoint() {
+            return minPoint;
+        }
+
+        public BlockVector3 getMaxPoint() {
+            return maxPoint;
+        }
+
+        public Map<String, Object> getFlags() {
+            return flags;
+        }
 
         // Cache valide pendant 10 minutes
         public boolean isExpired() {

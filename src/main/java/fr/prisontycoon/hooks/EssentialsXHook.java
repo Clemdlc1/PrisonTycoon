@@ -12,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -20,7 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Hook optimisé pour EssentialsX
  * Intégration complète avec l'économie, homes, warps et fonctionnalités avancées
- *
+ * <p>
  * Fonctionnalités:
  * - Économie synchronisée avec Vault et le plugin
  * - Gestion des homes personnalisés pour les mines
@@ -33,23 +34,19 @@ import java.util.concurrent.ConcurrentMap;
 public class EssentialsXHook {
 
     private final PrisonTycoon plugin;
-    private IEssentials essentials;
-    private Essentials essentialsPlugin;
-
     // Cache des utilisateurs EssentialsX
     private final ConcurrentMap<UUID, CachedEssentialsUser> userCache = new ConcurrentHashMap<>();
-
     // Configuration de l'intégration
     private final boolean syncEconomy;
     private final boolean syncHomes;
     private final boolean syncWarps;
     private final boolean createMineWarps;
     private final double economyMultiplier;
-
     // Cooldowns pour éviter le spam
     private final ConcurrentMap<UUID, Long> lastBalanceSync = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, Long> lastHomeUpdate = new ConcurrentHashMap<>();
-
+    private IEssentials essentials;
+    private Essentials essentialsPlugin;
     // État du hook
     private boolean initialized = false;
 

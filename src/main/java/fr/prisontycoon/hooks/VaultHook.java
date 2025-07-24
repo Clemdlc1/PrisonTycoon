@@ -10,8 +10,6 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +18,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Hook optimisé pour Vault Economy
  * Système économique hybride qui synchronise avec l'économie interne du plugin
- *
+ * <p>
  * Fonctionnalités:
  * - Synchronisation bidirectionnelle avec l'économie Vault
  * - Cache intelligent pour les performances
@@ -32,16 +30,13 @@ import java.util.concurrent.ConcurrentMap;
 public class VaultHook {
 
     private final PrisonTycoon plugin;
-    private Economy vaultEconomy;
-
     // Cache des balances pour éviter les accès fréquents à la DB
     private final ConcurrentMap<UUID, CachedBalance> balanceCache = new ConcurrentHashMap<>();
-
     // Configuration de synchronisation
     private final boolean syncWithVault;
     private final boolean preferVaultBalance;
     private final double conversionRate; // Taux de conversion tokens -> vault money
-
+    private Economy vaultEconomy;
     // État du hook
     private boolean initialized = false;
 

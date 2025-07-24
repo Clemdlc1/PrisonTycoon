@@ -13,12 +13,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * NOUVEAU: Gestionnaire des permissions intégré nativement avec LuckPerms
  * Remplace complètement l'ancien système et utilise directement l'API LuckPerms
- *
+ * <p>
  * Fonctionnalités intégrées:
  * - Utilisation directe de l'API LuckPerms du plugin principal
  * - Fallback automatique vers Bukkit si LuckPerms indisponible

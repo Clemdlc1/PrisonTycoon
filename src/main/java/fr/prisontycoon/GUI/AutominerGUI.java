@@ -13,7 +13,6 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -323,7 +322,7 @@ public class AutominerGUI {
         List<String> lore = new ArrayList<>();
 
         double fuelReserve = playerData.getAutominerFuelReserve();
-        lore.add("§7Réserve: §f" + NumberFormatter.format((long)fuelReserve) + " têtes");
+        lore.add("§7Réserve: §f" + NumberFormatter.format((long) fuelReserve) + " têtes");
 
         // Calculer l'autonomie
         double totalConsumption = 0;

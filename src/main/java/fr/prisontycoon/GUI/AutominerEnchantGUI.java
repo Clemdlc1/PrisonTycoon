@@ -328,7 +328,7 @@ public class AutominerEnchantGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        String slotNum = slotName.charAt(slotName.length()-1) + "";
+        String slotNum = slotName.charAt(slotName.length() - 1) + "";
         meta.setDisplayName("§d💎 Slot Cristal " + slotNum);
         List<String> lore = new ArrayList<>();
 

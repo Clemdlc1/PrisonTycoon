@@ -6,7 +6,7 @@ website: https://github.com/PrisonTycoon/PrisonTycoon
 main: fr.prisontycoon.PrisonTycoon
 
 # Intégrations modernes - Soft dependencies pour éviter les erreurs
-softdepend: [LuckPerms, Vault, WorldGuard, WorldEdit, Essentials, PlaceholderAPI]
+softdepend: [ LuckPerms, Vault, WorldGuard, WorldEdit, Essentials, PlaceholderAPI ]
 
 depend:
   - Multiverse-Core

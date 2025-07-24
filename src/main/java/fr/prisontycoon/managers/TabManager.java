@@ -2,374 +2,461 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.events.ChatListener;
-import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.ChatColor;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.cacheddata.CachedMetaData;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.model.user.UserManager;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
- * Gestionnaire pour le système de tab personnalisé avec teams de scoreboard
- * Version corrigée utilisant la méthode commune pour le formatage des préfixes
+ * Gestionnaire du Tab intégré avec LuckPerms et toutes les intégrations
+ * INTÉGRATION NATIVE - Remplace l'ancien TabManager
+ * <p>
+ * Fonctionnalités intégrées:
+ * - Préfixes/suffixes LuckPerms
+ * - Balances Vault et EssentialsX
+ * - Informations en temps réel
+ * - Cache intelligent
+ * - Mise à jour automatique
  */
 public class TabManager {
 
-    // Noms des équipes pour le tri (préfixe numérique pour l'ordre)
-    private static final String ADMIN_TEAM = "01_admin";
-    private static final String VIP_TEAM = "02_vip";
-    private static final String PLAYER_TEAM = "03_joueur";
     private final PrisonTycoon plugin;
-    private BukkitRunnable tabUpdateTask;
-    private ChatListener chatListener; // Référence au ChatListener pour la méthode commune
+    private final NumberFormat numberFormat;
+
+    // Cache des données de tab pour éviter les calculs répétés
+    private final ConcurrentMap<String, CachedTabData> tabCache = new ConcurrentHashMap<>();
+    // Configuration
+    private final boolean showPrefixSuffix;
+    private final boolean showVaultBalance;
+    private final boolean showEssentialsBalance;
+    private final boolean showPluginStats;
+    private final int updateInterval;
+    // Tâche de mise à jour périodique
+    private BukkitRunnable updateTask;
 
     public TabManager(PrisonTycoon plugin) {
         this.plugin = plugin;
+        this.numberFormat = NumberFormat.getInstance(Locale.FRENCH);
+
+        // Configuration depuis config.yml
+        this.showPrefixSuffix = plugin.getConfig().getBoolean("gui.integrations.show-luckperms-group", true);
+        this.showVaultBalance = plugin.getConfig().getBoolean("gui.integrations.show-vault-balance", true);
+        this.showEssentialsBalance = plugin.getConfig().getBoolean("gui.integrations.show-essentialsx-status", true);
+        this.showPluginStats = plugin.getConfig().getBoolean("gui.integrations.show-plugin-stats", true);
+        this.updateInterval = plugin.getConfig().getInt("gui.tab-update-interval", 10); // secondes
+
+        // Démarre les mises à jour automatiques
+        startUpdateTask();
+
+        plugin.getPluginLogger().info("TabManager intégré initialisé (update: " + updateInterval + "s)");
     }
 
     /**
-     * NOUVEAU: Définit la référence au ChatListener pour utiliser les méthodes communes
+     * Démarre la tâche de mise à jour automatique du tab
      */
-    public void setChatListener(ChatListener chatListener) {
-        this.chatListener = chatListener;
-    }
-
-    /**
-     * Démarre la tâche de mise à jour du tab
-     */
-    public void startTabUpdater() {
-        if (tabUpdateTask != null) {
-            tabUpdateTask.cancel();
-        }
-
-        tabUpdateTask = new BukkitRunnable() {
+    private void startUpdateTask() {
+        updateTask = new BukkitRunnable() {
             @Override
             public void run() {
-                updateAllPlayersTab();
+                try {
+                    updateAllPlayerTabs();
+                } catch (Exception e) {
+                    plugin.getPluginLogger().warning("Erreur mise à jour tab: " + e.getMessage());
+                }
             }
         };
 
-        // Met à jour toutes les 20 ticks (1 seconde)
-        tabUpdateTask.runTaskTimer(plugin, 0L, 20L);
-
-        plugin.getPluginLogger().info(ChatColor.GREEN + "TabManager démarré - Mise à jour toutes les secondes");
+        // Démarre avec un délai initial et répète toutes les X secondes
+        updateTask.runTaskTimerAsynchronously(plugin, 20L, updateInterval * 20L);
     }
 
     /**
-     * Arrête la tâche de mise à jour du tab
+     * Met à jour le tab de tous les joueurs connectés
      */
-    public void stopTabUpdater() {
-        if (tabUpdateTask != null) {
-            tabUpdateTask.cancel();
-            tabUpdateTask = null;
-            plugin.getPluginLogger().info(ChatColor.RED + "TabManager arrêté");
-        }
-    }
-
-    /**
-     * Met à jour le tab pour tous les joueurs
-     */
-    private void updateAllPlayersTab() {
+    public void updateAllPlayerTabs() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             updatePlayerTab(player);
         }
+
+        // Nettoie le cache périodiquement
+        cleanupExpiredCache();
     }
 
     /**
-     * Met à jour le tab pour un joueur spécifique
+     * Met à jour le tab d'un joueur spécifique
+     * INTÉGRATION NATIVE avec tous les plugins
      */
-    public void updatePlayerTab(Player player) {
+    public void updatePlayerTab(@NotNull Player player) {
         try {
-            // Header (en-tête du tab)
-            String header = buildTabHeader();
+            // Génère les données de tab
+            TabData tabData = generateTabData(player);
 
-            // Footer (pied de page du tab)
-            String footer = buildTabFooter(player);
+            // Applique au joueur
+            applyTabToPlayer(player, tabData);
 
-            // Applique le header et footer
-            player.setPlayerListHeaderFooter(header, footer);
-
-            // Met à jour les teams pour le tri
-            updatePlayerTeams(player);
+            // Met en cache
+            tabCache.put(player.getName(), new CachedTabData(tabData));
 
         } catch (Exception e) {
-            plugin.getPluginLogger().warning("Erreur lors de la mise à jour du tab pour " + player.getName() + ": " + e.getMessage());
+            plugin.getPluginLogger().debug("Erreur mise à jour tab " + player.getName() + ": " + e.getMessage());
         }
     }
 
     /**
-     * Construit l'en-tête du tab
+     * Génère les données de tab pour un joueur
+     * INTÉGRATION COMPLÈTE
      */
-    private String buildTabHeader() {
-        int onlinePlayers = plugin.getServer().getOnlinePlayers().size();
-        int maxPlayers = plugin.getServer().getMaxPlayers();
-        String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
-
-        return separator + "\n" +
-                ChatColor.GOLD.toString() + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
-                ChatColor.GRAY + "Serveur de minage et de progression\n" +
-                ChatColor.YELLOW + "📊 Joueurs connectés: " + ChatColor.GREEN + onlinePlayers + ChatColor.GRAY + "/" + ChatColor.GREEN + maxPlayers + "\n" +
-                separator;
-    }
-
-    /**
-     * Construit le pied de page du tab avec les stats du joueur
-     */
-    private String buildTabFooter(Player player) {
+    private TabData generateTabData(@NotNull Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
 
-        return separator + "\n" +
-                ChatColor.GRAY + "Votre progression:\n" +
-                ChatColor.YELLOW + "💰 Coins: " + ChatColor.GOLD + NumberFormatter.format(playerData.getCoins()) + "\n" +
-                ChatColor.AQUA + "🎟 Tokens: " + ChatColor.DARK_AQUA + NumberFormatter.format(playerData.getTokens()) + "\n" +
-                ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
-                ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
-                ChatColor.DARK_PURPLE + "🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
-                separator;
+        // Header du tab
+        String header = generateTabHeader(player, playerData);
+
+        // Footer du tab
+        String footer = generateTabFooter(player, playerData);
+
+        // Nom d'affichage du joueur
+        String displayName = generatePlayerDisplayName(player, playerData);
+
+        return new TabData(header, footer, displayName);
     }
 
     /**
-     * Obtient l'affichage du rang actuel du joueur dans les mines
+     * Génère l'en-tête du tab avec intégrations
      */
-    private String getCurrentRankDisplay(Player player) {
-        String highestPermission = plugin.getMineManager().getCurrentRank(player);
-        if (highestPermission != null) {
-            String rank = highestPermission.toUpperCase();
-            return "Mine " + rank;
-        }
-        return "Mine A";
-    }
+    private String generateTabHeader(@NotNull Player player, @NotNull PlayerData playerData) {
+        StringBuilder header = new StringBuilder();
 
-    /**
-     * NOUVEAU: Obtient l'affichage du prestige
-     */
-    private String getPrestigeDisplay(Player player) {
-        int prestigeLevel = plugin.getPrestigeManager().getPrestigeLevel(player);
-        if (prestigeLevel > 0) {
-            String prestigeColor = getPrestigeColor(prestigeLevel);
-            return prestigeColor + "P" + prestigeLevel;
-        }
-        return "§7Aucun";
-    }
+        // Logo du serveur
+        header.append("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n");
+        header.append("§6§l           PRISONTYCOON           \n");
+        header.append("§e§l        Serveur Prison Moderne        \n");
+        header.append("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n");
+        header.append("\n");
 
-    /**
-     * MÉTHODE COMMUNE - Obtient la couleur selon le niveau de prestige (copiée du ChatListener)
-     */
-    private String getPrestigeColor(int prestigeLevel) {
-        if (prestigeLevel >= 50) return "§c"; // Rouge - Prestige légendaire
-        if (prestigeLevel >= 40) return "§6"; // Orange - Prestige élevé
-        if (prestigeLevel >= 30) return "§d"; // Rose/Magenta - Haut prestige
-        if (prestigeLevel >= 20) return "§b"; // Cyan - Prestige moyen-haut
-        if (prestigeLevel >= 10) return "§a"; // Vert - Prestige moyen
-        if (prestigeLevel >= 5) return "§9";  // Bleu foncé - Bas prestige
-        return "§f"; // Blanc - Prestige très bas (P1-P4)
-    }
+        // Informations du joueur avec intégrations
+        header.append("§f§lVotre Profil:\n");
 
-    /**
-     * Met à jour les teams pour le tri des joueurs dans le tab
-     */
-    private void updatePlayerTeams(Player player) {
-        // Utilise le scoreboard principal (celui de ScoreboardTask)
-        Scoreboard scoreboard = player.getScoreboard();
-        if (scoreboard == null) {
-            scoreboard = plugin.getServer().getScoreboardManager().getMainScoreboard();
-        }
+        // Groupe LuckPerms si disponible
+        if (plugin.isLuckPermsEnabled() && showPrefixSuffix) {
+            String group = getPrimaryGroup(player);
+            String prefix = getPrefix(player);
 
-        // Met à jour tous les joueurs connectés
-        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-            updatePlayerTeam(scoreboard, onlinePlayer);
-        }
-    }
-
-    /**
-     * CORRIGÉ: Met à jour une équipe de joueur avec le nouveau système de préfixes
-     */
-    private void updatePlayerTeam(Scoreboard scoreboard, Player player) {
-        String teamName = getTeamName(player);
-
-        // Utilise la méthode commune pour obtenir le préfixe complet
-        String prefix = getPlayerPrefixForTab(player);
-
-        removePlayerFromAllTeams(scoreboard, player);
-
-        Team team = scoreboard.getTeam(teamName);
-        if (team == null) {
-            team = scoreboard.registerNewTeam(teamName);
-        }
-
-        // Limite le préfixe à 16 caractères (limitation Bukkit)
-        if (prefix.length() > 16) {
-            prefix = prefix.substring(0, 16);
-        }
-
-        team.setPrefix(prefix + " ");
-        team.addEntry(player.getName());
-    }
-
-    /**
-     * NOUVELLE MÉTHODE COMMUNE - Obtient le préfixe pour le tab (utilise la même logique que le chat)
-     */
-    private String getPlayerPrefixForTab(Player player) {
-        // Si chatListener est disponible, utilise sa méthode
-        if (chatListener != null) {
-            return chatListener.getPlayerPrefix(player);
-        }
-
-        // Sinon, implémentation de secours avec la même logique
-        return getPlayerPrefixFallback(player);
-    }
-
-    /**
-     * Implémentation de secours pour le préfixe (même logique que ChatListener)
-     */
-    private String getPlayerPrefixFallback(Player player) {
-        // Détermine le type de joueur et sa couleur de base
-        String playerType;
-        String playerTypeColor;
-
-        if (player.hasPermission("specialmine.admin")) {
-            playerType = "ADMIN";
-            playerTypeColor = "§4"; // Rouge foncé
-        } else if (player.hasPermission("specialmine.vip")) {
-            playerType = "VIP";
-            playerTypeColor = "§e"; // Jaune
-        } else {
-            playerType = "JOUEUR";
-            playerTypeColor = "§7"; // Gris
-        }
-
-        // Récupère le niveau de prestige
-        int prestigeLevel = plugin.getPrestigeManager().getPrestigeLevel(player);
-
-        // Récupère le rang de mine actuel
-        String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
-        String mineRank = rankInfo[0].toUpperCase(); // A, B, C... Z
-        String mineRankColor = rankInfo[1]; // Couleur du rang
-
-        // Construit le préfixe selon les spécifications
-        StringBuilder prefix = new StringBuilder();
-
-        // [TYPE] en couleur du type de joueur
-        prefix.append(playerTypeColor).append("[").append(playerType).append("]");
-
-        // [P{niveau}] seulement si prestige > 0, couleur selon prestige
-        if (prestigeLevel > 0) {
-            String prestigeColor = getPrestigeColor(prestigeLevel);
-            prefix.append(" ").append(prestigeColor).append("[P").append(prestigeLevel).append("]");
-        }
-
-        // [RANG] en couleur du rang de mine
-        prefix.append(" ").append(mineRankColor).append("[").append(mineRank).append("]");
-
-        return prefix.toString();
-    }
-
-    /**
-     * Retire un joueur de toutes les équipes
-     */
-    private void removePlayerFromAllTeams(Scoreboard scoreboard, Player player) {
-        for (Team team : scoreboard.getTeams()) {
-            if (team.hasEntry(player.getName())) {
-                team.removeEntry(player.getName());
+            if (prefix != null && !prefix.isEmpty()) {
+                header.append("§7Rang: ").append(prefix).append(" §f").append(group).append("\n");
+            } else {
+                header.append("§7Rang: §6").append(group).append("\n");
             }
         }
+
+        // Économie plugin
+        if (showPluginStats) {
+            header.append("§7Coins: §6").append(formatNumber(playerData.getCoins())).append("\n");
+            header.append("§7Tokens: §b").append(formatNumber(playerData.getTokens())).append("\n");
+        }
+
+        // Balance Vault si disponible
+        if (plugin.isVaultEnabled() && showVaultBalance) {
+            double vaultBalance = plugin.getEconomyManager().getVaultBalance(player);
+            header.append("§7Vault: §a$").append(formatNumber((long) vaultBalance)).append("\n");
+        }
+
+        // Balance EssentialsX si disponible
+        if (plugin.isEssentialsEnabled() && showEssentialsBalance) {
+            BigDecimal essentialsBalance = plugin.getEconomyManager().getEssentialsBalance(player);
+            header.append("§7EssentialsX: §e$").append(formatNumber(essentialsBalance.longValue())).append("\n");
+        }
+
+        return header.toString();
     }
 
     /**
-     * Retourne le nom de l'équipe pour un joueur (pour le tri dans le tab)
+     * Génère le pied de page du tab avec statistiques
      */
-    private String getTeamName(Player player) {
-        if (player.hasPermission("specialmine.admin")) {
-            return ADMIN_TEAM;
-        } else if (player.hasPermission("specialmine.vip")) {
-            return VIP_TEAM;
+    private String generateTabFooter(@NotNull Player player, @NotNull PlayerData playerData) {
+        StringBuilder footer = new StringBuilder();
+
+        footer.append("\n");
+        footer.append("§f§lStatistiques:\n");
+
+        // Niveau et expérience
+        long experience = playerData.getExperience();
+        int level = plugin.getEconomyManager().calculateLevelFromExperience(experience);
+        footer.append("§7Niveau: §b").append(level).append(" §7(§e").append(formatNumber(experience)).append(" XP§7)\n");
+
+        // Prestige si disponible
+        int prestigeLevel = playerData.getPrestigeLevel();
+        if (prestigeLevel > 0) {
+            footer.append("§7Prestige: §5✦ ").append(prestigeLevel).append("\n");
+        }
+
+        // Statistiques de minage
+        footer.append("§7Blocs minés: §f").append(formatNumber(playerData.getTotalBlocksMined())).append("\n");
+        footer.append("§7Blocs détruits: §f").append(formatNumber(playerData.getTotalBlocksDestroyed())).append("\n");
+
+
+        // Statut VIP
+        boolean isVip = plugin.getPermissionManager().isVip(player);
+        footer.append("§7Statut: ").append(isVip ? "§6VIP" : "§7Joueur").append("\n");
+
+        footer.append("\n");
+        footer.append("§f§lServeur:\n");
+        footer.append("§7Joueurs: §a").append(plugin.getServer().getOnlinePlayers().size())
+                .append("§7/§c").append(plugin.getServer().getMaxPlayers()).append("\n");
+
+        // Informations sur les intégrations
+        StringBuilder integrations = new StringBuilder("§7Intégrations: ");
+        if (plugin.isLuckPermsEnabled()) integrations.append("§aLP ");
+        if (plugin.isVaultEnabled()) integrations.append("§6V ");
+        if (plugin.isWorldGuardEnabled()) integrations.append("§cWG ");
+        if (plugin.isEssentialsEnabled()) integrations.append("§eESS ");
+        footer.append(integrations).append("\n");
+
+        footer.append("\n");
+        footer.append("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+
+        return footer.toString();
+    }
+
+    /**
+     * Génère le nom d'affichage du joueur avec préfixe/suffixe
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    private String generatePlayerDisplayName(@NotNull Player player, @NotNull PlayerData playerData) {
+        StringBuilder displayName = new StringBuilder();
+
+        if (plugin.isLuckPermsEnabled() && showPrefixSuffix) {
+            String prefix = getPrefix(player);
+            String suffix = getSuffix(player);
+
+            if (prefix != null && !prefix.isEmpty()) {
+                displayName.append(prefix).append(" ");
+            }
+
+            displayName.append("§f").append(player.getName());
+
+            if (suffix != null && !suffix.isEmpty()) {
+                displayName.append(" ").append(suffix);
+            }
         } else {
-            return PLAYER_TEAM;
+            // Fallback vers le système du plugin
+            if (playerData.isVip()) {
+                displayName.append("§6[VIP] §f").append(player.getName());
+            } else {
+                displayName.append("§7").append(player.getName());
+            }
+        }
+
+        return displayName.toString();
+    }
+
+    /**
+     * Applique les données de tab à un joueur
+     */
+    private void applyTabToPlayer(@NotNull Player player, @NotNull TabData tabData) {
+        // Utilise l'API Paper moderne si disponible
+        try {
+            player.setPlayerListHeaderFooter(tabData.header, tabData.footer);
+            player.setPlayerListName(tabData.displayName);
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur application tab " + player.getName() + ": " + e.getMessage());
         }
     }
 
     /**
-     * Met à jour le tab lors de la connexion d'un joueur
+     * Obtient le groupe principal d'un joueur
+     * INTÉGRATION NATIVE LUCKPERMS
      */
-    public void onPlayerJoin(Player player) {
-        // Délai pour assurer que le joueur est complètement connecté
+    @Nullable
+    private String getPrimaryGroup(@NotNull Player player) {
+        if (!plugin.isLuckPermsEnabled()) return "default";
+
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+            User user = userManager.getUser(player.getUniqueId());
+
+            return user != null ? user.getPrimaryGroup() : "default";
+        } catch (Exception e) {
+            return "default";
+        }
+    }
+
+    /**
+     * Obtient le préfixe d'un joueur
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    @Nullable
+    private String getPrefix(@NotNull Player player) {
+        if (!plugin.isLuckPermsEnabled()) return null;
+
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+            User user = userManager.getUser(player.getUniqueId());
+
+            if (user != null) {
+                CachedMetaData metaData = user.getCachedData().getMetaData();
+                return metaData.getPrefix();
+            }
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur obtention préfixe " + player.getName() + ": " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtient le suffixe d'un joueur
+     * INTÉGRATION NATIVE LUCKPERMS
+     */
+    @Nullable
+    private String getSuffix(@NotNull Player player) {
+        if (!plugin.isLuckPermsEnabled()) return null;
+
+        try {
+            LuckPerms luckPerms = plugin.getLuckPermsAPI();
+            UserManager userManager = luckPerms.getUserManager();
+            User user = userManager.getUser(player.getUniqueId());
+
+            if (user != null) {
+                CachedMetaData metaData = user.getCachedData().getMetaData();
+                return metaData.getSuffix();
+            }
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur obtention suffixe " + player.getName() + ": " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Formate un nombre pour l'affichage
+     */
+    private String formatNumber(long number) {
+        if (number >= 1_000_000_000) {
+            return String.format("%.1fB", number / 1_000_000_000.0);
+        } else if (number >= 1_000_000) {
+            return String.format("%.1fM", number / 1_000_000.0);
+        } else if (number >= 1_000) {
+            return String.format("%.1fK", number / 1_000.0);
+        } else {
+            return String.valueOf(number);
+        }
+    }
+
+    /**
+     * Nettoie le cache expiré
+     */
+    private void cleanupExpiredCache() {
+        tabCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
+    /**
+     * Met à jour le tab d'un joueur au login
+     */
+    public void onPlayerJoin(@NotNull Player player) {
+        // Délai pour laisser le temps aux autres plugins de se charger
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            try {
-                setupInitialTeams(player);
-                updatePlayerTab(player);
-
-                // Met à jour le tab pour tous les autres joueurs (nouveau joueur visible)
-                updateAllPlayersTab();
-
-                plugin.getPluginLogger().info("Tab initialisé pour " + player.getName());
-            } catch (Exception e) {
-                plugin.getPluginLogger().warning("Erreur lors de l'initialisation du tab pour " + player.getName() + ": " + e.getMessage());
-            }
+            updatePlayerTab(player);
         }, 20L); // 1 seconde de délai
     }
 
     /**
-     * Configure les équipes initiales pour un nouveau joueur
+     * Nettoie les données d'un joueur qui quitte
      */
-    private void setupInitialTeams(Player player) {
-        Scoreboard scoreboard = player.getScoreboard();
-        if (scoreboard == null) {
-            scoreboard = plugin.getServer().getScoreboardManager().getMainScoreboard();
+    public void onPlayerQuit(@NotNull Player player) {
+        tabCache.remove(player.getName());
+    }
+
+    /**
+     * Force la mise à jour de tous les tabs
+     */
+    public void forceUpdateAll() {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this::updateAllPlayerTabs);
+    }
+
+    /**
+     * Recharge la configuration
+     */
+    public void reloadConfig() {
+        // Arrête l'ancienne tâche
+        if (updateTask != null) {
+            updateTask.cancel();
         }
 
-        // Crée les équipes de base si elles n'existent pas
-        createTeamIfNotExists(scoreboard, ADMIN_TEAM, "§c");
-        createTeamIfNotExists(scoreboard, VIP_TEAM, "§6");
-        createTeamIfNotExists(scoreboard, PLAYER_TEAM, "§7");
+        // Nettoie le cache
+        tabCache.clear();
 
-        // Met à jour toutes les équipes pour ce joueur
-        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-            updatePlayerTeam(scoreboard, onlinePlayer);
+        // Redémarre avec la nouvelle config
+        startUpdateTask();
+
+        plugin.getPluginLogger().info("TabManager rechargé");
+    }
+
+    /**
+     * Nettoie toutes les ressources
+     */
+    public void cleanup() {
+        if (updateTask != null) {
+            updateTask.cancel();
+        }
+        tabCache.clear();
+    }
+
+    /**
+     * Obtient des statistiques sur le tab
+     */
+    public String getTabStats() {
+        int cached = tabCache.size();
+        int expired = (int) tabCache.values().stream().filter(CachedTabData::isExpired).count();
+        return "TabManager: " + cached + " joueurs en cache (" + expired + " expirés)";
+    }
+
+    /**
+     * Classe pour stocker les données de tab
+     */
+    private static class TabData {
+        final String header;
+        final String footer;
+        final String displayName;
+
+        TabData(String header, String footer, String displayName) {
+            this.header = header;
+            this.footer = footer;
+            this.displayName = displayName;
         }
     }
 
     /**
-     * Crée une équipe si elle n'existe pas déjà
+     * Cache des données de tab
      */
-    private void createTeamIfNotExists(Scoreboard scoreboard, String teamName, String nameColorCode) {
-        if (scoreboard.getTeam(teamName) == null) {
-            Team team = scoreboard.registerNewTeam(teamName);
-            char colorChar = nameColorCode.charAt(1);
-            team.setColor(ChatColor.getByChar(colorChar));
+    private static class CachedTabData {
+        private final TabData tabData;
+        private final long cacheTime;
+
+        CachedTabData(TabData tabData) {
+            this.tabData = tabData;
+            this.cacheTime = System.currentTimeMillis();
         }
-    }
 
-    /**
-     * Nettoie les données du tab lors de la déconnexion d'un joueur
-     */
-    public void onPlayerQuit(Player player) {
-        try {
-            // Retire le joueur de toutes les équipes de tous les scoreboards
-            for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-                if (!onlinePlayer.equals(player)) {
-                    Scoreboard board = onlinePlayer.getScoreboard();
-                    Team team = board.getEntryTeam(player.getName());
-                    if (team != null) {
-                        team.removeEntry(player.getName());
-                    }
-                }
-            }
-
-            plugin.getPluginLogger().info("Tab nettoyé pour " + player.getName());
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("Erreur lors du nettoyage du tab pour " + player.getName() + ": " + e.getMessage());
+        TabData getTabData() {
+            return tabData;
         }
-    }
 
-    /**
-     * Force la mise à jour du tab pour un joueur (utile après changement de permissions)
-     */
-    public void forceUpdatePlayer(Player player) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            updatePlayerTab(player);
-            updateAllPlayersTab(); // Met à jour pour tous car le rang a pu changer
-        });
+        // Cache valide pendant 2 minutes
+        boolean isExpired() {
+            return System.currentTimeMillis() - cacheTime > 120000;
+        }
     }
 }

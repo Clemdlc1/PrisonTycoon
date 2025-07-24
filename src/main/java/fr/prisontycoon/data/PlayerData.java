@@ -2,7 +2,6 @@ package fr.prisontycoon.data;
 
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
-import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -39,6 +38,8 @@ public class PlayerData {
     private final Set<Integer> completedPrestigeLevels = new HashSet<>();
     private final Map<Integer, PrestigeTalent> chosenPrestigeColumns = new ConcurrentHashMap<>();
     private final Map<String, PlayerBoost> activeBoosts = new HashMap<>();
+    private final Map<Material, Long> autominerStorageContents;
+    private final Map<String, Integer> autominerStoredKeys;
     private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
     // Économie TOTALE (toutes sources)
     private long coins;
@@ -91,19 +92,13 @@ public class PlayerData {
     private Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private int reputation = 0;
-
     private ItemStack activeAutominerSlot1;
     private ItemStack activeAutominerSlot2;
-
     // Carburant et monde
     private double autominerFuelReserve;
     private String autominerCurrentWorld;
-
     // Stockage
     private int autominerStorageLevel;
-    private final Map<Material, Long> autominerStorageContents;
-    private final Map<String, Integer> autominerStoredKeys;
-
     // Gains en attente (greed et beacons)
     private long autominerPendingCoins;
     private long autominerPendingTokens;
@@ -1703,12 +1698,6 @@ public class PlayerData {
         }
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
     // Automineurs actifs
     public ItemStack getActiveAutominerSlot1() {
         return activeAutominerSlot1;
@@ -1901,5 +1890,11 @@ public class PlayerData {
         long amount = this.autominerPendingBeacons;
         this.autominerPendingBeacons = 0;
         return amount;
+    }
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }
