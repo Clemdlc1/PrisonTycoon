@@ -44,7 +44,6 @@ public class ScoreboardTask extends BukkitRunnable {
         try {
             // Appel direct de la mise à jour à chaque exécution de la tâche
             updateScoreboardsBatch();
-            plugin.getEconomyManager().syncAllVanillaExp();
             updateCycles++;
 
             if (tickCount % 100 == 0) {

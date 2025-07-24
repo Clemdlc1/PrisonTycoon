@@ -15,6 +15,7 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import net.ess3.api.IEssentials;
+import net.kyori.adventure.key.Key;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -116,7 +117,7 @@ public class MineManager {
                     String mineName = entry.getKey();
                     MineData mineData = entry.getValue();
 
-                    World world = plugin.getServer().getWorld(mineData.getWorld());
+                    World world = plugin.getServer().getWorld((Key) mineData.getWorld());
                     if (world == null) {
                         plugin.getPluginLogger().warning("Monde introuvable pour la mine " + mineName + ": " + mineData.getWorld());
                         continue;
@@ -150,7 +151,6 @@ public class MineManager {
                     region.setFlag(Flags.BLOCK_PLACE, StateFlag.State.DENY);
                     region.setFlag(Flags.PVP, StateFlag.State.DENY);
                     region.setFlag(Flags.MOB_SPAWNING, StateFlag.State.DENY);
-                    region.setFlag(Flags.EXPLOSION_DAMAGE, StateFlag.State.DENY);
                     region.setPriority(10);
 
                     if (existingRegion == null) {
@@ -317,14 +317,7 @@ public class MineManager {
 
         // Vérifie le niveau de prestige requis
         if (mineData.getRequiredPrestigeLevel() > 0) {
-            if (playerData.getPrestigeLevel() < mineData.getRequiredPrestigeLevel()) {
-                return false;
-            }
-        }
-
-        // Vérifie le nombre de blocs minés requis
-        if (mineData.getRequiredBlocksMined() > 0) {
-            if (playerData.getBlocksMined() < mineData.getRequiredBlocksMined()) {
+            if (playerData.getPrestigeLevel(player) < mineData.getRequiredPrestigeLevel()) {
                 return false;
             }
         }

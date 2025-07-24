@@ -299,7 +299,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e• Joueurs mutés: §6" + mutedCount);
         sender.sendMessage("§e• Joueurs bannis: §6" + bannedCount);
         sender.sendMessage("§e• Messages enregistrés: §6" + messagesLogged);
-        sender.sendMessage("§e• Joueurs VIP: §6" + plugin.getVipManager().getVipCount());
+        sender.sendMessage("§e• Joueurs VIP: §6" + plugin.getVipManager().getAllVips());
 
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
     }

@@ -109,7 +109,7 @@ public class PermissionManager {
         }
 
         // Synchronise avec PlayerData
-        if (playerData.isVip() != isVipInLuckPerms) {
+        if (isVip(player) != isVipInLuckPerms) {
             playerData.setVip(isVipInLuckPerms);
             plugin.getPluginLogger().debug("Statut VIP synchronisé pour " + player.getName() + ": " + isVipInLuckPerms);
 
@@ -157,7 +157,7 @@ public class PermissionManager {
         }
 
         // Ajoute les permissions automatiques
-        if (playerData.isVip()) {
+        if (isVip(player)) {
             attachment.setPermission("prisontycoon.vip", true);
         }
 
@@ -291,10 +291,7 @@ public class PermissionManager {
                 return hasVipGroup || hasVipPermission;
             }
         }
-
-        // FALLBACK vers PlayerData
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.isVip();
+        return isVip(player);
     }
 
     /**

@@ -52,7 +52,7 @@ public class PrestigeManager {
         }
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int newPrestigeLevel = playerData.getPrestigeLevel() + 1;
+        int newPrestigeLevel = playerData.getPrestigeLevel(player) + 1;
 
         // Confirmation du prestige
         if (!confirmPrestige(player, newPrestigeLevel)) {

@@ -112,6 +112,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private ChatTask chatTask;
     private ScoreboardTask scoreboardTask;
 
+    // Commands
+    private RankupCommand rankupCommand;
+
     // Métriques bStats
     private Metrics metrics;
 
@@ -555,17 +558,6 @@ public final class PrisonTycoon extends JavaPlugin {
         }
     }
 
-    /**
-     * Nettoie les intégrations externes
-     */
-    private void cleanupIntegrations() {
-        // Rien de spécial à nettoyer car intégrations natives
-        luckPermsAPI = null;
-        vaultEconomy = null;
-        worldGuardPlugin = null;
-        essentialsAPI = null;
-    }
-
     // === GETTERS INTÉGRATIONS NATIVES ===
     public LuckPerms getLuckPermsAPI() {
         return luckPermsAPI;
@@ -781,4 +773,8 @@ public final class PrisonTycoon extends JavaPlugin {
     public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() {
         return weaponArmorEnchantGUI;
     }
+
+    public RankupCommand getRankupCommand() {return rankupCommand;}
+
+    public ActionBarTask getActionBarTask() {return actionBarTask;}
 }

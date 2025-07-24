@@ -191,7 +191,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        String info = plugin.getMineManager().getMineInfo(player, mineId);
+        String info = plugin.getMineManager().getMineInfo(mineId);
         player.sendMessage(info);
     }
 
@@ -462,9 +462,9 @@ public class MineCommand implements CommandExecutor, TabCompleter {
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        if (mine.getRequiredPrestige() > playerData.getPrestigeLevel()) {
+        if (mine.getRequiredPrestige() > playerData.getPrestigeLevel(player)) {
             player.sendMessage("§7Prestige requis: §d" + mine.getRequiredPrestige() +
-                    " §7(actuel: §d" + playerData.getPrestigeLevel() + "§7)");
+                    " §7(actuel: §d" + playerData.getPrestigeLevel(player) + "§7)");
         }
 
         if (mine.isVipOnly() && !player.hasPermission("specialmine.vip")) {

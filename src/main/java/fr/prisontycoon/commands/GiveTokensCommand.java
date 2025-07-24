@@ -60,7 +60,7 @@ public class GiveTokensCommand implements CommandExecutor, TabCompleter {
         }
 
         // Donne les tokens
-        boolean success = plugin.getPlayerDataManager().addTokensToPlayer(target.getUniqueId(), amount);
+        boolean success = plugin.getEconomyManager().addTokens(target, amount);
 
         if (success) {
             String formattedAmount = NumberFormatter.format(amount);

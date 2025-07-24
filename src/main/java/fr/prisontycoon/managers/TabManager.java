@@ -195,7 +195,7 @@ public class TabManager {
         footer.append("§7Niveau: §b").append(level).append(" §7(§e").append(formatNumber(experience)).append(" XP§7)\n");
 
         // Prestige si disponible
-        int prestigeLevel = playerData.getPrestigeLevel();
+        int prestigeLevel = playerData.getPrestigeLevel(player);
         if (prestigeLevel > 0) {
             footer.append("§7Prestige: §5✦ ").append(prestigeLevel).append("\n");
         }
@@ -250,7 +250,7 @@ public class TabManager {
             }
         } else {
             // Fallback vers le système du plugin
-            if (playerData.isVip()) {
+            if (plugin.getVipManager().isVip(player)) {
                 displayName.append("§6[VIP] §f").append(player.getName());
             } else {
                 displayName.append("§7").append(player.getName());

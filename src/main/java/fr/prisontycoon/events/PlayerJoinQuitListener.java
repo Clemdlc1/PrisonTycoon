@@ -126,7 +126,7 @@ public class PlayerJoinQuitListener implements Listener {
 
             // Synchronise le statut VIP
             boolean isVipInLuckPerms = plugin.getPermissionManager().isVip(player);
-            if (playerData.isVip() != isVipInLuckPerms) {
+            if (plugin.getVipManager().isVip(player) != isVipInLuckPerms) {
                 playerData.setVip(isVipInLuckPerms);
                 plugin.getPluginLogger().debug("Statut VIP synchronisé LuckPerms: " + player.getName() + " -> " + isVipInLuckPerms);
             }

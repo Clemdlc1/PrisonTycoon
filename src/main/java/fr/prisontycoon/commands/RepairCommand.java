@@ -52,7 +52,7 @@ public class RepairCommand implements CommandExecutor, TabCompleter {
         }
 
         // Ouvre le menu de réparation
-        plugin.getPickaxeRepairMenu().openRepairGUI(player);
+        plugin.getPickaxeRepairGUI().openRepairGUI(player);
 
         // Message de bienvenue
         player.sendMessage("§e🔨 Menu de réparation ouvert!");

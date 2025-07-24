@@ -131,7 +131,7 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        int nextPrestige = playerData.getPrestigeLevel() + 1;
+        int nextPrestige = playerData.getPrestigeLevel(player) + 1;
 
         // Afficher les informations de confirmation
         player.sendMessage("§6⚠ §e§lCONFIRMATION DE PRESTIGE");
@@ -185,7 +185,7 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§6§l╚═══════════════════════════════════╝");
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int prestigeLevel = playerData.getPrestigeLevel();
+        int prestigeLevel = playerData.getPrestigeLevel(player);
 
         player.sendMessage("");
         player.sendMessage("§7Votre prestige actuel: " + playerData.getPrestigeDisplayName(player));
