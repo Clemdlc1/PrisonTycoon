@@ -41,6 +41,9 @@ public class PlayerData {
     private final Map<String, PlayerBoost> activeBoosts = new HashMap<>();
     private final Map<Material, Long> autominerStorageContents;
     private final Map<String, Integer> autominerStoredKeys;
+    private boolean isVip = false;
+    private boolean isFirstJoin = true;
+    private Set<String> customPermissions = new HashSet<>();
     private Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
     // Économie TOTALE (toutes sources)
     private long coins;
@@ -1739,5 +1742,29 @@ public class PlayerData {
     }
 
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    public boolean isVip() {
+        return isVip;
+    }
+
+    public void setVip(boolean isVip) {
+        this.isVip = isVip;
+    }
+
+    public Set<String> getCustomPermissions() {
+        return customPermissions;
+    }
+
+    public void setCustomPermissions(Set<String> customPermissions) {
+        this.customPermissions = customPermissions;
+    }
+
+    public boolean isFirstJoin() {
+        return isFirstJoin;
+    }
+
+    public void setFirstJoin(boolean isFirstJoin) {
+        this.isFirstJoin = isFirstJoin;
     }
 }

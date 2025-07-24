@@ -160,18 +160,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        boolean success = plugin.getMineManager().teleportToMine(player, mineId);
-        if (!success) {
-            MineData mine = plugin.getMineManager().getMine(mineId);
-            if (mine != null) {
-                // Message d'erreur détaillé selon la raison
-                if (!plugin.getMineManager().canAccessMine(player, mineId)) {
-                    showAccessRequirements(player, mine);
-                } else {
-                    player.sendMessage("§c❌ Erreur lors de la téléportation!");
-                }
-            }
-        }
+        plugin.getMineManager().teleportToMine(player, mineId);
     }
 
     /**

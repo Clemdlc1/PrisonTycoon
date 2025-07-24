@@ -47,7 +47,7 @@ public class PlayerJoinQuitListener implements Listener {
         }, 40L); // 2 secondes de délai
 
         // Message de bienvenue immédiat
-        sendWelcomeMessage(player);
+        sendWelcomeMessage(player, event);
     }
 
     /**
@@ -306,7 +306,7 @@ public class PlayerJoinQuitListener implements Listener {
     /**
      * Envoie le message de bienvenue
      */
-    private void sendWelcomeMessage(@NotNull Player player) {
+    private void sendWelcomeMessage(@NotNull Player player, @NotNull PlayerJoinEvent event) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (playerData.isFirstJoin()) {

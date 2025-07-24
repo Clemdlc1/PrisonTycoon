@@ -60,22 +60,18 @@ public class GiveTokensCommand implements CommandExecutor, TabCompleter {
         }
 
         // Donne les tokens
-        boolean success = plugin.getEconomyManager().addTokens(target, amount);
+        plugin.getEconomyManager().addTokens(target, amount);
 
-        if (success) {
-            String formattedAmount = NumberFormatter.format(amount);
+        String formattedAmount = NumberFormatter.format(amount);
 
-            sender.sendMessage("§a✅ " + formattedAmount + " tokens donnés à " + target.getName());
-            target.sendMessage("§a📥 Vous avez reçu " + formattedAmount + " tokens de la part d'un administrateur!");
+        sender.sendMessage("§a✅ " + formattedAmount + " tokens donnés à " + target.getName());
+        target.sendMessage("§a📥 Vous avez reçu " + formattedAmount + " tokens de la part d'un administrateur!");
 
-            // Son de notification
-            target.playSound(target.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        // Son de notification
+        target.playSound(target.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
-            plugin.getPluginLogger().info("§7" + sender.getName() + " a donné " +
-                    formattedAmount + " tokens à " + target.getName());
-        } else {
-            sender.sendMessage("§cErreur lors du don de tokens!");
-        }
+        plugin.getPluginLogger().info("§7" + sender.getName() + " a donné " +
+                formattedAmount + " tokens à " + target.getName());
 
         return true;
     }

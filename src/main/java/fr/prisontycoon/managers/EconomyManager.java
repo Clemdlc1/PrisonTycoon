@@ -476,4 +476,9 @@ public class EconomyManager {
 
         return "Économie: Vault(" + vaultSyncs + " syncs) EssentialsX(" + essentialsSyncs + " syncs)";
     }
+
+    public void initializeVanillaExp(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        updateVanillaExpFromCustom(player, playerData.getExperience());
+    }
 }

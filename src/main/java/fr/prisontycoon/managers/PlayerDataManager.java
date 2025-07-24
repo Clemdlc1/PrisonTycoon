@@ -167,15 +167,18 @@ public class PlayerDataManager {
 
             // NOUVEAU: Historique des sanctions
             if (config.contains("sanctions")) {
-                for (String sanctionId : config.getConfigurationSection("sanctions").getKeys(false)) {
-                    String path = "sanctions." + sanctionId + ".";
-                    String type = config.getString(path + "type");
-                    String reason = config.getString(path + "reason");
-                    String moderator = config.getString(path + "moderator");
-                    long startTime = config.getLong(path + "startTime");
-                    long endTime = config.getLong(path + "endTime");
+                ConfigurationSection sanctionsSection = config.getConfigurationSection("sanctions");
+                if (sanctionsSection != null) {
+                    for (String sanctionId : sanctionsSection.getKeys(false)) {
+                        String path = "sanctions." + sanctionId + ".";
+                        String type = config.getString(path + "type");
+                        String reason = config.getString(path + "reason");
+                        String moderator = config.getString(path + "moderator");
+                        long startTime = config.getLong(path + "startTime");
+                        long endTime = config.getLong(path + "endTime");
 
-                    data.addSanction(type, reason, moderator, startTime, endTime);
+                        data.addSanction(type, reason, moderator, startTime, endTime);
+                    }
                 }
             }
 
@@ -448,10 +451,10 @@ public class PlayerDataManager {
             }
 
             // NOUVEAU: Historique des sanctions
-            List<PlayerData.SanctionData> sanctions = data.getSanctionHistory();
+            var sanctions = data.getSanctionHistory();
             if (!sanctions.isEmpty()) {
                 for (int i = 0; i < sanctions.size(); i++) {
-                    PlayerData.SanctionData sanction = sanctions.get(i);
+                    var sanction = sanctions.get(i);
                     String path = "sanctions." + i + ".";
                     config.set(path + "type", sanction.type());
                     config.set(path + "reason", sanction.reason());
@@ -678,6 +681,12 @@ public class PlayerDataManager {
     /**
      * Nettoie le cache des joueurs déconnectés
      */
+    public void addSanctionToPlayer(UUID uuid, String type, String reason, String moderator, long startTime, long endTime) {
+        PlayerData playerData = getPlayerData(uuid);
+        playerData.addSanction(type, reason, moderator, startTime, endTime);
+        markDirty(uuid);
+    }
+
     public void cleanupCache() {
         Set<UUID> onlinePlayerIds = new HashSet<>();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
