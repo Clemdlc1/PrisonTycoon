@@ -140,16 +140,10 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
     public String getCurrentRank(Player player) {
         String highestRank = "a"; // Rang par défaut
 
-        // Cherche toutes les permissions de mine que le joueur possède
-        Set<String> minePermissions = player.getEffectivePermissions().stream()
-                .map(perm -> perm.getPermission())
-                .filter(perm -> perm.startsWith("specialmine.mine."))
-                .collect(Collectors.toSet());
-
         // Recherche du rang le plus élevé en itérant de z vers a
         for (char c = 'z'; c >= 'a'; c--) {
             String minePermission = "specialmine.mine." + c;
-            if (minePermissions.contains(minePermission)) {
+            if (plugin.getPermissionManager().hasPermission(player, minePermission)) {
                 highestRank = String.valueOf(c);
                 break; // Premier trouvé = le plus élevé
             }
@@ -196,20 +190,18 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // CORRIGÉ : Utilise PlayerDataManager qui gère déjà la suppression des anciennes permissions
-        // et n'ajoute que la nouvelle permission
-        plugin.getPlayerDataManager().addMinePermissionToPlayer(player.getUniqueId(), targetRank);
+        // Remove all other mine permissions
+        for (char c = 'a'; c <= 'z'; c++) {
+            String minePermission = "specialmine.mine." + c;
+            if (plugin.getPermissionManager().hasPermission(player, minePermission)) {
+                plugin.getPermissionManager().removePermission(player, minePermission);
+            }
+        }
+
+        plugin.getPermissionManager().attachPermission(player, "specialmine.mine." + targetRank);
 
         plugin.getPluginLogger().info("Permission de mine définie pour " + player.getName() + ": " + targetRank.toUpperCase() +
                 " (les permissions précédentes ont été supprimées)");
-    }
-
-    /**
-     * CORRIGÉ: Retire toutes les permissions de mine (plus de FREE)
-     */
-    private void clearAllMinePermissions(Player player) {
-        // Utilise la méthode du PlayerDataManager qui gère déjà la suppression
-        plugin.getPlayerDataManager().removeAllMinePermissionsFromPlayer(player.getUniqueId());
     }
 
     /**

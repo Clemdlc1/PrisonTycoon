@@ -26,15 +26,13 @@ public class PrestigeManager {
      * CORRIGÉ: Vérifie si un joueur peut effectuer un prestige (rang Z requis au lieu de FREE)
      */
     public boolean canPrestige(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
         // Vérifier le rang Z (maximum) au lieu du rang FREE
-        if (!playerData.hasCustomPermission("specialmine.mine.z")) {
+        if (!plugin.getPermissionManager().hasPermission(player, "specialmine.mine.z")) {
             return false;
         }
 
         // Vérifier le niveau de prestige maximum
-        if (playerData.getPrestigeLevel() >= 50) {
+        if (getPrestigeLevel(player) >= 50) {
             return false;
         }
 
@@ -68,14 +66,7 @@ public class PrestigeManager {
         resetPlayerForPrestige(player);
 
         // Mettre à jour le niveau de prestige via PlayerData (qui gère les permissions)
-        playerData.setPrestigeLevel(newPrestigeLevel);
-
-        // Appliquer immédiatement la permission si le joueur est en ligne
-        Player onlinePlayer = plugin.getServer().getPlayer(player.getUniqueId());
-        if (onlinePlayer != null && onlinePlayer.isOnline()) {
-            String prestigePermission = "specialmine.prestige." + newPrestigeLevel;
-            plugin.getPermissionManager().attachPermission(onlinePlayer, prestigePermission);
-        }
+        plugin.getPermissionManager().attachPermission(player, "specialmine.prestige." + newPrestigeLevel);
 
         // Donner les récompenses automatiques
         rewardManager.giveAutomaticRewards(player, newPrestigeLevel);
@@ -99,13 +90,12 @@ public class PrestigeManager {
      * CORRIGÉ: Obtient le rang actuel du joueur via PermissionManager
      */
     private String getCurrentRank(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String highestRank = "a"; // Rang par défaut
 
         // Recherche du rang le plus élevé via les permissions bukkit
         for (char c = 'z'; c >= 'a'; c--) {
             String minePermission = "specialmine.mine." + c;
-            if (playerData.hasCustomPermission(minePermission)) {
+            if (plugin.getPermissionManager().hasPermission(player, minePermission)) {
                 highestRank = String.valueOf(c);
                 break;
             }
@@ -133,7 +123,7 @@ public class PrestigeManager {
         clearAllMinePermissions(player);
 
         // Remettre uniquement la permission de base (rang A) via PermissionManager
-        plugin.getPlayerDataManager().addPermissionToPlayer(player.getUniqueId(), "specialmine.mine.a");
+        plugin.getPermissionManager().attachPermission(player, "specialmine.mine.a");
 
         // Reset des coins
         playerData.setCoins(0);
@@ -145,18 +135,13 @@ public class PrestigeManager {
      * CORRIGÉ: Retire toutes les permissions de mine d'un joueur via PermissionManager (plus de FREE)
      */
     private void clearAllMinePermissions(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
         // Retirer toutes les permissions de mine a-z via PermissionManager
         for (char c = 'a'; c <= 'z'; c++) {
             String minePermission = "specialmine.mine." + c;
-            if (playerData.hasCustomPermission(minePermission)) {
-                plugin.getPlayerDataManager().removePermissionFromPlayer(player.getUniqueId(), minePermission);
+            if (plugin.getPermissionManager().hasPermission(player, minePermission)) {
+                plugin.getPermissionManager().removePermission(player, minePermission);
             }
         }
-
-        // Ancienne logique pour compatibilité
-        playerData.clearMinePermissions();
     }
 
     /**
@@ -218,16 +203,19 @@ public class PrestigeManager {
      * Vérifie si un joueur a un niveau de prestige spécifique
      */
     public boolean hasPrestigeLevel(Player player, int level) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.getPrestigeLevel() >= level;
+        return getPrestigeLevel(player) >= level;
     }
 
     /**
      * Obtient le niveau de prestige d'un joueur
      */
     public int getPrestigeLevel(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.getPrestigeLevel();
+        for (int i = 50; i >= 1; i--) {
+            if (plugin.getPermissionManager().hasPermission(player, "specialmine.prestige." + i)) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -283,8 +271,7 @@ public class PrestigeManager {
      * @return
      */
     public String showPrestigeInfo(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int prestigeLevel = playerData.getPrestigeLevel();
+        int prestigeLevel = getPrestigeLevel(player);
         String currentRank = getCurrentRank(player);
 
         player.sendMessage("§6═══════════ PRESTIGE INFO ═══════════");
