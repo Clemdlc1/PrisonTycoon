@@ -338,6 +338,10 @@ commands:
     permission: specialmine.admin
     permission-message: "§cVous n'avez pas la permission d'utiliser cette commande!"
 
+  autominer:
+    description: Menu principal des automineurs
+    usage: /autominer [give <type>]
+    permission: specialmine.basic
 # Chargement
 load: POSTWORLD
 startup: POSTWORLD

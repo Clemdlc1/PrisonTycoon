@@ -5,10 +5,12 @@ import fr.prisontycoon.boosts.BoostType;
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.prestige.PrestigeTalent;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
@@ -311,6 +313,57 @@ public class PlayerDataManager {
                 }
             }
 
+            if (config.contains("autominer.active-slot-1")) {
+                ItemStack slot1 = config.getItemStack("autominer.active-slot-1");
+                if (slot1 != null) {
+                    data.setActiveAutominerSlot1(slot1);
+                }
+            }
+
+            if (config.contains("autominer.active-slot-2")) {
+                ItemStack slot2 = config.getItemStack("autominer.active-slot-2");
+                if (slot2 != null) {
+                    data.setActiveAutominerSlot2(slot2);
+                }
+            }
+
+            data.setAutominerFuelReserve(config.getDouble("autominer.fuel-reserve", 0.0));
+            data.setAutominerCurrentWorld(config.getString("autominer.current-world", "mine-a"));
+            data.setAutominerStorageLevel(config.getInt("autominer.storage-level", 0));
+
+            // Charger le contenu du stockage
+            if (config.contains("autominer.storage-contents")) {
+                Map<Material, Long> storageContents = new HashMap<>();
+                ConfigurationSection storageSection = config.getConfigurationSection("autominer.storage-contents");
+                for (String materialName : storageSection.getKeys(false)) {
+                    try {
+                        Material material = Material.valueOf(materialName.toUpperCase());
+                        long amount = storageSection.getLong(materialName);
+                        storageContents.put(material, amount);
+                    } catch (IllegalArgumentException e) {
+                        plugin.getPluginLogger().warning("§cMatériel invalide dans le stockage automineur: " + materialName);
+                    }
+                }
+                data.setAutominerStorageContents(storageContents);
+            }
+
+            // Charger les clés stockées
+            if (config.contains("autominer.stored-keys")) {
+                Map<String, Integer> storedKeys = new HashMap<>();
+                ConfigurationSection keysSection = config.getConfigurationSection("autominer.stored-keys");
+                for (String keyType : keysSection.getKeys(false)) {
+                    int amount = keysSection.getInt(keyType);
+                    storedKeys.put(keyType, amount);
+                }
+                data.setAutominerStoredKeys(storedKeys);
+            }
+
+            // NOUVEAU: Charger les gains en attente
+            data.setAutominerPendingCoins(config.getLong("autominer.pending-coins", 0));
+            data.setAutominerPendingTokens(config.getLong("autominer.pending-tokens", 0));
+            data.setAutominerPendingExperience(config.getLong("autominer.pending-experience", 0));
+            data.setAutominerPendingBeacons(config.getLong("autominer.pending-beacons", 0));
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -500,6 +553,41 @@ public class PlayerDataManager {
             }
 
             config.set("reputation", data.getReputation());
+
+            if (data.getActiveAutominerSlot1() != null) {
+                config.set("autominer.active-slot-1", data.getActiveAutominerSlot1());
+            }
+
+            if (data.getActiveAutominerSlot2() != null) {
+                config.set("autominer.active-slot-2", data.getActiveAutominerSlot2());
+            }
+
+            config.set("autominer.fuel-reserve", data.getAutominerFuelReserve());
+            config.set("autominer.current-world", data.getAutominerCurrentWorld());
+            config.set("autominer.storage-level", data.getAutominerStorageLevel());
+
+            // Sauvegarder le contenu du stockage
+            Map<Material, Long> storageContents = data.getAutominerStorageContents();
+            if (!storageContents.isEmpty()) {
+                for (Map.Entry<Material, Long> entry : storageContents.entrySet()) {
+                    config.set("autominer.storage-contents." + entry.getKey().name().toLowerCase(), entry.getValue());
+                }
+            }
+
+            // Sauvegarder les clés stockées
+            Map<String, Integer> storedKeys = data.getAutominerStoredKeys();
+            if (!storedKeys.isEmpty()) {
+                for (Map.Entry<String, Integer> entry : storedKeys.entrySet()) {
+                    config.set("autominer.stored-keys." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            // NOUVEAU: Sauvegarder les gains en attente
+            config.set("autominer.pending-coins", data.getAutominerPendingCoins());
+            config.set("autominer.pending-tokens", data.getAutominerPendingTokens());
+            config.set("autominer.pending-experience", data.getAutominerPendingExperience());
+            config.set("autominer.pending-beacons", data.getAutominerPendingBeacons());
+
 
             // Statistiques complètes
             config.set("statistics.total-blocks-mined", data.getTotalBlocksMined());

@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -53,7 +54,14 @@ public class GUIListener implements Listener {
                 event.setCancelled(true);
                 plugin.getEnchantmentBookGUI().handlePhysicalBookApplication(player, clickedItem);
             }
-            // Pour tous les autres GUIs, on n'interfère pas avec l'inventaire du joueur.
+
+            if (title.contains("Menu Automineurs") && plugin.getAutominerManager().isAutominer(clickedItem)) {
+                event.setCancelled(true);
+                plugin.getAutominerGUI().handleInventoryItemClick(player, clickedItem);
+            }
+            if (title.contains("Amélioration Automineur") && plugin.getCristalManager().isCristal(clickedItem)) {
+                plugin.getAutominerEnchantGUI().handleCrystalApplication(player, clickedItem);
+            }
             return;
         }
 
@@ -68,6 +76,20 @@ public class GUIListener implements Listener {
         }
 
         handleGUIClick(player, title, event.getSlot(), clickedItem, event.getClick());
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+
+        String title = event.getView().getTitle();
+
+        // Gestion de la fermeture des GUIs d'automineur
+        if (title.contains("Condensation d'Automineurs")) {
+            plugin.getAutominerCondHeadGUI().handleCondensationClose(player, event.getInventory());
+        } else if (title.contains("Ajout de Carburant")) {
+            plugin.getAutominerCondHeadGUI().handleFuelClose(player, event.getInventory());
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -120,6 +142,14 @@ public class GUIListener implements Listener {
             plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
         } else if (title.contains("Vos Boosts Actifs")) {
             plugin.getBoostGUI().handleClick(player, item);
+        } else if (title.contains("Menu Automineurs")) {
+            plugin.getAutominerGUI().handleMainMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Amélioration Automineur")) {
+            plugin.getAutominerEnchantGUI().handleEnchantMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Stockage Automineur")) {
+            plugin.getAutominerCondHeadGUI().handleStorageClick(player, slot, item);
+        } else if (title.contains("🛠")) {
+            plugin.getAutominerEnchantUpgradeGUI().handleUpgradeClick(player, slot, item, clickType);
         }
     }
 
@@ -201,6 +231,10 @@ public class GUIListener implements Listener {
                 title.contains("§b🌍 §lMONDE") ||
                 title.contains("§d📦 §lSTOCKAGE") ||
                 title.contains("§6⚡ §lCONDENSATION") ||
-                title.contains("§c⚡ §lÉNERGIE");
+                title.contains("§c⚡ §lÉNERGIE") ||
+                title.contains("Menu Automineurs") ||
+                title.contains("Amélioration Automineur") ||
+                title.contains("Stockage Automineur") ||
+                title.contains("🛠");
     }
 }

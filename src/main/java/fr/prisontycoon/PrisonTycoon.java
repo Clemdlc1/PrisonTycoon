@@ -1,6 +1,7 @@
 package fr.prisontycoon;
 
 import fr.prisontycoon.GUI.*;
+import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
 import fr.prisontycoon.commands.*;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
@@ -53,8 +54,6 @@ public final class PrisonTycoon extends JavaPlugin {
 
     private Logger logger;
 
-    // SUPPRIMÉ : ScoreboardManager (maintenant intégré dans ScoreboardTask)
-
     // GUIs séparés
     private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
@@ -85,6 +84,14 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutoSaveTask autoSaveTask;
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
+
+    private AutominerManager autominerManager;
+    private AutominerGUI autominerGUI;
+    private AutominerEnchantGUI autominerEnchantGUI;
+    private AutominerCondHeadGUI autominerCondHeadGUI;
+    private AutominerTask autominerTask;
+    private AutominerEnchantUpgradeGUI autominerEnchantUpgradeGUI;
+
 
     public static PrisonTycoon getInstance() {
         return instance;
@@ -213,6 +220,7 @@ public final class PrisonTycoon extends JavaPlugin {
         uniqueEnchantmentBookFactory = new UniqueEnchantmentBookFactory(this);
         voucherManager = new VoucherManager(this);
         boostManager = new BoostManager(this);
+        autominerManager = new AutominerManager(this);
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
@@ -236,6 +244,10 @@ public final class PrisonTycoon extends JavaPlugin {
         professionRewardsGUI = new ProfessionRewardsGUI(this);
         prestigeGUI = new PrestigeGUI(this);
         boostGUI = new BoostGUI(this);
+        autominerGUI = new AutominerGUI(this);
+        autominerEnchantGUI = new AutominerEnchantGUI(this);
+        autominerCondHeadGUI = new AutominerCondHeadGUI(this);
+        autominerEnchantUpgradeGUI = new AutominerEnchantUpgradeGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -322,6 +334,9 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("giveboost").setExecutor(new GiveBoostCommand(this));
         getCommand("giveboost").setTabCompleter(new GiveBoostCommand(this));
 
+        getCommand("autominer").setExecutor(new AutominerCommand(this));
+
+
         logger.info("§aCommandes enregistrées.");
     }
 
@@ -370,6 +385,9 @@ public final class PrisonTycoon extends JavaPlugin {
         autoUpgradeTask = new AutoUpgradeTask(this);
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
         logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
+
+        autominerTask = new AutominerTask(this);
+        autominerTask.runTaskTimerAsynchronously(this, 20L, 20L);
 
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
             if (moderationManager != null) {
@@ -425,6 +443,10 @@ public final class PrisonTycoon extends JavaPlugin {
         }
         if (permissionManager != null) {
             permissionManager.cleanup();
+        }
+        if (autominerTask != null) {
+            autominerTask.cancel();
+            getPluginLogger().info("§7Tâche d'automineur arrêtée.");
         }
     }
 
@@ -634,6 +656,25 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public BoostGUI getBoostGUI() {
         return boostGUI;
+    }
+    public AutominerManager getAutominerManager() {
+        return autominerManager;
+    }
+
+    public AutominerGUI getAutominerGUI() {
+        return autominerGUI;
+    }
+
+    public AutominerEnchantGUI getAutominerEnchantGUI() {
+        return autominerEnchantGUI;
+    }
+
+    public AutominerCondHeadGUI getAutominerCondHeadGUI() {
+        return autominerCondHeadGUI;
+    }
+
+    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
+        return autominerEnchantUpgradeGUI;
     }
 }
 

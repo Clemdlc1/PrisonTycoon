@@ -4,6 +4,7 @@ import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,6 +92,24 @@ public class PlayerData {
     private Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private int reputation = 0;
 
+    private ItemStack activeAutominerSlot1;
+    private ItemStack activeAutominerSlot2;
+
+    // Carburant et monde
+    private double autominerFuelReserve;
+    private String autominerCurrentWorld;
+
+    // Stockage
+    private int autominerStorageLevel;
+    private final Map<Material, Long> autominerStorageContents;
+    private final Map<String, Integer> autominerStoredKeys;
+
+    // Gains en attente (greed et beacons)
+    private long autominerPendingCoins;
+    private long autominerPendingTokens;
+    private long autominerPendingExperience;
+    private long autominerPendingBeacons;
+
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
         this.playerName = playerName;
@@ -135,6 +154,17 @@ public class PlayerData {
         this.kitLevels = new ConcurrentHashMap<>();
         this.claimedProfessionRewards = new ConcurrentHashMap<>();
 
+        this.activeAutominerSlot1 = null;
+        this.activeAutominerSlot2 = null;
+        this.autominerFuelReserve = 0.0;
+        this.autominerCurrentWorld = "mine-a";
+        this.autominerStorageLevel = 0;
+        this.autominerStorageContents = new ConcurrentHashMap<>();
+        this.autominerStoredKeys = new ConcurrentHashMap<>();
+        this.autominerPendingCoins = 0L;
+        this.autominerPendingTokens = 0L;
+        this.autominerPendingExperience = 0L;
+        this.autominerPendingBeacons = 0L;
 
         // Reset stats dernière minute
         resetLastMinuteStats();
@@ -1677,5 +1707,199 @@ public class PlayerData {
     }
 
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    // Automineurs actifs
+    public ItemStack getActiveAutominerSlot1() {
+        return activeAutominerSlot1;
+    }
+
+    public void setActiveAutominerSlot1(ItemStack activeAutominerSlot1) {
+        this.activeAutominerSlot1 = activeAutominerSlot1;
+    }
+
+    public ItemStack getActiveAutominerSlot2() {
+        return activeAutominerSlot2;
+    }
+
+    public void setActiveAutominerSlot2(ItemStack activeAutominerSlot2) {
+        this.activeAutominerSlot2 = activeAutominerSlot2;
+    }
+
+    // Carburant
+    public double getAutominerFuelReserve() {
+        return autominerFuelReserve;
+    }
+
+    public void setAutominerFuelReserve(double autominerFuelReserve) {
+        this.autominerFuelReserve = Math.max(0, autominerFuelReserve);
+    }
+
+    public void addAutominerFuel(double amount) {
+        this.autominerFuelReserve += Math.max(0, amount);
+    }
+
+    public void removeAutominerFuel(double amount) {
+        this.autominerFuelReserve = Math.max(0, this.autominerFuelReserve - Math.max(0, amount));
+    }
+
+    // Monde de minage
+    public String getAutominerCurrentWorld() {
+        return autominerCurrentWorld;
+    }
+
+    public void setAutominerCurrentWorld(String autominerCurrentWorld) {
+        this.autominerCurrentWorld = autominerCurrentWorld;
+    }
+
+    // Stockage
+    public int getAutominerStorageLevel() {
+        return autominerStorageLevel;
+    }
+
+    public void setAutominerStorageLevel(int autominerStorageLevel) {
+        this.autominerStorageLevel = Math.max(0, autominerStorageLevel);
+    }
+
+    public Map<Material, Long> getAutominerStorageContents() {
+        return new HashMap<>(autominerStorageContents);
+    }
+
+    public void setAutominerStorageContents(Map<Material, Long> contents) {
+        this.autominerStorageContents.clear();
+        if (contents != null) {
+            this.autominerStorageContents.putAll(contents);
+        }
+    }
+
+    public void addToAutominerStorage(Material material, long amount) {
+        if (amount > 0) {
+            this.autominerStorageContents.put(material,
+                    this.autominerStorageContents.getOrDefault(material, 0L) + amount);
+        }
+    }
+
+    public void removeFromAutominerStorage(Material material, long amount) {
+        if (amount > 0) {
+            long current = this.autominerStorageContents.getOrDefault(material, 0L);
+            long newAmount = Math.max(0, current - amount);
+            if (newAmount == 0) {
+                this.autominerStorageContents.remove(material);
+            } else {
+                this.autominerStorageContents.put(material, newAmount);
+            }
+        }
+    }
+
+    // Clés stockées
+    public Map<String, Integer> getAutominerStoredKeys() {
+        return new HashMap<>(autominerStoredKeys);
+    }
+
+    public void setAutominerStoredKeys(Map<String, Integer> keys) {
+        this.autominerStoredKeys.clear();
+        if (keys != null) {
+            this.autominerStoredKeys.putAll(keys);
+        }
+    }
+
+    public void addAutominerKey(String keyType, int amount) {
+        if (amount > 0) {
+            this.autominerStoredKeys.put(keyType,
+                    this.autominerStoredKeys.getOrDefault(keyType, 0) + amount);
+        }
+    }
+
+    public void removeAutominerKey(String keyType, int amount) {
+        if (amount > 0) {
+            int current = this.autominerStoredKeys.getOrDefault(keyType, 0);
+            int newAmount = Math.max(0, current - amount);
+            if (newAmount == 0) {
+                this.autominerStoredKeys.remove(keyType);
+            } else {
+                this.autominerStoredKeys.put(keyType, newAmount);
+            }
+        }
+    }
+
+    // Gains en attente (greed et beacons)
+    public long getAutominerPendingCoins() {
+        return autominerPendingCoins;
+    }
+
+    public void setAutominerPendingCoins(long autominerPendingCoins) {
+        this.autominerPendingCoins = Math.max(0, autominerPendingCoins);
+    }
+
+    public void addAutominerPendingCoins(long amount) {
+        if (amount > 0) {
+            this.autominerPendingCoins += amount;
+        }
+    }
+
+    public long claimAutominerPendingCoins() {
+        long amount = this.autominerPendingCoins;
+        this.autominerPendingCoins = 0;
+        return amount;
+    }
+
+    public long getAutominerPendingTokens() {
+        return autominerPendingTokens;
+    }
+
+    public void setAutominerPendingTokens(long autominerPendingTokens) {
+        this.autominerPendingTokens = Math.max(0, autominerPendingTokens);
+    }
+
+    public void addAutominerPendingTokens(long amount) {
+        if (amount > 0) {
+            this.autominerPendingTokens += amount;
+        }
+    }
+
+    public long claimAutominerPendingTokens() {
+        long amount = this.autominerPendingTokens;
+        this.autominerPendingTokens = 0;
+        return amount;
+    }
+
+    public long getAutominerPendingExperience() {
+        return autominerPendingExperience;
+    }
+
+    public void setAutominerPendingExperience(long autominerPendingExperience) {
+        this.autominerPendingExperience = Math.max(0, autominerPendingExperience);
+    }
+
+    public void addAutominerPendingExperience(long amount) {
+        if (amount > 0) {
+            this.autominerPendingExperience += amount;
+        }
+    }
+
+    public long claimAutominerPendingExperience() {
+        long amount = this.autominerPendingExperience;
+        this.autominerPendingExperience = 0;
+        return amount;
+    }
+
+    public long getAutominerPendingBeacons() {
+        return autominerPendingBeacons;
+    }
+
+    public void setAutominerPendingBeacons(long autominerPendingBeacons) {
+        this.autominerPendingBeacons = Math.max(0, autominerPendingBeacons);
+    }
+
+    public void addAutominerPendingBeacons(long amount) {
+        if (amount > 0) {
+            this.autominerPendingBeacons += amount;
+        }
+    }
+
+    public long claimAutominerPendingBeacons() {
+        long amount = this.autominerPendingBeacons;
+        this.autominerPendingBeacons = 0;
+        return amount;
     }
 }
