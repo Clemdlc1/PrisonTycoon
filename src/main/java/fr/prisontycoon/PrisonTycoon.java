@@ -1,5 +1,8 @@
 package fr.prisontycoon;
 
+import com.earth2me.essentials.Essentials;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import fr.prisontycoon.GUI.*;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
@@ -15,19 +18,43 @@ import fr.prisontycoon.tasks.*;
 import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
 import fr.prisontycoon.vouchers.VoucherManager;
+import net.ess3.api.IEssentials;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
+import net.milkbowl.vault.economy.Economy;
+import org.bstats.bukkit.Metrics;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Plugin principal PrisonTycoon
- * CORRIGÉ : Suppression de ScoreboardManager, utilisation du nouveau système
+ * Plugin principal PrisonTycoon - VERSION COMPLÈTE INTÉGRÉE
+ * Intégration native avec LuckPerms, Vault, WorldGuard et EssentialsX
+ *
+ * @author PrisonTycoon Team
+ * @version 1.0-INTEGRATED
  */
 public final class PrisonTycoon extends JavaPlugin {
 
     // Instance singleton du plugin
     private static PrisonTycoon instance;
+
+    // Logger personnalisé
+    private Logger pluginLogger;
     private ChatLogger chatLogger;
 
-    // Managers principaux
+    // === INTÉGRATIONS NATIVES ===
+    private LuckPerms luckPermsAPI;
+    private Economy vaultEconomy;
+    private WorldGuardPlugin worldGuardPlugin;
+    private IEssentials essentialsAPI;
+
+    // États des intégrations
+    private boolean luckPermsEnabled = false;
+    private boolean vaultEnabled = false;
+    private boolean worldGuardEnabled = false;
+    private boolean essentialsEnabled = false;
+
+    // === MANAGERS PRINCIPAUX ===
     private ConfigManager configManager;
     private PlayerDataManager playerDataManager;
     private MineManager mineManager;
@@ -40,110 +67,100 @@ public final class PrisonTycoon extends JavaPlugin {
     private TabManager tabManager;
     private ModerationManager moderationManager;
     private VipManager vipManager;
-    private PermissionManager permissionManager;
+    private PermissionManager permissionManager; // Manager intégré
     private EnchantmentBookManager enchantmentBookManager;
     private ProfessionManager professionManager;
-    private PrestigeManager prestigeManager; // NOUVEAU
+    private PrestigeManager prestigeManager;
     private ReputationManager reputationManager;
     private BlackMarketManager blackMarketManager;
+    private CristalManager cristalManager;
     private WeaponArmorEnchantmentManager weaponArmorEnchantmentManager;
-    private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
-    private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
     private VoucherManager voucherManager;
     private BoostManager boostManager;
+    private AutominerManager autominerManager;
 
-    private Logger logger;
+    // === UTILITAIRES ===
+    private CristalBonusHelper cristalBonusHelper;
+    private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
 
-    // GUIs séparés
+    // === INTERFACES GRAPHIQUES ===
     private EnchantmentMenu mainMenuGUI;
     private CategoryMenuGUI categoryMenuGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
+    private CristalGUI cristalGUI;
     private EnchantmentBookGUI enchantmentBookGUI;
     private PetsMenuGUI petsMenuGUI;
     private PickaxeRepairGUI pickaxeRepairGUI;
     private ContainerGUI containerGUI;
     private ContainerFilterGUI containerFilterGUI;
+    private ProfessionGUI professionGUI;
     private ProfessionRewardsGUI professionRewardsGUI;
     private PrestigeGUI prestigeGUI;
-    private RankupCommand rankupCommand;
     private BoostGUI boostGUI;
-
-    //cristaux
-    private CristalManager cristalManager;
-    private CristalBonusHelper cristalBonusHelper;
-    private CristalGUI cristalGUI;
-    private ProfessionGUI professionGUI;
-
-
-    // 3 tâches séparées
-    private ActionBarTask actionBarTask;
-    private ScoreboardTask scoreboardTask;
-    private ChatTask chatTask;
-
-    // Autres tâches
-    private AutoSaveTask autoSaveTask;
-    private CombustionDecayTask combustionDecayTask;
-    private AutoUpgradeTask autoUpgradeTask;
-
-    private AutominerManager autominerManager;
     private AutominerGUI autominerGUI;
     private AutominerEnchantGUI autominerEnchantGUI;
     private AutominerCondHeadGUI autominerCondHeadGUI;
-    private AutominerTask autominerTask;
     private AutominerEnchantUpgradeGUI autominerEnchantUpgradeGUI;
+    private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
 
+    // === TÂCHES ASYNCHRONES ===
+    private AutoSaveTask autoSaveTask;
+    private AutominerTask autominerTask;
+    private AutoUpgradeTask autoUpgradeTask;
+    private CombustionDecayTask combustionDecayTask;
+    private ActionBarTask actionBarTask;
+    private ChatTask chatTask;
+    private ScoreboardTask scoreboardTask;
 
-    public static PrisonTycoon getInstance() {
-        return instance;
-    }
+    // Métriques bStats
+    private Metrics metrics;
 
     @Override
     public void onEnable() {
+        // Initialise l'instance singleton
         instance = this;
-        logger = new Logger(this);
 
-        logger.info("§a========================================");
-        logger.info("§a    PrisonTycoon Plugin Startup");
-        logger.info("§a========================================");
+        // Initialise le logger personnalisé
+        pluginLogger = new Logger(this);
+        chatLogger = new ChatLogger(this);
+
+        pluginLogger.info("§a========================================");
+        pluginLogger.info("§aPrisonTycoon v1.0-INTEGRATED - Démarrage");
+        pluginLogger.info("§a========================================");
 
         try {
-            // Initialisation de la configuration
+            // Phase 1: Configuration
             initializeConfig();
 
-            // Initialisation des managers
+            // Phase 2: Intégrations externes (ordre critique!)
+            setupExternalIntegrations();
+
+            // Phase 3: Managers internes (avec intégrations)
             initializeManagers();
 
-            // Initialisation des GUIs
+            // Phase 4: Interfaces utilisateur
             initializeGUIs();
 
-            // Enregistrement des événements
+            // Phase 5: Événements et commandes
             registerEvents();
-
-            // Enregistrement des commandes
             registerCommands();
 
-            chatLogger = new ChatLogger(this);
-
-
-            // Démarrage des tâches asynchrones
+            // Phase 6: Tâches asynchrones
             startTasks();
-            tabManager.startTabUpdater();
 
-            logger.info("§aPlugin PrisonTycoon activé avec succès!");
-            logger.info("§7Fonctionnalités chargées:");
-            logger.info("§7- Système de mines protégées");
-            logger.info("§7- Pioche légendaire immobile (slot 1)");
-            logger.info("§7- 18 enchantements custom");
-            logger.info("§7- Distinction blocs minés/cassés");
-            logger.info("§7- Restrictions hors mine");
-            logger.info("§7- Économie triple (coins/tokens/xp)");
-            logger.info("§7- Interface graphique avancée");
-            logger.info("§7- Auto-amélioration des enchantements");
-            logger.info("§7- Système de notifications intelligent multi-types");
-            logger.info("§7- ScoreboardTask intégré (sans ScoreboardManager)");
+            // Phase 7: Métriques
+            setupMetrics();
+
+            pluginLogger.info("§a========================================");
+            pluginLogger.info("§aPrisonTycoon démarré avec succès!");
+            pluginLogger.info("§7- LuckPerms: " + (luckPermsEnabled ? "§aOUI" : "§cNON"));
+            pluginLogger.info("§7- Vault: " + (vaultEnabled ? "§aOUI" : "§cNON"));
+            pluginLogger.info("§7- WorldGuard: " + (worldGuardEnabled ? "§aOUI" : "§cNON"));
+            pluginLogger.info("§7- EssentialsX: " + (essentialsEnabled ? "§aOUI" : "§cNON"));
+            pluginLogger.info("§a========================================");
 
         } catch (Exception e) {
-            logger.severe("§cErreur lors de l'activation du plugin:");
+            pluginLogger.severe("§cErreur critique lors du démarrage!");
             e.printStackTrace();
             getServer().getPluginManager().disablePlugin(this);
         }
@@ -151,85 +168,153 @@ public final class PrisonTycoon extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        logger.info("§cArrêt du plugin PrisonTycoon...");
+        pluginLogger.info("§e========================================");
+        pluginLogger.info("§ePrisonTycoon - Arrêt en cours...");
+        pluginLogger.info("§e========================================");
 
         try {
             // Arrêt des tâches
             stopTasks();
 
-            // Sauvegarde de toutes les données joueurs
+            // Sauvegarde finale
             if (playerDataManager != null) {
-                playerDataManager.saveAllPlayersSync();
-                logger.info("§aDonnées joueurs sauvegardées.");
+                pluginLogger.info("§7Sauvegarde finale des données...");
+                playerDataManager.saveAllPlayersAsync();
             }
 
             if (chatLogger != null) {
                 chatLogger.shutdown();
-                logger.info("§7ChatLogger arrêté");
+                pluginLogger.info("§7ChatLogger arrêté");
             }
 
         } catch (Exception e) {
-            logger.severe("§cErreur lors de la désactivation:");
+            pluginLogger.severe("§cErreur lors de l'arrêt:");
             e.printStackTrace();
         }
 
-        logger.info("§aPlugin PrisonTycoon désactivé correctement.");
+        pluginLogger.info("§e========================================");
     }
 
     /**
-     * Initialise le système de configuration
+     * PHASE 1: Initialise la configuration
      */
     private void initializeConfig() {
-        logger.info("§7Initialisation de la configuration...");
+        pluginLogger.info("§7Phase 1: Configuration...");
+
+        saveDefaultConfig();
         configManager = new ConfigManager(this);
 
-        // Sauvegarde du fichier de config par défaut si inexistant
-        saveDefaultConfig();
-
-        logger.info("§aConfiguration chargée.");
+        pluginLogger.info("§aConfiguration chargée.");
     }
 
     /**
-     * CORRIGÉ : Initialise tous les managers du plugin sans ScoreboardManager
+     * PHASE 2: Configure les intégrations externes - INTÉGRATION NATIVE!
+     */
+    private void setupExternalIntegrations() {
+        pluginLogger.info("§7Phase 2: Intégrations natives...");
+
+        // LuckPerms - INTÉGRATION NATIVE
+        if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
+            try {
+                luckPermsAPI = LuckPermsProvider.get();
+                luckPermsEnabled = true;
+                pluginLogger.info("§a✓ LuckPerms intégré nativement");
+            } catch (Exception e) {
+                pluginLogger.warning("§c⚠ Erreur intégration LuckPerms: " + e.getMessage());
+            }
+        } else {
+            pluginLogger.warning("§eLuckPerms non détecté - Système de permissions limité");
+        }
+
+        // Vault - INTÉGRATION NATIVE
+        if (getServer().getPluginManager().getPlugin("Vault") != null) {
+            try {
+                RegisteredServiceProvider<Economy> economyProvider =
+                        getServer().getServicesManager().getRegistration(Economy.class);
+                if (economyProvider != null) {
+                    vaultEconomy = economyProvider.getProvider();
+                    vaultEnabled = true;
+                    pluginLogger.info("§a✓ Vault intégré nativement (" + vaultEconomy.getName() + ")");
+                }
+            } catch (Exception e) {
+                pluginLogger.warning("§c⚠ Erreur intégration Vault: " + e.getMessage());
+            }
+        } else {
+            pluginLogger.warning("§eVault non détecté - Économie interne uniquement");
+        }
+
+        // WorldGuard - INTÉGRATION NATIVE
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+            try {
+                worldGuardPlugin = WorldGuardPlugin.inst();
+                if (worldGuardPlugin != null) {
+                    worldGuardEnabled = true;
+                    pluginLogger.info("§a✓ WorldGuard intégré nativement");
+                }
+            } catch (Exception e) {
+                pluginLogger.warning("§c⚠ Erreur intégration WorldGuard: " + e.getMessage());
+            }
+        } else {
+            pluginLogger.warning("§eWorldGuard non détecté - Protection des zones désactivée");
+        }
+
+        // EssentialsX - INTÉGRATION NATIVE
+        if (getServer().getPluginManager().getPlugin("Essentials") != null) {
+            try {
+                var essentialsPlugin = getServer().getPluginManager().getPlugin("Essentials");
+                if (essentialsPlugin instanceof Essentials) {
+                    essentialsAPI = (IEssentials) essentialsPlugin;
+                    essentialsEnabled = true;
+                    pluginLogger.info("§a✓ EssentialsX intégré nativement");
+                }
+            } catch (Exception e) {
+                pluginLogger.warning("§c⚠ Erreur intégration EssentialsX: " + e.getMessage());
+            }
+        } else {
+            pluginLogger.warning("§eEssentialsX non détecté - Fonctionnalités étendues désactivées");
+        }
+    }
+
+    /**
+     * PHASE 3: Initialise tous les managers avec intégrations
      */
     private void initializeManagers() {
-        logger.info("§7Initialisation des managers...");
+        pluginLogger.info("§7Phase 3: Managers intégrés...");
 
-        // Ordre d'initialisation important pour les dépendances
+        // Ordre critique pour les dépendances!
         playerDataManager = new PlayerDataManager(this);
-        economyManager = new EconomyManager(this);
+        economyManager = new EconomyManager(this); // Intégration Vault
         enchantmentManager = new EnchantmentManager(this);
         pickaxeManager = new PickaxeManager(this);
-        mineManager = new MineManager(this);
-        notificationManager = new NotificationManager(this); // NOUVEAU : Système amélioré
+        mineManager = new MineManager(this); // Intégration WorldGuard
+        notificationManager = new NotificationManager(this);
         containerManager = new ContainerManager(this);
         cristalManager = new CristalManager(this);
         cristalBonusHelper = new CristalBonusHelper(this);
         globalBonusManager = new GlobalBonusManager(this);
-        tabManager = new TabManager(this);
+        tabManager = new TabManager(this); // Intégration LuckPerms
         moderationManager = new ModerationManager(this);
-        vipManager = new VipManager(this);
-        permissionManager = new PermissionManager(this); // NOUVEAU !
+        vipManager = new VipManager(this); // Intégration LuckPerms
+        permissionManager = new PermissionManager(this); // Intégration LuckPerms
         enchantmentBookManager = new EnchantmentBookManager(this);
         professionManager = new ProfessionManager(this);
-        prestigeManager = new PrestigeManager(this);
+        prestigeManager = new PrestigeManager(this); // Intégration LuckPerms
         reputationManager = new ReputationManager(this);
         blackMarketManager = new BlackMarketManager(this);
         weaponArmorEnchantmentManager = new WeaponArmorEnchantmentManager(this);
-        weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
         uniqueEnchantmentBookFactory = new UniqueEnchantmentBookFactory(this);
         voucherManager = new VoucherManager(this);
         boostManager = new BoostManager(this);
         autominerManager = new AutominerManager(this);
 
-        logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
+        pluginLogger.info("§aTous les managers initialisés avec intégrations.");
     }
 
     /**
-     * Initialise tous les GUIs
+     * PHASE 4: Initialise les interfaces graphiques
      */
     private void initializeGUIs() {
-        logger.info("§7Initialisation des interfaces graphiques...");
+        pluginLogger.info("§7Phase 4: Interfaces graphiques...");
 
         mainMenuGUI = new EnchantmentMenu(this);
         categoryMenuGUI = new CategoryMenuGUI(this);
@@ -248,19 +333,19 @@ public final class PrisonTycoon extends JavaPlugin {
         autominerEnchantGUI = new AutominerEnchantGUI(this);
         autominerCondHeadGUI = new AutominerCondHeadGUI(this);
         autominerEnchantUpgradeGUI = new AutominerEnchantUpgradeGUI(this);
+        weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
 
-        logger.info("§aInterfaces graphiques initialisées.");
+        pluginLogger.info("§aInterfaces graphiques initialisées.");
     }
 
     /**
-     * Enregistre tous les listeners d'événements
+     * PHASE 5: Enregistre les événements
      */
     private void registerEvents() {
-        logger.info("§7Enregistrement des événements...");
+        pluginLogger.info("§7Phase 5: Événements...");
 
         var pluginManager = getServer().getPluginManager();
 
-        // Événements de base
         pluginManager.registerEvents(new PlayerJoinQuitListener(this), this);
         pluginManager.registerEvents(new MiningListener(this), this);
         pluginManager.registerEvents(new PickaxeProtectionListener(this), this);
@@ -273,15 +358,14 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new WeaponArmorEnchantmentListener(this), this);
         pluginManager.registerEvents(new VoucherBoostListener(this), this);
 
-
-        logger.info("§aÉvénements enregistrés.");
+        pluginLogger.info("§aÉvénements enregistrés.");
     }
 
     /**
-     * Enregistre toutes les commandes
+     * PHASE 5: Enregistre les commandes
      */
     private void registerCommands() {
-        logger.info("§7Enregistrement des commandes...");
+        pluginLogger.info("§7Enregistrement des commandes...");
 
         // Commandes joueur
         getCommand("pickaxe").setExecutor(new PickaxeCommand(this));
@@ -293,9 +377,8 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("repair").setExecutor(new RepairCommand(this)); // NOUVELLE LIGNE
         getCommand("repair").setTabCompleter(new RepairCommand(this));
 
-        this.rankupCommand = new RankupCommand(this);
-        getCommand("rankup").setExecutor(this.rankupCommand);
-        getCommand("rankup").setTabCompleter(this.rankupCommand);
+        getCommand("rankup").setExecutor(new RankupCommand(this));
+        getCommand("rankup").setTabCompleter(new RankupCommand(this));
 
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
@@ -335,16 +418,16 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("giveboost").setTabCompleter(new GiveBoostCommand(this));
 
         getCommand("autominer").setExecutor(new AutominerCommand(this));
+        getCommand("adminchat").setExecutor(new AdminChatCommand(this));
 
-
-        logger.info("§aCommandes enregistrées.");
+        pluginLogger.info("§aCommandes enregistrées.");
     }
 
     /**
-     * CORRIGÉ : Démarre toutes les tâches avec le nouveau système
+     * PHASE 6: Démarre les tâches asynchrones
      */
     private void startTasks() {
-        logger.info("§7Démarrage des tâches asynchrones...");
+        pluginLogger.info("§7Démarrage des tâches asynchrones...");
 
         // Récupère les intervalles depuis la config
         int actionBarInterval = getConfig().getInt("performance.task-intervals.action-bar-ticks", 5);
@@ -358,33 +441,33 @@ public final class PrisonTycoon extends JavaPlugin {
         if (getConfig().getBoolean("notifications.action-bar.enabled", true)) {
             actionBarTask = new ActionBarTask(this);
             actionBarTask.runTaskTimerAsynchronously(this, 0L, actionBarInterval);
-            logger.info("§7- ActionBarTask démarrée (nouveau système multi-notifications toutes les " + actionBarInterval + " ticks)");
+            pluginLogger.info("§7- ActionBarTask démarrée (nouveau système multi-notifications toutes les " + actionBarInterval + " ticks)");
         }
 
         if (getConfig().getBoolean("notifications.scoreboard.enabled", true)) {
             scoreboardTask = new ScoreboardTask(this);
             scoreboardTask.runTaskTimer(this, 0L, scoreboardInterval);
-            logger.info("§7- ScoreboardTask démarrée (gestion intégrée toutes les " + scoreboardInterval + " ticks)");
+            pluginLogger.info("§7- ScoreboardTask démarrée (gestion intégrée toutes les " + scoreboardInterval + " ticks)");
         }
 
         if (getConfig().getBoolean("notifications.chat.enabled", true)) {
             chatTask = new ChatTask(this);
             chatTask.runTaskTimerAsynchronously(this, chatInterval, chatInterval);
-            logger.info("§7- ChatTask démarrée (récapitulatif toutes les " + chatInterval + " ticks)");
+            pluginLogger.info("§7- ChatTask démarrée (récapitulatif toutes les " + chatInterval + " ticks)");
         }
 
         // Autres tâches existantes
         autoSaveTask = new AutoSaveTask(this);
         autoSaveTask.runTaskTimerAsynchronously(this, autoSaveInterval, autoSaveInterval);
-        logger.info("§7- AutoSaveTask démarrée (sauvegarde toutes les " + autoSaveInterval + " ticks)");
+        pluginLogger.info("§7- AutoSaveTask démarrée (sauvegarde toutes les " + autoSaveInterval + " ticks)");
 
         combustionDecayTask = new CombustionDecayTask(this);
         combustionDecayTask.runTaskTimer(this, 0L, combustionInterval);
-        logger.info("§7- CombustionDecayTask démarrée (décroissance corrigée toutes les " + combustionInterval + " ticks)");
+        pluginLogger.info("§7- CombustionDecayTask démarrée (décroissance corrigée toutes les " + combustionInterval + " ticks)");
 
         autoUpgradeTask = new AutoUpgradeTask(this);
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
-        logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
+        pluginLogger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
 
         autominerTask = new AutominerTask(this);
         autominerTask.runTaskTimerAsynchronously(this, 20L, 20L);
@@ -394,7 +477,7 @@ public final class PrisonTycoon extends JavaPlugin {
                 moderationManager.cleanupExpiredSanctions();
             }
         }, 12000L, 12000L); // Toutes les 10 minutes
-        logger.info("§7- Tâche de nettoyage automatique démarrée");
+        pluginLogger.info("§7- Tâche de nettoyage automatique démarrée");
 
         // NOUVELLE TÂCHE: Nettoyage des anciens logs (optionnel)
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
@@ -402,12 +485,31 @@ public final class PrisonTycoon extends JavaPlugin {
                 chatLogger.cleanOldLogs(30); // Garde 30 jours de logs
             }
         }, 86400L, 86400L); // Tous les jours
-        logger.info("§7- Tâche de nettoyage des logs démarrée");
-
-        logger.info("§aTâches asynchrones démarrées avec succès (nouveau système).");
+        pluginLogger.info("§7- Tâche de nettoyage des logs démarrée");
     }
 
-    // Getters pour accès aux managers
+    /**
+     * PHASE 7: Configure les métriques bStats
+     */
+    private void setupMetrics() {
+        if (getConfig().getBoolean("advanced.metrics.enabled", true)) {
+            pluginLogger.info("§7Phase 7: Métriques...");
+
+            metrics = new Metrics(this, 12345); // Remplacez par votre ID bStats
+
+            // Statistiques personnalisées
+            metrics.addCustomChart(new Metrics.SimplePie("luckperms_integration",
+                    () -> luckPermsEnabled ? "Enabled" : "Disabled"));
+            metrics.addCustomChart(new Metrics.SimplePie("vault_integration",
+                    () -> vaultEnabled ? "Enabled" : "Disabled"));
+            metrics.addCustomChart(new Metrics.SimplePie("worldguard_integration",
+                    () -> worldGuardEnabled ? "Enabled" : "Disabled"));
+            metrics.addCustomChart(new Metrics.SimplePie("essentialsx_integration",
+                    () -> essentialsEnabled ? "Enabled" : "Disabled"));
+
+            pluginLogger.info("§aMétriques bStats configurées.");
+        }
+    }
 
     /**
      * Arrête toutes les tâches
@@ -415,266 +517,115 @@ public final class PrisonTycoon extends JavaPlugin {
     private void stopTasks() {
         if (actionBarTask != null) {
             actionBarTask.cancel();
-            logger.debug("ActionBarTask arrêtée");
+            pluginLogger.debug("ActionBarTask arrêtée");
         }
         if (scoreboardTask != null) {
             scoreboardTask.cancel();
-            logger.debug("ScoreboardTask arrêtée");
+            pluginLogger.debug("ScoreboardTask arrêtée");
         }
         if (chatTask != null) {
             chatTask.cancel();
-            logger.debug("ChatTask arrêtée");
+            pluginLogger.debug("ChatTask arrêtée");
         }
         if (autoSaveTask != null) {
             autoSaveTask.cancel();
-            logger.debug("AutoSaveTask arrêtée");
+            pluginLogger.debug("AutoSaveTask arrêtée");
         }
         if (combustionDecayTask != null) {
             combustionDecayTask.cancel();
-            logger.debug("CombustionDecayTask arrêtée");
+            pluginLogger.debug("CombustionDecayTask arrêtée");
         }
         if (autoUpgradeTask != null) {
             autoUpgradeTask.cancel();
-            logger.debug("AutoUpgradeTask arrêtée");
+            pluginLogger.debug("AutoUpgradeTask arrêtée");
         }
         if (moderationManager != null) {
             moderationManager.cleanupExpiredSanctions();
-            logger.info("§7ModerationManager nettoyé");
+            pluginLogger.info("§7ModerationManager nettoyé");
         }
         if (permissionManager != null) {
             permissionManager.cleanup();
         }
         if (autominerTask != null) {
             autominerTask.cancel();
-            getPluginLogger().info("§7Tâche d'automineur arrêtée.");
         }
     }
 
-    public ConfigManager getConfigManager() {
-        return configManager;
-    }
-
-    public PlayerDataManager getPlayerDataManager() {
-        return playerDataManager;
-    }
-
-    public MineManager getMineManager() {
-        return mineManager;
-    }
-
-    public EnchantmentManager getEnchantmentManager() {
-        return enchantmentManager;
-    }
-
-    public PickaxeManager getPickaxeManager() {
-        return pickaxeManager;
-    }
-
-    public EconomyManager getEconomyManager() {
-        return economyManager;
-    }
-
-    public NotificationManager getNotificationManager() {
-        return notificationManager;
-    }
-
-    public Logger getPluginLogger() {
-        return logger;
-    }
-
-    public AutoUpgradeTask getAutoUpgradeTask() {
-        return autoUpgradeTask;
-    }
-
-    // Getters pour les tâches séparées
-
-    public ActionBarTask getActionBarTask() {
-        return actionBarTask;
-    }
-
-    public ScoreboardTask getScoreboardTask() {
-        return scoreboardTask;
-    }
-
-    public ChatTask getChatTask() {
-        return chatTask;
-    }
-
-    // Getters pour les GUIs
-
-    public EnchantmentMenu getMainMenuGUI() {
-        return mainMenuGUI;
-    }
-
-    public CategoryMenuGUI getCategoryMenuGUI() {
-        return categoryMenuGUI;
-    }
-
-    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() {
-        return enchantmentUpgradeGUI;
-    }
-
-    public EnchantmentBookManager getEnchantmentBookManager() {
-        return enchantmentBookManager;
-    }
-
-    public EnchantmentBookGUI getEnchantmentBookGUI() {
-        return enchantmentBookGUI;
-    }
-
-    public PetsMenuGUI getPetsMenuGUI() {
-        return petsMenuGUI;
-    }
-
-    public PickaxeRepairGUI getPickaxeRepairMenu() {
-        return pickaxeRepairGUI;
-    }
-
     /**
-     * Getter pour le manager des conteneurs
+     * Nettoie les intégrations externes
      */
-    public ContainerManager getContainerManager() {
-        return containerManager;
+    private void cleanupIntegrations() {
+        // Rien de spécial à nettoyer car intégrations natives
+        luckPermsAPI = null;
+        vaultEconomy = null;
+        worldGuardPlugin = null;
+        essentialsAPI = null;
     }
 
-    /**
-     * Getter pour le GUI des conteneurs
-     */
-    public ContainerGUI getContainerGUI() {
-        return containerGUI;
+    // === GETTERS STATIQUES ===
+    public static PrisonTycoon getInstance() {
+        return instance;
     }
 
-    public ContainerFilterGUI getContainerFilterGUI() {
-        return containerFilterGUI;
-    }
+    // === GETTERS INTÉGRATIONS NATIVES ===
+    public LuckPerms getLuckPermsAPI() { return luckPermsAPI; }
+    public Economy getVaultEconomy() { return vaultEconomy; }
+    public WorldGuardPlugin getWorldGuardPlugin() { return worldGuardPlugin; }
+    public IEssentials getEssentialsAPI() { return essentialsAPI; }
 
-    public RankupCommand getRankupCommand() {
-        return rankupCommand;
-    }
+    public boolean isLuckPermsEnabled() { return luckPermsEnabled; }
+    public boolean isVaultEnabled() { return vaultEnabled; }
+    public boolean isWorldGuardEnabled() { return worldGuardEnabled; }
+    public boolean isEssentialsEnabled() { return essentialsEnabled; }
 
-    public CristalManager getCristalManager() {
-        return cristalManager;
-    }
+    // === GETTERS MANAGERS (conservés pour compatibilité) ===
+    public Logger getPluginLogger() { return pluginLogger; }
+    public ChatLogger getChatLogger() { return chatLogger; }
+    public ConfigManager getConfigManager() { return configManager; }
+    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
+    public MineManager getMineManager() { return mineManager; }
+    public EnchantmentManager getEnchantmentManager() { return enchantmentManager; }
+    public PickaxeManager getPickaxeManager() { return pickaxeManager; }
+    public EconomyManager getEconomyManager() { return economyManager; }
+    public NotificationManager getNotificationManager() { return notificationManager; }
+    public ContainerManager getContainerManager() { return containerManager; }
+    public GlobalBonusManager getGlobalBonusManager() { return globalBonusManager; }
+    public TabManager getTabManager() { return tabManager; }
+    public ModerationManager getModerationManager() { return moderationManager; }
+    public VipManager getVipManager() { return vipManager; }
+    public PermissionManager getPermissionManager() { return permissionManager; }
+    public EnchantmentBookManager getEnchantmentBookManager() { return enchantmentBookManager; }
+    public ProfessionManager getProfessionManager() { return professionManager; }
+    public PrestigeManager getPrestigeManager() { return prestigeManager; }
+    public ReputationManager getReputationManager() { return reputationManager; }
+    public BlackMarketManager getBlackMarketManager() { return blackMarketManager; }
+    public CristalManager getCristalManager() { return cristalManager; }
+    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() { return weaponArmorEnchantmentManager; }
+    public VoucherManager getVoucherManager() { return voucherManager; }
+    public BoostManager getBoostManager() { return boostManager; }
+    public AutominerManager getAutominerManager() { return autominerManager; }
 
-    public CristalBonusHelper getCristalBonusHelper() {
-        return cristalBonusHelper;
-    }
+    // === GETTERS UTILITAIRES ===
+    public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
+    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() { return uniqueEnchantmentBookFactory; }
 
-    public CristalGUI getCristalGUI() {
-        return cristalGUI;
-    }
-
-    public GlobalBonusManager getGlobalBonusManager() {
-        return globalBonusManager;
-    }
-
-    public TabManager getTabManager() {
-        return tabManager;
-    }
-
-    /**
-     * Obtient le gestionnaire de modération
-     */
-    public ModerationManager getModerationManager() {
-        return moderationManager;
-    }
-
-    /**
-     * Obtient le gestionnaire de logs du chat
-     */
-    public ChatLogger getChatLogger() {
-        return chatLogger;
-    }
-
-    /**
-     * Obtient le gestionnaire des VIP
-     */
-    public VipManager getVipManager() {
-        return vipManager;
-    }
-
-    public PermissionManager getPermissionManager() {
-        return permissionManager;
-    }
-
-    /**
-     * Obtient le gestionnaire des métiers
-     */
-    public ProfessionManager getProfessionManager() {
-        return professionManager;
-    }
-
-    /**
-     * Obtient l'interface graphique des métiers
-     */
-    public ProfessionGUI getProfessionGUI() {
-        return professionGUI;
-    }
-
-    /**
-     * Obtient l'interface graphique des métiers
-     */
-    public ProfessionRewardsGUI getProfessionRewardsGUI() {
-        return professionRewardsGUI;
-    }
-
-    public PrestigeManager getPrestigeManager() {
-        return prestigeManager;
-    }
-
-    public PrestigeGUI getPrestigeGUI() {
-        return prestigeGUI;
-    }
-
-    public ReputationManager getReputationManager() {
-        return reputationManager;
-    }
-
-    public BlackMarketManager getBlackMarketManager() {
-        return blackMarketManager;
-    }
-
-    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() {
-        return weaponArmorEnchantmentManager;
-    }
-
-    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() {
-        return weaponArmorEnchantGUI;
-    }
-
-    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() {
-        return uniqueEnchantmentBookFactory;
-    }
-
-    public VoucherManager getVoucherManager() {
-        return voucherManager;
-    }
-
-    public BoostManager getBoostManager() {
-        return boostManager;
-    }
-
-    public BoostGUI getBoostGUI() {
-        return boostGUI;
-    }
-    public AutominerManager getAutominerManager() {
-        return autominerManager;
-    }
-
-    public AutominerGUI getAutominerGUI() {
-        return autominerGUI;
-    }
-
-    public AutominerEnchantGUI getAutominerEnchantGUI() {
-        return autominerEnchantGUI;
-    }
-
-    public AutominerCondHeadGUI getAutominerCondHeadGUI() {
-        return autominerCondHeadGUI;
-    }
-
-    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
-        return autominerEnchantUpgradeGUI;
-    }
+    // === GETTERS GUI ===
+    public EnchantmentMenu getMainMenuGUI() { return mainMenuGUI; }
+    public CategoryMenuGUI getCategoryMenuGUI() { return categoryMenuGUI; }
+    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
+    public CristalGUI getCristalGUI() { return cristalGUI; }
+    public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
+    public PetsMenuGUI getPetsMenuGUI() { return petsMenuGUI; }
+    public PickaxeRepairGUI getPickaxeRepairGUI() { return pickaxeRepairGUI; }
+    public ContainerGUI getContainerGUI() { return containerGUI; }
+    public ContainerFilterGUI getContainerFilterGUI() { return containerFilterGUI; }
+    public ProfessionGUI getProfessionGUI() { return professionGUI; }
+    public ProfessionRewardsGUI getProfessionRewardsGUI() { return professionRewardsGUI; }
+    public PrestigeGUI getPrestigeGUI() { return prestigeGUI; }
+    public BoostGUI getBoostGUI() { return boostGUI; }
+    public AutominerGUI getAutominerGUI() { return autominerGUI; }
+    public AutominerEnchantGUI getAutominerEnchantGUI() { return autominerEnchantGUI; }
+    public AutominerCondHeadGUI getAutominerCondHeadGUI() { return autominerCondHeadGUI; }
+    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() { return autominerEnchantUpgradeGUI; }
+    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
 }
-

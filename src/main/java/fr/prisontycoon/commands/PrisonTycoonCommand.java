@@ -122,7 +122,7 @@ public class PrisonTycoonCommand implements CommandExecutor, TabCompleter {
         var balance = plugin.getEconomyManager().getBalance(player);
 
         player.sendMessage("§e📊 Vos statistiques:");
-        player.sendMessage("§7Coins: §6" + NumberFormatter.format(balance.getCoins()));
+        player.sendMessage("§7Coins: §6" + NumberFormatter.format(balance.));
         player.sendMessage("§7Tokens: §e" + NumberFormatter.format(balance.getTokens()));
         player.sendMessage("§7Expérience: §a" + NumberFormatter.format(balance.getExperience()));
         player.sendMessage("§7Blocs minés: §b" + NumberFormatter.format(playerData.getTotalBlocksMined()));

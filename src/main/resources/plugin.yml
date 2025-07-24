@@ -1,9 +1,13 @@
 name: PrisonTycoon
-version: 2.0.0
+version: 1.0-OPTIMIZED
+description: Advanced Prison Plugin with Modern Integrations
+author: PrisonTycoon Team
+website: https://github.com/PrisonTycoon/PrisonTycoon
 main: fr.prisontycoon.PrisonTycoon
-api-version: 1.20
-author: PrisonCore
-description: Plugin de prison avec système de prestige, mines spéciales et métiers
+
+# Intégrations modernes - Soft dependencies pour éviter les erreurs
+softdepend: [LuckPerms, Vault, WorldGuard, WorldEdit, Essentials, PlaceholderAPI]
+
 depend:
   - Multiverse-Core
 
@@ -348,10 +352,3 @@ startup: POSTWORLD
 
 # Compatibilité
 depend-bootstrap: false
-
-# Dépendances (optionnelles)
-softdepend: [ Vault, PlaceholderAPI ]
-
-# Site web et auteur
-website: https://github.com/prisontycoon
-authors: [ PrisonCore ]

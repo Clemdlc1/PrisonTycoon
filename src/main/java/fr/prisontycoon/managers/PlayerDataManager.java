@@ -946,7 +946,7 @@ public class PlayerDataManager {
         // Retire immédiatement si le joueur est en ligne
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null && player.isOnline()) {
-            plugin.getPermissionManager().detachPermission(player, permission);
+            plugin.getPermissionManager().removePermission(player, permission);
         }
 
         // NOUVEAU: Force une sauvegarde immédiate pour les permissions critiques

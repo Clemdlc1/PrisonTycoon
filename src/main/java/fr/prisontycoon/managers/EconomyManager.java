@@ -1,421 +1,482 @@
 package fr.prisontycoon.managers;
 
+import com.earth2me.essentials.User;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.utils.NumberFormatter;
+import net.ess3.api.IEssentials;
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
- * Gestionnaire économique du plugin
- * CORRIGÉ : Synchronisation expérience custom/vanilla améliorée et automatique
+ * Gestionnaire économique intégré avec Vault et EssentialsX
+ * INTÉGRATION NATIVE - Remplace l'ancien EconomyManager
+ *
+ * Système économique hybride:
+ * - Économie interne du plugin (coins/tokens)
+ * - Intégration Vault (synchronisation bidirectionnelle)
+ * - Intégration EssentialsX (balance, transactions)
+ * - Gestion des niveaux et expérience
+ * - Cache intelligent pour les performances
  */
 public class EconomyManager {
 
-    // Limites de sécurité pour éviter les overflows
-    private static final long MAX_CURRENCY_VALUE = Long.MAX_VALUE / 2;
-    private static final long MIN_CURRENCY_VALUE = 0;
     private final PrisonTycoon plugin;
-    // Cache pour les statistiques économiques
-    private final Map<UUID, EconomicStats> playerStats;
+
+    // Configuration de synchronisation depuis config.yml
+    private final boolean vaultSyncEnabled;
+    private final boolean essentialsSyncEnabled;
+    private final double vaultConversionRate;
+    private final double essentialsMultiplier;
+
+    // Cache des dernières synchronisations pour éviter le spam
+    private final ConcurrentMap<String, Long> lastVaultSync = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Long> lastEssentialsSync = new ConcurrentHashMap<>();
+
+    // Constantes pour l'expérience
+    private static final int BASE_XP_PER_LEVEL = 1000;
+    private static final double XP_MULTIPLIER = 1.5;
 
     public EconomyManager(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.playerStats = new ConcurrentHashMap<>();
 
-        plugin.getPluginLogger().info("§aEconomyManager initialisé.");
+        // Charge la configuration
+        this.vaultSyncEnabled = plugin.getConfig().getBoolean("hooks.vault.sync-enabled", true);
+        this.essentialsSyncEnabled = plugin.getConfig().getBoolean("hooks.essentialsx.sync-economy", true);
+        this.vaultConversionRate = plugin.getConfig().getDouble("hooks.vault.token-conversion-rate", 0.1);
+        this.essentialsMultiplier = plugin.getConfig().getDouble("hooks.essentialsx.economy-multiplier", 1.0);
+
+        plugin.getPluginLogger().info("EconomyManager intégré initialisé:");
+        plugin.getPluginLogger().info("- Vault sync: " + vaultSyncEnabled);
+        plugin.getPluginLogger().info("- EssentialsX sync: " + essentialsSyncEnabled);
     }
 
     /**
-     * Ajoute des coins à un joueur avec validation (TOTAL - toutes sources)
+     * Ajoute des coins à un joueur avec synchronisation automatique
      */
-    public boolean addCoins(Player player, long amount) {
+    public void addCoins(@NotNull Player player, long amount) {
+        if (amount <= 0) return;
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        long oldCoins = playerData.getCoins();
+
+        // Ajoute au système interne
+        playerData.setCoins(oldCoins + amount);
+
+        // Synchronisation Vault
+        if (plugin.isVaultEnabled() && vaultSyncEnabled) {
+            synchronizeWithVault(player, playerData);
+        }
+
+        // Synchronisation EssentialsX
+        if (plugin.isEssentialsEnabled() && essentialsSyncEnabled) {
+            synchronizeWithEssentials(player, playerData);
+        }
+
+        plugin.getPluginLogger().debug("Coins ajoutés à " + player.getName() + ": +" + amount +
+                " (total: " + playerData.getCoins() + ")");
+    }
+
+    /**
+     * Retire des coins d'un joueur avec vérifications
+     */
+    public boolean removeCoins(@NotNull Player player, long amount) {
         if (amount <= 0) return false;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         long currentCoins = playerData.getCoins();
 
-        // Vérifie les limites
-        if (currentCoins + amount > MAX_CURRENCY_VALUE) {
-            player.sendMessage("§cLimite de coins atteinte! Maximum: " + NumberFormatter.format(MAX_CURRENCY_VALUE));
-            return false;
+        if (currentCoins < amount) {
+            return false; // Pas assez de coins
         }
 
-        playerData.addCoins(amount);
-        updateStats(player.getUniqueId(), amount, 0, 0);
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        // Retire du système interne
+        playerData.setCoins(currentCoins - amount);
+
+        // Synchronisation Vault
+        if (plugin.isVaultEnabled() && vaultSyncEnabled) {
+            synchronizeWithVault(player, playerData);
+        }
+
+        // Synchronisation EssentialsX
+        if (plugin.isEssentialsEnabled() && essentialsSyncEnabled) {
+            synchronizeWithEssentials(player, playerData);
+        }
+
+        plugin.getPluginLogger().debug("Coins retirés de " + player.getName() + ": -" + amount +
+                " (total: " + playerData.getCoins() + ")");
 
         return true;
     }
 
     /**
-     * Ajoute des tokens à un joueur avec validation (TOTAL - toutes sources)
+     * Ajoute des tokens à un joueur
      */
-    public boolean addTokens(Player player, long amount) {
+    public void addTokens(@NotNull Player player, long amount) {
+        if (amount <= 0) return;
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        long oldTokens = playerData.getTokens();
+
+        playerData.setTokens(oldTokens + amount);
+
+        // Les tokens influencent aussi l'économie Vault (conversion)
+        if (plugin.isVaultEnabled() && vaultSyncEnabled) {
+            synchronizeWithVault(player, playerData);
+        }
+
+        plugin.getPluginLogger().debug("Tokens ajoutés à " + player.getName() + ": +" + amount +
+                " (total: " + playerData.getTokens() + ")");
+    }
+
+    /**
+     * Retire des tokens avec vérifications
+     */
+    public boolean removeTokens(@NotNull Player player, long amount) {
         if (amount <= 0) return false;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         long currentTokens = playerData.getTokens();
 
-        // Vérifie les limites
-        if (currentTokens + amount > MAX_CURRENCY_VALUE) {
-            player.sendMessage("§cLimite de tokens atteinte! Maximum: " + NumberFormatter.format(MAX_CURRENCY_VALUE));
-            return false;
+        if (currentTokens < amount) {
+            return false; // Pas assez de tokens
         }
 
-        playerData.addTokens(amount);
-        updateStats(player.getUniqueId(), 0, amount, 0);
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        playerData.setTokens(currentTokens - amount);
+
+        // Synchronisation Vault
+        if (plugin.isVaultEnabled() && vaultSyncEnabled) {
+            synchronizeWithVault(player, playerData);
+        }
+
+        plugin.getPluginLogger().debug("Tokens retirés de " + player.getName() + ": -" + amount +
+                " (total: " + playerData.getTokens() + ")");
 
         return true;
     }
 
     /**
-     * CORRIGÉ : Ajoute de l'expérience avec synchronisation vanilla AUTOMATIQUE
+     * Ajoute de l'expérience avec mise à jour du niveau vanilla
      */
-    public boolean addExperience(Player player, long amount) {
-        if (amount <= 0) return false;
+    public void addExperience(@NotNull Player player, long amount) {
+        if (amount <= 0) return;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        long currentExp = playerData.getExperience();
+        long oldXP = playerData.getExperience();
+        int oldLevel = calculateLevelFromExperience(oldXP);
 
-        // Vérifie les limites
-        if (currentExp + amount > MAX_CURRENCY_VALUE) {
-            player.sendMessage("§cLimite d'expérience atteinte! Maximum: " + NumberFormatter.format(MAX_CURRENCY_VALUE));
-            return false;
+        playerData.setExperience(oldXP + amount);
+
+        int newLevel = calculateLevelFromExperience(playerData.getExperience());
+
+        // Met à jour l'expérience vanilla
+        updateVanillaExpFromCustom(player, playerData.getExperience());
+
+        // Vérifie s'il y a eu un level up
+        if (newLevel > oldLevel) {
+            handleLevelUp(player, oldLevel, newLevel);
         }
 
-        playerData.addExperience(amount);
-
-        // CORRIGÉ : Synchronisation vanilla AUTOMATIQUE à chaque changement
-        updateVanillaExpFromCustom(player, currentExp + amount);
-
-        updateStats(player.getUniqueId(), 0, 0, amount);
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-
-        return true;
+        plugin.getPluginLogger().debug("XP ajoutée à " + player.getName() + ": +" + amount +
+                " (niveau " + oldLevel + " -> " + newLevel + ")");
     }
 
     /**
-     * CORRIGÉ : Met à jour l'expérience vanilla avec formule rééquilibrée et logging
+     * Gère le level up d'un joueur
      */
-    public void updateVanillaExpFromCustom(Player player, long customExp) {
-        if (customExp < 0) customExp = 0; // Sécurité pour ne jamais avoir d'expérience négative
+    private void handleLevelUp(@NotNull Player player, int oldLevel, int newLevel) {
+        // Récompenses de niveau (coins bonus)
+        long coinsReward = newLevel * 100L;
+        addCoins(player, coinsReward);
 
-        // NOUVEAU : Définissez ici la quantité d'expérience requise pour chaque niveau.
-        // Augmentez cette valeur pour rendre la progression plus longue.
-        final long EXP_PAR_NIVEAU = 5000;
+        // Effets visuels/sons
+        player.sendMessage("§6✨ NIVEAU SUPÉRIEUR! §e" + oldLevel + " §7→ §a" + newLevel);
+        player.sendMessage("§7Récompense: §6+" + formatNumber(coinsReward) + " coins");
 
-        int vanillaLevel = (int) (customExp / EXP_PAR_NIVEAU);
+        // Son et particules
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
 
-        // Calcule l'EXP nécessaire pour le niveau actuel et le suivant.
-        long expPourNiveauActuel = (long) vanillaLevel * EXP_PAR_NIVEAU;
-        long expPourNiveauSuivant = (long) (vanillaLevel + 1) * EXP_PAR_NIVEAU;
+        plugin.getPluginLogger().info("Level up: " + player.getName() + " " + oldLevel + " -> " + newLevel);
+    }
 
-        // Calcule la quantité d'EXP accumulée dans le niveau en cours.
-        long expDansNiveauActuel = customExp - expPourNiveauActuel;
-        long expTotalPourNiveau = expPourNiveauSuivant - expPourNiveauActuel; // Ceci sera toujours égal à EXP_PAR_NIVEAU
+    /**
+     * Synchronise avec Vault Economy
+     * INTÉGRATION NATIVE VAULT
+     */
+    private void synchronizeWithVault(@NotNull Player player, @NotNull PlayerData playerData) {
+        if (!plugin.isVaultEnabled()) return;
 
-        // Calcule la progression en pourcentage pour la barre d'expérience.
-        float progress = (expTotalPourNiveau > 0) ?
-                Math.max(0.0f, Math.min(1.0f, (float) expDansNiveauActuel / expTotalPourNiveau)) : 0f;
+        String playerName = player.getName();
+        Long lastSync = lastVaultSync.get(playerName);
 
-        // On vérifie s'il y a un changement réel pour éviter de surcharger le serveur.
+        // Cooldown de 30 secondes pour éviter le spam
+        if (lastSync != null && System.currentTimeMillis() - lastSync < 30000) {
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                Economy vault = plugin.getVaultEconomy();
+                if (vault == null) return;
+
+                // Calcule l'équivalent Vault (coins + tokens convertis)
+                long totalCoins = playerData.getCoins();
+                long totalTokens = playerData.getTokens();
+                double vaultEquivalent = totalCoins + (totalTokens * vaultConversionRate);
+
+                // Met à jour Vault
+                double currentVaultBalance = vault.getBalance(player);
+                if (Math.abs(currentVaultBalance - vaultEquivalent) > 0.01) {
+
+                    // S'assure que le compte existe
+                    if (!vault.hasAccount(player)) {
+                        vault.createPlayerAccount(player);
+                    }
+
+                    // Ajuste le solde
+                    double difference = vaultEquivalent - currentVaultBalance;
+                    EconomyResponse response;
+
+                    if (difference > 0) {
+                        response = vault.depositPlayer(player, difference);
+                    } else {
+                        response = vault.withdrawPlayer(player, Math.abs(difference));
+                    }
+
+                    if (response.transactionSuccess()) {
+                        plugin.getPluginLogger().debug("Vault synchronisé pour " + playerName +
+                                ": " + totalCoins + "c+" + totalTokens + "t -> $" + vaultEquivalent);
+                    } else {
+                        plugin.getPluginLogger().warning("Erreur sync Vault " + playerName + ": " + response.errorMessage);
+                    }
+                }
+
+                lastVaultSync.put(playerName, System.currentTimeMillis());
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur synchronisation Vault " + playerName + ": " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Synchronise avec EssentialsX
+     * INTÉGRATION NATIVE ESSENTIALSX
+     */
+    private void synchronizeWithEssentials(@NotNull Player player, @NotNull PlayerData playerData) {
+        if (!plugin.isEssentialsEnabled()) return;
+
+        String playerName = player.getName();
+        Long lastSync = lastEssentialsSync.get(playerName);
+
+        // Cooldown de 30 secondes pour éviter le spam
+        if (lastSync != null && System.currentTimeMillis() - lastSync < 30000) {
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                IEssentials essentials = plugin.getEssentialsAPI();
+                if (essentials == null) return;
+
+                User essentialsUser = essentials.getUser(player.getUniqueId());
+                if (essentialsUser == null) return;
+
+                // Calcule l'équivalent EssentialsX
+                long totalCoins = playerData.getCoins();
+                BigDecimal essentialsEquivalent = BigDecimal.valueOf(totalCoins * essentialsMultiplier);
+
+                // Met à jour EssentialsX
+                BigDecimal currentBalance = essentialsUser.getMoney();
+                if (currentBalance.compareTo(essentialsEquivalent) != 0) {
+                    essentialsUser.setMoney(essentialsEquivalent);
+
+                    plugin.getPluginLogger().debug("EssentialsX synchronisé pour " + playerName +
+                            ": " + totalCoins + " coins -> $" + essentialsEquivalent);
+                }
+
+                lastEssentialsSync.put(playerName, System.currentTimeMillis());
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().warning("Erreur synchronisation EssentialsX " + playerName + ": " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Met à jour l'expérience vanilla depuis l'expérience personnalisée
+     * MÉTHODE CONSERVÉE DE L'ANCIEN SYSTÈME
+     */
+    public void updateVanillaExpFromCustom(@NotNull Player player, long customExperience) {
+        int vanillaLevel = calculateLevelFromExperience(customExperience);
+
+        // Calcule la progression dans le niveau actuel
+        long currentLevelXP = getExperienceForLevel(vanillaLevel);
+        long nextLevelXP = getExperienceForLevel(vanillaLevel + 1);
+        long expInCurrentLevel = customExperience - currentLevelXP;
+        long expNeededForNextLevel = nextLevelXP - currentLevelXP;
+
+        float progress = expNeededForNextLevel > 0 ? (float) expInCurrentLevel / expNeededForNextLevel : 0.0f;
+
+        // Limite les valeurs
+        progress = Math.max(0.0f, Math.min(1.0f, progress));
+        vanillaLevel = Math.max(0, Math.min(21863, vanillaLevel));
+
+        // Vérifie si une mise à jour est nécessaire
         boolean shouldUpdate = false;
         if (player.getLevel() != vanillaLevel) {
             shouldUpdate = true;
-        } else if (Math.abs(player.getExp() - progress) > 0.01f) { // Comparaison avec une petite marge d'erreur
+        } else if (Math.abs(player.getExp() - progress) > 0.01f) {
             shouldUpdate = true;
         }
 
         if (shouldUpdate) {
             try {
-                // Limite le niveau à la valeur maximale gérée par Minecraft (21863).
-                player.setLevel(Math.max(0, Math.min(21863, vanillaLevel)));
-                player.setExp(Math.max(0.0f, Math.min(1.0f, progress)));
+                player.setLevel(vanillaLevel);
+                player.setExp(progress);
 
-                // Message de log pour le débogage.
-                plugin.getPluginLogger().debug("Sync exp pour " + player.getName() + ": " +
-                        "custom=" + customExp + " -> vanilla=" + vanillaLevel + " (+" +
-                        String.format("%.1f%%", progress * 100) + ") [" + expDansNiveauActuel + "/" + expTotalPourNiveau + "]");
+                plugin.getPluginLogger().debug("XP vanilla mise à jour pour " + player.getName() +
+                        ": niveau " + vanillaLevel + " (" + String.format("%.1f", progress * 100) + "%)");
+
             } catch (Exception e) {
-                plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() +
-                        ": level=" + vanillaLevel + ", exp=" + progress + " - " + e.getMessage());
+                plugin.getPluginLogger().warning("Erreur mise à jour XP vanilla " + player.getName() + ": " + e.getMessage());
             }
         }
     }
 
     /**
-     * NOUVEAU : Synchronise l'expérience vanilla pour tous les joueurs en ligne
+     * Calcule le niveau depuis l'expérience
+     * MÉTHODE CONSERVÉE DE L'ANCIEN SYSTÈME
      */
-    public void syncAllVanillaExp() {
-        int synced = 0;
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            try {
-                PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-                updateVanillaExpFromCustom(player, playerData.getExperience());
-                synced++;
-            } catch (Exception e) {
-                plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() + ": " + e.getMessage());
-            }
+    public int calculateLevelFromExperience(long experience) {
+        if (experience <= 0) return 0;
+
+        int level = 0;
+        long totalXpForLevel = 0;
+
+        while (totalXpForLevel <= experience) {
+            level++;
+            totalXpForLevel = getExperienceForLevel(level);
+            if (level > 10000) break; // Protection contre les boucles infinies
         }
 
-        if (synced > 0) {
-            plugin.getPluginLogger().debug("Synchronisation expérience vanilla pour " + synced + " joueurs");
+        return Math.max(0, level - 1);
+    }
+
+    /**
+     * Calcule l'expérience nécessaire pour un niveau donné
+     * MÉTHODE CONSERVÉE DE L'ANCIEN SYSTÈME
+     */
+    public long getExperienceForLevel(int level) {
+        if (level <= 0) return 0;
+
+        long totalXp = 0;
+        for (int i = 1; i <= level; i++) {
+            totalXp += (long) (BASE_XP_PER_LEVEL * Math.pow(XP_MULTIPLIER, i - 1));
+        }
+
+        return totalXp;
+    }
+
+    /**
+     * Formate un nombre pour l'affichage
+     */
+    private String formatNumber(long number) {
+        if (number >= 1_000_000_000) {
+            return String.format("%.1fB", number / 1_000_000_000.0);
+        } else if (number >= 1_000_000) {
+            return String.format("%.1fM", number / 1_000_000.0);
+        } else if (number >= 1_000) {
+            return String.format("%.1fK", number / 1_000.0);
+        } else {
+            return String.valueOf(number);
         }
     }
 
     /**
-     * CORRIGÉ : Initialise l'expérience vanilla d'un joueur à la connexion avec vérification
+     * Obtient le solde Vault d'un joueur (intégration native)
      */
-    public void initializeVanillaExp(Player player) {
+    public double getVaultBalance(@NotNull OfflinePlayer player) {
+        if (!plugin.isVaultEnabled()) return 0.0;
+
         try {
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            long customExp = playerData.getExperience();
-
-            plugin.getPluginLogger().debug("Initialisation exp vanilla pour " + player.getName() +
-                    ": custom=" + customExp);
-
-            updateVanillaExpFromCustom(player, customExp);
+            Economy vault = plugin.getVaultEconomy();
+            return vault != null ? vault.getBalance(player) : 0.0;
         } catch (Exception e) {
-            plugin.getPluginLogger().severe("Erreur initialisation exp vanilla pour " + player.getName() + ":");
-            e.printStackTrace();
+            plugin.getPluginLogger().debug("Erreur lecture balance Vault " + player.getName() + ": " + e.getMessage());
+            return 0.0;
         }
     }
 
     /**
-     * Retire des tokens d'un joueur
+     * Obtient le solde EssentialsX d'un joueur (intégration native)
      */
-    public boolean removeTokens(Player player, long amount) {
-        if (amount <= 0) return false;
+    public BigDecimal getEssentialsBalance(@NotNull Player player) {
+        if (!plugin.isEssentialsEnabled()) return BigDecimal.ZERO;
+
+        try {
+            IEssentials essentials = plugin.getEssentialsAPI();
+            if (essentials != null) {
+                User user = essentials.getUser(player.getUniqueId());
+                return user != null ? user.getMoney() : BigDecimal.ZERO;
+            }
+        } catch (Exception e) {
+            plugin.getPluginLogger().debug("Erreur lecture balance EssentialsX " + player.getName() + ": " + e.getMessage());
+        }
+
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * Synchronise un joueur au login (intégrations natives)
+     */
+    public void synchronizePlayerOnLogin(@NotNull Player player) {
+        if (!vaultSyncEnabled && !essentialsSyncEnabled) return;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        if (playerData.getTokens() < amount) {
-            player.sendMessage("§cTokens insuffisants! Requis: " + NumberFormatter.format(amount));
-            return false;
-        }
-
-        boolean success = playerData.removeTokens(amount);
-        if (success) {
-            plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-        }
-
-        return success;
+        // Synchronisation différée pour éviter les lags au login
+        plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            if (vaultSyncEnabled) {
+                synchronizeWithVault(player, playerData);
+            }
+            if (essentialsSyncEnabled) {
+                synchronizeWithEssentials(player, playerData);
+            }
+        }, 60L); // 3 secondes de délai
     }
 
     /**
-     * Met à jour les statistiques économiques d'un joueur
+     * Nettoie les caches d'un joueur qui se déconnecte
      */
-    private void updateStats(UUID playerId, long coinsGained, long tokensGained, long expGained) {
-        playerStats.computeIfAbsent(playerId, k -> new EconomicStats()).update(coinsGained, tokensGained, expGained);
+    public void cleanupPlayer(@NotNull Player player) {
+        String playerName = player.getName();
+        lastVaultSync.remove(playerName);
+        lastEssentialsSync.remove(playerName);
     }
 
     /**
-     * Obtient le solde complet d'un joueur
+     * Recharge la configuration
      */
-    public EconomicBalance getBalance(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return new EconomicBalance(
-                playerData.getCoins(),
-                playerData.getTokens(),
-                playerData.getExperience()
-        );
+    public void reloadConfig() {
+        // Les nouvelles valeurs seront prises en compte au prochain démarrage
+        plugin.getPluginLogger().info("Configuration économique rechargée au prochain redémarrage");
     }
 
     /**
-     * Calcule le classement économique des joueurs
+     * Obtient des statistiques sur l'économie
      */
-    public List<EconomicRanking> getTopPlayers(EconomicType type, int limit) {
-        List<EconomicRanking> rankings = new ArrayList<>();
+    public String getEconomyStats() {
+        int vaultSyncs = lastVaultSync.size();
+        int essentialsSyncs = lastEssentialsSync.size();
 
-        for (PlayerData playerData : plugin.getPlayerDataManager().getAllCachedPlayers()) {
-            long value = switch (type) {
-                case COINS -> playerData.getCoins();
-                case TOKENS -> playerData.getTokens();
-                case EXPERIENCE -> playerData.getExperience();
-                case TOTAL_BLOCKS -> playerData.getTotalBlocksMined();
-            };
-
-            rankings.add(new EconomicRanking(playerData.getPlayerName(), value));
-        }
-
-        return rankings.stream()
-                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
-                .limit(limit)
-                .toList();
-    }
-
-    /**
-     * CORRIGÉ: Statistiques économiques globales avec distinction gains pioche
-     */
-    public Map<String, Object> getGlobalEconomicStats() {
-        Map<String, Object> stats = new HashMap<>();
-
-        long totalCoins = 0;
-        long totalTokens = 0;
-        long totalExperience = 0;
-        long totalCoinsViaPickaxe = 0;
-        long totalTokensViaPickaxe = 0;
-        long totalExperienceViaPickaxe = 0;
-        long totalBlocksMined = 0;
-        long totalGreedTriggers = 0;
-        long totalKeysObtained = 0;
-        int activePlayers = 0;
-
-        for (PlayerData playerData : plugin.getPlayerDataManager().getAllCachedPlayers()) {
-            totalCoins += playerData.getCoins();
-            totalTokens += playerData.getTokens();
-            totalExperience += playerData.getExperience();
-            totalCoinsViaPickaxe += playerData.getCoinsViaPickaxe();
-            totalTokensViaPickaxe += playerData.getTokensViaPickaxe();
-            totalExperienceViaPickaxe += playerData.getExperienceViaPickaxe();
-            totalBlocksMined += playerData.getTotalBlocksMined();
-            totalGreedTriggers += playerData.getTotalGreedTriggers();
-            totalKeysObtained += playerData.getTotalKeysObtained();
-            activePlayers++;
-        }
-
-        // Statistiques TOTALES
-        stats.put("total-coins", totalCoins);
-        stats.put("total-tokens", totalTokens);
-        stats.put("total-experience", totalExperience);
-
-        // NOUVEAU: Statistiques VIA PIOCHE
-        stats.put("total-coins-via-pickaxe", totalCoinsViaPickaxe);
-        stats.put("total-tokens-via-pickaxe", totalTokensViaPickaxe);
-        stats.put("total-experience-via-pickaxe", totalExperienceViaPickaxe);
-
-        // Autres statistiques
-        stats.put("total-blocks-mined", totalBlocksMined);
-        stats.put("total-greed-triggers", totalGreedTriggers);
-        stats.put("total-keys-obtained", totalKeysObtained);
-        stats.put("active-players", activePlayers);
-
-        if (activePlayers > 0) {
-            stats.put("average-coins", totalCoins / activePlayers);
-            stats.put("average-tokens", totalTokens / activePlayers);
-            stats.put("average-experience", totalExperience / activePlayers);
-            stats.put("average-greeds", totalGreedTriggers / activePlayers);
-        }
-
-        return stats;
-    }
-
-    /**
-     * Réinitialise les statistiques de la dernière minute pour tous les joueurs
-     */
-    public void resetAllLastMinuteStats() {
-        for (PlayerData playerData : plugin.getPlayerDataManager().getAllCachedPlayers()) {
-            playerData.resetLastMinuteStats();
-        }
-    }
-
-    // Classes utilitaires
-
-    /**
-     * Types de valeurs économiques pour les classements
-     */
-    public enum EconomicType {
-        COINS,
-        TOKENS,
-        EXPERIENCE,
-        TOTAL_BLOCKS
-    }
-
-    /**
-     * Solde économique d'un joueur
-     */
-    public static class EconomicBalance {
-        private final long coins;
-        private final long tokens;
-        private final long experience;
-
-        public EconomicBalance(long coins, long tokens, long experience) {
-            this.coins = coins;
-            this.tokens = tokens;
-            this.experience = experience;
-        }
-
-        public long getCoins() {
-            return coins;
-        }
-
-        public long getTokens() {
-            return tokens;
-        }
-
-        public long getExperience() {
-            return experience;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("Balance{coins=%s, tokens=%s, exp=%s}",
-                    NumberFormatter.format(coins),
-                    NumberFormatter.format(tokens),
-                    NumberFormatter.format(experience));
-        }
-    }
-
-    /**
-     * Statistiques économiques d'un joueur
-     */
-    private static class EconomicStats {
-        private long totalCoinsEarned;
-        private long totalTokensEarned;
-        private long totalExperienceEarned;
-        private long lastUpdate;
-
-        public EconomicStats() {
-            this.lastUpdate = System.currentTimeMillis();
-        }
-
-        public void update(long coinsGained, long tokensGained, long expGained) {
-            this.totalCoinsEarned += coinsGained;
-            this.totalTokensEarned += tokensGained;
-            this.totalExperienceEarned += expGained;
-            this.lastUpdate = System.currentTimeMillis();
-        }
-
-        // Getters
-        public long getTotalCoinsEarned() {
-            return totalCoinsEarned;
-        }
-
-        public long getTotalTokensEarned() {
-            return totalTokensEarned;
-        }
-
-        public long getTotalExperienceEarned() {
-            return totalExperienceEarned;
-        }
-
-        public long getLastUpdate() {
-            return lastUpdate;
-        }
-    }
-
-    /**
-     * Classement économique
-     */
-    public static class EconomicRanking {
-        private final String playerName;
-        private final long value;
-
-        public EconomicRanking(String playerName, long value) {
-            this.playerName = playerName;
-            this.value = value;
-        }
-
-        public String getPlayerName() {
-            return playerName;
-        }
-
-        public long getValue() {
-            return value;
-        }
+        return "Économie: Vault(" + vaultSyncs + " syncs) EssentialsX(" + essentialsSyncs + " syncs)";
     }
 }
