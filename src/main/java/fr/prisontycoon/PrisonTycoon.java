@@ -22,7 +22,7 @@ import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.milkbowl.vault.economy.Economy;
 import org.bstats.bukkit.Metrics;
-import org.bstats.charts.SimplePie;
+import fr.prisontycoon.libs.bstats.charts.SimplePie;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -388,7 +388,8 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
         getCommand("givetokens").setTabCompleter(new GiveTokensCommand(this));
-
+        getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
+        getCommand("prisontycoon").setTabCompleter(new PrisonTycoonCommand(this));
         getCommand("conteneur").setExecutor(new ContainerCommand(this));
         getCommand("conteneur").setTabCompleter(new ContainerCommand(this));
 
@@ -502,13 +503,13 @@ public final class PrisonTycoon extends JavaPlugin {
             metrics = new Metrics(this, 12345); // Remplacez par votre ID bStats
 
             // Statistiques personnalisées
-            metrics.addCustomChart(new SimplePie("luckperms_integration",
+            metrics.addCustomChart(new Metrics.SimplePie("luckperms_integration",
                     () -> luckPermsEnabled ? "Enabled" : "Disabled"));
-            metrics.addCustomChart(new SimplePie("vault_integration",
+            metrics.addCustomChart(new Metrics.SimplePie("vault_integration",
                     () -> vaultEnabled ? "Enabled" : "Disabled"));
-            metrics.addCustomChart(new SimplePie("worldguard_integration",
+            metrics.addCustomChart(new Metrics.SimplePie("worldguard_integration",
                     () -> worldGuardEnabled ? "Enabled" : "Disabled"));
-            metrics.addCustomChart(new SimplePie("essentialsx_integration",
+            metrics.addCustomChart(new Metrics.SimplePie("essentialsx_integration",
                     () -> essentialsEnabled ? "Enabled" : "Disabled"));
 
             pluginLogger.info("§aMétriques bStats configurées.");

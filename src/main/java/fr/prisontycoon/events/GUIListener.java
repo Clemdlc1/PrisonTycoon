@@ -129,7 +129,7 @@ public class GUIListener implements Listener {
         } else if (title.contains("Compagnons")) {
             plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
         } else if (title.contains("Réparation")) {
-            plugin.getPickaxeRepairGUI().handleRepairMenuClick(player, slot, item);
+            plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
         } else if (title.contains("Métiers") || title.contains("Choisir un Métier") || title.contains("⭐") || title.contains("Changer de Métier")) {
             plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
         } else if (title.contains("🎁")) {

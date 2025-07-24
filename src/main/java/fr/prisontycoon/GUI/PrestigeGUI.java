@@ -99,7 +99,7 @@ public class PrestigeGUI {
 
         // Bouton de prestige (si possible)
         if (plugin.getPrestigeManager().canPrestige(player)) {
-            gui.setItem(PERFORM_PRESTIGE_SLOT, createPerformPrestigeButton(playerData.getPrestigeLevel(player) + 1));
+            gui.setItem(PERFORM_PRESTIGE_SLOT, createPerformPrestigeButton(playerData.getPrestigeLevel() + 1));
         } else {
             gui.setItem(PERFORM_PRESTIGE_SLOT, createLockedPrestigeButton());
         }
@@ -114,7 +114,7 @@ public class PrestigeGUI {
      */
     public void openCombinedMenu(Player player, int page) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int maxPrestige = playerData.getPrestigeLevel(player);
+        int maxPrestige = playerData.getPrestigeLevel();
 
         // 54 slots, 5 prestiges par page
         int maxPage = (maxPrestige - 1) / 5;
@@ -131,7 +131,7 @@ public class PrestigeGUI {
 
     private void setupProgressionMenu(Inventory gui, Player player, int page) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int maxPrestige = playerData.getPrestigeLevel(player);
+        int maxPrestige = playerData.getPrestigeLevel();
 
         // 5 lignes de prestige par page
         for (int i = 0; i < 5; i++) {
@@ -431,7 +431,7 @@ public class PrestigeGUI {
     // Modifier setupPrestigeRow pour inclure l'en-tête :
     private void setupPrestigeRow(Inventory gui, Player player, int prestigeLevel, int baseSlot) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        boolean isUnlocked = prestigeLevel <= playerData.getPrestigeLevel(player);
+        boolean isUnlocked = prestigeLevel <= playerData.getPrestigeLevel();
 
         if (prestigeLevel % 5 == 0) {
             // Palier spécial : récompenses
@@ -494,7 +494,7 @@ public class PrestigeGUI {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         // Vérifier que le niveau est débloqué
-        if (prestigeLevel > playerData.getPrestigeLevel(player)) {
+        if (prestigeLevel > playerData.getPrestigeLevel()) {
             player.sendMessage("§c❌ Vous devez atteindre P" + prestigeLevel + " pour choisir ce bonus!");
             return;
         }
@@ -547,7 +547,7 @@ public class PrestigeGUI {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         // Vérifier que le niveau est débloqué
-        if (prestigeLevel > playerData.getPrestigeLevel(player)) {
+        if (prestigeLevel > playerData.getPrestigeLevel()) {
             player.sendMessage("§c❌ Vous devez atteindre P" + prestigeLevel + " pour choisir cette récompense!");
             return;
         }
@@ -720,7 +720,7 @@ public class PrestigeGUI {
 
     private ItemStack createPrestigeInfoItem(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int prestigeLevel = playerData.getPrestigeLevel(player);
+        int prestigeLevel = playerData.getPrestigeLevel();
 
         Material material = prestigeLevel > 0 ? Material.NETHER_STAR : Material.GRAY_DYE;
         ItemStack item = new ItemStack(material);
@@ -730,7 +730,7 @@ public class PrestigeGUI {
             meta.setDisplayName("§6🏆 Votre Prestige");
 
             List<String> lore = new ArrayList<>();
-            lore.add("§7Niveau actuel: " + playerData.getPrestigeDisplayName(player));
+            lore.add("§7Niveau actuel: " + playerData.getPrestigeDisplayName());
             lore.add("");
 
             if (prestigeLevel > 0) {
@@ -773,7 +773,7 @@ public class PrestigeGUI {
      */
     private ItemStack createCombinedButton(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int currentPrestige = playerData.getPrestigeLevel(player);
+        int currentPrestige = playerData.getPrestigeLevel();
 
         // Calculer les statistiques avec le nouveau système
         int availableTalents = 0;

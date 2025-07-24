@@ -188,7 +188,7 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
         int prestigeLevel = playerData.getPrestigeLevel();
 
         player.sendMessage("");
-        player.sendMessage("§7Votre prestige actuel: " + playerData.getPrestigeDisplayName(player));
+        player.sendMessage("§7Votre prestige actuel: " + playerData.getPrestigeDisplayName());
 
         if (plugin.getPrestigeManager().canPrestige(player)) {
             player.sendMessage("§a✅ Vous pouvez effectuer un prestige!");
