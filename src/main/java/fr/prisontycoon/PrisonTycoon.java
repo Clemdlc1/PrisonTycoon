@@ -387,8 +387,7 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes admin
         getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
         getCommand("givetokens").setTabCompleter(new GiveTokensCommand(this));
-        getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
-        getCommand("prisontycoon").setTabCompleter(new PrisonTycoonCommand(this));
+
         getCommand("conteneur").setExecutor(new ContainerCommand(this));
         getCommand("conteneur").setTabCompleter(new ContainerCommand(this));
 

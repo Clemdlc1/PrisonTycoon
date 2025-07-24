@@ -1,8 +1,10 @@
 package fr.prisontycoon.data;
 
+import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;

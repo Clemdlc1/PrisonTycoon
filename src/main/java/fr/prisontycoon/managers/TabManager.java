@@ -250,7 +250,7 @@ public class TabManager {
             }
         } else {
             // Fallback vers le système du plugin
-            if (playerData.isVip()) {
+            if (plugin.getVipManager().isVip(player)) {
                 displayName.append("§6[VIP] §f").append(player.getName());
             } else {
                 displayName.append("§7").append(player.getName());

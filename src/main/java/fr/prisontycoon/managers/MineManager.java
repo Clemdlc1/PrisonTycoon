@@ -150,7 +150,7 @@ public class MineManager {
                     region.setFlag(Flags.BLOCK_PLACE, StateFlag.State.DENY);
                     region.setFlag(Flags.PVP, StateFlag.State.DENY);
                     region.setFlag(Flags.MOB_SPAWNING, StateFlag.State.DENY);
-                    region.setFlag(Flags.EXPLOSION_DAMAGE, StateFlag.State.DENY);
+                    region.setFlag(Flags.OTHER_EXPLOSION, StateFlag.State.DENY);
                     region.setPriority(10);
 
                     if (existingRegion == null) {
