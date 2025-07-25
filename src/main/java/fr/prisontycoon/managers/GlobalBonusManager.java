@@ -204,12 +204,22 @@ public class GlobalBonusManager {
                 }
             }
             case "commercant" -> {
-                if (category == BonusCategory.SELL_BONUS) {
-                    int talentLevel = playerData.getTalentLevel("commercant", "sell_boost");
-                    if (talentLevel > 0) {
-                        var profession = plugin.getProfessionManager().getProfession("commercant");
-                        var talent = profession.getTalent("sell_boost");
-                        bonus += talent.getValueAtLevel(talentLevel);
+                switch (category) {
+                    case SELL_BONUS -> {
+                        int talentLevel = playerData.getTalentLevel("commercant", "sell_boost");
+                        if (talentLevel > 0) {
+                            var profession = plugin.getProfessionManager().getProfession("commercant");
+                            var talent = profession.getTalent("sell_boost");
+                            bonus += talent.getValueAtLevel(talentLevel);
+                        }
+                    }
+                    case HDV_SLOT -> {
+                        int talentLevel = playerData.getTalentLevel("commercant", "vitrines_sup");
+                        if (talentLevel > 0) {
+                            var profession = plugin.getProfessionManager().getProfession("commercant");
+                            var talent = profession.getTalent("vitrines_sup");
+                            bonus += talent.getValueAtLevel(talentLevel);
+                        }
                     }
                 }
             }
@@ -459,7 +469,8 @@ public class GlobalBonusManager {
         BEACON_MULTIPLIER("Beacon Multiplier", "🔥", "§c", "Multiplicateur de beacons"),
         TAX_REDUCTION("Tax Reduction", "💳", "§5", "Réduction des taxes"),
         OUTPOST_BONUS("Outpost Bonus", "🏰", "§3", "Bonus des avant-postes"),
-        PVP_MERCHANT_REDUCTION("PvP Merchant Reduction", "⚔️", "§4", "Réduction prix marchand PvP");
+        PVP_MERCHANT_REDUCTION("PvP Merchant Reduction", "⚔️", "§4", "Réduction prix marchand PvP"),
+        HDV_SLOT("Slot HDV", "", "§8", "Augmentation nombre de slot à l'hotel de ventes");
 
         private final String displayName;
         private final String emoji;

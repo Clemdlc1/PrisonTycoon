@@ -5,6 +5,7 @@ import fr.prisontycoon.autominers.AutominerType;
 import fr.prisontycoon.boosts.BoostType;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
+import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.managers.PlayerDataManager;
 import fr.prisontycoon.vouchers.VoucherType;
 import org.bukkit.entity.Player;
@@ -908,6 +909,14 @@ public class PrisonTycoonAPI {
      */
     public fr.prisontycoon.managers.PermissionManager getPermissionManager() {
         return plugin.getPermissionManager();
+    }
+
+    public int AuctionHouseSlot (Player player) {
+        return (int) plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.HDV_SLOT);
+    }
+
+    public boolean isLegendaryPickaxe(ItemStack item) {
+        return plugin.getPickaxeManager().isLegendaryPickaxe(item);
     }
 
     public ItemStack createKey(String keyType) {
