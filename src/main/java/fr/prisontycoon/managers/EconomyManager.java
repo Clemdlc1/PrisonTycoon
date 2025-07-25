@@ -326,18 +326,18 @@ public class EconomyManager {
     }
 
     /**
-         * Solde économique d'un joueur
-         */
-        public record EconomicBalance(long coins, long tokens, long experience) {
+     * Solde économique d'un joueur
+     */
+    public record EconomicBalance(long coins, long tokens, long experience) {
 
         @Override
-            public String toString() {
-                return String.format("Balance{coins=%s, tokens=%s, exp=%s}",
-                        NumberFormatter.format(coins),
-                        NumberFormatter.format(tokens),
-                        NumberFormatter.format(experience));
-            }
+        public String toString() {
+            return String.format("Balance{coins=%s, tokens=%s, exp=%s}",
+                    NumberFormatter.format(coins),
+                    NumberFormatter.format(tokens),
+                    NumberFormatter.format(experience));
         }
+    }
 
     /**
      * Statistiques économiques d'un joueur
@@ -378,8 +378,8 @@ public class EconomyManager {
     }
 
     /**
-         * Classement économique
-         */
-        public record EconomicRanking(String playerName, long value) {
+     * Classement économique
+     */
+    public record EconomicRanking(String playerName, long value) {
     }
 }

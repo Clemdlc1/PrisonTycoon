@@ -40,6 +40,11 @@ public class PlayerData {
     private final Map<Material, Long> autominerStorageContents;
     private final Map<String, Integer> autominerStoredKeys;
     private final Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
+    //prestige
+    private final int prestigeLevel = 0;
+    // NOUVEAUX ajouts pour le système amélioré
+    private final Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
+    private final Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -84,11 +89,6 @@ public class PlayerData {
     // Système de métiers
     private String activeProfession; // null si aucun métier choisi
     private long lastProfessionChange; // Timestamp du dernier changement
-    //prestige
-    private final int prestigeLevel = 0;
-    // NOUVEAUX ajouts pour le système amélioré
-    private final Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
-    private final Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     private int reputation = 0;
     private ItemStack activeAutominerSlot1;
     private ItemStack activeAutominerSlot2;

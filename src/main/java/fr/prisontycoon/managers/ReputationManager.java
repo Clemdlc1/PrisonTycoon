@@ -324,20 +324,20 @@ public class ReputationManager {
     }
 
     /**
-         * Classe interne pour représenter un changement de réputation
-         */
-        public record ReputationChange(long timestamp, int originalChange, int appliedChange, String reason,
-                                       int oldReputation, int newReputation) {
+     * Classe interne pour représenter un changement de réputation
+     */
+    public record ReputationChange(long timestamp, int originalChange, int appliedChange, String reason,
+                                   int oldReputation, int newReputation) {
 
         public String getFormattedTime() {
-                LocalDateTime dateTime = LocalDateTime.ofEpochSecond(timestamp / 1000, 0,
-                        java.time.ZoneOffset.systemDefault().getRules().getOffset(java.time.Instant.ofEpochMilli(timestamp)));
-                return dateTime.format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
-            }
-
-            public String getChangeDisplay() {
-                String color = appliedChange >= 0 ? "§a+" : "§c";
-                return color + appliedChange;
-            }
+            LocalDateTime dateTime = LocalDateTime.ofEpochSecond(timestamp / 1000, 0,
+                    java.time.ZoneOffset.systemDefault().getRules().getOffset(java.time.Instant.ofEpochMilli(timestamp)));
+            return dateTime.format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
         }
+
+        public String getChangeDisplay() {
+            String color = appliedChange >= 0 ? "§a+" : "§c";
+            return color + appliedChange;
+        }
+    }
 }

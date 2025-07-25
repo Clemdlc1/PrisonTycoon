@@ -286,8 +286,8 @@ public class VipManager {
     }
 
     /**
-         * Classe pour stocker les données VIP
-         */
-        public record VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
+     * Classe pour stocker les données VIP
+     */
+    public record VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
     }
 }

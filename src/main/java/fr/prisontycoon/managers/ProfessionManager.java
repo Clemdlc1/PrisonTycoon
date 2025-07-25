@@ -402,26 +402,26 @@ public class ProfessionManager {
     // Classes internes
 
     /**
-         * Représente un métier
-         */
-        public record Profession(String id, String displayName, String title, String description,
-                                 List<ProfessionTalent> talents) {
+     * Représente un métier
+     */
+    public record Profession(String id, String displayName, String title, String description,
+                             List<ProfessionTalent> talents) {
 
         public ProfessionTalent getTalent(String talentId) {
-                return talents.stream().filter(t -> t.id().equals(talentId)).findFirst().orElse(null);
-            }
+            return talents.stream().filter(t -> t.id().equals(talentId)).findFirst().orElse(null);
         }
+    }
 
     /**
      * Représente un talent de métier
      *
      * @param values Valeurs pour les niveaux 1-10
      */
-        public record ProfessionTalent(String id, String displayName, String description, int[] values) {
+    public record ProfessionTalent(String id, String displayName, String description, int[] values) {
 
         public int getValueAtLevel(int level) {
-                if (level < 1 || level > values.length) return 0;
-                return values[level - 1];
-            }
+            if (level < 1 || level > values.length) return 0;
+            return values[level - 1];
         }
+    }
 }

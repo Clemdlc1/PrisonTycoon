@@ -474,8 +474,8 @@ public class PickaxeRepairGUI {
     }
 
     /**
-         * NOUVEAU : Classe pour stocker le résultat de la réparation maximale
-         */
-        private record MaxRepairResult(int repairPoints, long cost, double repairPercent, double finalHealthPercent) {
+     * NOUVEAU : Classe pour stocker le résultat de la réparation maximale
+     */
+    private record MaxRepairResult(int repairPoints, long cost, double repairPercent, double finalHealthPercent) {
     }
 }

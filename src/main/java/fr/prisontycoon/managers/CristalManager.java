@@ -81,6 +81,12 @@ public class CristalManager {
         return true;
     }
 
+    public ItemStack createCristalViergeApi(int niveau) {
+        Cristal cristal = createCristalVierge(niveau);
+        ItemStack cristalItem = cristal.toItemStack(cristalUuidKey, cristalLevelKey, cristalTypeKey, cristalViergeKey);
+        return cristalItem;
+    }
+
     /**
      * Donne un cristal avec type spécifique à un joueur (pour admins)
      */

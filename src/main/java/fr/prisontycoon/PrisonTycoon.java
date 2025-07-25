@@ -1,6 +1,6 @@
 package fr.prisontycoon;
 
-import fr.prisontycoon.gui.*;
+import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
 import fr.prisontycoon.commands.*;
@@ -10,6 +10,7 @@ import fr.prisontycoon.enchantments.EnchantmentManager;
 import fr.prisontycoon.enchantments.UniqueEnchantmentBookFactory;
 import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
 import fr.prisontycoon.events.*;
+import fr.prisontycoon.gui.*;
 import fr.prisontycoon.managers.*;
 import fr.prisontycoon.tasks.*;
 import fr.prisontycoon.utils.ChatLogger;
@@ -121,6 +122,8 @@ public final class PrisonTycoon extends JavaPlugin {
 
             // Enregistrement des commandes
             registerCommands();
+
+            PrisonTycoonAPI.initialize(this);
 
             chatLogger = new ChatLogger(this);
 

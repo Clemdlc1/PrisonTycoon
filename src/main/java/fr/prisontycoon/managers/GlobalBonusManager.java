@@ -498,11 +498,11 @@ public class GlobalBonusManager {
      * Détails des sources d'un bonus
      */
     public static class BonusSourceDetails {
+        private final Map<String, Double> detailedSources = new HashMap<>();
         private double cristalBonus = 0.0;
         private double professionBonus = 0.0;
         private double prestigeBonus = 0.0;
         private double temporaryBoostBonus = 0.0;
-        private final Map<String, Double> detailedSources = new HashMap<>();
 
         public double getTotalBonus() {
             return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus;

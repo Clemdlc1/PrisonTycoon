@@ -336,18 +336,18 @@ public class ModerationManager {
     }
 
     /**
-         * Classe pour stocker les données de modération
-         */
-        public record ModerationData(UUID uuid, String playerName, long endTime, String reason, String moderator,
-                                     long startTime) {
+     * Classe pour stocker les données de modération
+     */
+    public record ModerationData(UUID uuid, String playerName, long endTime, String reason, String moderator,
+                                 long startTime) {
 
         public boolean isPermanent() {
-                return endTime == 0;
-            }
-
-            public long getRemainingTime() {
-                if (isPermanent()) return -1;
-                return Math.max(0, endTime - System.currentTimeMillis());
-            }
+            return endTime == 0;
         }
+
+        public long getRemainingTime() {
+            if (isPermanent()) return -1;
+            return Math.max(0, endTime - System.currentTimeMillis());
+        }
+    }
 }

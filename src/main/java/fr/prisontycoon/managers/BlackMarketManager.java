@@ -991,40 +991,40 @@ public class BlackMarketManager {
      *
      * @param dangerLevel 0.0 à 1.0
      */
-        private record BlackMarketLocation(Location location, String name, double dangerLevel) {
+    private record BlackMarketLocation(Location location, String name, double dangerLevel) {
 
         @Override
         public Location location() {
-                return location.clone();
-            }
+            return location.clone();
         }
+    }
 
     /**
      * Classe interne pour représenter un item du marché noir
      *
      * @param itemId ID unique pour chaque item
      */
-        private record BlackMarketItem(String itemId, int basePrice, String category, ReputationTier... requiredTiers) {
+    private record BlackMarketItem(String itemId, int basePrice, String category, ReputationTier... requiredTiers) {
 
         public boolean canPlayerAccess(ReputationTier playerTier) {
-                if (requiredTiers.length == 0) return true;
-                for (ReputationTier tier : requiredTiers) {
-                    if (tier == playerTier) return true;
-                }
-                return false;
+            if (requiredTiers.length == 0) return true;
+            for (ReputationTier tier : requiredTiers) {
+                if (tier == playerTier) return true;
             }
-
-            @Override
-            public boolean equals(Object obj) {
-                if (this == obj) return true;
-                if (obj == null || getClass() != obj.getClass()) return false;
-                BlackMarketItem that = (BlackMarketItem) obj;
-                return Objects.equals(itemId, that.itemId);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(itemId);
-            }
+            return false;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            BlackMarketItem that = (BlackMarketItem) obj;
+            return Objects.equals(itemId, that.itemId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(itemId);
+        }
+    }
 }

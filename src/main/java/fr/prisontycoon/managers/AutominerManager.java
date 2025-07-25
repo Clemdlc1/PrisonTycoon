@@ -589,9 +589,9 @@ public class AutominerManager {
     }
 
     /**
-         * Résultat d'une simulation de minage
-         */
-        public record AutominerMiningResult(Material minedBlock, int quantity, long coins, long tokens, long experience,
-                                            int keys, boolean beaconFound) {
+     * Résultat d'une simulation de minage
+     */
+    public record AutominerMiningResult(Material minedBlock, int quantity, long coins, long tokens, long experience,
+                                        int keys, boolean beaconFound) {
     }
 }

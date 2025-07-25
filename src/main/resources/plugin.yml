@@ -343,15 +343,8 @@ commands:
     usage: /autominer [give <type>]
     permission: specialmine.basic
 
-# Chargement
-load: POSTWORLD
-startup: POSTWORLD
-
 # Compatibilité
 depend-bootstrap: false
-
-# Dépendances (optionnelles)
-softdepend: [ Vault, PlaceholderAPI ]
 
 # Site web et auteur
 website: https://github.com/prisontycoon

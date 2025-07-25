@@ -201,9 +201,9 @@ public class ChatLogger {
     }
 
     /**
-         * Classe pour représenter une entrée de log
-         */
-        private record LogEntry(long timestamp, LogType type, String playerName, String uuid, String rawMessage,
-                                String formattedMessage) {
+     * Classe pour représenter une entrée de log
+     */
+    private record LogEntry(long timestamp, LogType type, String playerName, String uuid, String rawMessage,
+                            String formattedMessage) {
     }
 }

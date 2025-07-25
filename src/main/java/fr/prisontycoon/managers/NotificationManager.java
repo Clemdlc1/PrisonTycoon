@@ -142,15 +142,15 @@ public class NotificationManager {
     }
 
     /**
-         * NOUVEAU : Classe pour les notifications temporaires avec durée
-         */
-        private record TemporaryNotification(String message, long expiryTime) {
+     * NOUVEAU : Classe pour les notifications temporaires avec durée
+     */
+    private record TemporaryNotification(String message, long expiryTime) {
     }
 
     /**
-         * Notification de jeu
-         */
-        public record GameNotification(NotificationType type, String message, NotificationPriority priority) {
+     * Notification de jeu
+     */
+    public record GameNotification(NotificationType type, String message, NotificationPriority priority) {
     }
 
     /**
