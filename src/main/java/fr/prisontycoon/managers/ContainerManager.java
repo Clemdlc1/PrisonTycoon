@@ -51,7 +51,7 @@ public class ContainerManager {
      * @param data          Les données à sauvegarder sur l'item.
      * @return true si la sauvegarde a réussi.
      */
-    private boolean saveDataToItem(ItemStack containerItem, ContainerData data) {
+    public boolean saveDataToItem(ItemStack containerItem, ContainerData data) {
         if (containerItem == null || data == null) return false;
 
         // On lit l'UUID de l'item AVANT de modifier ses métadonnées.

@@ -1555,3 +1555,121 @@ bank:
     # Notifications de fluctuations importantes (>10%)
     major-fluctuation-notifications: true
     major-fluctuation-threshold: 0.10
+
+
+# ========================================
+#          CONFIGURATION CRATES
+# ========================================
+
+crates:
+  # Positions des crates dans le monde
+  locations:
+    # Crate Commune
+    crate_commune:
+      world: "world"          # Nom du monde
+      x: 100                  # Coordonnée X
+      y: 64                   # Coordonnée Y
+      z: 100                  # Coordonnée Z
+      type: "COMMUNE"         # Type de crate
+
+    # Crate Peu Commune
+    crate_peu_commune:
+      world: "world"
+      x: 110
+      y: 64
+      z: 100
+      type: "PEU_COMMUNE"
+
+    # Crate Rare
+    crate_rare:
+      world: "world"
+      x: 120
+      y: 64
+      z: 100
+      type: "RARE"
+
+    # Crate Légendaire
+    crate_legendaire:
+      world: "world"
+      x: 130
+      y: 64
+      z: 100
+      type: "LEGENDAIRE"
+
+    # Crate Cristal
+    crate_cristal:
+      world: "world"
+      x: 140
+      y: 64
+      z: 100
+      type: "CRISTAL"
+
+  # Configuration des animations
+  animations:
+    duration: 4000              # Durée en millisecondes (4 secondes)
+    particle-intensity: 30      # Intensité des particules
+    sound-enabled: true         # Activer les sons
+
+  # Configuration des effets ambiants
+  ambient-effects:
+    enabled: true               # Effets ambiants activés
+    particle-chance: 0.3        # Chance de spawn des particules (30%)
+    effect-radius: 10           # Rayon d'effet autour des joueurs
+    update-interval: 40         # Intervalle en ticks (2 secondes)
+
+# ========================================
+#     RÉCOMPENSES DES CRATES
+# ========================================
+
+# Note: Les récompenses sont définies dans le code (CrateType.java)
+# mais vous pouvez les personnaliser ici si besoin
+
+crate-rewards:
+  # Multiplicateurs de récompenses (optionnel)
+  money-multiplier: 1.0         # x1 par défaut
+  tokens-multiplier: 1.0        # x1 par défaut
+
+  # Types de vouchers disponibles
+  voucher-types:
+    - "money_boost_small"       # Boost argent petit
+    - "money_boost_medium"      # Boost argent moyen
+    - "money_boost_large"       # Boost argent grand
+    - "token_boost_small"       # Boost token petit
+    - "token_boost_medium"      # Boost token moyen
+    - "token_boost_large"       # Boost token grand
+    - "xp_boost_small"          # Boost XP petit
+    - "xp_boost_medium"         # Boost XP moyen
+    - "xp_boost_large"          # Boost XP grand
+
+  # Types d'automineurs disponibles
+  autominer-types:
+    - "iron"                    # Autominer fer
+    - "diamond"                 # Autominer diamant
+    - "emerald"                 # Autominer émeraude
+    - "netherite"               # Autominer netherite
+
+# ========================================
+#      CONFIGURATION AVANCÉE
+# ========================================
+
+crate-advanced:
+  # Cooldown entre les interactions (ms)
+  interaction-cooldown: 1000    # 1 seconde
+
+  # Messages personnalisés
+  messages:
+    no-key: "§c❌ Vous n'avez pas de clé {type} pour ouvrir cette crate!"
+    opening: "§6🔑 Ouverture de la crate {type}..."
+    reward-gained: "§a✅ {reward} ajouté à votre inventaire!"
+    inventory-full: "§e⚠ Inventaire plein! L'item a été lâché au sol."
+    cooldown: "§cAttendez avant d'interagir à nouveau avec cette crate!"
+
+  # Sécurité
+  protection:
+    prevent-break: true         # Empêcher la destruction des crates
+    prevent-place: true         # Empêcher la pose sur les crates
+
+  # Performance
+  performance:
+    max-particles-per-tick: 50  # Limite de particules par tick
+    disable-effects-if-no-players: true  # Désactive effets si aucun joueur proche

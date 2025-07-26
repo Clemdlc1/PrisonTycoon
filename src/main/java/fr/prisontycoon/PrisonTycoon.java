@@ -53,7 +53,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private VoucherManager voucherManager;
     private BoostManager boostManager;
     private BankManager bankManager;
-
+    private CrateManager crateManager;
+    private CrateGUI crateGUI;
+    private CrateListener crateListener;
 
     private Logger logger;
 
@@ -227,6 +229,7 @@ public final class PrisonTycoon extends JavaPlugin {
         boostManager = new BoostManager(this);
         autominerManager = new AutominerManager(this);
         bankManager = new BankManager(this);
+        crateManager = new CrateManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -256,6 +259,7 @@ public final class PrisonTycoon extends JavaPlugin {
         autominerCondHeadGUI = new AutominerCondHeadGUI(this);
         autominerEnchantUpgradeGUI = new AutominerEnchantUpgradeGUI(this);
         bankGUI = new BankGUI(this);
+        crateGUI = new CrateGUI(this);
 
 
         logger.info("§aInterfaces graphiques initialisées.");
@@ -281,7 +285,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new PNJInteract(this), this);
         pluginManager.registerEvents(new WeaponArmorEnchantmentListener(this), this);
         pluginManager.registerEvents(new VoucherBoostListener(this), this);
-
+        pluginManager.registerEvents(new CrateListener(this), this);
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -696,6 +700,25 @@ public final class PrisonTycoon extends JavaPlugin {
     public BankGUI getBankGUI() {
         return bankGUI;
     }
+    /**
+     * Obtient le gestionnaire des crates
+     */
+    public CrateManager getCrateManager() {
+        return crateManager;
+    }
 
+    /**
+     * Obtient l'interface graphique des crates
+     */
+    public CrateGUI getCrateGUI() {
+        return crateGUI;
+    }
+
+    /**
+     * Obtient le listener des crates
+     */
+    public CrateListener getCrateListener() {
+        return crateListener;
+    }
 }
 

@@ -25,6 +25,7 @@ public class PrisonTycoonAPI {
     private final PrisonTycoon plugin;
     private final PlayerDataManager playerDataManager;
 
+
     private PrisonTycoonAPI(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.playerDataManager = plugin.getPlayerDataManager();
@@ -904,9 +905,22 @@ public class PrisonTycoonAPI {
         return playerDataManager;
     }
 
-    /**
-     * Récupère le PermissionManager
-     */
+    public int getReputation(UUID playerId) { return plugin.getReputationManager().getReputation(playerId); }
+
+    public String getActiveProfession(UUID playerId) {
+        PlayerData playerData = playerDataManager.getPlayerData(playerId);
+        return playerData.getActiveProfession();
+    }
+
+    public int getProfessionLevel(UUID playerId) {
+        PlayerData playerData = playerDataManager.getPlayerData(playerId);
+                return playerData.getProfessionLevel(playerData.getActiveProfession());
+    }
+
+    public double getTotalBonusMultiplier(Player player, GlobalBonusManager.BonusCategory category) {
+        return plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, category);
+    }
+
     public fr.prisontycoon.managers.PermissionManager getPermissionManager() {
         return plugin.getPermissionManager();
     }
