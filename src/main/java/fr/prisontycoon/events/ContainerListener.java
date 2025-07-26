@@ -96,6 +96,7 @@ public class ContainerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
+        plugin.getContainerManager().handleInventoryUpdate(player);
 
         if (plugin.getContainerManager().isContainer(event.getCurrentItem()) || plugin.getContainerManager().isContainer(event.getCursor())) {
             Bukkit.getScheduler().runTask(plugin, () -> plugin.getContainerManager().rescanAndCachePlayerInventory(player));

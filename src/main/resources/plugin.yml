@@ -350,6 +350,12 @@ commands:
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [banque, banco, bank]
 
+  tankadmin:
+    description: "Commandes d'administration pour les Tanks et Sell Hands"
+    usage: "/tankadmin <give|reload> [args...]"
+    permission: prisontycoon.tankadmin
+    aliases: [ "ta", "tanks" ]
+
 # Compatibilité
 depend-bootstrap: false
 

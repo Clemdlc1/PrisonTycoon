@@ -39,6 +39,10 @@ public class ChatListener implements Listener {
         Player player = event.getPlayer();
         String message = event.getMessage();
 
+        if (plugin.getTankGUI().isPlayerAwaitingInput(player)) {
+            return;
+        }
+
         // Annule l'événement par défaut pour gérer le chat manuellement
         event.setCancelled(true);
 

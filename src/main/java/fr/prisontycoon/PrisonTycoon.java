@@ -54,8 +54,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private BoostManager boostManager;
     private BankManager bankManager;
     private CrateManager crateManager;
-    private CrateGUI crateGUI;
-    private CrateListener crateListener;
+    private TankManager tankManager;
+    private SellHandManager sellHandManager;
 
     private Logger logger;
 
@@ -73,6 +73,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private RankupCommand rankupCommand;
     private BoostGUI boostGUI;
     private BankGUI bankGUI;
+    private CrateGUI crateGUI;
+    private TankGUI tankGUI;
 
     //cristaux
     private CristalManager cristalManager;
@@ -230,6 +232,8 @@ public final class PrisonTycoon extends JavaPlugin {
         autominerManager = new AutominerManager(this);
         bankManager = new BankManager(this);
         crateManager = new CrateManager(this);
+        tankManager = new TankManager(this);
+        sellHandManager = new SellHandManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -260,6 +264,7 @@ public final class PrisonTycoon extends JavaPlugin {
         autominerEnchantUpgradeGUI = new AutominerEnchantUpgradeGUI(this);
         bankGUI = new BankGUI(this);
         crateGUI = new CrateGUI(this);
+        tankGUI = new TankGUI(this);
 
 
         logger.info("§aInterfaces graphiques initialisées.");
@@ -286,6 +291,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new WeaponArmorEnchantmentListener(this), this);
         pluginManager.registerEvents(new VoucherBoostListener(this), this);
         pluginManager.registerEvents(new CrateListener(this), this);
+        pluginManager.registerEvents(new TankListener(this), this);
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -351,6 +357,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
         getCommand("bank").setExecutor(new BankCommand(this));
         getCommand("bank").setTabCompleter(new BankCommand(this));
+
+        getCommand("tankadmin").setExecutor(new TankAdminCommand(this));
+        getCommand("tankadmin").setTabCompleter(new TankAdminCommand(this));
+
 
 
         logger.info("§aCommandes enregistrées.");
@@ -714,11 +724,14 @@ public final class PrisonTycoon extends JavaPlugin {
         return crateGUI;
     }
 
-    /**
-     * Obtient le listener des crates
-     */
-    public CrateListener getCrateListener() {
-        return crateListener;
+    public TankManager getTankManager() {
+        return tankManager;
+    }
+
+    public TankGUI getTankGUI() {return tankGUI;}
+
+    public SellHandManager getSellHandManager() {
+        return sellHandManager;
     }
 }
 
