@@ -343,6 +343,13 @@ commands:
     usage: /autominer [give <type>]
     permission: specialmine.basic
 
+  bank:
+    description: "Système bancaire complet - épargne, investissements et coffre-fort"
+    usage: /bank [deposit|withdraw|invest|safe|improve|transfer|help] [args...]
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [banque, banco, bank]
+
 # Compatibilité
 depend-bootstrap: false
 

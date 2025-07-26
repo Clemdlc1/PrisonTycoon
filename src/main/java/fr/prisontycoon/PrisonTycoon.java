@@ -52,6 +52,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
     private VoucherManager voucherManager;
     private BoostManager boostManager;
+    private BankManager bankManager;
+
 
     private Logger logger;
 
@@ -68,6 +70,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private PrestigeGUI prestigeGUI;
     private RankupCommand rankupCommand;
     private BoostGUI boostGUI;
+    private BankGUI bankGUI;
 
     //cristaux
     private CristalManager cristalManager;
@@ -224,6 +227,8 @@ public final class PrisonTycoon extends JavaPlugin {
         voucherManager = new VoucherManager(this);
         boostManager = new BoostManager(this);
         autominerManager = new AutominerManager(this);
+        bankManager = new BankManager(this);
+
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
     }
@@ -251,6 +256,8 @@ public final class PrisonTycoon extends JavaPlugin {
         autominerEnchantGUI = new AutominerEnchantGUI(this);
         autominerCondHeadGUI = new AutominerCondHeadGUI(this);
         autominerEnchantUpgradeGUI = new AutominerEnchantUpgradeGUI(this);
+        bankGUI = new BankGUI(this);
+
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -338,6 +345,9 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("giveboost").setTabCompleter(new GiveBoostCommand(this));
 
         getCommand("autominer").setExecutor(new AutominerCommand(this));
+
+        getCommand("bank").setExecutor(new BankCommand(this));
+        getCommand("bank").setTabCompleter(new BankCommand(this));
 
 
         logger.info("§aCommandes enregistrées.");
@@ -680,5 +690,13 @@ public final class PrisonTycoon extends JavaPlugin {
     public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
         return autominerEnchantUpgradeGUI;
     }
+    public BankManager getBankManager() {
+        return bankManager;
+    }
+
+    public BankGUI getBankGUI() {
+        return bankGUI;
+    }
+
 }
 

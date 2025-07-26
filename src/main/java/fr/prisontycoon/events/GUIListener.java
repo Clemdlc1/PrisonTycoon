@@ -150,6 +150,10 @@ public class GUIListener implements Listener {
             plugin.getAutominerCondHeadGUI().handleStorageClick(player, slot, item);
         } else if (title.contains("🛠")) {
             plugin.getAutominerEnchantUpgradeGUI().handleUpgradeClick(player, slot, item, clickType);
+        } else if (title.contains("🏦 Banque PrisonTycoon")) {
+            plugin.getBankGUI().handleMainMenuClick(player, slot, item);
+        } else if (title.contains("📈 Investissements")) {
+            plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
         }
     }
 
@@ -235,6 +239,8 @@ public class GUIListener implements Listener {
                 title.contains("Menu Automineurs") ||
                 title.contains("Amélioration Automineur") ||
                 title.contains("Stockage Automineur") ||
-                title.contains("🛠");
+                title.contains("🛠") ||
+                title.contains("📈 Investissements") ||
+                title.contains("🏦 Banque PrisonTycoon");
     }
 }

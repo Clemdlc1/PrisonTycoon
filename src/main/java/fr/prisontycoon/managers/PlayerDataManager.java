@@ -362,6 +362,34 @@ public class PlayerDataManager {
             data.setAutominerPendingExperience(config.getLong("autominer.pending-experience", 0));
             data.setAutominerPendingBeacons(config.getLong("autominer.pending-beacons", 0));
 
+            long savedSavingsBalance = config.getLong("bank.savings-balance", 0);
+            long savedSafeBalance = config.getLong("bank.safe-balance", 0);
+            int savedBankLevel = config.getInt("bank.level", 1);
+            long savedTotalDeposits = config.getLong("bank.total-deposits", 0);
+            long savedLastInterest = config.getLong("bank.last-interest", System.currentTimeMillis());
+
+            if (savedSavingsBalance > 0) data.setSavingsBalance(savedSavingsBalance);
+            if (savedSafeBalance > 0) data.setSafeBalance(savedSafeBalance);
+            if (savedBankLevel > 1) data.setBankLevel(savedBankLevel);
+            if (savedTotalDeposits > 0) data.setTotalBankDeposits(savedTotalDeposits);
+            data.setLastInterestTime(savedLastInterest);
+
+            // Investissements
+            if (config.contains("bank.investments")) {
+                ConfigurationSection investSection = config.getConfigurationSection("bank.investments");
+                for (String materialName : investSection.getKeys(false)) {
+                    try {
+                        Material material = Material.valueOf(materialName.toUpperCase());
+                        int quantity = investSection.getInt(materialName);
+                        if (quantity > 0) {
+                            data.setInvestment(material, quantity);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // Matériau invalide, ignore
+                    }
+                }
+            }
+
             // Statistiques de base
             data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
             data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
@@ -577,6 +605,20 @@ public class PlayerDataManager {
             if (!storedKeys.isEmpty()) {
                 for (Map.Entry<String, Integer> entry : storedKeys.entrySet()) {
                     config.set("autominer.stored-keys." + entry.getKey(), entry.getValue());
+                }
+            }
+
+            config.set("bank.savings-balance", data.getSavingsBalance());
+            config.set("bank.safe-balance", data.getSafeBalance());
+            config.set("bank.level", data.getBankLevel());
+            config.set("bank.total-deposits", data.getTotalBankDeposits());
+            config.set("bank.last-interest", data.getLastInterestTime());
+
+            // Investissements
+            Map<Material, Integer> investments = data.getAllInvestments();
+            if (!investments.isEmpty()) {
+                for (Map.Entry<Material, Integer> entry : investments.entrySet()) {
+                    config.set("bank.investments." + entry.getKey().name().toLowerCase(), entry.getValue());
                 }
             }
 

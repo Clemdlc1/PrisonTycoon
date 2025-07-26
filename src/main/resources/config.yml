@@ -1419,3 +1419,139 @@ black-market:
       z: -1800
       name: "§cCratère de Météorite"
       danger-level: 0.9
+
+# ========================================
+#           SYSTÈME BANCAIRE
+# ========================================
+
+bank:
+  # Configuration du compte d'épargne
+  savings:
+    # Plafond de base en millions (améliorable par niveau bancaire)
+    base-limit-millions: 10
+
+    # Taux d'intérêt de base (5% toutes les 12h)
+    base-interest-rate: 0.05
+
+    # Période d'intérêts en millisecondes (12h = 43200000)
+    interest-period-ms: 43200000
+
+    # Bonus d'intérêts par niveau bancaire (+1% par niveau)
+    interest-bonus-per-level: 0.01
+
+    # Bonus de plafond par niveau bancaire (+20% par niveau)
+    limit-bonus-per-level: 0.20
+
+  # Configuration des investissements
+  investments:
+    # Fluctuation des prix (toutes les 5 minutes)
+    fluctuation-interval-minutes: 5
+
+    # Facteur de stabilité maximum (réduit la volatilité)
+    max-stability-factor: 0.5
+
+    # Bonus de popularité par investissement
+    popularity-bonus-per-investment: 0.001
+
+    # Multiplicateur de volatilité pour les blocs populaires
+    stability-threshold: 1000
+
+    # Valeurs de base des blocs d'investissement
+    base-values:
+      cobblestone: 10.0
+      stone: 15.0
+      coal_ore: 25.0
+      iron_ore: 45.0
+      copper_ore: 35.0
+      gold_ore: 75.0
+      diamond_ore: 150.0
+      emerald_ore: 200.0
+      beacon: 500.0
+
+    # Volatilité de base des blocs (plus élevée = plus de fluctuation)
+    base-volatility:
+      cobblestone: 0.15
+      stone: 0.12
+      coal_ore: 0.10
+      iron_ore: 0.08
+      copper_ore: 0.09
+      gold_ore: 0.06
+      diamond_ore: 0.05
+      emerald_ore: 0.04
+      beacon: 0.03
+
+    # Nombre maximum d'entrées d'historique par bloc
+    max-history-entries: 100
+
+  # Configuration du coffre-fort (Prestige 10+)
+  safe:
+    # Capacité de base en coins
+    base-capacity: 1000000000  # 1 milliard
+
+    # Frais de retrait (pourcentage)
+    withdrawal-fee: 0.20  # 20%
+
+    # Frais de gestion (pourcentage du solde total)
+    maintenance-fee: 0.10  # 10%
+
+    # Période des frais de gestion en millisecondes (12h)
+    maintenance-period-ms: 43200000
+
+    # Prestige minimum requis
+    required-prestige-level: 10
+
+  # Configuration des niveaux bancaires
+  levels:
+    # Niveau maximum
+    max-level: 10
+
+    # Multiplicateur pour les dépôts requis (base: 1M coins)
+    deposit-requirement-base: 1000000
+    deposit-requirement-multiplier: 5.0  # 1M, 5M, 25M, 125M, etc.
+
+    # Coût en expérience (base: 10k XP)
+    experience-cost-base: 10000
+    experience-cost-multiplier: 3.0  # 10k, 30k, 90k, 270k, etc.
+
+  # Configuration des transferts
+  transfers:
+    # Frais de transfert (pourcentage)
+    fee-percentage: 0.02  # 2%
+
+    # Montant minimum de transfert
+    minimum-amount: 1000
+
+    # Cooldown entre transferts (en secondes)
+    cooldown-seconds: 30
+
+  # Bonus métier Commerçant
+  trader-bonuses:
+    # Niveau 3+ : informations détaillées sur les investissements
+    detailed-info-level: 3
+
+    # Niveau 5+ : levier x2 sur les investissements
+    leverage-multiplier-level: 5
+    leverage-multiplier: 2.0
+
+  # Limitations et sécurité
+  limits:
+    # Montant maximum par transaction
+    max-transaction-amount: 1000000000  # 1 milliard
+
+    # Nombre maximum d'investissements par joueur par type
+    max-investment-per-block: 100000
+
+    # Cooldown anti-spam (en secondes)
+    transaction-cooldown: 1
+
+  # Messages et notifications
+  notifications:
+    # Notifications d'intérêts automatiques
+    interest-notifications: true
+
+    # Notifications de frais de gestion
+    maintenance-notifications: true
+
+    # Notifications de fluctuations importantes (>10%)
+    major-fluctuation-notifications: true
+    major-fluctuation-threshold: 0.10

@@ -103,6 +103,15 @@ public class PlayerData {
     private long autominerPendingExperience;
     private long autominerPendingBeacons;
 
+    private long savingsBalance = 0;
+    private long safeBalance = 0;
+    private int bankLevel = 1;
+    private long totalBankDeposits = 0;
+    private long lastInterestTime = System.currentTimeMillis();
+
+    // Investissements - Map<Material, Quantité>
+    private final Map<Material, Integer> investments = new ConcurrentHashMap<>();
+
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
         this.playerName = playerName;
@@ -1540,5 +1549,174 @@ public class PlayerData {
     }
 
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    /**
+     * Vérifie si le joueur a un rang spécifique ou supérieur
+     */
+    public boolean hasRank(String rankName) {
+        for (String permission : customPermissions) {
+            if (permission.startsWith("specialmine.mine.")) {
+                String rank = permission.substring("specialmine.mine.".length()).toUpperCase();
+                // Logique de comparaison des rangs (A-Z, avec F+ requis pour la banque)
+                if (compareRanks(rank, rankName.toUpperCase()) >= 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Compare deux rangs (A=1, B=2, ..., Z=26)
+     * Retourne: positif si rank1 > rank2, 0 si égaux, négatif si rank1 < rank2
+     */
+    private int compareRanks(String rank1, String rank2) {
+        char c1 = rank1.charAt(0);
+        char c2 = rank2.charAt(0);
+
+        return Character.compare(c1, c2);
+    }
+
+// ===============================
+// MÉTHODES ÉPARGNE
+// ===============================
+
+    public long getSavingsBalance() {
+        synchronized (dataLock) {
+            return savingsBalance;
+        }
+    }
+
+    public void setSavingsBalance(long balance) {
+        synchronized (dataLock) {
+            this.savingsBalance = Math.max(0, balance);
+        }
+    }
+
+    public void addSavingsBalance(long amount) {
+        synchronized (dataLock) {
+            this.savingsBalance += amount;
+            this.totalBankDeposits += amount; // Compte pour les niveaux bancaires
+        }
+    }
+
+    public void removeSavingsBalance(long amount) {
+        synchronized (dataLock) {
+            this.savingsBalance = Math.max(0, this.savingsBalance - amount);
+        }
+    }
+
+// ===============================
+// MÉTHODES COFFRE-FORT
+// ===============================
+
+    public long getSafeBalance() {
+        synchronized (dataLock) {
+            return safeBalance;
+        }
+    }
+
+    public void setSafeBalance(long balance) {
+        synchronized (dataLock) {
+            this.safeBalance = Math.max(0, balance);
+        }
+    }
+
+    public void addSafeBalance(long amount) {
+        synchronized (dataLock) {
+            this.safeBalance += amount;
+        }
+    }
+
+    public void removeSafeBalance(long amount) {
+        synchronized (dataLock) {
+            this.safeBalance = Math.max(0, this.safeBalance - amount);
+        }
+    }
+
+// ===============================
+// MÉTHODES NIVEAU BANCAIRE
+// ===============================
+
+    public int getBankLevel() {
+        synchronized (dataLock) {
+            return bankLevel;
+        }
+    }
+
+    public void setBankLevel(int level) {
+        synchronized (dataLock) {
+            this.bankLevel = Math.max(1, Math.min(10, level));
+        }
+    }
+
+    public long getTotalBankDeposits() {
+        synchronized (dataLock) {
+            return totalBankDeposits;
+        }
+    }
+
+    public void setTotalBankDeposits(long total) {
+        synchronized (dataLock) {
+            this.totalBankDeposits = Math.max(0, total);
+        }
+    }
+
+    public long getLastInterestTime() {
+        synchronized (dataLock) {
+            return lastInterestTime;
+        }
+    }
+
+    public void setLastInterestTime(long timestamp) {
+        synchronized (dataLock) {
+            this.lastInterestTime = timestamp;
+        }
+    }
+
+// ===============================
+// MÉTHODES INVESTISSEMENTS
+// ===============================
+
+    public Map<Material, Integer> getAllInvestments() {
+        synchronized (dataLock) {
+            return new HashMap<>(investments);
+        }
+    }
+
+    public int getInvestmentQuantity(Material material) {
+        synchronized (dataLock) {
+            return investments.getOrDefault(material, 0);
+        }
+    }
+
+    public void addInvestment(Material material, int quantity) {
+        synchronized (dataLock) {
+            investments.put(material, investments.getOrDefault(material, 0) + quantity);
+        }
+    }
+
+    public void removeInvestment(Material material, int quantity) {
+        synchronized (dataLock) {
+            int current = investments.getOrDefault(material, 0);
+            int newAmount = Math.max(0, current - quantity);
+
+            if (newAmount == 0) {
+                investments.remove(material);
+            } else {
+                investments.put(material, newAmount);
+            }
+        }
+    }
+
+    public void setInvestment(Material material, int quantity) {
+        synchronized (dataLock) {
+            if (quantity <= 0) {
+                investments.remove(material);
+            } else {
+                investments.put(material, quantity);
+            }
+        }
     }
 }
