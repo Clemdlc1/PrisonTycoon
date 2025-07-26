@@ -73,7 +73,7 @@ public class BankManager {
      */
     public boolean hasSavings(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.getSavingsBalance() > 0;
+        return playerData.getSavingsBalance() > 0 || canUseSavings(player);
     }
 
     /**
@@ -176,9 +176,9 @@ public class BankManager {
     }
 
     /**
-     * Achète des investissements
+     * Achète des investissements avec levier optionnel
      */
-    public boolean buyInvestment(Player player, Material material, int quantity) {
+    public boolean buyInvestment(Player player, Material material, long quantity, boolean useLevier) {
         if (!Arrays.asList(INVESTMENT_MATERIALS).contains(material)) {
             player.sendMessage("§c❌ Ce bloc n'est pas disponible à l'investissement !");
             return false;
@@ -188,13 +188,32 @@ public class BankManager {
         if (block == null) return false;
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        long totalCost = (long) (block.currentValue * quantity);
 
-        // Bonus commerçant niveau 5+ : levier x2
-        if (isTraderLevel5Plus(player)) {
-            quantity *= 2;
-            player.sendMessage("§6⚡ Bonus Commerçant Niv.5+ : Quantité doublée !");
+        // Validation des quantités extrêmes
+        if (quantity <= 0 || quantity > 1_000_000_000L) { // 1 milliard max par transaction
+            player.sendMessage("§c❌ Quantité invalide ! (1 à 1,000,000,000)");
+            return false;
         }
+
+        long finalQuantity = quantity;
+
+        // Levier x2 optionnel pour commerçant niveau 5+
+        if (useLevier && isTraderLevel5Plus(player)) {
+            finalQuantity *= 2;
+            player.sendMessage("§6⚡ Levier Commerçant x2 activé !");
+        } else if (useLevier && !isTraderLevel5Plus(player)) {
+            player.sendMessage("§c❌ Le levier nécessite Commerçant niveau 5+ !");
+            return false;
+        }
+
+        // Calcul du coût avec protection contre les débordements
+        double costPerUnit = block.currentValue;
+        if (costPerUnit * finalQuantity > Long.MAX_VALUE) {
+            player.sendMessage("§c❌ Montant trop élevé ! Réduisez la quantité.");
+            return false;
+        }
+
+        long totalCost = (long) (costPerUnit * finalQuantity);
 
         if (playerData.getCoins() < totalCost) {
             player.sendMessage("§c❌ Solde insuffisant ! Coût: " + NumberFormatter.format(totalCost));
@@ -202,48 +221,76 @@ public class BankManager {
         }
 
         playerData.removeCoins(totalCost);
-        playerData.addInvestment(material, quantity);
+        playerData.addInvestment(material, finalQuantity);
 
-        // Augmente la valeur du bloc selon l'investissement
-        block.totalInvestments += quantity;
-        updateBlockValue(material);
+        // Augmente la valeur du bloc selon l'investissement (avec protection débordement)
+        if (block.totalInvestments + finalQuantity > 0) { // Évite les débordements négatifs
+            block.totalInvestments += finalQuantity;
+            updateBlockValue(material);
+        }
 
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
         saveInvestmentData();
 
-        player.sendMessage("§a✅ Investi " + quantity + "x " + getBlockDisplayName(material));
+        player.sendMessage("§a✅ Investi " + NumberFormatter.format(finalQuantity) + "x " + getBlockDisplayName(material));
         player.sendMessage("§7Coût total: " + NumberFormatter.format(totalCost));
+        if (useLevier && isTraderLevel5Plus(player)) {
+            player.sendMessage("§6⚡ Quantité avec levier: " + NumberFormatter.format(quantity) + " → " + NumberFormatter.format(finalQuantity));
+        }
         return true;
     }
 
     /**
-     * Vend des investissements
+     * Vend des investissements avec support pour "all"
      */
-    public boolean sellInvestment(Player player, Material material, int quantity) {
+    public boolean sellInvestment(Player player, Material material, long quantity) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        if (playerData.getInvestmentQuantity(material) < quantity) {
-            player.sendMessage("§c❌ Quantité insuffisante en investissement !");
+        long currentInvestment = playerData.getInvestmentQuantity(material);
+        if (currentInvestment <= 0) {
+            player.sendMessage("§c❌ Vous n'avez aucun investissement dans ce bloc !");
+            return false;
+        }
+
+        // Support pour "all" - vendre tout
+        if (quantity == -1) { // -1 indique "all"
+            quantity = currentInvestment;
+        }
+
+        if (quantity <= 0 || quantity > currentInvestment) {
+            player.sendMessage("§c❌ Quantité invalide ! Vous avez " + NumberFormatter.format(currentInvestment) + " unités.");
             return false;
         }
 
         InvestmentBlock block = investmentBlocks.get(material);
         if (block == null) return false;
 
+        // Calcul de la valeur avec protection contre les débordements
+        if (block.currentValue * quantity > Long.MAX_VALUE) {
+            player.sendMessage("§c❌ Valeur trop élevée ! Contactez un administrateur.");
+            return false;
+        }
+
         long totalValue = (long) (block.currentValue * quantity);
 
         playerData.addCoins(totalValue);
         playerData.removeInvestment(material, quantity);
 
-        // Diminue la valeur du bloc
+        // Diminue la valeur du bloc avec protection
         block.totalInvestments = Math.max(0, block.totalInvestments - quantity);
         updateBlockValue(material);
 
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
         saveInvestmentData();
 
-        player.sendMessage("§a✅ Vendu " + quantity + "x " + getBlockDisplayName(material));
+        String quantityText = quantity == currentInvestment ? "TOUT (" + NumberFormatter.format(quantity) + "x)" : NumberFormatter.format(quantity) + "x";
+        player.sendMessage("§a✅ Vendu " + quantityText + " " + getBlockDisplayName(material));
         player.sendMessage("§7Valeur totale: " + NumberFormatter.format(totalValue));
+
+        if (quantity == currentInvestment) {
+            player.sendMessage("§7Vous n'avez plus d'investissement dans ce bloc.");
+        }
+
         return true;
     }
 
@@ -266,19 +313,25 @@ public class BankManager {
     }
 
     /**
-     * Met à jour la valeur d'un bloc selon les investissements
+     * Met à jour la valeur d'un bloc selon les investissements (adapté aux grandes valeurs)
      */
     private void updateBlockValue(Material material) {
         InvestmentBlock block = investmentBlocks.get(material);
         if (block == null) return;
 
         // Plus d'investissements = valeur plus stable, moins = plus volatile
-        double stabilityFactor = Math.min(1.0, block.totalInvestments / 1000.0);
+        // Utilisation de Math.min pour éviter les divisions par zéro et les valeurs extrêmes
+        double stabilityFactor = Math.min(1.0, block.totalInvestments / 100_000.0); // Ajusté pour les grandes valeurs
         block.volatility = block.baseVolatility * (1 - stabilityFactor * 0.5);
 
-        // Valeur augmente avec les investissements
-        double popularityBonus = 1 + (block.totalInvestments * 0.001);
-        block.currentValue = block.baseValue * popularityBonus;
+        // Valeur augmente avec les investissements, mais avec diminution des rendements
+        // Utilisation de log pour éviter une croissance exponentielle incontrôlable
+        double popularityMultiplier = 1 + (Math.log10(Math.max(1, block.totalInvestments)) * 0.1);
+        block.currentValue = block.baseValue * popularityMultiplier;
+
+        // Limite la valeur maximale pour éviter l'inflation extrême
+        double maxValue = block.baseValue * 50.0; // Limite à 50x la valeur de base
+        block.currentValue = Math.min(block.currentValue, maxValue);
     }
 
     /**
@@ -565,7 +618,7 @@ public class BankManager {
                 String path = material.name().toLowerCase();
                 if (investmentConfig.contains(path)) {
                     double currentValue = investmentConfig.getDouble(path + ".current-value");
-                    int totalInvestments = investmentConfig.getInt(path + ".total-investments");
+                    long totalInvestments = investmentConfig.getLong(path + ".total-investments"); // Changé en getLong
 
                     InvestmentBlock block = investmentBlocks.get(material);
                     if (block != null) {
@@ -636,11 +689,11 @@ public class BankManager {
         public Material material;
         public double baseValue;
         public double currentValue;
-        public int totalInvestments;
+        public long totalInvestments; // Changé de int à long pour supporter de grandes valeurs
         public double volatility;
         public double baseVolatility;
 
-        public InvestmentBlock(Material material, double baseValue, int totalInvestments, double baseVolatility) {
+        public InvestmentBlock(Material material, double baseValue, long totalInvestments, double baseVolatility) {
             this.material = material;
             this.baseValue = baseValue;
             this.currentValue = baseValue;

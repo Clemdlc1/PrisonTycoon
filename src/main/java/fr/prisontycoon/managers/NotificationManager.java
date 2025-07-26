@@ -32,7 +32,7 @@ public class NotificationManager {
         this.lastNotificationTime = new ConcurrentHashMap<>();
         this.activeTemporaryNotifications = new ConcurrentHashMap<>();
 
-        plugin.getPluginLogger().info("§aNotificationManager amélioré initialisé (avec notifications temporaires).");
+        plugin.getPluginLogger().info("§aNotificationManager amélioré initialisé.");
     }
 
     /**

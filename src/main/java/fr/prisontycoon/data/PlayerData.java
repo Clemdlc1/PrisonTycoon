@@ -109,8 +109,8 @@ public class PlayerData {
     private long totalBankDeposits = 0;
     private long lastInterestTime = System.currentTimeMillis();
 
-    // Investissements - Map<Material, Quantité>
-    private final Map<Material, Integer> investments = new ConcurrentHashMap<>();
+    // Investissements - Map<Material, Quantité> avec support grandes valeurs
+    private final Map<Material, Long> investments = new ConcurrentHashMap<>();
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -1578,10 +1578,6 @@ public class PlayerData {
         return Character.compare(c1, c2);
     }
 
-// ===============================
-// MÉTHODES ÉPARGNE
-// ===============================
-
     public long getSavingsBalance() {
         synchronized (dataLock) {
             return savingsBalance;
@@ -1676,33 +1672,33 @@ public class PlayerData {
     }
 
 // ===============================
-// MÉTHODES INVESTISSEMENTS
+// MÉTHODES INVESTISSEMENTS (avec support grandes valeurs)
 // ===============================
 
-    public Map<Material, Integer> getAllInvestments() {
+    public Map<Material, Long> getAllInvestments() {
         synchronized (dataLock) {
             return new HashMap<>(investments);
         }
     }
 
-    public int getInvestmentQuantity(Material material) {
+    public long getInvestmentQuantity(Material material) {
         synchronized (dataLock) {
-            return investments.getOrDefault(material, 0);
+            return investments.getOrDefault(material, 0L);
         }
     }
 
-    public void addInvestment(Material material, int quantity) {
+    public void addInvestment(Material material, long quantity) {
         synchronized (dataLock) {
-            investments.put(material, investments.getOrDefault(material, 0) + quantity);
+            investments.put(material, investments.getOrDefault(material, 0L) + quantity);
         }
     }
 
-    public void removeInvestment(Material material, int quantity) {
+    public void removeInvestment(Material material, long quantity) {
         synchronized (dataLock) {
-            int current = investments.getOrDefault(material, 0);
-            int newAmount = Math.max(0, current - quantity);
+            long current = investments.getOrDefault(material, 0L);
+            long newAmount = Math.max(0L, current - quantity);
 
-            if (newAmount == 0) {
+            if (newAmount == 0L) {
                 investments.remove(material);
             } else {
                 investments.put(material, newAmount);
@@ -1710,9 +1706,9 @@ public class PlayerData {
         }
     }
 
-    public void setInvestment(Material material, int quantity) {
+    public void setInvestment(Material material, long quantity) {
         synchronized (dataLock) {
-            if (quantity <= 0) {
+            if (quantity <= 0L) {
                 investments.remove(material);
             } else {
                 investments.put(material, quantity);

@@ -138,15 +138,14 @@ public final class PrisonTycoon extends JavaPlugin {
             logger.info("§aPlugin PrisonTycoon activé avec succès!");
             logger.info("§7Fonctionnalités chargées:");
             logger.info("§7- Système de mines protégées");
-            logger.info("§7- Pioche légendaire immobile (slot 1)");
             logger.info("§7- 18 enchantements custom");
             logger.info("§7- Distinction blocs minés/cassés");
             logger.info("§7- Restrictions hors mine");
-            logger.info("§7- Économie triple (coins/tokens/xp)");
+            logger.info("§7- Économie (coins/tokens/xp/beacons)");
             logger.info("§7- Interface graphique avancée");
             logger.info("§7- Auto-amélioration des enchantements");
             logger.info("§7- Système de notifications intelligent multi-types");
-            logger.info("§7- ScoreboardTask intégré (sans ScoreboardManager)");
+            logger.info("§7- ScoreboardTask intégré");
 
         } catch (Exception e) {
             logger.severe("§cErreur lors de l'activation du plugin:");
@@ -393,7 +392,7 @@ public final class PrisonTycoon extends JavaPlugin {
 
         combustionDecayTask = new CombustionDecayTask(this);
         combustionDecayTask.runTaskTimer(this, 0L, combustionInterval);
-        logger.info("§7- CombustionDecayTask démarrée (décroissance corrigée toutes les " + combustionInterval + " ticks)");
+        logger.info("§7- CombustionDecayTask démarrée (décroissance toutes les " + combustionInterval + " ticks)");
 
         autoUpgradeTask = new AutoUpgradeTask(this);
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);

@@ -345,7 +345,7 @@ commands:
 
   bank:
     description: "Système bancaire complet - épargne, investissements et coffre-fort"
-    usage: /bank [deposit|withdraw|invest|safe|improve|transfer|help] [args...]
+    usage: /bank [deposit|withdraw|invest|safe|improve|help] [args...]
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [banque, banco, bank]

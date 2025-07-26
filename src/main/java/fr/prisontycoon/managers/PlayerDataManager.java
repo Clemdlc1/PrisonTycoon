@@ -374,14 +374,14 @@ public class PlayerDataManager {
             if (savedTotalDeposits > 0) data.setTotalBankDeposits(savedTotalDeposits);
             data.setLastInterestTime(savedLastInterest);
 
-            // Investissements
+            // Investissements avec support grandes valeurs
             if (config.contains("bank.investments")) {
                 ConfigurationSection investSection = config.getConfigurationSection("bank.investments");
                 for (String materialName : investSection.getKeys(false)) {
                     try {
                         Material material = Material.valueOf(materialName.toUpperCase());
-                        int quantity = investSection.getInt(materialName);
-                        if (quantity > 0) {
+                        long quantity = investSection.getLong(materialName); // Changé en getLong
+                        if (quantity > 0L) {
                             data.setInvestment(material, quantity);
                         }
                     } catch (IllegalArgumentException e) {
@@ -614,10 +614,10 @@ public class PlayerDataManager {
             config.set("bank.total-deposits", data.getTotalBankDeposits());
             config.set("bank.last-interest", data.getLastInterestTime());
 
-            // Investissements
-            Map<Material, Integer> investments = data.getAllInvestments();
+            // Investissements avec support grandes valeurs
+            Map<Material, Long> investments = data.getAllInvestments();
             if (!investments.isEmpty()) {
-                for (Map.Entry<Material, Integer> entry : investments.entrySet()) {
+                for (Map.Entry<Material, Long> entry : investments.entrySet()) {
                     config.set("bank.investments." + entry.getKey().name().toLowerCase(), entry.getValue());
                 }
             }

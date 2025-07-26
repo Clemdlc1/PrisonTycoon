@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
  * - /bank safe deposit <montant> : dépose dans le coffre-fort
  * - /bank safe withdraw <montant> : retire du coffre-fort
  * - /bank improve : améliore le niveau bancaire
- * - /bank transfer <joueur> <montant> : transfert d'argent
  */
 public class BankCommand implements CommandExecutor, TabCompleter {
 
@@ -66,7 +65,6 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             case "invest" -> handleInvest(player, args);
             case "safe" -> handleSafe(player, args);
             case "improve" -> handleImprove(player);
-            case "transfer" -> handleTransfer(player, args);
             case "help" -> sendHelpMessage(player);
             default -> {
                 player.sendMessage("§c❌ Sous-commande inconnue. Utilisez /bank help");
@@ -145,7 +143,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Affiche les informations détaillées d'un bloc d'investissement
+     * Affiche les informations détaillées d'un bloc avec différenciation par métier
      */
     private void handleInvestInfo(Player player, String[] args) {
         if (args.length != 3) {
@@ -166,27 +164,32 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        boolean isTrader3Plus = bankManager.isTraderLevel3Plus(player);
+        boolean isTrader5Plus = bankManager.isTraderLevel5Plus(player);
+
         player.sendMessage("§6═══════════════════════════════");
         player.sendMessage("§e📊 " + bankManager.getBlockDisplayName(material));
         player.sendMessage("§6═══════════════════════════════");
-        player.sendMessage("§7Valeur actuelle: §a" + NumberFormatter.format((long) block.currentValue) + " coins");
-        player.sendMessage("§7Valeur de base: §e" + NumberFormatter.format((long) block.baseValue) + " coins");
-        player.sendMessage("§7Investisseurs totaux: §b" + NumberFormatter.format(block.totalInvestments));
-        player.sendMessage("§7Volatilité: §c" + String.format("%.1f%%", block.volatility * 100));
 
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        int playerInvestment = playerData.getInvestmentQuantity(material);
+        // Informations de base (tous les joueurs)
+        player.sendMessage("§7Valeur actuelle: §a" + NumberFormatter.format((long) block.currentValue) + " coins");
+        player.sendMessage("§7Investisseurs totaux: §b" + NumberFormatter.format(block.totalInvestments));
+
+        long playerInvestment = playerData.getInvestmentQuantity(material);
         if (playerInvestment > 0) {
             long totalValue = (long) (block.currentValue * playerInvestment);
-            player.sendMessage("§7Votre investissement: §6" + playerInvestment + " unités");
+            player.sendMessage("§7Votre investissement: §6" + NumberFormatter.format(playerInvestment) + " unités");
             player.sendMessage("§7Valeur de votre portefeuille: §a" + NumberFormatter.format(totalValue) + " coins");
         }
 
-        // Informations détaillées pour les commerçants niveau 3+
-        if (bankManager.isTraderLevel3Plus(player)) {
+        if (isTrader3Plus) {
             player.sendMessage("");
             player.sendMessage("§6⚡ Informations Commerçant:");
+            player.sendMessage("§7Valeur de base: §e" + NumberFormatter.format((long) block.baseValue) + " coins");
+            player.sendMessage("§7Volatilité: §c" + String.format("%.1f%%", block.volatility * 100));
 
+            // Évolution en temps réel sur les dernières valeurs
             List<BankManager.InvestmentHistory> history = bankManager.getInvestmentHistory(material);
             if (history.size() >= 2) {
                 BankManager.InvestmentHistory current = history.get(history.size() - 1);
@@ -194,15 +197,46 @@ public class BankCommand implements CommandExecutor, TabCompleter {
 
                 double change = ((current.value - previous.value) / previous.value) * 100;
                 String changeColor = change > 0 ? "§a+" : "§c";
-                player.sendMessage("§7Évolution récente: " + changeColor + String.format("%.2f%%", change));
+                player.sendMessage("§7Évolution (Temps réel): " + changeColor + String.format("%.2f%%", change));
 
                 // Tendance sur les 10 dernières valeurs
                 if (history.size() >= 10) {
                     double trend = calculateTrend(history.subList(history.size() - 10, history.size()));
                     String trendText = trend > 0.02 ? "§aHaussière" : trend < -0.02 ? "§cBaissière" : "§eStable";
                     player.sendMessage("§7Tendance (10 pts): " + trendText);
+
+                    // Affichage du graphique textuel pour les commerçants
+                    if (history.size() >= 5) {
+                        StringBuilder graph = new StringBuilder("§7Graphique: ");
+                        List<BankManager.InvestmentHistory> last5 = history.subList(history.size() - 5, history.size());
+                        double minVal = last5.stream().mapToDouble(h -> h.value).min().orElse(0);
+                        double maxVal = last5.stream().mapToDouble(h -> h.value).max().orElse(1);
+
+                        for (BankManager.InvestmentHistory h : last5) {
+                            double normalized = (h.value - minVal) / (maxVal - minVal);
+                            if (normalized > 0.8) graph.append("§a▲");
+                            else if (normalized > 0.6) graph.append("§e▲");
+                            else if (normalized > 0.4) graph.append("§e■");
+                            else if (normalized > 0.2) graph.append("§c▼");
+                            else graph.append("§c▼");
+                        }
+
+                        player.sendMessage(graph.toString());
+                    }
                 }
             }
+        }
+
+        if (isTrader5Plus) {
+            player.sendMessage("§6⚡ Bonus Levier x2 disponible !");
+            player.sendMessage("§7Utilisez: §e/bank invest buy " + args[2] + " <quantité> levier");
+        }
+
+        // Conseils selon le métier
+        if (!isTrader3Plus) {
+            player.sendMessage("");
+            player.sendMessage("§7§o💡 Conseil: Devenez Commerçant niveau 3+ pour");
+            player.sendMessage("§7§o   des analyses détaillées et graphiques !");
         }
 
         player.sendMessage("§6═══════════════════════════════");
@@ -221,11 +255,12 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Gère l'achat d'investissements
+     * Gère l'achat d'investissements avec levier optionnel
      */
     private void handleInvestBuy(Player player, String[] args) {
-        if (args.length != 4) {
-            player.sendMessage("§c❌ Usage: /bank invest buy <bloc> <quantité>");
+        if (args.length < 4 || args.length > 5) {
+            player.sendMessage("§c❌ Usage: /bank invest buy <bloc> <quantité> [levier]");
+            player.sendMessage("§7Exemple: §e/bank invest buy gold 100 levier");
             return;
         }
 
@@ -237,24 +272,30 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         }
 
         try {
-            int quantity = Integer.parseInt(args[3]);
+            long quantity = parseAmount(args[3], player);
             if (quantity <= 0) {
                 player.sendMessage("§c❌ La quantité doit être positive!");
                 return;
             }
 
-            bankManager.buyInvestment(player, material, quantity);
+            boolean useLevier = false;
+            if (args.length == 5 && args[4].equalsIgnoreCase("levier")) {
+                useLevier = true;
+            }
+
+            bankManager.buyInvestment(player, material, quantity, useLevier);
         } catch (NumberFormatException e) {
             player.sendMessage("§c❌ Quantité invalide: " + args[3]);
         }
     }
 
     /**
-     * Gère la vente d'investissements
+     * Gère la vente d'investissements avec support pour "all"
      */
     private void handleInvestSell(Player player, String[] args) {
         if (args.length != 4) {
-            player.sendMessage("§c❌ Usage: /bank invest sell <bloc> <quantité>");
+            player.sendMessage("§c❌ Usage: /bank invest sell <bloc> <quantité|all>");
+            player.sendMessage("§7Exemple: §e/bank invest sell gold all");
             return;
         }
 
@@ -266,10 +307,15 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         }
 
         try {
-            int quantity = Integer.parseInt(args[3]);
-            if (quantity <= 0) {
-                player.sendMessage("§c❌ La quantité doit être positive!");
-                return;
+            long quantity;
+            if (args[3].equalsIgnoreCase("all")) {
+                quantity = -1; // -1 indique "all" au BankManager
+            } else {
+                quantity = parseAmount(args[3], player);
+                if (quantity <= 0) {
+                    player.sendMessage("§c❌ La quantité doit être positive!");
+                    return;
+                }
             }
 
             bankManager.sellInvestment(player, material, quantity);
@@ -279,11 +325,12 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Affiche les investissements du joueur
+     * Affiche les investissements du joueur avec informations différenciées
      */
     private void showPlayerInvestments(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Map<Material, Integer> investments = playerData.getAllInvestments();
+        Map<Material, Long> investments = playerData.getAllInvestments();
+        boolean isTrader = bankManager.isTraderLevel3Plus(player);
 
         player.sendMessage("§6═══════════════════════════════");
         player.sendMessage("§e💼 Votre Portefeuille d'Investissements");
@@ -291,13 +338,16 @@ public class BankCommand implements CommandExecutor, TabCompleter {
 
         if (investments.isEmpty()) {
             player.sendMessage("§7Aucun investissement actuel.");
-            player.sendMessage("§7Utilisez §e/bank invest buy <bloc> <quantité>§7 pour investir.");
+            player.sendMessage("§7Utilisez §e/bank invest buy <bloc> <quantité> [levier]§7 pour investir.");
+            if (bankManager.isTraderLevel5Plus(player)) {
+                player.sendMessage("§6⚡ Astuce: Ajoutez §elevier§6 pour doubler votre achat !");
+            }
         } else {
             long totalValue = 0;
 
-            for (Map.Entry<Material, Integer> entry : investments.entrySet()) {
+            for (Map.Entry<Material, Long> entry : investments.entrySet()) {
                 Material material = entry.getKey();
-                int quantity = entry.getValue();
+                long quantity = entry.getValue();
 
                 BankManager.InvestmentBlock block = bankManager.getInvestmentBlock(material);
                 if (block != null) {
@@ -305,13 +355,35 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                     totalValue += value;
 
                     String blockName = bankManager.getBlockDisplayName(material);
-                    player.sendMessage("§7• " + blockName + ": §e" + quantity + "x §7(§a" +
-                            NumberFormatter.format(value) + " coins§7)");
+
+                    if (isTrader) {
+                        // Informations détaillées pour les commerçants
+                        List<BankManager.InvestmentHistory> history = bankManager.getInvestmentHistory(material);
+                        String evolutionText = "";
+                        if (history.size() >= 2) {
+                            BankManager.InvestmentHistory current = history.get(history.size() - 1);
+                            BankManager.InvestmentHistory previous = history.get(history.size() - 2);
+                            double change = ((current.value - previous.value) / previous.value) * 100;
+                            String changeColor = change > 0 ? "§a+" : "§c";
+                            evolutionText = " " + changeColor + String.format("%.2f%%", change);
+                        }
+
+                        player.sendMessage("§7• " + blockName + ": §e" + NumberFormatter.format(quantity) + "x §7(§a" +
+                                NumberFormatter.format(value) + " coins§7)" + evolutionText);
+                    } else {
+                        // Informations basiques pour les non-commerçants
+                        player.sendMessage("§7• " + blockName + ": §e" + NumberFormatter.format(quantity) + "x §7(§a" +
+                                NumberFormatter.format(value) + " coins§7)");
+                    }
                 }
             }
 
             player.sendMessage("§6─────────────────────────────");
             player.sendMessage("§7Valeur totale: §a" + NumberFormatter.format(totalValue) + " coins");
+
+            if (!isTrader) {
+                player.sendMessage("§7§o💡 Devenez Commerçant pour des infos détaillées !");
+            }
         }
 
         player.sendMessage("§6═══════════════════════════════");
@@ -410,36 +482,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Gère les transferts d'argent
-     */
-    private void handleTransfer(Player player, String[] args) {
-        if (args.length != 3) {
-            player.sendMessage("§c❌ Usage: /bank transfer <joueur> <montant>");
-            return;
-        }
-
-        String targetName = args[1];
-
-        try {
-            long amount = parseAmount(args[2], player);
-            if (amount <= 0) {
-                player.sendMessage("§c❌ Le montant doit être positif!");
-                return;
-            }
-
-            if (amount < 1000) {
-                player.sendMessage("§c❌ Montant minimum de transfert: 1,000 coins");
-                return;
-            }
-
-            bankManager.transferMoney(player, targetName, amount);
-        } catch (NumberFormatException e) {
-            player.sendMessage("§c❌ Montant invalide: " + args[2]);
-        }
-    }
-
-    /**
-     * Parse un montant avec support des raccourcis (k, m, b)
+     * Parse un montant avec support des raccourcis (k, m, b, t) et valeurs extrêmes
      */
     private long parseAmount(String amountStr, Player player) {
         if (amountStr.equalsIgnoreCase("all")) {
@@ -451,17 +494,27 @@ public class BankCommand implements CommandExecutor, TabCompleter {
 
         long multiplier = 1;
         if (clean.endsWith("k")) {
-            multiplier = 1_000;
+            multiplier = 1_000L;
             clean = clean.substring(0, clean.length() - 1);
         } else if (clean.endsWith("m")) {
-            multiplier = 1_000_000;
+            multiplier = 1_000_000L;
             clean = clean.substring(0, clean.length() - 1);
         } else if (clean.endsWith("b")) {
-            multiplier = 1_000_000_000;
+            multiplier = 1_000_000_000L;
+            clean = clean.substring(0, clean.length() - 1);
+        } else if (clean.endsWith("t")) {
+            multiplier = 1_000_000_000_000L; // Support pour les trillions
             clean = clean.substring(0, clean.length() - 1);
         }
 
-        return Long.parseLong(clean) * multiplier;
+        long baseAmount = Long.parseLong(clean);
+
+        // Protection contre les débordements
+        if (baseAmount > Long.MAX_VALUE / multiplier) {
+            throw new NumberFormatException("Montant trop élevé");
+        }
+
+        return baseAmount * multiplier;
     }
 
     /**
@@ -490,7 +543,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Envoie le message d'aide
+     * Envoie le message d'aide avec nouvelles syntaxes
      */
     private void sendHelpMessage(Player player) {
         player.sendMessage("§6═══════════════════════════════");
@@ -501,8 +554,8 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/bank withdraw <montant> §7- Retire de l'épargne");
         player.sendMessage("§e/bank invest §7- Affiche vos investissements");
         player.sendMessage("§e/bank invest info <bloc> §7- Informations sur un bloc");
-        player.sendMessage("§e/bank invest buy <bloc> <qté> §7- Achète des investissements");
-        player.sendMessage("§e/bank invest sell <bloc> <qté> §7- Vend des investissements");
+        player.sendMessage("§e/bank invest buy <bloc> <qté> [levier] §7- Achète des investissements");
+        player.sendMessage("§e/bank invest sell <bloc> <qté|all> §7- Vend des investissements");
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         if (playerData.getPrestigeLevel() >= 10) {
@@ -511,9 +564,16 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         }
 
         player.sendMessage("§e/bank improve §7- Améliore le niveau bancaire");
-        player.sendMessage("§e/bank transfer <joueur> <montant> §7- Transfère de l'argent");
         player.sendMessage("§6═══════════════════════════════");
-        player.sendMessage("§7Montants acceptés: §e1000, 1k, 1.5m, all");
+        player.sendMessage("§7Montants acceptés: §e1000, 1k, 1.5m, 2b, 3t, all");
+
+        if (bankManager.isTraderLevel5Plus(player)) {
+            player.sendMessage("§6⚡ Bonus Commerçant: Ajoutez §elevier§6 pour doubler vos achats !");
+        } else if (bankManager.isTraderLevel3Plus(player)) {
+            player.sendMessage("§6⚡ Bonus Commerçant: Informations détaillées disponibles !");
+        } else {
+            player.sendMessage("§7💡 Conseil: Devenez Commerçant pour des bonus d'investissement !");
+        }
     }
 
     @Override
@@ -522,7 +582,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 1) {
             List<String> subCommands = Arrays.asList(
-                    "deposit", "withdraw", "invest", "safe", "improve", "transfer", "help"
+                    "deposit", "withdraw", "invest", "safe", "improve", "help"
             );
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2) {
@@ -539,27 +599,27 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                     List<String> amounts = Arrays.asList("1000", "5000", "10k", "50k", "100k", "1m", "all");
                     StringUtil.copyPartialMatches(args[1], amounts, completions);
                 }
-                case "transfer" -> {
-                    // Suggère les joueurs en ligne
-                    List<String> playerNames = plugin.getServer().getOnlinePlayers().stream()
-                            .map(Player::getName)
-                            .collect(Collectors.toList());
-                    StringUtil.copyPartialMatches(args[1], playerNames, completions);
-                }
             }
         } else if (args.length == 3) {
             if ("invest".equals(args[0].toLowerCase())) {
                 if ("info".equals(args[1].toLowerCase()) || "buy".equals(args[1].toLowerCase()) || "sell".equals(args[1].toLowerCase())) {
                     StringUtil.copyPartialMatches(args[2], INVESTMENT_MATERIALS, completions);
                 }
-            } else if ("transfer".equals(args[0].toLowerCase())) {
-                List<String> amounts = Arrays.asList("1000", "5000", "10k", "50k", "100k", "1m");
-                StringUtil.copyPartialMatches(args[2], amounts, completions);
             }
         } else if (args.length == 4) {
             if ("invest".equals(args[0].toLowerCase()) && ("buy".equals(args[1].toLowerCase()) || "sell".equals(args[1].toLowerCase()))) {
-                List<String> quantities = Arrays.asList("1", "5", "10", "25", "50", "100");
-                StringUtil.copyPartialMatches(args[3], quantities, completions);
+                if ("sell".equals(args[1].toLowerCase())) {
+                    List<String> quantities = Arrays.asList("1", "5", "10", "25", "50", "100", "all");
+                    StringUtil.copyPartialMatches(args[3], quantities, completions);
+                } else {
+                    List<String> quantities = Arrays.asList("1", "5", "10", "25", "50", "100", "1k", "10k");
+                    StringUtil.copyPartialMatches(args[3], quantities, completions);
+                }
+            }
+        } else if (args.length == 5) {
+            if ("invest".equals(args[0].toLowerCase()) && "buy".equals(args[1].toLowerCase())) {
+                List<String> leverOptions = Arrays.asList("levier");
+                StringUtil.copyPartialMatches(args[4], leverOptions, completions);
             }
         }
 

@@ -8,15 +8,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +22,7 @@ import java.util.Map;
 /**
  * Interface graphique du système bancaire
  */
-public class BankGUI implements Listener {
+public class BankGUI {
 
     private final PrisonTycoon plugin;
     private final BankManager bankManager;
@@ -36,7 +32,6 @@ public class BankGUI implements Listener {
     private static final int INVESTMENT_SLOT = 22;
     private static final int SAFE_SLOT = 24;
     private static final int BANK_LEVEL_SLOT = 40;
-    private static final int TRANSFER_SLOT = 42;
     private static final int CLOSE_SLOT = 44;
 
     // Slots pour le menu d'investissement
@@ -44,9 +39,7 @@ public class BankGUI implements Listener {
 
     public BankGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.bankManager = plugin.getBankManager();
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
-    }
+        this.bankManager = plugin.getBankManager();}
 
     /**
      * Ouvre le menu principal de la banque
@@ -87,9 +80,6 @@ public class BankGUI implements Listener {
         // Niveau bancaire
         gui.setItem(BANK_LEVEL_SLOT, createBankLevelItem(player, playerData));
 
-        // Transfert
-        gui.setItem(TRANSFER_SLOT, createTransferItem());
-
         // Fermer
         gui.setItem(CLOSE_SLOT, createCloseItem());
 
@@ -125,7 +115,7 @@ public class BankGUI implements Listener {
     }
 
     /**
-     * Crée l'item des investissements
+     * Crée l'item des investissements avec informations différenciées
      */
     private ItemStack createInvestmentItem(Player player, PlayerData playerData) {
         ItemStack item = new ItemStack(Material.DIAMOND);
@@ -135,14 +125,16 @@ public class BankGUI implements Listener {
 
         List<String> lore = new ArrayList<>();
 
-        Map<Material, Integer> investments = playerData.getAllInvestments();
+        Map<Material, Long> investments = playerData.getAllInvestments();
+        boolean isTrader = bankManager.isTraderLevel3Plus(player);
+
         if (investments.isEmpty()) {
             lore.add("§7Aucun investissement actuel");
         } else {
             long totalValue = 0;
-            int totalInvestments = 0;
+            long totalInvestments = 0;
 
-            for (Map.Entry<Material, Integer> entry : investments.entrySet()) {
+            for (Map.Entry<Material, Long> entry : investments.entrySet()) {
                 BankManager.InvestmentBlock block = bankManager.getInvestmentBlock(entry.getKey());
                 if (block != null) {
                     totalValue += (long) (block.currentValue * entry.getValue());
@@ -150,7 +142,7 @@ public class BankGUI implements Listener {
                 }
             }
 
-            lore.add("§7Investissements: §e" + totalInvestments + " unités");
+            lore.add("§7Investissements: §e" + NumberFormatter.format(totalInvestments) + " unités");
             lore.add("§7Valeur totale: §a" + NumberFormatter.format(totalValue) + " coins");
         }
 
@@ -158,10 +150,12 @@ public class BankGUI implements Listener {
         lore.add("§7Blocs disponibles: §e9 types");
 
         if (bankManager.isTraderLevel5Plus(player)) {
-            lore.add("§6⚡ Bonus Commerçant Niv.5+: §eQuantité x2");
+            lore.add("§6⚡ Bonus Commerçant Niv.5+: §eLevier x2 optionnel");
         }
-        if (bankManager.isTraderLevel3Plus(player)) {
+        if (isTrader) {
             lore.add("§6⚡ Bonus Commerçant Niv.3+: §eInformations détaillées");
+        } else {
+            lore.add("§7§o💡 Devenez Commerçant pour plus d'infos !");
         }
 
         lore.add("");
@@ -274,30 +268,6 @@ public class BankGUI implements Listener {
     }
 
     /**
-     * Crée l'item de transfert
-     */
-    private ItemStack createTransferItem() {
-        ItemStack item = new ItemStack(Material.PAPER);
-        ItemMeta meta = item.getItemMeta();
-
-        meta.setDisplayName("§e💸 Transfert d'Argent");
-
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Transférez vos coins à");
-        lore.add("§7d'autres joueurs en ligne.");
-        lore.add("");
-        lore.add("§c⚠ Frais de transfert: §e2%");
-        lore.add("§c⚠ Montant minimum: §e1,000 coins");
-        lore.add("");
-        lore.add("§7Usage: §e/bank transfer <joueur> <montant>");
-
-        meta.setLore(lore);
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
-    /**
      * Crée l'item d'informations du joueur
      */
     private ItemStack createPlayerInfoItem(Player player, PlayerData playerData) {
@@ -361,7 +331,7 @@ public class BankGUI implements Listener {
     }
 
     /**
-     * Crée un item pour un bloc d'investissement
+     * Crée un item pour un bloc d'investissement avec informations différenciées
      */
     private ItemStack createInvestmentBlockItem(Player player, Material material, PlayerData playerData) {
         BankManager.InvestmentBlock block = bankManager.getInvestmentBlock(material);
@@ -372,22 +342,18 @@ public class BankGUI implements Listener {
         meta.setDisplayName("§e" + blockName);
 
         List<String> lore = new ArrayList<>();
+        boolean isTrader3Plus = bankManager.isTraderLevel3Plus(player);
+        boolean isTrader5Plus = bankManager.isTraderLevel5Plus(player);
+
+        // Informations de base pour tous
         lore.add("§7Valeur actuelle: §a" + NumberFormatter.format((long) block.currentValue) + " coins");
         lore.add("§7Investisseurs: §b" + NumberFormatter.format(block.totalInvestments));
-        lore.add("§7Volatilité: §c" + String.format("%.1f%%", block.volatility * 100));
-
-        int playerInvestment = playerData.getInvestmentQuantity(material);
-        if (playerInvestment > 0) {
-            long value = (long) (block.currentValue * playerInvestment);
-            lore.add("");
-            lore.add("§7Votre investissement: §6" + playerInvestment + " unités");
-            lore.add("§7Valeur: §a" + NumberFormatter.format(value) + " coins");
-        }
-
-        lore.add("");
 
         // Informations détaillées pour commerçants niveau 3+
-        if (bankManager.isTraderLevel3Plus(player)) {
+        if (isTrader3Plus) {
+            lore.add("§7Volatilité: §c" + String.format("%.1f%%", block.volatility * 100));
+
+            // Évolution en temps réel
             List<BankManager.InvestmentHistory> history = bankManager.getInvestmentHistory(material);
             if (history.size() >= 2) {
                 BankManager.InvestmentHistory current = history.get(history.size() - 1);
@@ -399,16 +365,34 @@ public class BankGUI implements Listener {
             }
         }
 
+        long playerInvestment = playerData.getInvestmentQuantity(material);
+        if (playerInvestment > 0) {
+            long value = (long) (block.currentValue * playerInvestment);
+            lore.add("");
+            lore.add("§7Votre investissement: §6" + NumberFormatter.format(playerInvestment) + " unités");
+            lore.add("§7Valeur: §a" + NumberFormatter.format(value) + " coins");
+        }
+
+        lore.add("");
+
+        // Instructions d'utilisation
         lore.add("§7Clic gauche: §eInfo détaillée");
         lore.add("§7Clic droit: §aAcheter rapidement");
         if (playerInvestment > 0) {
             lore.add("§7Shift + clic droit: §cVendre rapidement");
         }
 
+        // Bonus commerçant
+        if (isTrader5Plus) {
+            lore.add("§6⚡ Levier x2 disponible");
+        } else if (!isTrader3Plus) {
+            lore.add("§7§o💡 Commerçant pour plus d'infos");
+        }
+
         meta.setLore(lore);
 
         // Ajout des données pour le clic
-        meta.getPersistentDataContainer().set(new org.bukkit.NamespacedKey((Plugin) this, "investment_material"),
+        meta.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "investment_material"),
                 PersistentDataType.STRING, material.name());
 
         item.setItemMeta(meta);
@@ -416,7 +400,7 @@ public class BankGUI implements Listener {
     }
 
     /**
-     * Crée un résumé du portefeuille
+     * Crée un résumé du portefeuille avec support grandes valeurs
      */
     private ItemStack createPortfolioSummaryItem(Player player, PlayerData playerData) {
         ItemStack item = new ItemStack(Material.BOOK);
@@ -425,15 +409,15 @@ public class BankGUI implements Listener {
         meta.setDisplayName("§6📊 Résumé du Portefeuille");
 
         List<String> lore = new ArrayList<>();
-        Map<Material, Integer> investments = playerData.getAllInvestments();
+        Map<Material, Long> investments = playerData.getAllInvestments();
 
         if (investments.isEmpty()) {
             lore.add("§7Aucun investissement");
         } else {
             long totalValue = 0;
-            int totalQuantity = 0;
+            long totalQuantity = 0;
 
-            for (Map.Entry<Material, Integer> entry : investments.entrySet()) {
+            for (Map.Entry<Material, Long> entry : investments.entrySet()) {
                 BankManager.InvestmentBlock block = bankManager.getInvestmentBlock(entry.getKey());
                 if (block != null) {
                     totalValue += (long) (block.currentValue * entry.getValue());
@@ -441,7 +425,7 @@ public class BankGUI implements Listener {
                 }
             }
 
-            lore.add("§7Total investi: §e" + totalQuantity + " unités");
+            lore.add("§7Total investi: §e" + NumberFormatter.format(totalQuantity) + " unités");
             lore.add("§7Valeur totale: §a" + NumberFormatter.format(totalValue) + " coins");
             lore.add("§7Types d'investissements: §b" + investments.size());
         }
@@ -449,7 +433,12 @@ public class BankGUI implements Listener {
         if (bankManager.isTraderLevel5Plus(player)) {
             lore.add("");
             lore.add("§6⚡ Bonus Commerçant Actif:");
-            lore.add("§7• Quantité d'achat doublée");
+            lore.add("§7• Levier x2 optionnel sur achats");
+            lore.add("§7• Informations détaillées");
+        } else if (bankManager.isTraderLevel3Plus(player)) {
+            lore.add("");
+            lore.add("§6⚡ Bonus Commerçant Actif:");
+            lore.add("§7• Informations détaillées");
         }
 
         meta.setLore(lore);
@@ -535,29 +524,18 @@ public class BankGUI implements Listener {
                 player.closeInventory();
                 bankManager.upgradeBankLevel(player);
             }
-            case TRANSFER_SLOT -> {
-                player.closeInventory();
-                player.sendMessage("§6═══════════════════════════════");
-                player.sendMessage("§e💸 Transfert d'Argent");
-                player.sendMessage("§6═══════════════════════════════");
-                player.sendMessage("§e/bank transfer <joueur> <montant>");
-                player.sendMessage("§7Exemple: §e/bank transfer Steve 5000");
-                player.sendMessage("§c⚠ Frais: 2% | Minimum: 1,000 coins");
-                player.sendMessage("§6═══════════════════════════════");
-            }
             case CLOSE_SLOT -> player.closeInventory();
         }
     }
 
     /**
-     * Gère les clics dans le menu d'investissement
+     * Gère les clics dans le menu d'investissement avec nouvelles fonctionnalités
      */
     public void handleInvestmentMenuClick(Player player, int slot, ItemStack clicked, ClickType clickType) {
-        // Boutons de navigation
 
         boolean rightClick = clickType.isRightClick();
         boolean shift = clickType.isShiftClick();
-
+        // Boutons de navigation
         if (slot == 45) { // Retour
             openMainMenu(player);
             return;
@@ -570,8 +548,7 @@ public class BankGUI implements Listener {
         // Clics sur les blocs d'investissement
         if (Arrays.stream(INVESTMENT_SLOTS).anyMatch(s -> s == slot)) {
             String materialName = clicked.getItemMeta().getPersistentDataContainer()
-                    .get(new org.bukkit.NamespacedKey((Plugin) this, "investment_material"), PersistentDataType.STRING);
-
+                    .get(new org.bukkit.NamespacedKey(plugin, "investment_material"), PersistentDataType.STRING);
             if (materialName == null) return;
 
             Material material;
@@ -583,13 +560,20 @@ public class BankGUI implements Listener {
 
             if (rightClick) {
                 if (shift) {
-                    // Vente rapide
+                    // Vente rapide - tout vendre
                     player.closeInventory();
-                    player.performCommand("bank invest sell " + materialName.toLowerCase() + " 10");
+                    player.performCommand("bank invest sell " + materialName.toLowerCase() + " all");
                 } else {
-                    // Achat rapide
+                    // Achat rapide avec option levier pour commerçants niveau 5+
                     player.closeInventory();
-                    player.performCommand("bank invest buy " + materialName.toLowerCase() + " 10");
+                    if (bankManager.isTraderLevel5Plus(player)) {
+                        // Proposer le choix via chat
+                        player.sendMessage("§6⚡ Achat rapide - Choix du levier:");
+                        player.sendMessage("§e• /bank invest buy " + materialName.toLowerCase() + " 10 §7- Achat normal");
+                        player.sendMessage("§e• /bank invest buy " + materialName.toLowerCase() + " 10 levier §7- Avec levier x2");
+                    } else {
+                        player.performCommand("bank invest buy " + materialName.toLowerCase() + " 10");
+                    }
                 }
             } else {
                 // Informations détaillées
