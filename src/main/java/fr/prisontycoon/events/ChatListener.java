@@ -96,8 +96,8 @@ public class ChatListener implements Listener {
             var banData = plugin.getModerationManager().getBanData(player.getUniqueId());
             if (banData != null) {
                 String kickMessage = ChatColor.RED.toString() + ChatColor.BOLD + "=== BANNISSEMENT ===\n\n" +
-                        ChatColor.RED + "Vous êtes banni du serveur\n" +
-                        ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + banData.reason() + "\n";
+                                     ChatColor.RED + "Vous êtes banni du serveur\n" +
+                                     ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + banData.reason() + "\n";
 
                 if (!banData.isPermanent()) {
                     long remaining = banData.getRemainingTime();
@@ -200,9 +200,9 @@ public class ChatListener implements Listener {
         if (processedMessage.contains("[hand]") || processedMessage.contains("[inv]")) {
             // Vérifie les permissions pour les placeholders spéciaux
             boolean canUseSpecialPlaceholders = player.hasPermission("specialmine.chat.hand") ||
-                    player.hasPermission("specialmine.chat.inv") ||
-                    player.hasPermission("specialmine.vip") ||
-                    player.hasPermission("specialmine.admin");
+                                                player.hasPermission("specialmine.chat.inv") ||
+                                                player.hasPermission("specialmine.vip") ||
+                                                player.hasPermission("specialmine.admin");
 
             if (!canUseSpecialPlaceholders) {
                 // Si pas de permission, retire les placeholders
@@ -354,8 +354,8 @@ public class ChatListener implements Listener {
     private String processMessage(Player player, String message) {
         // Vérifie les permissions pour les couleurs
         boolean canUseColors = player.hasPermission("specialmine.chat.colors") ||
-                player.hasPermission("specialmine.vip") ||
-                player.hasPermission("specialmine.admin");
+                               player.hasPermission("specialmine.vip") ||
+                               player.hasPermission("specialmine.admin");
 
         // Applique les couleurs si autorisé
         if (canUseColors) {
@@ -365,8 +365,8 @@ public class ChatListener implements Listener {
         // Vérifie si le message ne contient QUE des placeholders
         String trimmedMessage = message.trim();
         if (trimmedMessage.equals("[hand]") || trimmedMessage.equals("[inv]") ||
-                (trimmedMessage.contains("[hand]") && trimmedMessage.contains("[inv]") &&
-                        trimmedMessage.replaceAll("\\[hand\\]|\\[inv\\]", "").trim().isEmpty())) {
+            (trimmedMessage.contains("[hand]") && trimmedMessage.contains("[inv]") &&
+             trimmedMessage.replaceAll("\\[hand\\]|\\[inv\\]", "").trim().isEmpty())) {
 
             // Ajoute un texte par défaut pour éviter un message vide
             if (trimmedMessage.equals("[hand]")) {
@@ -454,7 +454,7 @@ public class ChatListener implements Listener {
      */
     public String getChatStats() {
         return ChatColor.GRAY + "Statistiques du chat:\n" +
-                ChatColor.YELLOW + "- Joueurs avec historique: " + ChatColor.GOLD + lastMessages.size() + "\n" +
-                ChatColor.YELLOW + "- Messages en cache anti-spam: " + ChatColor.GOLD + lastMessageTimes.size();
+               ChatColor.YELLOW + "- Joueurs avec historique: " + ChatColor.GOLD + lastMessages.size() + "\n" +
+               ChatColor.YELLOW + "- Messages en cache anti-spam: " + ChatColor.GOLD + lastMessageTimes.size();
     }
 }

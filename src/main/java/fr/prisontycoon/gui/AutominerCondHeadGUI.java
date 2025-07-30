@@ -36,6 +36,7 @@ public class AutominerCondHeadGUI {
      */
     public void openCondensationMenu(Player player) {
         Inventory inv = Bukkit.createInventory(null, 9, "§d🔧 Condensation d'Automineurs");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_CONDENSATION, inv);
         player.openInventory(inv);
     }
 
@@ -104,7 +105,7 @@ public class AutominerCondHeadGUI {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
         plugin.getPluginLogger().info("§7" + player.getName() + " a condensé 9x " + firstType.getDisplayName() +
-                " en 1x " + nextType.getDisplayName());
+                                      " en 1x " + nextType.getDisplayName());
 
         reopenMainMenu(player);
     }
@@ -116,6 +117,7 @@ public class AutominerCondHeadGUI {
      */
     public void openFuelMenu(Player player) {
         Inventory inv = Bukkit.createInventory(null, 9, "§c⛽ Ajout de Carburant");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_FUEL, inv);
         player.openInventory(inv);
     }
 
@@ -166,6 +168,7 @@ public class AutominerCondHeadGUI {
 
         int size = Math.min(54, Math.max(27, ((storage.size() + 8) / 9) * 9 + 9));
         Inventory inv = Bukkit.createInventory(null, size, "§6📦 Stockage Automineur");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_STORAGE, inv);
 
         // Afficher les items stockés
         int slot = 0;
@@ -340,10 +343,10 @@ public class AutominerCondHeadGUI {
 
     private boolean isValidFuel(ItemStack item) {
         return item.getType() == Material.PLAYER_HEAD ||
-                item.getType() == Material.SKELETON_SKULL ||
-                item.getType() == Material.ZOMBIE_HEAD ||
-                item.getType() == Material.CREEPER_HEAD ||
-                item.getType() == Material.WITHER_SKELETON_SKULL;
+               item.getType() == Material.SKELETON_SKULL ||
+               item.getType() == Material.ZOMBIE_HEAD ||
+               item.getType() == Material.CREEPER_HEAD ||
+               item.getType() == Material.WITHER_SKELETON_SKULL;
     }
 
     private double getFuelValue(ItemStack item) {
@@ -653,8 +656,8 @@ public class AutominerCondHeadGUI {
                     long defaultPrice = getDefaultSellPrice(material);
 
                     player.sendMessage("§8- " + material.name() + ": sellPrice=" + sellPrice +
-                            ", blockCoins=" + (blockValue != null ? blockValue.coins() : 0) +
-                            ", default=" + defaultPrice);
+                                       ", blockCoins=" + (blockValue != null ? blockValue.coins() : 0) +
+                                       ", default=" + defaultPrice);
                     count++;
                 }
             }

@@ -36,6 +36,7 @@ public class CategoryMenuGUI {
     public void openCategoryMenu(Player player, EnchantmentCategory category) {
         String title = "§6✨ §l" + category.getDisplayName() + " §6✨";
         Inventory gui = Bukkit.createInventory(null, 27, title);
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.CATEGORY_ENCHANT, gui);
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -62,7 +63,7 @@ public class CategoryMenuGUI {
     /**
      * CORRIGÉ : Gère les clics dans le menu de catégorie avec SHIFT-CLIC pour mobilité
      */
-    public void handleCategoryMenuClick(Player player, int slot, ItemStack item, String title, ClickType clickType) {
+    public void handleCategoryMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         if (slot == 22) { // Bouton retour
             plugin.getMainMenuGUI().openEnchantmentMenu(player);
             return;
@@ -128,7 +129,7 @@ public class CategoryMenuGUI {
         }
 
         plugin.getPluginLogger().debug("Enchantement mobilité " + enchantmentName +
-                " " + (newState ? "activé" : "désactivé") + " pour " + player.getName());
+                                       " " + (newState ? "activé" : "désactivé") + " pour " + player.getName());
     }
 
     /**
@@ -227,7 +228,7 @@ public class CategoryMenuGUI {
 
         // Auto-upgrade status
         if (plugin.getEnchantmentManager().canUseAutoUpgrade(player) &&
-                playerData.isAutoUpgradeEnabled(enchantment.getName())) {
+            playerData.isAutoUpgradeEnabled(enchantment.getName())) {
             lore.add("§a🔄 §lAUTO-AMÉLIORATION ACTIVE");
             lore.add("§7▸ Se met à niveau automatiquement");
             lore.add("");

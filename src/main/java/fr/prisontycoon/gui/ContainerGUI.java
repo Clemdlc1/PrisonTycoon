@@ -67,6 +67,7 @@ public class ContainerGUI {
             inv.setItem(i, createGlassPane("", Material.GRAY_STAINED_GLASS_PANE));
         }
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.CONTAINER_CONFIG, inv);
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.2f);
 
@@ -133,7 +134,7 @@ public class ContainerGUI {
                     break;
                 }
                 contentsLore.add("§7┃ §e" + formatMaterialName(entry.getKey().getType()) + "§7: §a" +
-                        NumberFormatter.format(entry.getValue()));
+                                 NumberFormatter.format(entry.getValue()));
                 itemCount++;
             }
             contentsLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -390,7 +391,7 @@ public class ContainerGUI {
             if (itemsTransferred > 0) {
                 plugin.getContainerManager().saveContainerItem(containerItem, data);
                 player.sendMessage("§a✅ " + NumberFormatter.format(itemsTransferred) +
-                        " items récupérés dans votre inventaire!");
+                                   " items récupérés dans votre inventaire!");
                 player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.2f);
 
                 // Recharge le menu pour mettre à jour l'affichage

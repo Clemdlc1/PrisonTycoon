@@ -348,7 +348,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7• Mine actuelle: " + (currentMine != null ? "§6" + currentMine : "§cAucune"));
         player.sendMessage("§7• Mines accessibles: §6" + plugin.getMineManager().getAccessibleMines(player).size());
         player.sendMessage("§7• Rang: " + plugin.getMineManager().getRankColor(plugin.getMineManager().getCurrentRank(player)) +
-                plugin.getMineManager().getCurrentRank(player).toUpperCase());
+                           plugin.getMineManager().getCurrentRank(player).toUpperCase());
         player.sendMessage("§7• Prestige: " + playerData.getPrestigeDisplayName());
     }
 
@@ -378,7 +378,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
             String accessIcon = canAccess ? "§a✅" : "§c❌";
 
             player.sendMessage("§7" + accessIcon + " §6" + mine.getId() + " §7- §f" + mine.getDisplayName() +
-                    " §7(" + getTypeDisplayName(mine.getType()) + "§7)");
+                               " §7(" + getTypeDisplayName(mine.getType()) + "§7)");
         }
 
         player.sendMessage("");
@@ -464,7 +464,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
 
         if (mine.getRequiredPrestige() > playerData.getPrestigeLevel()) {
             player.sendMessage("§7Prestige requis: §d" + mine.getRequiredPrestige() +
-                    " §7(actuel: §d" + playerData.getPrestigeLevel() + "§7)");
+                               " §7(actuel: §d" + playerData.getPrestigeLevel() + "§7)");
         }
 
         if (mine.isVipOnly() && !player.hasPermission("specialmine.vip")) {
@@ -477,9 +477,9 @@ public class MineCommand implements CommandExecutor, TabCompleter {
 
         String currentRank = plugin.getMineManager().getCurrentRank(player);
         if (mine.getType() == MineData.MineType.NORMAL &&
-                !plugin.getMineManager().canAccessMine(player, mine.getId())) {
+            !plugin.getMineManager().canAccessMine(player, mine.getId())) {
             player.sendMessage("§7Rang requis: §6" + mine.getRequiredRank().toUpperCase() +
-                    " §7(actuel: §6" + currentRank.toUpperCase() + "§7)");
+                               " §7(actuel: §6" + currentRank.toUpperCase() + "§7)");
         }
     }
 

@@ -111,7 +111,7 @@ public class ContainerCommand implements CommandExecutor, TabCompleter {
         for (int tier = 1; tier <= 5; tier++) {
             String tierName = getTierName(tier);
             player.sendMessage("§7┃ Tier §6" + tier + " §7(" + tierName + "§7): §a" +
-                    getCapacityForTier(tier) + " items §7- §2" + getDurabilityForTier(tier) + " utilisations");
+                               getCapacityForTier(tier) + " items §7- §2" + getDurabilityForTier(tier) + " utilisations");
         }
 
         player.sendMessage("");

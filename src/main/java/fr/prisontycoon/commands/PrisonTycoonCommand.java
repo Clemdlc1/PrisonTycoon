@@ -136,7 +136,7 @@ public class PrisonTycoonCommand implements CommandExecutor, TabCompleter {
         // Combustion
         if (playerData.getCombustionLevel() > 0) {
             player.sendMessage("§7Combustion: §c" + playerData.getCombustionLevel() + "/1000 " +
-                    "(§6x" + String.format("%.2f", playerData.getCombustionMultiplier()) + "§7)");
+                               "(§6x" + String.format("%.2f", playerData.getCombustionMultiplier()) + "§7)");
         }
 
         // Abondance
@@ -203,7 +203,7 @@ public class PrisonTycoonCommand implements CommandExecutor, TabCompleter {
             };
 
             sender.sendMessage(medal + " §e" + ranking.playerName() +
-                    " §7- §a" + NumberFormatter.format(ranking.value()));
+                               " §7- §a" + NumberFormatter.format(ranking.value()));
         }
     }
 

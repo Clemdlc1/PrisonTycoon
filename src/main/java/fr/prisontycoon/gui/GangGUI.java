@@ -3,9 +3,9 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.gangs.GangBoostType;
 import fr.prisontycoon.gangs.GangRole;
 import fr.prisontycoon.gangs.GangTalent;
-import fr.prisontycoon.gangs.GangBoostType;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
@@ -15,10 +15,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.BannerMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -39,6 +42,7 @@ public class GangGUI {
     public void openMainMenu(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
+
         if (playerData.getGangId() == null) {
             openNoGangMenu(player);
         } else {
@@ -56,6 +60,7 @@ public class GangGUI {
      */
     private void openNoGangMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "§6⭐ §lGANG - Menu Principal §6⭐");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.GANG_MAIN, gui);
         openGuis.put(player.getUniqueId(), "no_gang_menu");
 
         fillWithGlass(gui, DyeColor.GRAY);
@@ -145,6 +150,7 @@ public class GangGUI {
      */
     private void openGangMenu(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 54, "§6☠ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6☠");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.GANG_MAIN, gui);
         openGuis.put(player.getUniqueId(), "gang_menu");
 
         fillWithGlass(gui, DyeColor.YELLOW);
@@ -1250,7 +1256,7 @@ public class GangGUI {
     /**
      * Gère les clics dans le créateur de bannière
      */
-    private void handleBannerCreatorClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleBannerCreatorClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;

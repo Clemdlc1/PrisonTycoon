@@ -62,7 +62,7 @@ public class PickaxeProtectionListener implements Listener {
 
             // Si clic sur slot 0 et contient une pioche légendaire
             if (clickedSlot == 0 && currentItem != null &&
-                    plugin.getPickaxeManager().isLegendaryPickaxe(currentItem)) {
+                plugin.getPickaxeManager().isLegendaryPickaxe(currentItem)) {
 
                 // BLOQUE TOUS LES CLICS sur la pioche dans le slot 0
                 event.setCancelled(true);
@@ -109,7 +109,7 @@ public class PickaxeProtectionListener implements Listener {
             if (event.getClick().isKeyboardClick()) {
                 // Vérifie si l'inventaire ouvert n'est pas l'inventaire du joueur
                 if (event.getView().getTopInventory() != player.getInventory() &&
-                        event.getView().getTopInventory().getType() != InventoryType.CRAFTING) {
+                    event.getView().getTopInventory().getType() != InventoryType.CRAFTING) {
                     event.setCancelled(true);
                     player.sendMessage("§c❌ Action interdite avec la pioche légendaire!");
                     plugin.getPluginLogger().debug("Touche clavier bloquée avec pioche");
@@ -121,7 +121,7 @@ public class PickaxeProtectionListener implements Listener {
             if (event.isShiftClick()) {
                 // Si l'inventaire du haut n'est pas l'inventaire du joueur
                 if (event.getView().getTopInventory() != player.getInventory() &&
-                        event.getView().getTopInventory().getType() != InventoryType.CRAFTING) {
+                    event.getView().getTopInventory().getType() != InventoryType.CRAFTING) {
                     event.setCancelled(true);
                     player.sendMessage("§c❌ Vous ne pouvez pas déplacer la pioche légendaire!");
                     plugin.getPluginLogger().debug("Shift+clic bloqué avec pioche");
@@ -268,11 +268,11 @@ public class PickaxeProtectionListener implements Listener {
         // Affiche le message de pénalité
         double percentageLost = (durabilityPenalty / (double) maxDurability) * 100;
         player.sendMessage("§c⚠ Votre pioche a perdu " + String.format("%.1f%%", percentageLost) +
-                " de durabilité due à votre mort (");
+                           " de durabilité due à votre mort (");
         plugin.getPickaxeManager().updatePlayerPickaxe(player);
 
         plugin.getPluginLogger().debug("Pénalité de mort appliquée à la pioche de " + player.getName() +
-                ": -" + durabilityPenalty + " durabilité (" + String.format("%.1f%%", percentageLost) + ")");
+                                       ": -" + durabilityPenalty + " durabilité (" + String.format("%.1f%%", percentageLost) + ")");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -291,7 +291,7 @@ public class PickaxeProtectionListener implements Listener {
         Player player = event.getPlayer();
 
         if (plugin.getPickaxeManager().isLegendaryPickaxe(event.getMainHandItem()) ||
-                plugin.getPickaxeManager().isLegendaryPickaxe(event.getOffHandItem())) {
+            plugin.getPickaxeManager().isLegendaryPickaxe(event.getOffHandItem())) {
             event.setCancelled(true);
             player.sendMessage("§c❌ Action interdite avec la pioche légendaire!");
         }
@@ -313,11 +313,11 @@ public class PickaxeProtectionListener implements Listener {
 
             // Clic droit pour ouvrir le menu d'enchantements
             if (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
-                    event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
+                event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
 
                 // Évite d'ouvrir le menu si le joueur clique sur un bloc interactif
                 if (event.getClickedBlock() != null &&
-                        isInteractiveBlock(event.getClickedBlock().getType())) {
+                    isInteractiveBlock(event.getClickedBlock().getType())) {
                     return;
                 }
 
@@ -327,8 +327,8 @@ public class PickaxeProtectionListener implements Listener {
 
             // Shift + clic droit pour l'escalateur
             if (player.isSneaking() &&
-                    (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
-                            event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK)) {
+                (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
+                 event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK)) {
 
                 event.setCancelled(true);
                 plugin.getPickaxeManager().handleEscalator(player);
@@ -344,9 +344,9 @@ public class PickaxeProtectionListener implements Listener {
         // Bloque les commandes dangereuses si le joueur a une pioche légendaire
         if (plugin.getPickaxeManager().hasLegendaryPickaxe(player)) {
             if (command.startsWith("/clear") ||
-                    command.startsWith("/minecraft:clear") ||
-                    command.contains("clear @") ||
-                    command.startsWith("/give") && command.contains("netherite_pickaxe")) {
+                command.startsWith("/minecraft:clear") ||
+                command.contains("clear @") ||
+                command.startsWith("/give") && command.contains("netherite_pickaxe")) {
 
                 // Vérifie les permissions admin
                 if (!player.hasPermission("specialmine.admin")) {
@@ -422,11 +422,11 @@ public class PickaxeProtectionListener implements Listener {
 
             // Bloque placement dans des inventaires spéciaux
             if (inventoryTitle.contains("armor stand") ||
-                    inventoryTitle.contains("item frame") ||
-                    inventoryTitle.contains("display")) {
+                inventoryTitle.contains("item frame") ||
+                inventoryTitle.contains("display")) {
 
                 if ((currentItem != null && plugin.getPickaxeManager().isLegendaryPickaxe(currentItem)) ||
-                        (cursor != null && plugin.getPickaxeManager().isLegendaryPickaxe(cursor))) {
+                    (cursor != null && plugin.getPickaxeManager().isLegendaryPickaxe(cursor))) {
 
                     event.setCancelled(true);
                     player.sendMessage("§c❌ Vous ne pouvez pas placer la pioche légendaire ici!");
@@ -451,7 +451,7 @@ public class PickaxeProtectionListener implements Listener {
         event.setCancelled(true);
 
         plugin.getPluginLogger().debug("Perte de durabilité de la pioche légendaire de "
-                + event.getPlayer().getName() + " annulée (source non-minage).");
+                                       + event.getPlayer().getName() + " annulée (source non-minage).");
     }
 
     /**

@@ -110,6 +110,7 @@ public class ProfessionGUI {
         fillWithGlass(gui);
         setupTalentsKitsMenu(gui, player, profession, page);
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_TALENTS, gui);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
     }
@@ -722,7 +723,7 @@ public class ProfessionGUI {
         boolean isCurrent = professionId.equals(currentProfession);
 
         meta.setDisplayName((isCurrent ? "§e" : "§a") + profession.displayName() +
-                (isCurrent ? " §7(Actuel)" : ""));
+                            (isCurrent ? " §7(Actuel)" : ""));
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + profession.description());

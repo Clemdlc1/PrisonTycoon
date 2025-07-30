@@ -93,7 +93,7 @@ public class PickaxeManager {
         placePickaxeInSlot0(player, pickaxe);
 
         plugin.getPluginLogger().info("§7Pioche légendaire créée pour: " + player.getName() +
-                " avec enchantements par défaut (placée slot 0)");
+                                      " avec enchantements par défaut (placée slot 0)");
     }
 
     /**
@@ -224,7 +224,7 @@ public class PickaxeManager {
             if (durabilityLevel > 0) {
                 double preservationChance = Math.min(95.0, durabilityLevel * 5.0);
                 lore.add("§7│ §eSolidité: §a" + String.format("%.0f%%", preservationChance) +
-                        " §7chance d'éviter perte (Niv." + durabilityLevel + ")");
+                         " §7chance d'éviter perte (Niv." + durabilityLevel + ")");
             }
 
             // Indicateur visuel avec barre de durabilité
@@ -285,7 +285,7 @@ public class PickaxeManager {
                     }
 
                     String displayText = statusColor + enchant.getDisplayName() + " " +
-                            NumberFormatter.formatRoman(entry.getValue()) + statusIndicator;
+                                         NumberFormatter.formatRoman(entry.getValue()) + statusIndicator;
 
                     enchantsByCategory.get(category).add(displayText);
                 }
@@ -323,7 +323,7 @@ public class PickaxeManager {
             lore.add("§d✨ Cristaux Appliqués §8(" + cristals.size() + "/4)§d:");
             for (Cristal cristal : cristals) {
                 lore.add("§8• §d" + cristal.getType().getDisplayName() + " " + cristal.getNiveau() +
-                        " §8- §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
+                         " §8- §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
             }
             lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         }
@@ -436,7 +436,7 @@ public class PickaxeManager {
 
         // Vision nocturne
         if (playerData.getEnchantmentLevel("night_vision") > 0 &&
-                playerData.isMobilityEnchantmentEnabled("night_vision")) {
+            playerData.isMobilityEnchantmentEnabled("night_vision")) {
             player.addPotionEffect(new org.bukkit.potion.PotionEffect(
                     org.bukkit.potion.PotionEffectType.NIGHT_VISION,
                     Integer.MAX_VALUE, 0, true, false));
@@ -498,7 +498,7 @@ public class PickaxeManager {
         }
 
         if (playerData.getEnchantmentLevel("escalator") > 0 &&
-                playerData.isMobilityEnchantmentEnabled("escalator")) {
+            playerData.isMobilityEnchantmentEnabled("escalator")) {
             Location location = player.getLocation();
             World world = location.getWorld();
 
@@ -508,7 +508,7 @@ public class PickaxeManager {
 
             // Vérifie qu'il y a 2 blocs d'air
             if (surfaceLocation.getBlock().getType() == Material.AIR &&
-                    surfaceLocation.clone().add(0, 1, 0).getBlock().getType() == Material.AIR) {
+                surfaceLocation.clone().add(0, 1, 0).getBlock().getType() == Material.AIR) {
 
                 player.teleport(surfaceLocation);
                 player.sendMessage("§a✨ Escalateur activé! Téléportation vers la surface.");

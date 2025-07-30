@@ -61,7 +61,7 @@ public class MineManager {
 
             mines.put(mineId, mineData);
             plugin.getPluginLogger().info("§aMine chargée: " + mineId + " (Type: " + mineData.getType() +
-                    ", Volume: " + mineData.getVolume() + " blocs)");
+                                          ", Volume: " + mineData.getVolume() + " blocs)");
         }
 
         plugin.getPluginLogger().info("§aMines chargées: " + mines.size());
@@ -128,7 +128,7 @@ public class MineManager {
 
                     long duration = System.currentTimeMillis() - startTime;
                     plugin.getPluginLogger().info("§aMine " + mineId + " générée: " + finalBlocksGenerated +
-                            " blocs en " + duration + "ms");
+                                                  " blocs en " + duration + "ms");
 
                     // Notification de fin
                     notifyPlayersInMine(mineId, "§a✅ Mine régénérée avec succès!");
@@ -562,7 +562,7 @@ public class MineManager {
         String lowerQuery = query.toLowerCase();
         return mines.values().stream()
                 .filter(mine -> mine.getId().toLowerCase().contains(lowerQuery) ||
-                        mine.getDisplayName().toLowerCase().contains(lowerQuery))
+                                mine.getDisplayName().toLowerCase().contains(lowerQuery))
                 .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
                 .collect(Collectors.toList());
     }

@@ -69,12 +69,12 @@ public class TankManager {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
         return meta.getPersistentDataContainer().has(tankKey, PersistentDataType.BOOLEAN) &&
-                meta.getPersistentDataContainer().has(tankIdKey, PersistentDataType.STRING);
+               meta.getPersistentDataContainer().has(tankIdKey, PersistentDataType.STRING);
     }
 
     public boolean isTankBlock(Location location) {
         return tankLocations.containsKey(location) &&
-                location.getBlock().getType() == Material.BARREL;
+               location.getBlock().getType() == Material.BARREL;
     }
 
     public TankData getTankAt(Location location) {
@@ -115,9 +115,8 @@ public class TankManager {
             player.sendMessage("§c❌ Il y a déjà un tank à cette position!");
             return false;
         }
-        location.getBlock().setType(Material.BARREL);
         tankData.setLocation(location);
-        tankLocations.put(location, tankId);
+        tankLocations.put(location.getBlock().getLocation(), tankId); // Utilisez location.getBlock().getLocation() pour une clé normalisée
         createNameTag(tankData);
         saveTank(tankData);
         player.sendMessage("§a✓ Tank placé! Les autres joueurs peuvent maintenant vendre leurs items.");
@@ -276,12 +275,12 @@ public class TankManager {
         }
         tankData.addItems(material, amount);
         seller.sendMessage("§a✓ Vendu " + amount + "x " + material.name().toLowerCase() +
-                " pour " + NumberFormatter.format(totalPrice) + "$!");
+                           " pour " + NumberFormatter.format(totalPrice) + "$!");
         seller.playSound(seller.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         if (owner != null && !owner.equals(seller)) {
             owner.sendMessage("§7📦 " + seller.getName() + " a vendu " + amount + "x " +
-                    material.name().toLowerCase() + " à votre tank pour " +
-                    NumberFormatter.format(totalPrice) + "$");
+                              material.name().toLowerCase() + " à votre tank pour " +
+                              NumberFormatter.format(totalPrice) + "$");
         }
         updateTankNameTag(tankData);
         saveTank(tankData);
@@ -319,20 +318,40 @@ public class TankManager {
                 UUID owner = UUID.fromString(rs.getString("owner"));
                 TankData tankData = new TankData(id, owner);
 
-                Type locationType = new TypeToken<Location>() {
-                }.getType();
-                Location location = gson.fromJson(rs.getString("location"), locationType);
-                tankData.setLocation(location);
+                // Correction : Désérialiser la localisation manuellement
+                String locationJson = rs.getString("location");
+                if (locationJson != null) {
+                    Type locationMapType = new TypeToken<Map<String, Object>>() {
+                    }.getType();
+                    Map<String, Object> locationMap = gson.fromJson(locationJson, locationMapType);
+
+                    String worldName = (String) locationMap.get("world");
+                    double x = (double) locationMap.get("x");
+                    double y = (double) locationMap.get("y");
+                    double z = (double) locationMap.get("z");
+                    // Gérer le fait que yaw/pitch peuvent être stockés comme des Double
+                    float yaw = ((Number) locationMap.get("yaw")).floatValue();
+                    float pitch = ((Number) locationMap.get("pitch")).floatValue();
+
+                    Location location = new Location(plugin.getServer().getWorld(worldName), x, y, z, yaw, pitch);
+                    tankData.setLocation(location);
+                }
 
                 Type materialSetType = new TypeToken<Set<Material>>() {
                 }.getType();
-                Set<Material> filters = gson.fromJson(rs.getString("filters"), materialSetType);
-                tankData.getFilters().addAll(filters);
+                String filtersJson = rs.getString("filters");
+                if (filtersJson != null) {
+                    Set<Material> filters = gson.fromJson(filtersJson, materialSetType);
+                    tankData.getFilters().addAll(filters);
+                }
 
                 Type materialLongMapType = new TypeToken<Map<Material, Long>>() {
                 }.getType();
-                Map<Material, Long> prices = gson.fromJson(rs.getString("prices"), materialLongMapType);
-                tankData.getPrices().putAll(prices);
+                String pricesJson = rs.getString("prices");
+                if (pricesJson != null) {
+                    Map<Material, Long> prices = gson.fromJson(pricesJson, materialLongMapType);
+                    tankData.getPrices().putAll(prices);
+                }
 
                 tankData.setCustomName(rs.getString("custom_name"));
 
@@ -364,7 +383,22 @@ public class TankManager {
 
             ps.setString(1, tankData.getId());
             ps.setString(2, tankData.getOwner().toString());
-            ps.setString(3, gson.toJson(tankData.getLocation()));
+
+            // Correction : Sérialiser la localisation manuellement
+            Location loc = tankData.getLocation();
+            if (loc != null) {
+                Map<String, Object> locationMap = new HashMap<>();
+                locationMap.put("world", loc.getWorld().getName());
+                locationMap.put("x", loc.getX());
+                locationMap.put("y", loc.getY());
+                locationMap.put("z", loc.getZ());
+                locationMap.put("yaw", loc.getYaw());
+                locationMap.put("pitch", loc.getPitch());
+                ps.setString(3, gson.toJson(locationMap));
+            } else {
+                ps.setString(3, null); // Gérer le cas où la localisation est nulle
+            }
+
             ps.setString(4, gson.toJson(tankData.getFilters()));
             ps.setString(5, gson.toJson(tankData.getPrices()));
             ps.setString(6, tankData.getCustomName());

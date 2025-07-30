@@ -143,8 +143,8 @@ public class MineData {
         double z = location.getZ();
 
         return x >= minX && x <= maxX &&
-                y >= minY && y <= maxY &&
-                z >= minZ && z <= maxZ;
+               y >= minY && y <= maxY &&
+               z >= minZ && z <= maxZ;
     }
 
     /**

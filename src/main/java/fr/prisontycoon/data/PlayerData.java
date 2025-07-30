@@ -1714,12 +1714,6 @@ public class PlayerData {
         }
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
     /**
      * Obtient l'ID du gang du joueur
      */
@@ -1760,5 +1754,11 @@ public class PlayerData {
      */
     public boolean hasPendingGangInvitation() {
         return gangInvitation != null;
+    }
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

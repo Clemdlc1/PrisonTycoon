@@ -2,10 +2,10 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.boosts.BoostType;
-import fr.prisontycoon.gangs.GangBoostType; // Import ajouté
 import fr.prisontycoon.cristaux.CristalType;
 import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.gangs.GangBoostType;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.entity.Player;
 
@@ -624,21 +624,54 @@ public class GlobalBonusManager {
         }
 
         // Getters
-        public double getCristalBonus() { return cristalBonus; }
-        public double getProfessionBonus() { return professionBonus; }
-        public double getPrestigeBonus() { return prestigeBonus; }
-        public double getTemporaryBoostBonus() { return temporaryBoostBonus; }
-        public double getGangBonus() { return gangBonus; }
-        public double getTemporaryGangBoostBonus() { return temporaryGangBoostBonus; }
-
+        public double getCristalBonus() {
+            return cristalBonus;
+        }
 
         // Setters
-        public void setCristalBonus(double cristalBonus) { this.cristalBonus = cristalBonus; }
-        public void setProfessionBonus(double professionBonus) { this.professionBonus = professionBonus; }
-        public void setPrestigeBonus(double prestigeBonus) { this.prestigeBonus = prestigeBonus; }
-        public void setTemporaryBoostBonus(double temporaryBoostBonus) { this.temporaryBoostBonus = temporaryBoostBonus; }
-        public void setGangBonus(double gangBonus) { this.gangBonus = gangBonus; }
-        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) { this.temporaryGangBoostBonus = temporaryGangBoostBonus; }
+        public void setCristalBonus(double cristalBonus) {
+            this.cristalBonus = cristalBonus;
+        }
+
+        public double getProfessionBonus() {
+            return professionBonus;
+        }
+
+        public void setProfessionBonus(double professionBonus) {
+            this.professionBonus = professionBonus;
+        }
+
+        public double getPrestigeBonus() {
+            return prestigeBonus;
+        }
+
+        public void setPrestigeBonus(double prestigeBonus) {
+            this.prestigeBonus = prestigeBonus;
+        }
+
+        public double getTemporaryBoostBonus() {
+            return temporaryBoostBonus;
+        }
+
+        public void setTemporaryBoostBonus(double temporaryBoostBonus) {
+            this.temporaryBoostBonus = temporaryBoostBonus;
+        }
+
+        public double getGangBonus() {
+            return gangBonus;
+        }
+
+        public void setGangBonus(double gangBonus) {
+            this.gangBonus = gangBonus;
+        }
+
+        public double getTemporaryGangBoostBonus() {
+            return temporaryGangBoostBonus;
+        }
+
+        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) {
+            this.temporaryGangBoostBonus = temporaryGangBoostBonus;
+        }
 
 
         public Map<String, Double> getDetailedSources() {

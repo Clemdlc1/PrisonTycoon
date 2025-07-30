@@ -57,6 +57,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private TankManager tankManager;
     private SellHandManager sellHandManager;
     private GangManager gangManager;
+    private GUIManager guiManager;
 
     private Logger logger;
 
@@ -243,6 +244,7 @@ public final class PrisonTycoon extends JavaPlugin {
         tankManager = new TankManager(this);
         sellHandManager = new SellHandManager(this);
         gangManager = new GangManager(this);
+        guiManager = new GUIManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -767,6 +769,10 @@ public final class PrisonTycoon extends JavaPlugin {
      */
     public GangGUI getGangGUI() {
         return gangGUI;
+    }
+
+    public GUIManager getGUIManager() {
+        return guiManager;
     }
 }
 

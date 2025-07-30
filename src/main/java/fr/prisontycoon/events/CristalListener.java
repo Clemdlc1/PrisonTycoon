@@ -63,7 +63,7 @@ public class CristalListener implements Listener {
             player.sendMessage("§d✨ §lRévélation du cristal!");
             player.sendMessage("§7Votre cristal vierge s'est transformé en:");
             player.sendMessage("§d✨ Cristal " + revealedCristal.getType().getDisplayName() +
-                    " §7(Niveau " + revealedCristal.getNiveau() + ")");
+                               " §7(Niveau " + revealedCristal.getNiveau() + ")");
             player.sendMessage("§a" + revealedCristal.getType().getBonusDescription(revealedCristal.getNiveau()));
 
             // Effets sonores et visuels
@@ -71,7 +71,7 @@ public class CristalListener implements Listener {
             player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
 
             plugin.getPluginLogger().info("§7Cristal révélé pour " + player.getName() + ": " +
-                    revealedCristal.getType().getDisplayName() + " niv." + revealedCristal.getNiveau());
+                                          revealedCristal.getType().getDisplayName() + " niv." + revealedCristal.getNiveau());
         }
     }
 
@@ -147,5 +147,4 @@ public class CristalListener implements Listener {
             }
         }
     }
-
 }

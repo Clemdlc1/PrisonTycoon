@@ -1,7 +1,8 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.cristaux.Cristal;
+import fr.prisontycoon.gui.GUIManager;
+import fr.prisontycoon.gui.GUIType;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -15,268 +16,175 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Listener pour les interfaces graphiques générales
+ * Nouveau GUIListener optimisé utilisant le système d'IDs
+ * Plus de title.contains() !
  */
 public class GUIListener implements Listener {
 
     private final PrisonTycoon plugin;
+    private final GUIManager guiManager;
 
     public GUIListener(PrisonTycoon plugin) {
         this.plugin = plugin;
+        this.guiManager = plugin.getGUIManager();
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        String title = event.getView().getTitle();
+        // Récupère le type de GUI depuis le gestionnaire
+        GUIType guiType = guiManager.getOpenGUIType(player);
+        if (guiType == null) return; // Pas un GUI du plugin
 
-        if (title.equals("§6⚡ Fusion de Cristaux ⚡")) {
-            plugin.getCristalGUI().handleFusionInventoryClick(event);
+        // Vérifie si c'est un GUI conteneur (géré séparément)
+        if (isContainerGUI(guiType)) {
             return;
         }
 
-        if (isContainerGUI(title)) {
-            return;
-        }
-
-        // Si le clic est dans l'inventaire du joueur
         if (event.getClickedInventory() == player.getInventory()) {
-            // On agit uniquement si le GUI des cristaux est ouvert
-            if (title.contains("Gestion des Cristaux")) {
-                handleCristalApplicationClick(player, event);
+            if (guiType == GUIType.CRISTAL_MANAGEMENT) {
+                plugin.getCristalGUI().handleCristalApplicationClick(player, event);
+                return;
             }
 
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem != null && clickedItem.getType() == Material.ENCHANTED_BOOK &&
-                    clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
-                    new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING) && title.contains("Enchantements Uniques")) {
+                clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
+                    new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING) && guiType == GUIType.ENCHANTMENT_BOOK) {
                 event.setCancelled(true);
                 plugin.getEnchantmentBookGUI().handlePhysicalBookApplication(player, clickedItem);
             }
 
-            if (title.contains("Menu Automineurs") && plugin.getAutominerManager().isAutominer(clickedItem)) {
+            if (guiType == GUIType.AUTOMINER_MAIN && plugin.getAutominerManager().isAutominer(clickedItem)) {
                 event.setCancelled(true);
                 plugin.getAutominerGUI().handleInventoryItemClick(player, clickedItem);
             }
-            if (title.contains("Amélioration Automineur") && plugin.getCristalManager().isCristal(clickedItem)) {
+            if (guiType == GUIType.AUTOMINER_UPGRADE && plugin.getCristalManager().isCristal(clickedItem)) {
                 plugin.getAutominerEnchantGUI().handleCrystalApplication(player, clickedItem);
             }
             return;
         }
 
-        if (event.getClickedInventory() == player.getInventory()) {
-            handleBannerCreationClick(player, event);
-        }
-
-        // Si on arrive ici, le clic a eu lieu dans l'inventaire du haut (le GUI)
-        if (!isPluginGUI(title)) return;
-
+        // Empêche les modifications dans les GUIs
         event.setCancelled(true);
 
         ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || clickedItem.getType() == Material.AIR) {
-            return;
-        }
+        if (clickedItem == null) return;
 
-        handleGUIClick(player, title, event.getSlot(), clickedItem, event.getClick());
+        // Délègue vers la bonne méthode de traitement
+        handleGUIClick(player, guiType, event.getSlot(), clickedItem, event.getClick());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
+        GUIType guiType = guiManager.getOpenGUIType(player);
+        if (guiType == null) return;
 
-        String title = event.getView().getTitle();
+        // Gère les fermetures spéciales
+        handleGUIClose(player, guiType, event);
 
-        // Gestion de la fermeture des GUIs d'automineur
-        if (title.contains("Condensation d'Automineurs")) {
-            plugin.getAutominerCondHeadGUI().handleCondensationClose(player, event.getInventory());
-        } else if (title.contains("Ajout de Carburant")) {
-            plugin.getAutominerCondHeadGUI().handleFuelClose(player, event.getInventory());
-        } else if (title.contains("Gang") || title.contains("GANG")) {
-            plugin.getGangGUI().closeGui(player);
-        }
+        // Supprime l'enregistrement
+        guiManager.unregisterGUI(player, event.getInventory());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        String title = event.getView().getTitle();
+        GUIType guiType = guiManager.getOpenGUIType(player);
+        if (guiType == null) return;
 
-        // NOUVEAU : Ignore complètement les GUIs de conteneur
-        if (isContainerGUI(title)) {
-            return; // Laisse ContainerListener gérer ces GUIs
+        if (isContainerGUI(guiType)) {
+            return; // Laisse ContainerListener gérer
         }
 
-        if (!isPluginGUI(title)) return;
-
-        // Empêche le glisser-déposer dans tous les autres GUIs du plugin
+        // Empêche le glisser-déposer dans tous les autres GUIs
         event.setCancelled(true);
     }
 
     /**
-     * Délègue les clics vers les bonnes GUIs (sauf conteneurs)
+     * Délègue les clics vers les bonnes GUIs basé sur l'enum
      */
-    private void handleGUIClick(Player player, String title, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
-        if (title.contains("Menu Principal") || title.contains("Menu Enchantement")) {
-            plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
-        } else if (title.contains("Économiques") || title.contains("Utilités") ||
-                title.contains("Mobilité") || title.contains("Spéciaux")) {
-            plugin.getCategoryMenuGUI().handleCategoryMenuClick(player, slot, item, title, clickType);
-        } else if (title.contains("🔧")) {
-            plugin.getEnchantmentUpgradeGUI().handleUpgradeMenuClick(player, slot, item, clickType, title);
-        } else if (title.contains("Gestion des Cristaux")) {
-            plugin.getCristalGUI().handleCristalMenuClick(player, slot, item);
-        } else if (title.contains("Enchantements Uniques")) {
-            plugin.getEnchantmentBookGUI().handleEnchantmentBookMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Boutique de Livres")) {
-            plugin.getEnchantmentBookGUI().handleBookShopClick(player, slot, item);
-        } else if (title.contains("Compagnons")) {
-            plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
-        } else if (title.contains("Réparation")) {
-            plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
-        } else if (title.contains("Métiers") || title.contains("Choisir un Métier") || title.contains("⭐") || title.contains("Changer de Métier")) {
-            plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
-        } else if (title.contains("🎁")) {
-            plugin.getProfessionRewardsGUI().handleRewardMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Prestige")) {
-            plugin.getPrestigeGUI().handleClick(player, item, clickType);
-        } else if (title.contains("MARCHÉ NOIR")) {
-            plugin.getBlackMarketManager().handleBlackMarketClick(player, item);
-        } else if (title.contains("Enchantement d'Épée") || title.contains("Enchantement d'Armure")) {
-            plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Vos Boosts Actifs")) {
-            plugin.getBoostGUI().handleClick(player, item);
-        } else if (title.contains("Menu Automineurs")) {
-            plugin.getAutominerGUI().handleMainMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Amélioration Automineur")) {
-            plugin.getAutominerEnchantGUI().handleEnchantMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Stockage Automineur")) {
-            plugin.getAutominerCondHeadGUI().handleStorageClick(player, slot, item);
-        } else if (title.contains("🛠")) {
-            plugin.getAutominerEnchantUpgradeGUI().handleUpgradeClick(player, slot, item, clickType);
-        } else if (title.contains("🏦 Banque PrisonTycoon")) {
-            plugin.getBankGUI().handleMainMenuClick(player, slot, item);
-        } else if (title.contains("📈 Investissements")) {
-            plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
-        } else if (title.contains("GANG") || title.contains("Gang") || title.contains("☠")) {
-            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Boutique - ") || title.contains("Amélioration - ")) {
-            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Liste des Gangs")) {
-            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
-        } else if (title.contains("Créateur de Bannière")) {
-            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
+    private void handleGUIClick(Player player, GUIType guiType, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
+        switch (guiType) {
+            case ENCHANTMENT_MENU -> plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
+
+            case CATEGORY_ENCHANT -> plugin.getCategoryMenuGUI().handleCategoryMenuClick(player, slot, item, clickType);
+
+            case ENCHANTMENT_UPGRADE ->
+                    plugin.getEnchantmentUpgradeGUI().handleUpgradeMenuClick(player, slot, item, guiManager.getGUIData(player, "enchantment"));
+
+            case CRISTAL_MANAGEMENT -> plugin.getCristalGUI().handleCristalMenuClick(player, slot, item);
+
+            case ENCHANTMENT_BOOK ->
+                    plugin.getEnchantmentBookGUI().handleEnchantmentBookMenuClick(player, slot, item, clickType);
+
+            case BOOK_SHOP -> plugin.getEnchantmentBookGUI().handleBookShopClick(player, slot, item);
+
+            case PETS_MENU -> plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
+
+            case PICKAXE_REPAIR -> plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
+
+            case PROFESSION_MAIN, PROFESSION_TALENTS, PROFESSION_REWARDS ->
+                    plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
+
+            case PRESTIGE_MENU -> plugin.getPrestigeGUI().handleClick(player, item, clickType);
+
+            case BLACK_MARKET -> plugin.getBlackMarketManager().handleBlackMarketClick(player, item);
+
+            case WEAPON_ARMOR_ENCHANT ->
+                    plugin.getWeaponArmorEnchantGUI().handleMenuClick(player, slot, item, clickType);
+
+            case BOOST_MENU -> plugin.getBoostGUI().handleClick(player, item);
+
+            case AUTOMINER_MAIN -> plugin.getAutominerGUI().handleMainMenuClick(player, slot, item, clickType);
+
+            case AUTOMINER_ENCHANT ->
+                    plugin.getAutominerEnchantGUI().handleEnchantMenuClick(player, slot, item, clickType);
+
+            case AUTOMINER_UPGRADE ->
+                    plugin.getAutominerEnchantUpgradeGUI().handleUpgradeClick(player, slot, item, clickType);
+
+            case AUTOMINER_STORAGE -> plugin.getAutominerCondHeadGUI().handleStorageClick(player, slot, item);
+
+            case GANG_MAIN, GANG_MANAGEMENT -> plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
+
+            case GANG_BANNER_CREATOR -> plugin.getGangGUI().handleBannerCreatorClick(player, slot, item, clickType);
+
+            case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
+
+            case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
+            default -> {
+                plugin.getPluginLogger().warning("GUI non géré: " + guiType);
+            }
         }
     }
 
     /**
-     * NOUVEAU : Gère la tentative d'application d'un cristal en cliquant dessus
-     * depuis l'inventaire du joueur lorsque le GUI des cristaux est ouvert.
+     * Gère les fermetures spéciales de GUIs
      */
-    private void handleCristalApplicationClick(Player player, InventoryClickEvent event) {
-        ItemStack clickedItem = event.getCurrentItem();
+    private void handleGUIClose(Player player, GUIType guiType, InventoryCloseEvent event) {
+        switch (guiType) {
+            case AUTOMINER_CONDENSATION ->
+                    plugin.getAutominerCondHeadGUI().handleCondensationClose(player, event.getInventory());
 
-        // On vérifie si l'item cliqué est un cristal révélé
-        if (clickedItem == null || !plugin.getCristalManager().isCristal(clickedItem)) {
-            return;
-        }
+            case AUTOMINER_FUEL -> plugin.getAutominerCondHeadGUI().handleFuelClose(player, event.getInventory());
 
-        Cristal cristal = plugin.getCristalManager().getCristalFromItem(clickedItem);
-        if (cristal == null || cristal.isVierge()) {
-            player.sendMessage("§cCe cristal doit d'abord être révélé (clic-droit en main).");
-            return;
-        }
+            case GANG_MAIN, GANG_MANAGEMENT -> plugin.getGangGUI().closeGui(player);
 
-        // C'est un cristal applicable, on annule l'événement pour prendre le contrôle.
-        event.setCancelled(true);
-
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) {
-            player.sendMessage("§cVous devez avoir une pioche légendaire pour appliquer des cristaux!");
-            return;
-        }
-
-        // On tente l'application du cristal
-        if (plugin.getCristalManager().applyCristalToPickaxe(player, pickaxe, cristal)) {
-            // L'application a réussi, on consomme l'item
-            clickedItem.setAmount(clickedItem.getAmount() - 1);
-
-            // On rafraîchit l'interface pour montrer le changement
-            plugin.getCristalGUI().refreshCristalGUI(player);
-        }
-        // Si l'application échoue, les messages d'erreur sont déjà envoyés par applyCristalToPickaxe.
-    }
-
-    /**
-     * NOUVEAU : Vérifie si c'est un GUI de conteneur
-     */
-    private boolean isContainerGUI(String title) {
-        return title.contains("Configuration Conteneur") ||
-                title.contains("Conteneur Cassé") ||
-                plugin.getContainerFilterGUI().isFilterGUI(title);
-    }
-
-    /**
-     * Gère les clics dans l'inventaire du joueur pour les bannières de gang
-     */
-    private void handleBannerCreationClick(Player player, InventoryClickEvent event) {
-        if (!event.getView().getTitle().contains("Créateur de Bannière")) {
-            return;
-        }
-
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem != null && clickedItem.getItemMeta() instanceof org.bukkit.inventory.meta.BannerMeta) {
-            plugin.getGangGUI().handleBannerSelection(player, clickedItem);
-            event.setCancelled(true);
+            default -> {
+                // La plupart des GUIs n'ont pas besoin de traitement spécial à la fermeture
+            }
         }
     }
 
     /**
-     * Vérifie si c'est un GUI du plugin (sauf conteneurs)
+     * Vérifie si c'est un GUI de conteneur
      */
-    private boolean isPluginGUI(String title) {
-        return title.contains("Menu Principal") ||
-                title.contains("Menu Enchantement") ||
-                title.contains("Économiques") ||
-                title.contains("Utilités") ||
-                title.contains("Mobilité") ||
-                title.contains("Spéciaux") ||
-                title.contains("🔧") ||
-                title.contains("Cristaux") ||
-                title.contains("Enchantements Uniques") ||
-                title.contains("Compagnons") ||
-                title.contains("Livres d'Enchantements") ||
-                title.contains("Boutique de Livres") ||
-                title.contains("Réparation") ||
-                title.contains("Métiers") ||
-                title.contains("Choisir un Métier") ||
-                title.contains("⭐") ||
-                title.contains("Changer de Métier") ||
-                title.contains("🎁") ||
-                title.contains("Prestige") ||
-                title.contains("MARCHÉ NOIR") ||
-                title.contains("Vos Boosts Actifs") ||
-                title.contains("§6⚡ §lGESTION DES AUTOMINEURS") ||
-                title.contains("AUTOMINEUR §6⚙️") ||
-                title.contains("§e⛽ §lCARBURANT") ||
-                title.contains("§b🌍 §lMONDE") ||
-                title.contains("§d📦 §lSTOCKAGE") ||
-                title.contains("§6⚡ §lCONDENSATION") ||
-                title.contains("§c⚡ §lÉNERGIE") ||
-                title.contains("Menu Automineurs") ||
-                title.contains("Amélioration Automineur") ||
-                title.contains("Stockage Automineur") ||
-                title.contains("🛠") ||
-                title.contains("📈 Investissements") ||
-                title.contains("🏦 Banque PrisonTycoon") ||
-                title.contains("GANG") ||
-                title.contains("Gang") ||
-                title.contains("Boutique - ") ||
-                title.contains("Amélioration - ") ||
-                title.contains("Liste des Gangs") ||
-                title.contains("Créateur de Bannière") ||
-                title.contains("☠");
+    private boolean isContainerGUI(GUIType guiType) {
+        return guiType == GUIType.CONTAINER_CONFIG ||
+               guiType == GUIType.CONTAINER_FILTER;
     }
 }

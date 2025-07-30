@@ -35,6 +35,38 @@ public enum GangBoostType {
     }
 
     /**
+     * Parse un nom de boost en GangBoostType
+     */
+    public static GangBoostType fromString(String name) {
+        if (name == null) return null;
+
+        try {
+            return GangBoostType.valueOf(name.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // Essaie avec les noms d'affichage
+            for (GangBoostType type : values()) {
+                if (type.displayName.equalsIgnoreCase(name) ||
+                    type.name().equalsIgnoreCase(name.replace(" ", "_"))) {
+                    return type;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Obtient tous les types de boost sous forme de liste
+     */
+    public static String getAllTypesString() {
+        StringBuilder builder = new StringBuilder();
+        for (GangBoostType type : values()) {
+            if (builder.length() > 0) builder.append(", ");
+            builder.append(type.name().toLowerCase());
+        }
+        return builder.toString();
+    }
+
+    /**
      * Nom d'affichage du boost
      */
     public String getDisplayName() {
@@ -184,38 +216,6 @@ public enum GangBoostType {
      */
     public int getDailyLimit() {
         return 3;
-    }
-
-    /**
-     * Parse un nom de boost en GangBoostType
-     */
-    public static GangBoostType fromString(String name) {
-        if (name == null) return null;
-
-        try {
-            return GangBoostType.valueOf(name.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            // Essaie avec les noms d'affichage
-            for (GangBoostType type : values()) {
-                if (type.displayName.equalsIgnoreCase(name) ||
-                        type.name().equalsIgnoreCase(name.replace(" ", "_"))) {
-                    return type;
-                }
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Obtient tous les types de boost sous forme de liste
-     */
-    public static String getAllTypesString() {
-        StringBuilder builder = new StringBuilder();
-        for (GangBoostType type : values()) {
-            if (builder.length() > 0) builder.append(", ");
-            builder.append(type.name().toLowerCase());
-        }
-        return builder.toString();
     }
 
     @Override

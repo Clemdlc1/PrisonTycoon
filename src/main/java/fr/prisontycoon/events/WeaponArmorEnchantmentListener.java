@@ -45,7 +45,7 @@ public class WeaponArmorEnchantmentListener implements Listener {
         if (!player.isSneaking()) return;
 
         if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR &&
-                event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
+            event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 
@@ -68,7 +68,7 @@ public class WeaponArmorEnchantmentListener implements Listener {
         String title = event.getView().getTitle();
 
         if (!title.contains("§c⚔ §lEnchantement d'Épée") &&
-                !title.contains("§9🛡 §lEnchantement d'Armure")) {
+            !title.contains("§9🛡 §lEnchantement d'Armure")) {
             return;
         }
 
@@ -221,15 +221,15 @@ public class WeaponArmorEnchantmentListener implements Listener {
 
         // Épées
         if (type == Material.NETHERITE_SWORD || type == Material.DIAMOND_SWORD ||
-                type == Material.IRON_SWORD || type == Material.GOLDEN_SWORD ||
-                type == Material.STONE_SWORD || type == Material.WOODEN_SWORD) {
+            type == Material.IRON_SWORD || type == Material.GOLDEN_SWORD ||
+            type == Material.STONE_SWORD || type == Material.WOODEN_SWORD) {
             return true;
         }
 
         // Armures
         String typeName = type.name();
         return typeName.endsWith("_HELMET") || typeName.endsWith("_CHESTPLATE") ||
-                typeName.endsWith("_LEGGINGS") || typeName.endsWith("_BOOTS");
+               typeName.endsWith("_LEGGINGS") || typeName.endsWith("_BOOTS");
     }
 
     /**

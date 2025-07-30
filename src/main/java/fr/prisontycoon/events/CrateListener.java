@@ -17,7 +17,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -124,14 +123,14 @@ public class CrateListener implements Listener {
 
         if (keyCount == 0) {
             player.sendMessage("§c❌ Vous n'avez aucune clé " + crateType.getColor() +
-                    crateType.getDisplayName() + " §cpour ouvrir cette crate!");
+                               crateType.getDisplayName() + " §cpour ouvrir cette crate!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
             return;
         }
 
         // Confirmation avec le nombre de clés
         player.sendMessage("§6🔑 Ouverture de la crate " + crateType.getColor() +
-                crateType.getDisplayName() + "§6... §7(" + keyCount + " clé(s) restante(s))");
+                           crateType.getDisplayName() + "§6... §7(" + keyCount + " clé(s) restante(s))");
 
         // Ouvre la crate
         crateManager.openCrateWithAnimation(player, location, crateType);
@@ -149,7 +148,7 @@ public class CrateListener implements Listener {
 
         if (keyCount == 0) {
             player.sendMessage("§c❌ Vous n'avez aucune clé " + crateType.getColor() +
-                    crateType.getDisplayName() + " §cpour cette crate!");
+                               crateType.getDisplayName() + " §cpour cette crate!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
             return;
         }
@@ -174,7 +173,7 @@ public class CrateListener implements Listener {
                 10, 30, 10);
 
         player.sendMessage("§6🔥 Ouverture de §e" + keyCount + " §6clés " + crateType.getColor() +
-                crateType.getDisplayName() + "§6!");
+                           crateType.getDisplayName() + "§6!");
         player.sendMessage("§7💡 L'ouverture s'arrêtera si votre inventaire se remplit.");
 
         // Ouvre toutes les clés
@@ -189,7 +188,7 @@ public class CrateListener implements Listener {
      */
     private void handleShowRewards(Player player, CrateType crateType) {
         player.sendMessage("§6📋 Ouverture du menu des récompenses pour la crate " +
-                crateType.getColor() + crateType.getDisplayName() + "§6...");
+                           crateType.getColor() + crateType.getDisplayName() + "§6...");
 
         // Ouvre le GUI des récompenses
         crateGUI.openRewardsGUI(player, crateType);
@@ -368,7 +367,7 @@ public class CrateListener implements Listener {
             CrateType crateType = crateManager.getCrateTypeAtLocation(blockLocation);
 
             player.sendMessage("§c❌ Vous ne pouvez pas détruire cette crate " +
-                    (crateType != null ? crateType.getColor() + crateType.getDisplayName() : "inconnue") + "§c!");
+                               (crateType != null ? crateType.getColor() + crateType.getDisplayName() : "inconnue") + "§c!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
         }
     }
@@ -387,20 +386,6 @@ public class CrateListener implements Listener {
             Player player = event.getPlayer();
             player.sendMessage("§c❌ Vous ne pouvez pas placer de bloc à cet emplacement!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
-        }
-    }
-
-    /**
-     * Nettoie le cache lors de la déconnexion d'un joueur
-     */
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        lastInteraction.remove(player);
-
-        // Ferme le GUI de crate s'il est ouvert
-        if (crateGUI.hasOpenGUI(player)) {
-            crateGUI.closeGUI(player);
         }
     }
 
@@ -428,15 +413,5 @@ public class CrateListener implements Listener {
                 }
             }
         }.runTaskLater(plugin, 60L); // 3 secondes après la connexion
-    }
-
-    /**
-     * Nettoie les ressources lors de l'arrêt
-     */
-    public void cleanup() {
-        lastInteraction.clear();
-        if (crateGUI != null) {
-            crateGUI.closeAllGuis();
-        }
     }
 }

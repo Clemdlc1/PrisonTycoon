@@ -36,6 +36,7 @@ public class AutominerGUI {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         Inventory inv = Bukkit.createInventory(null, 27, "§8Menu Automineurs");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_MAIN, inv);
 
         // Slots des automineurs actifs
         ItemStack slot1 = playerData.getActiveAutominerSlot1();

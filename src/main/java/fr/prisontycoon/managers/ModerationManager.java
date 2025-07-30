@@ -26,15 +26,15 @@ public class ModerationManager {
 
     private void createTable() {
         String moderationTable = "CREATE TABLE IF NOT EXISTS moderation (" +
-                "id SERIAL PRIMARY KEY," +
-                "uuid VARCHAR(36) NOT NULL," +
-                "player_name VARCHAR(16)," +
-                "type VARCHAR(16) NOT NULL," +
-                "reason VARCHAR(255)," +
-                "moderator VARCHAR(16)," +
-                "start_time BIGINT," +
-                "end_time BIGINT" +
-                ");";
+                                 "id SERIAL PRIMARY KEY," +
+                                 "uuid VARCHAR(36) NOT NULL," +
+                                 "player_name VARCHAR(16)," +
+                                 "type VARCHAR(16) NOT NULL," +
+                                 "reason VARCHAR(255)," +
+                                 "moderator VARCHAR(16)," +
+                                 "start_time BIGINT," +
+                                 "end_time BIGINT" +
+                                 ");";
         try (Connection conn = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = conn.prepareStatement(moderationTable)) {
             ps.execute();
         } catch (SQLException e) {
@@ -180,18 +180,6 @@ public class ModerationManager {
         plugin.getLogger().info("Moderation system reloaded.");
     }
 
-    public record ModerationData(UUID uuid, String playerName, long endTime, String reason, String moderator,
-                                 long startTime) {
-        public boolean isPermanent() {
-            return endTime == 0;
-        }
-
-        public long getRemainingTime() {
-            if (isPermanent()) return -1;
-            return Math.max(0, endTime - System.currentTimeMillis());
-        }
-    }
-
     public int getMutedPlayersCount() {
         return muteCache.size();
     }
@@ -234,6 +222,18 @@ public class ModerationManager {
             ps.executeUpdate();
         } catch (SQLException e) {
             plugin.getLogger().severe("Error deleting expired sanction from database: " + e.getMessage());
+        }
+    }
+
+    public record ModerationData(UUID uuid, String playerName, long endTime, String reason, String moderator,
+                                 long startTime) {
+        public boolean isPermanent() {
+            return endTime == 0;
+        }
+
+        public long getRemainingTime() {
+            if (isPermanent()) return -1;
+            return Math.max(0, endTime - System.currentTimeMillis());
         }
     }
 }

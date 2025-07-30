@@ -141,6 +141,6 @@ public class Cristal {
     @Override
     public String toString() {
         return "Cristal{uuid='" + uuid + "', niveau=" + niveau +
-                ", type=" + type + ", vierge=" + vierge + '}';
+               ", type=" + type + ", vierge=" + vierge + '}';
     }
 }

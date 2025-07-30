@@ -73,7 +73,7 @@ public class GiveTokensCommand implements CommandExecutor, TabCompleter {
         target.playSound(target.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
         plugin.getPluginLogger().info("§7" + sender.getName() + " a donné " +
-                formattedAmount + " tokens à " + target.getName());
+                                      formattedAmount + " tokens à " + target.getName());
         return true;
     }
 

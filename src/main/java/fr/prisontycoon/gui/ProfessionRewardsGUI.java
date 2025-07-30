@@ -9,7 +9,6 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -45,10 +44,12 @@ public class ProfessionRewardsGUI {
      * Ouvre le menu des récompenses pour un métier
      */
     public void openRewardsMenu(Player player, String professionId) {
+
         ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession(professionId);
         if (profession == null) return;
 
         Inventory gui = Bukkit.createInventory(null, 36, "§6🎁 " + profession.displayName() + " - Récompenses");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_REWARDS, gui);
 
         fillWithGlass(gui);
         setupRewardsMenu(gui, player, profession);
@@ -277,32 +278,6 @@ public class ProfessionRewardsGUI {
 
         item.setItemMeta(meta);
         return item;
-    }
-
-    /**
-     * Gère les clics dans le menu des récompenses
-     */
-    public void handleRewardMenuClick(Player player, int slot, ItemStack clickedItem, ClickType clickType) {
-        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
-
-        ItemMeta meta = clickedItem.getItemMeta();
-        String action = meta.getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
-        if (action == null) return;
-
-        switch (action) {
-            case "claim_reward" -> {
-                String professionId = meta.getPersistentDataContainer().get(professionKey, PersistentDataType.STRING);
-                Integer level = meta.getPersistentDataContainer().get(levelKey, PersistentDataType.INTEGER);
-
-                if (professionId != null && level != null) {
-                    claimReward(player, professionId, level);
-                    // Rafraîchit le menu
-                    openRewardsMenu(player, professionId);
-                }
-            }
-            case "back_to_professions" -> // Retour au menu principal des métiers
-                    plugin.getProfessionGUI().openProfessionMenu(player);
-        }
     }
 
     /**

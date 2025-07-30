@@ -86,12 +86,12 @@ public class ScoreboardTask extends BukkitRunnable {
 
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur mise à jour scoreboard pour " +
-                        player.getName() + ": " + e.getMessage());
+                                                 player.getName() + ": " + e.getMessage());
             }
         }
 
         plugin.getPluginLogger().debug("Scoreboards mis à jour: " + updated + " joueurs (ignorés: " +
-                skipped + ") (cycle #" + updateCycles + ")");
+                                       skipped + ") (cycle #" + updateCycles + ")");
     }
 
     /**
@@ -144,7 +144,7 @@ public class ScoreboardTask extends BukkitRunnable {
         for (String teamName : teamNames) {
             Team team = scoreboard.registerNewTeam(teamName);
             team.addEntry(ChatColor.values()[teamNames.length - 1 -
-                    java.util.Arrays.asList(teamNames).indexOf(teamName)] + "");
+                                             java.util.Arrays.asList(teamNames).indexOf(teamName)] + "");
         }
     }
 
@@ -164,7 +164,7 @@ public class ScoreboardTask extends BukkitRunnable {
             plugin.getPluginLogger().debug("Scoreboard mis à jour pour " + player.getName());
         } catch (Exception e) {
             plugin.getPluginLogger().warning("Erreur mise à jour scoreboard pour " + player.getName() +
-                    ", recréation...");
+                                             ", recréation...");
             e.printStackTrace();
 
             // En cas d'erreur, recrée le scoreboard
@@ -202,13 +202,13 @@ public class ScoreboardTask extends BukkitRunnable {
         // Section économie
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GOLD + "💰 " + ChatColor.BOLD + "ÉCONOMIE");
         setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Coins: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(coins));
+                                                         ChatColor.WHITE + NumberFormatter.formatWithColor(coins));
         setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Tokens: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(tokens));
+                                                         ChatColor.WHITE + NumberFormatter.formatWithColor(tokens));
         setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Expérience: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(experience));
+                                                         ChatColor.WHITE + NumberFormatter.formatWithColor(experience));
         setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Beacons: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(beacons));
+                                                         ChatColor.WHITE + NumberFormatter.formatWithColor(beacons));
 
         // Ligne vide
         setScoreboardLine(scoreboard, objective, line--, "  ");
@@ -216,12 +216,12 @@ public class ScoreboardTask extends BukkitRunnable {
         // Section statistiques avec distinction blocs minés/cassés
         setScoreboardLine(scoreboard, objective, line--, ChatColor.AQUA + "📊 " + ChatColor.BOLD + "STATISTIQUES");
         setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs minés: " +
-                ChatColor.BLUE + NumberFormatter.format(blocksMined));
+                                                         ChatColor.BLUE + NumberFormatter.format(blocksMined));
 
         // Affiche les blocs cassés seulement si différent des blocs minés
         if (blocksDestroyed > blocksMined) {
             setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " +
-                    ChatColor.LIGHT_PURPLE + NumberFormatter.format(blocksDestroyed));
+                                                             ChatColor.LIGHT_PURPLE + NumberFormatter.format(blocksDestroyed));
         }
 
         // Ligne vide finale
@@ -299,7 +299,7 @@ public class ScoreboardTask extends BukkitRunnable {
                 lastScoreboardUpdate.put(player, System.currentTimeMillis());
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur force update scoreboard pour " +
-                        player.getName() + ": " + e.getMessage());
+                                                 player.getName() + ": " + e.getMessage());
             }
         }
 
@@ -337,7 +337,7 @@ public class ScoreboardTask extends BukkitRunnable {
 
         if (cleanedCount > 0) {
             plugin.getPluginLogger().debug("Nettoyage scoreboards: " + cleanedCount +
-                    " joueurs déconnectés supprimés");
+                                           " joueurs déconnectés supprimés");
         }
     }
 

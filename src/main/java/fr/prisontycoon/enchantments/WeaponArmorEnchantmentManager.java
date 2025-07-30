@@ -431,28 +431,28 @@ public class WeaponArmorEnchantmentManager {
     // Méthodes utilitaires
     private boolean isValidWeapon(ItemStack item) {
         return item.getType() == Material.NETHERITE_SWORD ||
-                item.getType() == Material.DIAMOND_SWORD ||
-                item.getType() == Material.IRON_SWORD ||
-                item.getType() == Material.GOLDEN_SWORD ||
-                item.getType() == Material.STONE_SWORD ||
-                item.getType() == Material.WOODEN_SWORD;
+               item.getType() == Material.DIAMOND_SWORD ||
+               item.getType() == Material.IRON_SWORD ||
+               item.getType() == Material.GOLDEN_SWORD ||
+               item.getType() == Material.STONE_SWORD ||
+               item.getType() == Material.WOODEN_SWORD;
     }
 
     private boolean isValidArmor(ItemStack item) {
         Material type = item.getType();
         return type.name().endsWith("_HELMET") ||
-                type.name().endsWith("_CHESTPLATE") ||
-                type.name().endsWith("_LEGGINGS") ||
-                type.name().endsWith("_BOOTS");
+               type.name().endsWith("_CHESTPLATE") ||
+               type.name().endsWith("_LEGGINGS") ||
+               type.name().endsWith("_BOOTS");
     }
 
     private boolean isValidPickaxe(ItemStack item) {
         return item.getType() == Material.NETHERITE_PICKAXE ||
-                item.getType() == Material.DIAMOND_PICKAXE ||
-                item.getType() == Material.IRON_PICKAXE ||
-                item.getType() == Material.GOLDEN_PICKAXE ||
-                item.getType() == Material.STONE_PICKAXE ||
-                item.getType() == Material.WOODEN_PICKAXE;
+               item.getType() == Material.DIAMOND_PICKAXE ||
+               item.getType() == Material.IRON_PICKAXE ||
+               item.getType() == Material.GOLDEN_PICKAXE ||
+               item.getType() == Material.STONE_PICKAXE ||
+               item.getType() == Material.WOODEN_PICKAXE;
     }
 
     public UniqueEnchantment getEnchantment(String id) {

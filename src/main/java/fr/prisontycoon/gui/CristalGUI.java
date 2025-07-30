@@ -61,6 +61,7 @@ public class CristalGUI {
         // Livre d'explication (slot 8)
         fillExplanationBook(inv);
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.CRISTAL_MANAGEMENT, inv);
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
     }
@@ -103,7 +104,7 @@ public class CristalGUI {
             lore.add("§d✨ Bonus actifs:");
             for (Cristal cristal : cristals) {
                 lore.add("§8• §d" + cristal.getType().getDisplayName() + " " + cristal.getNiveau() +
-                        "§8: §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
+                         "§8: §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
             }
             lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         }
@@ -321,57 +322,38 @@ public class CristalGUI {
         }
     }
 
-    /**
-     * Gère les clics dans le menu de fusion.
-     * Reçoit l'événement complet pour gérer les items sur le curseur.
-     */
-    public void handleFusionInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+    public void handleCristalApplicationClick(Player player, InventoryClickEvent event) {
+        ItemStack clickedItem = event.getCurrentItem();
 
-        // Vérifier que c'est bien le menu de fusion
-        if (!event.getView().getTitle().equals("§6⚡ Fusion de Cristaux ⚡")) return;
-
-        // Si le clic est dans l'inventaire du joueur, on autorise
-        if (event.getClickedInventory() == player.getInventory()) {
-            return; // Laisser le joueur gérer ses items
+        // On vérifie si l'item cliqué est un cristal révélé
+        if (clickedItem == null || !plugin.getCristalManager().isCristal(clickedItem)) {
+            return;
         }
 
-        // Si le clic est dans le menu de fusion
-        if (event.getClickedInventory() != null && event.getClickedInventory().getSize() == 9) {
-            event.setCancelled(true);
-
-            int slot = event.getSlot();
-            ItemStack currentItem = event.getCurrentItem();
-            ItemStack cursorItem = event.getCursor();
-
-            // Cas 1: Le joueur veut placer un cristal depuis son curseur
-            if (cursorItem != null && cursorItem.getType() != Material.AIR) {
-                if (plugin.getCristalManager().isCristal(cursorItem)) {
-                    Cristal cristal = plugin.getCristalManager().getCristalFromItem(cursorItem);
-                    if (cristal != null && cristal.getNiveau() >= 1 && cristal.getNiveau() <= 19) {
-                        // Placer le cristal et vider le curseur
-                        event.getClickedInventory().setItem(slot, cursorItem.clone());
-                        player.setItemOnCursor(null);
-                        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 1.2f);
-                    } else {
-                        player.sendMessage("§cSeuls les cristaux de niveau 1 à 19 peuvent être fusionnés!");
-                        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                    }
-                } else {
-                    player.sendMessage("§cSeuls les cristaux peuvent être placés ici!");
-                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                }
-            }
-            // Cas 2: Le joueur veut récupérer un cristal
-            else if (currentItem != null && currentItem.getType() != Material.AIR) {
-                if (plugin.getCristalManager().isCristal(currentItem)) {
-                    // Mettre le cristal sur le curseur et vider le slot
-                    player.setItemOnCursor(currentItem.clone());
-                    event.getClickedInventory().setItem(slot, null);
-                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 0.8f);
-                }
-            }
+        Cristal cristal = plugin.getCristalManager().getCristalFromItem(clickedItem);
+        if (cristal == null || cristal.isVierge()) {
+            player.sendMessage("§cCe cristal doit d'abord être révélé (clic-droit en main).");
+            return;
         }
+
+        // C'est un cristal applicable, on annule l'événement pour prendre le contrôle.
+        event.setCancelled(true);
+
+        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
+        if (pickaxe == null) {
+            player.sendMessage("§cVous devez avoir une pioche légendaire pour appliquer des cristaux!");
+            return;
+        }
+
+        // On tente l'application du cristal
+        if (plugin.getCristalManager().applyCristalToPickaxe(player, pickaxe, cristal)) {
+            // L'application a réussi, on consomme l'item
+            clickedItem.setAmount(clickedItem.getAmount() - 1);
+
+            // On rafraîchit l'interface pour montrer le changement
+            plugin.getCristalGUI().refreshCristalGUI(player);
+        }
+        // Si l'application échoue, les messages d'erreur sont déjà envoyés par applyCristalToPickaxe.
     }
 
     /**
@@ -434,7 +416,7 @@ public class CristalGUI {
      */
     public void refreshCristalGUI(Player player) {
         if (player.getOpenInventory() != null &&
-                player.getOpenInventory().getTitle().equals("§d✨ Gestion des Cristaux ✨")) {
+            player.getOpenInventory().getTitle().equals("§d✨ Gestion des Cristaux ✨")) {
 
             // Actualiser seulement les parties dynamiques du GUI
             Inventory inv = player.getOpenInventory().getTopInventory();

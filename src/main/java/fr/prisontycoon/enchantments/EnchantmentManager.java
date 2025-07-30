@@ -159,7 +159,7 @@ public class EnchantmentManager {
         int finalBonusBlocks = plugin.getGlobalBonusManager().applyFortuneBonus(player, baseBonusBlocks);
 
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
-                ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
+                                       ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
 
         return 1 + finalBonusBlocks;
     }
@@ -228,7 +228,7 @@ public class EnchantmentManager {
 
                 // Message d'avertissement moins fréquent pour l'inventaire plein
                 if (!player.hasMetadata("inventory_full_warning") ||
-                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
+                    System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
 
                     int droppedCount = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
                     player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items droppés au sol.");
@@ -246,7 +246,7 @@ public class EnchantmentManager {
         }
 
         plugin.getPluginLogger().debug("Blocs ajoutés au total: " + actuallyAdded + "/" + quantity + "x " + material.name() +
-                " (conteneurs + inventaire + droppés)");
+                                       " (conteneurs + inventaire + droppés)");
     }
 
     /**
@@ -275,7 +275,7 @@ public class EnchantmentManager {
      */
     public void processBlockMinedOutsideMine(Player player, Material blockType) {
         plugin.getPluginLogger().debug("Bloc miné hors mine: " + blockType + " par " + player.getName() +
-                " (seuls efficacité/solidité/mobilité actifs)");
+                                       " (seuls efficacité/solidité/mobilité actifs)");
     }
 
     /**
@@ -378,7 +378,7 @@ public class EnchantmentManager {
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
 
                     plugin.getPluginLogger().info("Abondance activée pour " + player.getName() +
-                            " (niveau " + abundanceLevel + ", durée " + duration + "s)");
+                                                  " (niveau " + abundanceLevel + ", durée " + duration + "s)");
                 }
             }
         }
@@ -796,8 +796,8 @@ public class EnchantmentManager {
             playerData.setEnchantmentLevel(enchantmentName, currentLevel + actualLevels);
 
             player.sendMessage("§a✅ " + enchantment.getDisplayName() + " amélioré de " + actualLevels +
-                    " niveau" + (actualLevels > 1 ? "x" : "") + " au niveau " + (currentLevel + actualLevels) +
-                    " §7(-" + NumberFormatter.format(totalCost) + " tokens)");
+                               " niveau" + (actualLevels > 1 ? "x" : "") + " au niveau " + (currentLevel + actualLevels) +
+                               " §7(-" + NumberFormatter.format(totalCost) + " tokens)");
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());

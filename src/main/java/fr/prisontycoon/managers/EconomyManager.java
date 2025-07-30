@@ -138,11 +138,11 @@ public class EconomyManager {
 
                 // Message de log pour le débogage.
                 plugin.getPluginLogger().debug("Sync exp pour " + player.getName() + ": " +
-                        "custom=" + customExp + " -> vanilla=" + vanillaLevel + " (+" +
-                        String.format("%.1f%%", progress * 100) + ") [" + expDansNiveauActuel + "/" + expTotalPourNiveau + "]");
+                                               "custom=" + customExp + " -> vanilla=" + vanillaLevel + " (+" +
+                                               String.format("%.1f%%", progress * 100) + ") [" + expDansNiveauActuel + "/" + expTotalPourNiveau + "]");
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() +
-                        ": level=" + vanillaLevel + ", exp=" + progress + " - " + e.getMessage());
+                                                 ": level=" + vanillaLevel + ", exp=" + progress + " - " + e.getMessage());
             }
         }
     }
@@ -176,7 +176,7 @@ public class EconomyManager {
             long customExp = playerData.getExperience();
 
             plugin.getPluginLogger().debug("Initialisation exp vanilla pour " + player.getName() +
-                    ": custom=" + customExp);
+                                           ": custom=" + customExp);
 
             updateVanillaExpFromCustom(player, customExp);
         } catch (Exception e) {

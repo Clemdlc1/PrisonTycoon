@@ -69,11 +69,11 @@ public class GangTalent {
      */
     public String getFormattedDescription() {
         if (isPercentage()) {
-            return description.replace("{value}", "+" + (int)value + "%");
+            return description.replace("{value}", "+" + (int) value + "%");
         } else if (isMultiplier()) {
             return description.replace("{value}", "x" + value);
         } else if (category.equals("gang_collectif")) {
-            return description.replace("{value}", "+" + (int)value);
+            return description.replace("{value}", "+" + (int) value);
         }
         return description;
     }
@@ -196,12 +196,12 @@ public class GangTalent {
     @Override
     public String toString() {
         return "GangTalent{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", category='" + category + '\'' +
-                ", cost=" + cost +
-                ", value=" + value +
-                '}';
+               "id='" + id + '\'' +
+               ", name='" + name + '\'' +
+               ", category='" + category + '\'' +
+               ", cost=" + cost +
+               ", value=" + value +
+               '}';
     }
 
     @Override

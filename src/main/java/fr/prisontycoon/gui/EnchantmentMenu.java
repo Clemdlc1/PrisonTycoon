@@ -75,6 +75,7 @@ public class EnchantmentMenu {
         gui.setItem(MOBILITY_SLOT, createCategoryItem(EnchantmentCategory.MOBILITY, player));
         gui.setItem(SPECIAL_SLOT, createCategoryItem(EnchantmentCategory.SPECIAL, player));
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.ENCHANTMENT_MENU, gui);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
     }

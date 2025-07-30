@@ -33,10 +33,12 @@ public class BankGUI {
     // Slots pour le menu d'investissement
     private static final int[] INVESTMENT_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 25};
     private final PrisonTycoon plugin;
+    private final GUIManager guiManager;
     private final BankManager bankManager;
 
     public BankGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
+        this.guiManager = plugin.getGUIManager();
         this.bankManager = plugin.getBankManager();
     }
 
@@ -50,6 +52,7 @@ public class BankGUI {
         }
 
         Inventory gui = Bukkit.createInventory(null, 54, "§6🏦 Banque PrisonTycoon");
+        guiManager.registerOpenGUI(player, GUIType.BANK_MAIN, gui);
         fillWithGlass(gui);
         setupMainMenu(gui, player);
 
@@ -241,10 +244,10 @@ public class BankGUI {
             lore.add("§7Prochain niveau (§e" + nextLevel + "§7):");
             lore.add("§7Dépôts requis: §e" + NumberFormatter.format(requiredDeposits));
             lore.add("§7Vos dépôts: " + (totalDeposits >= requiredDeposits ? "§a" : "§c") +
-                    NumberFormatter.format(totalDeposits));
+                     NumberFormatter.format(totalDeposits));
             lore.add("§7Coût XP: §b" + NumberFormatter.format(experienceCost));
             lore.add("§7Votre XP: " + (playerData.getExperience() >= experienceCost ? "§a" : "§c") +
-                    NumberFormatter.format(playerData.getExperience()));
+                     NumberFormatter.format(playerData.getExperience()));
         }
 
         lore.add("");
@@ -285,7 +288,7 @@ public class BankGUI {
         String profession = playerData.getActiveProfession();
         if (profession != null) {
             lore.add("§7Métier: §e" + profession.substring(0, 1).toUpperCase() + profession.substring(1) +
-                    " §7Niv." + playerData.getProfessionLevel(profession));
+                     " §7Niv." + playerData.getProfessionLevel(profession));
         }
 
         meta.setLore(lore);

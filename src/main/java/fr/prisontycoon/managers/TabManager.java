@@ -107,10 +107,10 @@ public class TabManager {
         String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
 
         return separator + "\n" +
-                ChatColor.GOLD + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
-                ChatColor.GRAY + "Serveur de minage et de progression\n" +
-                ChatColor.YELLOW + "📊 Joueurs connectés: " + ChatColor.GREEN + onlinePlayers + ChatColor.GRAY + "/" + ChatColor.GREEN + maxPlayers + "\n" +
-                separator;
+               ChatColor.GOLD + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
+               ChatColor.GRAY + "Serveur de minage et de progression\n" +
+               ChatColor.YELLOW + "📊 Joueurs connectés: " + ChatColor.GREEN + onlinePlayers + ChatColor.GRAY + "/" + ChatColor.GREEN + maxPlayers + "\n" +
+               separator;
     }
 
     /**
@@ -121,13 +121,13 @@ public class TabManager {
         String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
 
         return separator + "\n" +
-                ChatColor.GRAY + "Votre progression:\n" +
-                ChatColor.YELLOW + "💰 Coins: " + ChatColor.GOLD + NumberFormatter.format(playerData.getCoins()) + "\n" +
-                ChatColor.AQUA + "🎟 Tokens: " + ChatColor.DARK_AQUA + NumberFormatter.format(playerData.getTokens()) + "\n" +
-                ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
-                ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
-                ChatColor.DARK_PURPLE + "🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
-                separator;
+               ChatColor.GRAY + "Votre progression:\n" +
+               ChatColor.YELLOW + "💰 Coins: " + ChatColor.GOLD + NumberFormatter.format(playerData.getCoins()) + "\n" +
+               ChatColor.AQUA + "🎟 Tokens: " + ChatColor.DARK_AQUA + NumberFormatter.format(playerData.getTokens()) + "\n" +
+               ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
+               ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
+               ChatColor.DARK_PURPLE + "🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
+               separator;
     }
 
     /**

@@ -14,7 +14,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
@@ -35,6 +34,9 @@ public class TankListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockPlace(BlockPlaceEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         Player player = event.getPlayer();
         ItemStack item = event.getItemInHand();
 
@@ -324,7 +326,7 @@ public class TankListener implements Listener {
 
         if (soldSomething) {
             player.sendMessage("§a✓ Vendu " + totalItemsSold + " items pour " +
-                    NumberFormatter.format(totalMoneyEarned) + "$!");
+                               NumberFormatter.format(totalMoneyEarned) + "$!");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
 
             // Sauvegarder et mettre à jour le nametag
@@ -335,32 +337,6 @@ public class TankListener implements Listener {
         } else {
             // Ne pas afficher de message ici - sera géré par l'appelant
             return false;
-        }
-    }
-
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        ItemStack clicked = event.getCurrentItem();
-        ItemStack cursor = event.getCursor();
-
-        // Vérifier si on essaie de faire un shift-clic sur un Tank dans l'inventaire
-        if (event.isShiftClick() && clicked != null && plugin.getTankManager().isTank(clicked)) {
-            // Les tanks ne peuvent plus être utilisés directement depuis l'inventaire
-            // Ils doivent être placés au sol
-            player.sendMessage("§c❌ Vous devez placer le tank au sol pour l'utiliser!");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            event.setCancelled(true);
-            return;
-        }
-
-        // Empêcher de mettre des items dans un Tank en drag&drop
-        if (cursor != null && cursor.getType() != Material.AIR && clicked != null &&
-                plugin.getTankManager().isTank(clicked)) {
-            event.setCancelled(true);
-            player.sendMessage("§c❌ Placez le tank au sol et utilisez-le là-bas!");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         }
     }
 }

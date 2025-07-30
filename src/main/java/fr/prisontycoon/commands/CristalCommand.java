@@ -99,14 +99,14 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
             success = plugin.getCristalManager().giveCristalToPlayer(target, niveau, type);
             if (success) {
                 sender.sendMessage("§a✓ Cristal §d" + type.getDisplayName() + " §7(Niveau " + niveau +
-                        ") §adonné à §e" + target.getName() + "§a!");
+                                   ") §adonné à §e" + target.getName() + "§a!");
             }
         } else {
             // Cristal vierge
             success = plugin.getCristalManager().giveCristalToPlayer(target, niveau);
             if (success) {
                 sender.sendMessage("§a✓ Cristal vierge §7(Niveau " + niveau +
-                        ") §adonné à §e" + target.getName() + "§a!");
+                                   ") §adonné à §e" + target.getName() + "§a!");
             }
         }
 
@@ -214,8 +214,8 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.5f);
 
         plugin.getPluginLogger().info("§7" + player.getName() + " a régénéré un cristal " +
-                cristal.getType().getDisplayName() + " niveau " + cristal.getNiveau() +
-                " pour " + regenerationCost + " coins");
+                                      cristal.getType().getDisplayName() + " niveau " + cristal.getNiveau() +
+                                      " pour " + regenerationCost + " coins");
 
         return true;
     }

@@ -169,7 +169,7 @@ public class TankAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Types de Sell Hand disponibles:");
         for (SellHandType type : SellHandType.values()) {
             sender.sendMessage("§8▸ §7" + type.name().toLowerCase() + " §8- " + type.getDisplayName() +
-                    " §8(x" + String.format("%.2f", type.getMultiplier()) + ")");
+                               " §8(x" + String.format("%.2f", type.getMultiplier()) + ")");
         }
     }
 

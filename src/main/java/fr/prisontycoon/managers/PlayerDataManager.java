@@ -167,8 +167,8 @@ public class PlayerDataManager {
                 data.getChosenSpecialRewards().putAll(gson.fromJson(rs.getString("chosen_special_rewards"), intStringMapType));
                 data.setReputation(rs.getInt("reputation"));
                 data.getActiveBoosts().putAll(gson.fromJson(rs.getString("boosts"), stringBoostMapType));
-                data.setActiveAutominerSlot1(gson.fromJson(rs.getString("autominer_active_slot_1"), ItemStack.class));
-                data.setActiveAutominerSlot2(gson.fromJson(rs.getString("autominer_active_slot_2"), ItemStack.class));
+                data.setActiveAutominerSlot1(Optional.ofNullable(rs.getString("autominer_active_slot_1")).map(json -> (Map<String, Object>) gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType())).map(ItemStack::deserialize).orElse(null));
+                data.setActiveAutominerSlot2(Optional.ofNullable(rs.getString("autominer_active_slot_2")).map(json -> (Map<String, Object>) gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType())).map(ItemStack::deserialize).orElse(null));
                 data.setAutominerFuelReserve(rs.getDouble("autominer_fuel_reserve"));
                 data.setAutominerCurrentWorld(rs.getString("autominer_current_world"));
                 data.setAutominerStorageLevel(rs.getInt("autominer_storage_level"));
@@ -292,8 +292,8 @@ public class PlayerDataManager {
             ps.setString(26, gson.toJson(data.getChosenSpecialRewards()));
             ps.setInt(27, data.getReputation());
             ps.setString(28, gson.toJson(data.getActiveBoosts()));
-            ps.setString(29, gson.toJson(data.getActiveAutominerSlot1()));
-            ps.setString(30, gson.toJson(data.getActiveAutominerSlot2()));
+            ps.setString(29, Optional.ofNullable(data.getActiveAutominerSlot1()).map(ItemStack::serialize).map(gson::toJson).orElse(null));
+            ps.setString(30, Optional.ofNullable(data.getActiveAutominerSlot2()).map(ItemStack::serialize).map(gson::toJson).orElse(null));
             ps.setDouble(31, data.getAutominerFuelReserve());
             ps.setString(32, data.getAutominerCurrentWorld());
             ps.setInt(33, data.getAutominerStorageLevel());

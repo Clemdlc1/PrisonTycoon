@@ -1,4 +1,3 @@
-
 package fr.prisontycoon.boosts;
 
 import fr.prisontycoon.gangs.GangBoostType;

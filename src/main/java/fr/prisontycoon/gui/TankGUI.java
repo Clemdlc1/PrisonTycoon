@@ -70,6 +70,7 @@ public class TankGUI implements Listener {
         }
 
         Inventory gui = Bukkit.createInventory(null, 54, "§6⚡ Configuration Tank " + tankId);
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_CONFIG, gui);
 
         // === LIGNE 1 : INFORMATIONS ===
         gui.setItem(4, createInfoItem(tankData));
@@ -108,7 +109,8 @@ public class TankGUI implements Listener {
      */
     public void openPricesViewGUI(Player player, TankData tankData) {
         Inventory gui = Bukkit.createInventory(null, 54, "§6💰 Prix - Tank de " +
-                plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName());
+                                                         plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName());
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_PRICES, gui);
 
         // Informations
         gui.setItem(4, createPublicInfoItem(tankData));
@@ -322,7 +324,7 @@ public class TankGUI implements Listener {
                     break;
                 }
                 lore.add("§8▸ §b" + NumberFormatter.format(entry.getValue()) + "x §7" +
-                        entry.getKey().name().toLowerCase());
+                         entry.getKey().name().toLowerCase());
                 count++;
             }
         }
@@ -360,7 +362,7 @@ public class TankGUI implements Listener {
                     break;
                 }
                 lore.add("§8▸ §7" + entry.getKey().name().toLowerCase() + " §a" +
-                        NumberFormatter.format(entry.getValue()) + "$/item");
+                         NumberFormatter.format(entry.getValue()) + "$/item");
                 count++;
             }
         }
@@ -549,6 +551,7 @@ public class TankGUI implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
+        ItemStack clicked = event.getCurrentItem();
         String tankId = openTankGUIs.get(player.getUniqueId());
         if (tankId == null) return;
 
@@ -556,7 +559,6 @@ public class TankGUI implements Listener {
 
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
 
-        ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() == Material.AIR) return;
 
         String title = event.getView().getTitle();
@@ -564,7 +566,6 @@ public class TankGUI implements Listener {
         if (title.startsWith("§e🔧 Ajouter un filtre")) {
             handleMaterialSelection(player, clicked, tankId);
         } else if (title.startsWith("§6💰 Prix - Tank de")) {
-            // GUI publique - rien à faire
             if (clicked.getType() == Material.BARRIER) {
                 player.closeInventory();
             }
@@ -784,8 +785,8 @@ public class TankGUI implements Listener {
      */
     private boolean isMaterialFilterItem(ItemStack item) {
         return Arrays.asList(COMMON_ORES).contains(item.getType()) ||
-                Arrays.asList(DEEPSLATE_ORES).contains(item.getType()) ||
-                Arrays.asList(NETHER_MATERIALS).contains(item.getType());
+               Arrays.asList(DEEPSLATE_ORES).contains(item.getType()) ||
+               Arrays.asList(NETHER_MATERIALS).contains(item.getType());
     }
 
     @EventHandler

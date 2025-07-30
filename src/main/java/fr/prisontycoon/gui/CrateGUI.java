@@ -7,10 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -18,27 +14,20 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Interface graphique pour visualiser les récompenses des crates
  */
-public class CrateGUI implements Listener {
+public class CrateGUI {
 
     private final PrisonTycoon plugin;
     private final CrateManager crateManager;
-    private final ConcurrentMap<Player, CrateType> openGuis;
     private final DecimalFormat percentFormat;
 
     public CrateGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.crateManager = plugin.getCrateManager();
-        this.openGuis = new ConcurrentHashMap<>();
         this.percentFormat = new DecimalFormat("#0.0");
-
-        // Enregistre les événements
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
         plugin.getPluginLogger().info("§aCrateGUI initialisé.");
     }
@@ -47,10 +36,6 @@ public class CrateGUI implements Listener {
      * Ouvre le GUI des récompenses pour un type de crate spécifique
      */
     public void openRewardsGUI(Player player, CrateType crateType) {
-        // Évite les ouvertures multiples
-        if (openGuis.containsKey(player)) {
-            return;
-        }
 
         // Crée l'inventaire
         String title = crateType.getColor() + "Récompenses - Crate " + crateType.getDisplayName();
@@ -59,13 +44,12 @@ public class CrateGUI implements Listener {
         // Ajoute les récompenses
         populateRewardsInventory(gui, crateType);
 
-        // Ajoute les éléments de navigation
-        // MODIFICATION: Pass the player object directly
         addNavigationItems(player, gui, crateType);
 
         // Ouvre le GUI
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.CRATE_MANAGEMENT, gui);
         player.openInventory(gui);
-        openGuis.put(player, crateType);
+
 
         // Son d'ouverture
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.2f);
@@ -73,7 +57,7 @@ public class CrateGUI implements Listener {
         // Message informatif
         int keyCount = crateManager.countKeys(player, crateType.getDisplayName());
         player.sendMessage("§7Vous possédez §e" + keyCount + " §7clé(s) " +
-                crateType.getColor() + crateType.getDisplayName());
+                           crateType.getColor() + crateType.getDisplayName());
     }
 
     /**
@@ -317,7 +301,7 @@ public class CrateGUI implements Listener {
 
         crateInfoLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         crateInfoLore.add("§7Clés possédées: §e" +
-                crateManager.countKeys(player, crateType.getDisplayName()));
+                          crateManager.countKeys(player, crateType.getDisplayName()));
         crateInfoLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         crateInfoLore.add("§cFermez ce menu pour retourner au jeu");
 
@@ -370,90 +354,5 @@ public class CrateGUI implements Listener {
         } else {
             return seconds + "s";
         }
-    }
-
-    /**
-     * Récupère le joueur actuel depuis l'inventaire (méthode utilitaire)
-     */
-    private Player getCurrentPlayer(Inventory inventory) {
-        for (Player player : openGuis.keySet()) {
-            if (player.getOpenInventory().getTopInventory().equals(inventory)) {
-                return player;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Gestion des clics dans le GUI
-     */
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        // Vérifie si c'est notre GUI
-        if (!openGuis.containsKey(player)) return;
-
-        event.setCancelled(true); // Empêche la manipulation des items
-
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
-
-        // Gestion du bouton de fermeture
-        if (clickedItem.getType() == Material.BARRIER) {
-            player.closeInventory();
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.8f);
-            return;
-        }
-
-        // Gestion du bouton d'aide
-        if (clickedItem.getType() == Material.BOOK) {
-            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.0f);
-            return;
-        }
-
-        // Autres clics - just son de feedback
-        if (clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()) {
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.3f, 1.2f);
-        }
-    }
-
-    /**
-     * Gestion de la fermeture du GUI
-     */
-    @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) return;
-
-        // Supprime le joueur du cache des GUI ouverts
-        if (openGuis.remove(player) != null) {
-            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.5f, 1.0f);
-        }
-    }
-
-    /**
-     * Vérifie si un joueur a un GUI de crate ouvert
-     */
-    public boolean hasOpenGUI(Player player) {
-        return openGuis.containsKey(player);
-    }
-
-    /**
-     * Ferme le GUI d'un joueur spécifique
-     */
-    public void closeGUI(Player player) {
-        if (openGuis.containsKey(player)) {
-            player.closeInventory();
-        }
-    }
-
-    /**
-     * Ferme tous les GUI ouverts (pour le disable du plugin)
-     */
-    public void closeAllGuis() {
-        for (Player player : openGuis.keySet()) {
-            player.closeInventory();
-        }
-        openGuis.clear();
     }
 }

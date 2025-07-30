@@ -49,8 +49,8 @@ public class WeaponArmorEnchantGUI {
 
         boolean isWeapon = isValidWeapon(item);
         String title = isWeapon ? "§c⚔ §lEnchantement d'Épée" : "§9🛡 §lEnchantement d'Armure";
-
         Inventory gui = Bukkit.createInventory(null, 27, title);
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.WEAPON_ARMOR_ENCHANT, gui);
 
         fillWithGlass(gui, isWeapon);
         setupItemDisplay(gui, item, isWeapon);
@@ -481,29 +481,29 @@ public class WeaponArmorEnchantGUI {
     // Méthodes utilitaires
     private boolean isValidWeapon(ItemStack item) {
         return item.getType() == Material.NETHERITE_SWORD ||
-                item.getType() == Material.DIAMOND_SWORD ||
-                item.getType() == Material.IRON_SWORD ||
-                item.getType() == Material.GOLDEN_SWORD ||
-                item.getType() == Material.STONE_SWORD ||
-                item.getType() == Material.WOODEN_SWORD;
+               item.getType() == Material.DIAMOND_SWORD ||
+               item.getType() == Material.IRON_SWORD ||
+               item.getType() == Material.GOLDEN_SWORD ||
+               item.getType() == Material.STONE_SWORD ||
+               item.getType() == Material.WOODEN_SWORD;
     }
 
     private boolean isValidArmor(ItemStack item) {
         Material type = item.getType();
         return type.name().endsWith("_HELMET") ||
-                type.name().endsWith("_CHESTPLATE") ||
-                type.name().endsWith("_LEGGINGS") ||
-                type.name().endsWith("_BOOTS");
+               type.name().endsWith("_CHESTPLATE") ||
+               type.name().endsWith("_LEGGINGS") ||
+               type.name().endsWith("_BOOTS");
     }
 
     private boolean isMaxVanillaEnchanted(ItemStack item, boolean isWeapon) {
         if (isWeapon) {
             return item.getEnchantmentLevel(Enchantment.SHARPNESS) >= 5 &&
-                    item.getEnchantmentLevel(Enchantment.UNBREAKING) >= 3 &&
-                    item.getEnchantmentLevel(Enchantment.FIRE_ASPECT) >= 2;
+                   item.getEnchantmentLevel(Enchantment.UNBREAKING) >= 3 &&
+                   item.getEnchantmentLevel(Enchantment.FIRE_ASPECT) >= 2;
         } else {
             return item.getEnchantmentLevel(Enchantment.PROTECTION) >= 4 &&
-                    item.getEnchantmentLevel(Enchantment.UNBREAKING) >= 3;
+                   item.getEnchantmentLevel(Enchantment.UNBREAKING) >= 3;
         }
     }
 

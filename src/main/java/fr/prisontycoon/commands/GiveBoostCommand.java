@@ -138,8 +138,8 @@ public class GiveBoostCommand implements CommandExecutor, TabCompleter {
 
         // Log
         plugin.getPluginLogger().info("Item boost donné par " + sender.getName() +
-                " à " + target.getName() + ": " + amount + "x " + type.name() +
-                " (" + durationMinutes + "min, +" + bonus + "%)");
+                                      " à " + target.getName() + ": " + amount + "x " + type.name() +
+                                      " (" + durationMinutes + "min, +" + bonus + "%)");
 
         return true;
     }

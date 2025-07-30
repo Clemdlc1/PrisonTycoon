@@ -52,6 +52,7 @@ public class PetsMenuGUI {
         // Bouton retour
         gui.setItem(22, createBackButton());
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PETS_MENU, gui);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.ENTITY_WOLF_AMBIENT, 1.0f, 1.2f);
         player.sendMessage("§6🐕 Aperçu du système de Pets - Fonctionnalité à venir!");

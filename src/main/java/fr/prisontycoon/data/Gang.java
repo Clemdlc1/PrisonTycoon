@@ -1,7 +1,7 @@
 package fr.prisontycoon.data;
 
-import fr.prisontycoon.gangs.GangRole;
 import fr.prisontycoon.gangs.GangBoostType;
+import fr.prisontycoon.gangs.GangRole;
 import org.bukkit.Bukkit;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.entity.Player;
@@ -15,21 +15,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Gang {
 
     private final String id;
-    private String name;
-    private String tag;
-    private UUID leader;
     private final Map<UUID, GangRole> members;
-    private int level;
-    private long bankBalance;
     private final long creationDate;
-    private String description;
     private final Map<String, Integer> talents;
-    private List<Pattern> bannerPatterns;
-
     // Système de boosts temporaires
     private final Map<GangBoostType, GangBoostData> activeBoosts;
     private final Map<GangBoostType, Long> lastBoostActivation;
     private final Map<GangBoostType, Integer> dailyBoostCount;
+    private String name;
+    private String tag;
+    private UUID leader;
+    private int level;
+    private long bankBalance;
+    private String description;
+    private List<Pattern> bannerPatterns;
     private long lastDailyReset;
 
     public Gang(String id, String name, String tag, UUID leader, long creationDate) {

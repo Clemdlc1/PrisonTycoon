@@ -71,6 +71,7 @@ public class PrestigeGUI {
      */
     public void openMainPrestigeMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "§6🏆 §lSystème de Prestige §6🏆");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PRESTIGE_MENU, gui);
 
         fillWithGlass(gui);
         setupMainPrestigeMenu(gui, player);

@@ -1,12 +1,12 @@
 package fr.prisontycoon.managers;
 
+import com.google.gson.Gson;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.gangs.GangBoostType;
 import fr.prisontycoon.gangs.GangRole;
 import fr.prisontycoon.gangs.GangTalent;
-import fr.prisontycoon.gangs.GangBoostType;
-import com.google.gson.Gson;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -138,20 +138,20 @@ public class GangManager {
      */
     private void createGangTable() {
         String query = """
-            CREATE TABLE IF NOT EXISTS gangs (
-                id VARCHAR(36) PRIMARY KEY,
-                name VARCHAR(16) NOT NULL UNIQUE,
-                tag VARCHAR(6) NOT NULL UNIQUE,
-                leader VARCHAR(36) NOT NULL,
-                members TEXT,
-                level INT DEFAULT 1,
-                bank_balance BIGINT DEFAULT 0,
-                creation_date BIGINT,
-                description TEXT,
-                talents TEXT,
-                banner_patterns TEXT
-            )
-        """;
+                    CREATE TABLE IF NOT EXISTS gangs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        name VARCHAR(16) NOT NULL UNIQUE,
+                        tag VARCHAR(6) NOT NULL UNIQUE,
+                        leader VARCHAR(36) NOT NULL,
+                        members TEXT,
+                        level INT DEFAULT 1,
+                        bank_balance BIGINT DEFAULT 0,
+                        creation_date BIGINT,
+                        description TEXT,
+                        talents TEXT,
+                        banner_patterns TEXT
+                    )
+                """;
 
         try (Connection conn = plugin.getDatabaseManager().getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -183,7 +183,8 @@ public class GangManager {
         String membersJson = rs.getString("members");
         if (membersJson != null && !membersJson.isEmpty()) {
             Map<UUID, GangRole> members = gson.fromJson(membersJson,
-                    new com.google.gson.reflect.TypeToken<Map<UUID, GangRole>>() {}.getType());
+                    new com.google.gson.reflect.TypeToken<Map<UUID, GangRole>>() {
+                    }.getType());
             if (members != null) {
                 gang.setMembers(members);
             }
@@ -193,7 +194,8 @@ public class GangManager {
         String talentsJson = rs.getString("talents");
         if (talentsJson != null && !talentsJson.isEmpty()) {
             Map<String, Integer> talents = gson.fromJson(talentsJson,
-                    new com.google.gson.reflect.TypeToken<Map<String, Integer>>() {}.getType());
+                    new com.google.gson.reflect.TypeToken<Map<String, Integer>>() {
+                    }.getType());
             if (talents != null) {
                 gang.setTalents(talents);
             }
@@ -204,7 +206,8 @@ public class GangManager {
         if (bannerJson != null && !bannerJson.isEmpty()) {
             try {
                 List<org.bukkit.block.banner.Pattern> patterns = gson.fromJson(bannerJson,
-                        new com.google.gson.reflect.TypeToken<List<org.bukkit.block.banner.Pattern>>() {}.getType());
+                        new com.google.gson.reflect.TypeToken<List<org.bukkit.block.banner.Pattern>>() {
+                        }.getType());
                 gang.setBannerPatterns(patterns);
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur lors du chargement des motifs de bannière pour " + name + ": " + e.getMessage());
@@ -219,19 +222,19 @@ public class GangManager {
      */
     public void saveGang(Gang gang) {
         String query = """
-            INSERT INTO gangs (id, name, tag, leader, members, level, bank_balance, creation_date, description, talents, banner_patterns)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                tag = EXCLUDED.tag,
-                leader = EXCLUDED.leader,
-                members = EXCLUDED.members,
-                level = EXCLUDED.level,
-                bank_balance = EXCLUDED.bank_balance,
-                description = EXCLUDED.description,
-                talents = EXCLUDED.talents,
-                banner_patterns = EXCLUDED.banner_patterns
-        """;
+                    INSERT INTO gangs (id, name, tag, leader, members, level, bank_balance, creation_date, description, talents, banner_patterns)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        tag = EXCLUDED.tag,
+                        leader = EXCLUDED.leader,
+                        members = EXCLUDED.members,
+                        level = EXCLUDED.level,
+                        bank_balance = EXCLUDED.bank_balance,
+                        description = EXCLUDED.description,
+                        talents = EXCLUDED.talents,
+                        banner_patterns = EXCLUDED.banner_patterns
+                """;
 
         try (Connection conn = plugin.getDatabaseManager().getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -306,7 +309,7 @@ public class GangManager {
      */
     public boolean gangExists(String name, String tag) {
         return gangNameToId.containsKey(name.toLowerCase()) ||
-                gangTagToId.containsKey(tag.toLowerCase());
+               gangTagToId.containsKey(tag.toLowerCase());
     }
 
     /**
@@ -729,7 +732,7 @@ public class GangManager {
         // Notifier
         String[] multipliers = {"1.5x", "2x", "3x"};
         gang.broadcast("§6⚡ Boost " + boostType.getDisplayName() + " " + multipliers[tier - 1] +
-                " §6activé par §e" + activator.getName() + "§6!", null);
+                       " §6activé par §e" + activator.getName() + "§6!", null);
 
         return true;
     }

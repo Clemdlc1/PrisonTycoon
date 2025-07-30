@@ -80,6 +80,7 @@ public class PickaxeRepairGUI {
         // Bouton retour
         gui.setItem(BACK_BUTTON_SLOT, createBackButton());
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PICKAXE_REPAIR, gui);
         player.openInventory(gui);
     }
 
@@ -211,7 +212,7 @@ public class PickaxeRepairGUI {
             lore.add("§7│ §ePoints de réparation: §a+" + maxRepair.repairPoints);
             lore.add("§7│ §eRéparation effective: §a+" + String.format("%.1f%%", maxRepair.repairPercent));
             lore.add("§7│ §eÉtat final: " + getDurabilityColor(maxRepair.finalHealthPercent) +
-                    String.format("%.1f%%", maxRepair.finalHealthPercent));
+                     String.format("%.1f%%", maxRepair.finalHealthPercent));
             lore.add("§7└");
             lore.add("");
 
@@ -305,7 +306,7 @@ public class PickaxeRepairGUI {
 
         // Messages de succès
         player.sendActionBar("§a✅ Pioche réparée: +" + String.format("%.1f%%", maxRepair.repairPercent) +
-                " (-" + NumberFormatter.format(maxRepair.cost) + " tokens)");
+                             " (-" + NumberFormatter.format(maxRepair.cost) + " tokens)");
 
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
         plugin.getActionBarTask().updateActionBarStatus();
@@ -319,8 +320,8 @@ public class PickaxeRepairGUI {
         }, 1L);
 
         plugin.getPluginLogger().info("Réparation maximale effectuée pour " + player.getName() +
-                ": +" + maxRepair.repairPoints + " points (+" + String.format("%.1f%%", maxRepair.repairPercent) +
-                ") pour " + NumberFormatter.format(maxRepair.cost) + " tokens");
+                                      ": +" + maxRepair.repairPoints + " points (+" + String.format("%.1f%%", maxRepair.repairPercent) +
+                                      ") pour " + NumberFormatter.format(maxRepair.cost) + " tokens");
     }
 
     private void fillBorders(Inventory gui) {

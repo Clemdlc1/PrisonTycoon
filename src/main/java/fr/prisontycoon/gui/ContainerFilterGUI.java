@@ -21,7 +21,6 @@ import java.util.Set;
 public class ContainerFilterGUI {
 
     private final PrisonTycoon plugin;
-    // Map pour associer les inventaires ouverts aux UUIDs des conteneurs
     private final Map<String, String> activeFilterGUIs = new HashMap<>();
 
     public ContainerFilterGUI(PrisonTycoon plugin) {
@@ -63,6 +62,7 @@ public class ContainerFilterGUI {
         // Associe ce GUI à l'UUID du conteneur pour le retrouver à la fermeture
         activeFilterGUIs.put(title, containerUUID);
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.CONTAINER_FILTER, filterInv);
         player.openInventory(filterInv);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
 
@@ -152,8 +152,8 @@ public class ContainerFilterGUI {
         activeFilterGUIs.remove(title);
 
         plugin.getPluginLogger().debug("Filtres sauvegardés pour " + player.getName() +
-                " (UUID: " + containerUUID.substring(0, 8) + "): " +
-                totalStacks + " slots utilisés.");
+                                       " (UUID: " + containerUUID.substring(0, 8) + "): " +
+                                       totalStacks + " slots utilisés.");
     }
 
     /**
@@ -161,26 +161,5 @@ public class ContainerFilterGUI {
      */
     public boolean isFilterGUI(String title) {
         return title.contains("🎯 Filtres - Conteneur Tier");
-    }
-
-    /**
-     * Nettoie les références quand un GUI est fermé (par le listener).
-     */
-    public void cleanupClosedGUI(String title) {
-        activeFilterGUIs.remove(title);
-    }
-
-    /**
-     * Obtient l'UUID du conteneur associé à un GUI de filtres.
-     */
-    public String getContainerUUIDFromFilterGUI(String title) {
-        return activeFilterGUIs.get(title);
-    }
-
-    /**
-     * Vérifie si un GUI de filtres est actif pour un conteneur donné.
-     */
-    public boolean hasActiveFilterGUI(String containerUUID) {
-        return activeFilterGUIs.containsValue(containerUUID);
     }
 }

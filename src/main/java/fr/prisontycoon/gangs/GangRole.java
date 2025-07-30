@@ -22,6 +22,25 @@ public enum GangRole {
     }
 
     /**
+     * Parse un nom de rôle en GangRole
+     */
+    public static GangRole fromString(String name) {
+        if (name == null) return null;
+
+        try {
+            return GangRole.valueOf(name.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // Essaie avec les noms d'affichage
+            for (GangRole role : values()) {
+                if (role.displayName.equalsIgnoreCase(name)) {
+                    return role;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
      * Nom d'affichage du rôle
      */
     public String getDisplayName() {
@@ -146,25 +165,6 @@ public enum GangRole {
             case OFFICIER -> MEMBRE;
             case MEMBRE -> MEMBRE; // Le membre ne peut pas être rétrogradé
         };
-    }
-
-    /**
-     * Parse un nom de rôle en GangRole
-     */
-    public static GangRole fromString(String name) {
-        if (name == null) return null;
-
-        try {
-            return GangRole.valueOf(name.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            // Essaie avec les noms d'affichage
-            for (GangRole role : values()) {
-                if (role.displayName.equalsIgnoreCase(name)) {
-                    return role;
-                }
-            }
-            return null;
-        }
     }
 
     @Override

@@ -74,8 +74,8 @@ public class SellCommand implements CommandExecutor, TabCompleter {
             ItemStack item = player.getInventory().getItem(i);
 
             if (item == null || item.getType() == Material.AIR ||
-                    plugin.getPickaxeManager().isLegendaryPickaxe(item) ||
-                    plugin.getContainerManager().isContainer(item)) {
+                plugin.getPickaxeManager().isLegendaryPickaxe(item) ||
+                plugin.getContainerManager().isContainer(item)) {
                 continue;
             }
 
@@ -187,7 +187,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
                 double durabilityPercent = containerData.getDurabilityPercentage();
                 if (durabilityPercent <= 25) {
                     player.sendMessage("§7▸ Durabilité: " + (durabilityPercent <= 10 ? "§c" : "§e") +
-                            String.format("%.1f%%", durabilityPercent));
+                                       String.format("%.1f%%", durabilityPercent));
                 }
             }
             plugin.getContainerManager().saveContainerItem(containerItem, containerData);
@@ -240,7 +240,7 @@ public class SellCommand implements CommandExecutor, TabCompleter {
 
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         plugin.getPluginLogger().info("Vente: " + NumberFormatter.format((long) finalPrice) + " coins pour " +
-                NumberFormatter.format(totalItems) + " items via " + logContext);
+                                      NumberFormatter.format(totalItems) + " items via " + logContext);
     }
 
     private String formatMaterialName(Material material) {

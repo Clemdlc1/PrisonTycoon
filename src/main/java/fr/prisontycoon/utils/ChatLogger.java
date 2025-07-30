@@ -19,14 +19,14 @@ public class ChatLogger {
 
     private void createTable() {
         String query = "CREATE TABLE IF NOT EXISTS chat_logs (" +
-                "id SERIAL PRIMARY KEY," +
-                "timestamp BIGINT NOT NULL," +
-                "type VARCHAR(16) NOT NULL," +
-                "player_name VARCHAR(16) NOT NULL," +
-                "uuid VARCHAR(36) NOT NULL," +
-                "raw_message TEXT NOT NULL," +
-                "formatted_message TEXT" +
-                ");";
+                       "id SERIAL PRIMARY KEY," +
+                       "timestamp BIGINT NOT NULL," +
+                       "type VARCHAR(16) NOT NULL," +
+                       "player_name VARCHAR(16) NOT NULL," +
+                       "uuid VARCHAR(36) NOT NULL," +
+                       "raw_message TEXT NOT NULL," +
+                       "formatted_message TEXT" +
+                       ");";
         try (Connection conn = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = conn.prepareStatement(query)) {
             ps.execute();
         } catch (SQLException e) {
@@ -67,10 +67,6 @@ public class ChatLogger {
         // No action needed for database logging
     }
 
-    public enum LogType {
-        CHAT, ADMIN, COMMAND
-    }
-
     public int getTotalMessagesLogged() {
         String query = "SELECT COUNT(*) FROM chat_logs";
         try (Connection conn = plugin.getDatabaseManager().getConnection();
@@ -96,10 +92,13 @@ public class ChatLogger {
                 if (deletedRows > 0) {
                     plugin.getLogger().info("Cleaned up " + deletedRows + " old chat logs.");
                 }
-            }
-            catch (SQLException e) {
+            } catch (SQLException e) {
                 plugin.getLogger().severe("Error cleaning old chat logs: " + e.getMessage());
             }
         });
+    }
+
+    public enum LogType {
+        CHAT, ADMIN, COMMAND
     }
 }

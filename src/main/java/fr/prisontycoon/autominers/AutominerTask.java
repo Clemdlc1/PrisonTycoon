@@ -33,7 +33,7 @@ public class AutominerTask extends BukkitRunnable {
                 processPlayerAutominers(player);
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("§cErreur lors du traitement des automineurs pour " +
-                        player.getName() + ": " + e.getMessage());
+                                                 player.getName() + ": " + e.getMessage());
             }
         }
     }
@@ -97,12 +97,12 @@ public class AutominerTask extends BukkitRunnable {
         // Debug amélioré avec détails Fortune et Greed
         if (plugin.getConfig().getBoolean("debug", false)) {
             plugin.getPluginLogger().info("§7Automineur " + slotName + " de " + player.getName() +
-                    " a miné " + result.quantity() + "x " + result.minedBlock().name() +
-                    " (Fortune: " + result.quantity() + " blocs)" +
-                    " → Gains: " + result.coins() + " coins, " + result.tokens() + " tokens, " +
-                    result.experience() + " exp" +
-                    (result.keys() > 0 ? ", " + result.keys() + " clés" : "") +
-                    (result.beaconFound() ? ", 1 beacon" : ""));
+                                          " a miné " + result.quantity() + "x " + result.minedBlock().name() +
+                                          " (Fortune: " + result.quantity() + " blocs)" +
+                                          " → Gains: " + result.coins() + " coins, " + result.tokens() + " tokens, " +
+                                          result.experience() + " exp" +
+                                          (result.keys() > 0 ? ", " + result.keys() + " clés" : "") +
+                                          (result.beaconFound() ? ", 1 beacon" : ""));
         }
     }
 

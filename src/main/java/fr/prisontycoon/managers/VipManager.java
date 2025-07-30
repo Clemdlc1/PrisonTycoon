@@ -25,11 +25,11 @@ public class VipManager {
 
     private void createTable() {
         String vipTable = "CREATE TABLE IF NOT EXISTS vips (" +
-                "uuid VARCHAR(36) PRIMARY KEY," +
-                "player_name VARCHAR(16)," +
-                "added_by VARCHAR(16)," +
-                "added_at BIGINT" +
-                ");";
+                          "uuid VARCHAR(36) PRIMARY KEY," +
+                          "player_name VARCHAR(16)," +
+                          "added_by VARCHAR(16)," +
+                          "added_at BIGINT" +
+                          ");";
         try (Connection conn = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = conn.prepareStatement(vipTable)) {
             ps.execute();
         } catch (SQLException e) {
@@ -121,9 +121,6 @@ public class VipManager {
         plugin.getLogger().info("VIP system reloaded.");
     }
 
-    public record VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
-    }
-
     public void forcePlayerSync(Player player) {
         boolean isVipInCache = isVip(player.getUniqueId());
         boolean hasVipPermission = player.hasPermission("specialmine.vip");
@@ -164,5 +161,8 @@ public class VipManager {
         // and permissions are synced based on cache.
         // A full DB sync would involve reading all DB entries and comparing with cache.
         // This simplified version focuses on ensuring online players have correct permissions.
+    }
+
+    public record VipData(UUID uuid, String playerName, String addedBy, long addedAt) {
     }
 }
