@@ -462,59 +462,6 @@ public class GangGUI {
         openGangList(player, 0);
     }
 
-    private void openGangList(Player player, int page) {
-        List<Gang> gangs = plugin.getGangManager().getAllGangs();
-        gangs.sort((a, b) -> Integer.compare(b.getLevel(), a.getLevel())); // Trier par niveau décroissant
-
-        int maxPage = (int) Math.ceil(gangs.size() / 28.0) - 1;
-        if (maxPage < 0) maxPage = 0;
-        if (page > maxPage) page = maxPage;
-
-        Inventory gui = Bukkit.createInventory(null, 54, "§6📚 §lListe des Gangs §7(" + (page + 1) + "/" + (maxPage + 1) + ")");
-        openGuis.put(player.getUniqueId(), "gang_list:" + page);
-
-        fillWithGlass(gui, DyeColor.GREEN);
-
-        // Gangs (slots 10-43, saut des bordures)
-        int[] slots = new int[28];
-        int index = 0;
-        for (int row = 1; row < 5; row++) {
-            for (int col = 1; col < 8; col++) {
-                slots[index++] = row * 9 + col;
-            }
-        }
-
-        int startIndex = page * 28;
-        for (int i = 0; i < 28 && startIndex + i < gangs.size(); i++) {
-            Gang gang = gangs.get(startIndex + i);
-            ItemStack gangItem = createGangListItem(gang, player);
-            gui.setItem(slots[i], gangItem);
-        }
-
-        // Contrôles de pagination
-        if (page > 0) {
-            ItemStack prev = new ItemStack(Material.ARROW);
-            ItemMeta prevMeta = prev.getItemMeta();
-            prevMeta.setDisplayName("§a⬅ §lPage Précédente");
-            prev.setItemMeta(prevMeta);
-            gui.setItem(45, prev);
-        }
-
-        if (page < maxPage) {
-            ItemStack next = new ItemStack(Material.ARROW);
-            ItemMeta nextMeta = next.getItemMeta();
-            nextMeta.setDisplayName("§a➡ §lPage Suivante");
-            next.setItemMeta(nextMeta);
-            gui.setItem(53, next);
-        }
-
-        // Fermer
-        gui.setItem(49, createCloseButton());
-
-        player.openInventory(gui);
-        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.0f);
-    }
-
     /**
      * Ouvre le menu d'amélioration du gang
      */
@@ -699,29 +646,6 @@ public class GangGUI {
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.0f);
     }
 
-    // Méthodes de gestion des clics
-    public void handleGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
-        String guiType = openGuis.get(player.getUniqueId());
-        if (guiType == null) return;
-
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        switch (guiType) {
-            case "no_gang_menu" -> handleNoGangMenuClick(player, slot, item, clickType);
-            case "gang_menu" -> handleMainGangMenuClick(player, slot, item, clickType);
-            case "gang_info" -> handleGangInfoClick(player, slot, item, clickType);
-            case "upgrade_menu" -> handleUpgradeMenuClick(player, slot, item, clickType);
-            case "gang_shop" -> handleShopClick(player, slot, item, clickType);
-            case "banner_creator" -> handleBannerCreatorClick(player, slot, item, clickType);
-            default -> {
-                if (guiType.startsWith("gang_list:")) {
-                    int page = Integer.parseInt(guiType.split(":")[1]);
-                    handleGangListClick(player, slot, item, clickType, page);
-                }
-            }
-        }
-    }
-
     private void handleNoGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         switch (slot) {
             case 11 -> { // Créer un gang
@@ -863,7 +787,7 @@ public class GangGUI {
     }
 
     private void fillWithGlass(Inventory gui, DyeColor color) {
-        ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS, 1, color.getWoolData());
+        ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, color.getWoolData());
         ItemMeta glassMeta = glass.getItemMeta();
         glassMeta.setDisplayName("§7");
         glass.setItemMeta(glassMeta);
@@ -892,14 +816,803 @@ public class GangGUI {
     public void closeGui(Player player) {
         openGuis.remove(player.getUniqueId());
     }
+    // Voici les implémentations des méthodes manquantes pour GangGUI
 
-    // Méthodes non implémentées pour l'exemple - à compléter selon les besoins
-    private void openMembersMenu(Player player, Gang gang) { /* À implémenter */ }
-    private void openTalentsMenu(Player player, Gang gang) { /* À implémenter */ }
-    private void openSettingsMenu(Player player, Gang gang) { /* À implémenter */ }
-    private void handleGangInfoClick(Player player, int slot, ItemStack item, ClickType clickType) { /* À implémenter */ }
-    private void handleUpgradeMenuClick(Player player, int slot, ItemStack item, ClickType clickType) { /* À implémenter */ }
-    private void handleShopClick(Player player, int slot, ItemStack item, ClickType clickType) { /* À implémenter */ }
-    private void handleBannerCreatorClick(Player player, int slot, ItemStack item, ClickType clickType) { /* À implémenter */ }
-    private void handleGangListClick(Player player, int slot, ItemStack item, ClickType clickType, int page) { /* À implémenter */ }
+    /**
+     * Gère la sélection d'une bannière (appelée depuis GangListener)
+     */
+    public void handleBannerSelection(Player player, ItemStack selectedBanner) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+
+        if (gang == null) {
+            player.sendMessage("§c❌ Vous n'êtes dans aucun gang!");
+            return;
+        }
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        if (playerRole != GangRole.CHEF) {
+            player.sendMessage("§c❌ Seul le chef peut modifier la bannière du gang!");
+            return;
+        }
+
+        if (selectedBanner.getType().name().contains("BANNER")) {
+            // Ouvrir le créateur de bannière avec la bannière sélectionnée
+            openBannerCreator(player, gang);
+            player.sendMessage("§a✅ Bannière sélectionnée! Personnalisez-la et confirmez.");
+        }
+    }
+
+    /**
+     * Ouvre le menu des membres du gang
+     */
+    private void openMembersMenu(Player player, Gang gang) {
+        Inventory gui = Bukkit.createInventory(null, 54, "§b👥 §l" + gang.getName() + " - Membres");
+        openGuis.put(player.getUniqueId(), "members_menu");
+
+        fillWithGlass(gui, DyeColor.BLUE);
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        boolean canManage = (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER);
+
+        // Afficher les membres
+        int slot = 10;
+        for (Map.Entry<UUID, GangRole> entry : gang.getMembers().entrySet()) {
+            if (slot >= 44) break; // Limite d'espace
+
+            UUID memberId = entry.getKey();
+            GangRole role = entry.getValue();
+
+            ItemStack memberItem = new ItemStack(Material.PLAYER_HEAD);
+            ItemMeta meta = memberItem.getItemMeta();
+
+            String memberName = getPlayerName(memberId);
+            meta.setDisplayName(role.getColor() + "👤 " + memberName);
+
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add("§7Rôle: " + role.getDisplayName());
+            lore.add("§7Statut: " + (Bukkit.getPlayer(memberId) != null ? "§aEn ligne" : "§cHors ligne"));
+
+            if (canManage && role != GangRole.CHEF && !memberId.equals(player.getUniqueId())) {
+                lore.add("");
+                lore.add("§e⬆ Clic gauche: Promouvoir");
+                lore.add("§e⬇ Clic droit: Rétrograder");
+                lore.add("§c🗙 Shift+Clic: Expulser");
+            }
+
+            meta.setLore(lore);
+            memberItem.setItemMeta(meta);
+            gui.setItem(slot, memberItem);
+
+            slot++;
+            if (slot == 17) slot = 19; // Skip to next row
+            if (slot == 26) slot = 28; // Skip to next row
+            if (slot == 35) slot = 37; // Skip to next row
+        }
+
+        // Inviter un membre (si permissions)
+        if (canManage) {
+            ItemStack invite = new ItemStack(Material.EMERALD);
+            ItemMeta inviteMeta = invite.getItemMeta();
+            inviteMeta.setDisplayName("§a➕ §lInviter un Joueur");
+            List<String> inviteLore = new ArrayList<>();
+            inviteLore.add("");
+            inviteLore.add("§7Invitez un nouveau membre");
+            inviteLore.add("§7dans votre gang.");
+            inviteLore.add("");
+            inviteLore.add("§a▶ Cliquez pour fermer et utiliser /gang invite <joueur>");
+            inviteMeta.setLore(inviteLore);
+            invite.setItemMeta(inviteMeta);
+            gui.setItem(49, invite);
+        }
+
+        // Retour et fermer
+        gui.setItem(45, createBackButton());
+        gui.setItem(53, createCloseButton());
+
+        player.openInventory(gui);
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.0f);
+    }
+
+    /**
+     * Ouvre le menu des talents du gang
+     */
+    private void openTalentsMenu(Player player, Gang gang) {
+        Inventory gui = Bukkit.createInventory(null, 54, "§5🎯 §l" + gang.getName() + " - Talents");
+        openGuis.put(player.getUniqueId(), "talents_menu");
+
+        fillWithGlass(gui, DyeColor.PURPLE);
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        boolean canBuy = (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER);
+
+        // Afficher les talents par catégorie
+        int slot = 10;
+
+        // Talents SellBoost
+        for (int i = 1; i <= 10; i++) {
+            String talentId = "sell_boost_" + i;
+            GangTalent talent = plugin.getGangManager().getTalent(talentId);
+            if (talent != null) {
+                ItemStack item = createTalentItem(talent, gang, canBuy);
+                gui.setItem(slot++, item);
+                if (slot == 17) slot = 19;
+            }
+        }
+
+        // Talents Gang Collectif
+        slot = 28;
+        for (int i = 1; i <= 5; i++) {
+            String talentId = "gang_collectif_" + i;
+            GangTalent talent = plugin.getGangManager().getTalent(talentId);
+            if (talent != null) {
+                ItemStack item = createTalentItem(talent, gang, canBuy);
+                gui.setItem(slot++, item);
+            }
+        }
+
+        // Talents Beacon Multiplier
+        slot = 37;
+        for (int i = 1; i <= 5; i++) {
+            String talentId = "beacon_multiplier_" + i;
+            GangTalent talent = plugin.getGangManager().getTalent(talentId);
+            if (talent != null) {
+                ItemStack item = createTalentItem(talent, gang, canBuy);
+                gui.setItem(slot++, item);
+            }
+        }
+
+        // Informations
+        ItemStack info = new ItemStack(Material.BOOK);
+        ItemMeta infoMeta = info.getItemMeta();
+        infoMeta.setDisplayName("§e📚 §lInformations");
+        List<String> infoLore = new ArrayList<>();
+        infoLore.add("");
+        infoLore.add("§7Banque du gang: §6" + NumberFormatter.format(gang.getBankBalance()) + " coins");
+        infoLore.add("");
+        infoLore.add("§7Les talents améliorent tous les");
+        infoLore.add("§7membres du gang de façon permanente.");
+        infoMeta.setLore(infoLore);
+        info.setItemMeta(infoMeta);
+        gui.setItem(4, info);
+
+        // Retour et fermer
+        gui.setItem(45, createBackButton());
+        gui.setItem(53, createCloseButton());
+
+        player.openInventory(gui);
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.7f, 1.0f);
+    }
+
+    /**
+     * Crée un item représentant un talent
+     */
+    private ItemStack createTalentItem(GangTalent talent, Gang gang, boolean canBuy) {
+        ItemStack item = new ItemStack(talent.getIconMaterial());
+        ItemMeta meta = item.getItemMeta();
+
+        boolean owned = gang.getTalents().containsKey(talent.getId());
+        boolean canAfford = gang.getBankBalance() >= talent.getCost();
+        boolean levelSufficient = gang.getLevel() >= talent.getRequiredGangLevel();
+
+        if (owned) {
+            meta.setDisplayName("§a✅ §l" + talent.getName());
+        } else if (canAfford && levelSufficient && canBuy) {
+            meta.setDisplayName("§e⭐ §l" + talent.getName());
+        } else {
+            meta.setDisplayName("§7❌ §l" + talent.getName());
+        }
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add("§7" + talent.getDescription());
+        lore.add("");
+        lore.add("§7Coût: §6" + NumberFormatter.format(talent.getCost()) + " coins");
+        lore.add("§7Niveau requis: §e" + talent.getRequiredGangLevel());
+        lore.add("");
+
+        if (owned) {
+            lore.add("§a✅ Talent acheté!");
+        } else if (!levelSufficient) {
+            lore.add("§c❌ Niveau de gang insuffisant");
+        } else if (!canAfford) {
+            lore.add("§c❌ Fonds insuffisants");
+        } else if (!canBuy) {
+            lore.add("§c❌ Permissions insuffisantes");
+        } else {
+            lore.add("§a▶ Cliquez pour acheter!");
+        }
+
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /**
+     * Ouvre le menu des paramètres du gang
+     */
+    private void openSettingsMenu(Player player, Gang gang) {
+        Inventory gui = Bukkit.createInventory(null, 45, "§6⚙️ §l" + gang.getName() + " - Paramètres");
+        openGuis.put(player.getUniqueId(), "settings_menu");
+
+        fillWithGlass(gui, DyeColor.ORANGE);
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        boolean isLeader = (playerRole == GangRole.CHEF);
+
+        // Modifier description
+        ItemStack description = new ItemStack(Material.WRITABLE_BOOK);
+        ItemMeta descMeta = description.getItemMeta();
+        descMeta.setDisplayName("§e📝 §lModifier la Description");
+        List<String> descLore = new ArrayList<>();
+        descLore.add("");
+        descLore.add("§7Description actuelle:");
+        if (gang.getDescription() != null && !gang.getDescription().isEmpty()) {
+            descLore.add("§f" + gang.getDescription());
+        } else {
+            descLore.add("§7Aucune description");
+        }
+        descLore.add("");
+
+        if (isLeader) {
+            descLore.add("§a▶ Cliquez pour fermer et utiliser /gang description <texte>");
+        } else {
+            descLore.add("§c❌ Réservé au chef");
+        }
+
+        descMeta.setLore(descLore);
+        description.setItemMeta(descMeta);
+        gui.setItem(10, description);
+
+        // Renommer le gang
+        if (isLeader) {
+            ItemStack rename = new ItemStack(Material.NAME_TAG);
+            ItemMeta renameMeta = rename.getItemMeta();
+            renameMeta.setDisplayName("§e✏️ §lRenommer le Gang");
+            List<String> renameLore = new ArrayList<>();
+            renameLore.add("");
+            renameLore.add("§7Nom actuel: §e" + gang.getName());
+            renameLore.add("");
+            renameLore.add("§7Coût: §65,000 beacons");
+            renameLore.add("");
+            renameLore.add("§a▶ Cliquez pour fermer et utiliser /gang rename <nom>");
+            renameMeta.setLore(renameLore);
+            rename.setItemMeta(renameMeta);
+            gui.setItem(12, rename);
+        }
+
+        // Créateur de bannière (niveau 10+)
+        if (gang.getLevel() >= 10 && isLeader) {
+            ItemStack bannerCreator = new ItemStack(Material.WHITE_BANNER);
+            ItemMeta bannerMeta = bannerCreator.getItemMeta();
+            bannerMeta.setDisplayName("§6🏳️ §lCréateur de Bannière");
+            List<String> bannerLore = new ArrayList<>();
+            bannerLore.add("");
+            bannerLore.add("§7Créez une bannière personnalisée");
+            bannerLore.add("§7pour représenter votre gang.");
+            bannerLore.add("");
+            bannerLore.add("§a▶ Cliquez pour ouvrir!");
+            bannerMeta.setLore(bannerLore);
+            bannerCreator.setItemMeta(bannerMeta);
+            gui.setItem(14, bannerCreator);
+        }
+
+        // Dissoudre le gang
+        if (isLeader) {
+            ItemStack dissolve = new ItemStack(Material.TNT);
+            ItemMeta dissolveMeta = dissolve.getItemMeta();
+            dissolveMeta.setDisplayName("§c💥 §lDissoudre le Gang");
+            List<String> dissolveLore = new ArrayList<>();
+            dissolveLore.add("");
+            dissolveLore.add("§c⚠️ ATTENTION: Cette action est");
+            dissolveLore.add("§cirréversible et supprimera");
+            dissolveLore.add("§cdéfinitivement le gang!");
+            dissolveLore.add("");
+            dissolveLore.add("§c▶ Cliquez pour fermer et utiliser /gang disband");
+            dissolveMeta.setLore(dissolveLore);
+            dissolve.setItemMeta(dissolveMeta);
+            gui.setItem(32, dissolve);
+        }
+
+        // Transférer le leadership
+        if (isLeader) {
+            ItemStack transfer = new ItemStack(Material.GOLDEN_HELMET);
+            ItemMeta transferMeta = transfer.getItemMeta();
+            transferMeta.setDisplayName("§6👑 §lTransférer le Leadership");
+            List<String> transferLore = new ArrayList<>();
+            transferLore.add("");
+            transferLore.add("§7Transférez le leadership du gang");
+            transferLore.add("§7à un autre membre.");
+            transferLore.add("");
+            transferLore.add("§a▶ Cliquez pour fermer et utiliser /gang transfer <joueur>");
+            transferMeta.setLore(transferLore);
+            transfer.setItemMeta(transferMeta);
+            gui.setItem(16, transfer);
+        }
+
+        // Retour et fermer
+        gui.setItem(36, createBackButton());
+        gui.setItem(44, createCloseButton());
+
+        player.openInventory(gui);
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.7f, 1.0f);
+    }
+
+    /**
+     * Gère les clics dans le menu d'informations du gang
+     */
+    private void handleGangInfoClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        switch (slot) {
+            case 45 -> openMainMenu(player); // Retour
+            case 49 -> player.closeInventory(); // Fermer
+            // Autres slots peuvent être ajoutés pour des fonctionnalités spécifiques
+        }
+    }
+
+    /**
+     * Gère les clics dans le menu d'amélioration
+     */
+    private void handleUpgradeMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+        if (gang == null) return;
+
+        switch (slot) {
+            case 13 -> { // Améliorer
+                if (gang.getLevel() < 10) {
+                    GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+                    if (playerRole == GangRole.CHEF) {
+                        if (plugin.getGangManager().upgradeGang(gang)) {
+                            player.sendMessage("§a✅ Gang amélioré au niveau " + gang.getLevel() + "!");
+                            openUpgradeMenu(player, gang); // Rafraîchir
+                        } else {
+                            player.sendMessage("§c❌ Amélioration impossible (fonds insuffisants?)");
+                        }
+                    } else {
+                        player.sendMessage("§c❌ Seul le chef peut améliorer le gang!");
+                    }
+                }
+            }
+            case 27 -> openMainMenu(player); // Retour
+            case 31 -> player.closeInventory(); // Fermer
+        }
+    }
+
+    /**
+     * Gère les clics dans la boutique du gang
+     */
+    private void handleShopClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+        if (gang == null) return;
+
+        // Vérifier si c'est un boost
+        if (slot >= 10 && slot <= 43) {
+            // Calculer quel boost c'est
+            int boostIndex = getBoostIndexFromSlot(slot);
+            if (boostIndex >= 0) {
+                GangBoostType[] boostTypes = GangBoostType.values();
+                int typeIndex = boostIndex / 3;
+                int tier = (boostIndex % 3) + 1;
+
+                if (typeIndex < boostTypes.length) {
+                    GangBoostType boostType = boostTypes[typeIndex];
+                    if (plugin.getGangManager().activateGangBoost(gang, player, boostType, tier)) {
+                        player.sendMessage("§a✅ Boost " + boostType.getDisplayName() + " activé!");
+                        openShop(player, gang); // Rafraîchir
+                    }
+                }
+            }
+        }
+
+        // Bannière du gang
+        if (slot == 49 && gang.getLevel() >= 10) {
+            if (playerData.getBeacons() >= 1000) {
+                playerData.removeBeacon(1000);
+
+                // Donner la bannière au joueur
+                ItemStack banner = createGangBanner(gang);
+                if (player.getInventory().firstEmpty() != -1) {
+                    player.getInventory().addItem(banner);
+                    player.sendMessage("§a✅ Bannière du gang achetée!");
+                } else {
+                    player.sendMessage("§c❌ Inventaire plein!");
+                    playerData.addBeacons(1000); // Rembourser
+                }
+            } else {
+                player.sendMessage("§c❌ Vous n'avez pas assez de beacons!");
+            }
+        }
+
+        // Boutons de navigation
+        switch (slot) {
+            case 45 -> openMainMenu(player); // Retour
+            case 53 -> player.closeInventory(); // Fermer
+        }
+    }
+
+    /**
+     * Calcule l'index du boost basé sur le slot
+     */
+    private int getBoostIndexFromSlot(int slot) {
+        // Mapping des slots vers les index de boost
+        int[] boostSlots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
+
+        for (int i = 0; i < boostSlots.length; i++) {
+            if (boostSlots[i] == slot) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Gère les clics dans le créateur de bannière
+     */
+    private void handleBannerCreatorClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+        if (gang == null) return;
+
+        switch (slot) {
+            case 20 -> { // Confirmer
+                // Récupérer la bannière du slot 13
+                ItemStack banner = player.getOpenInventory().getItem(13);
+                if (banner != null && banner.getType().name().contains("BANNER")) {
+                    BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
+                    if (bannerMeta != null) {
+                        gang.setBannerPatterns(bannerMeta.getPatterns());
+                        plugin.getGangManager().saveGang(gang);
+
+                        player.closeInventory();
+                        player.sendMessage("§a✅ Bannière du gang enregistrée!");
+                        gang.broadcast("§6🏳️ " + player.getName() + " a mis à jour la bannière du gang!", player);
+                    }
+                } else {
+                    player.sendMessage("§c❌ Aucune bannière valide trouvée!");
+                }
+            }
+            case 24 -> { // Annuler
+                player.closeInventory();
+                player.sendMessage("§c❌ Création de bannière annulée.");
+            }
+        }
+    }
+
+    /**
+     * Gère les clics dans la liste des gangs
+     */
+    private void handleGangListClick(Player player, int slot, ItemStack item, ClickType clickType, int page) {
+        if (item != null && item.getType() == Material.WHITE_BANNER) {
+            // Récupérer le nom du gang depuis l'item
+            if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+                String displayName = item.getItemMeta().getDisplayName();
+                String gangName = displayName.split(" ")[1]; // Extraire le nom
+
+                Gang gang = plugin.getGangManager().getGangByName(gangName);
+                if (gang != null) {
+                    openGangInfo(player, gang);
+                }
+            }
+        }
+
+        // Navigation
+        switch (slot) {
+            case 45 -> { // Page précédente
+                if (page > 0) {
+                    openGangList(player, page - 1);
+                }
+            }
+            case 53 -> { // Page suivante
+                openGangList(player, page + 1);
+            }
+            case 49 -> openMainMenu(player); // Retour au menu principal
+        }
+    }
+
+    /**
+     * Implémentation complète de la liste des gangs avec pagination
+     */
+    private void openGangList(Player player, int page) {
+        List<Gang> allGangs = plugin.getGangManager().getAllGangs();
+        allGangs.sort((g1, g2) -> Integer.compare(g2.getLevel(), g1.getLevel())); // Trier par niveau décroissant
+
+        int gangsPerPage = 28; // 4 rows of 7 items
+        int totalPages = (int) Math.ceil((double) allGangs.size() / gangsPerPage);
+
+        if (page >= totalPages) page = Math.max(0, totalPages - 1);
+        if (page < 0) page = 0;
+
+        Inventory gui = Bukkit.createInventory(null, 54, "§6📋 §lListe des Gangs §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
+        openGuis.put(player.getUniqueId(), "gang_list:" + page);
+
+        fillWithGlass(gui, DyeColor.ORANGE);
+
+        // Afficher les gangs de cette page
+        int startIndex = page * gangsPerPage;
+        int endIndex = Math.min(startIndex + gangsPerPage, allGangs.size());
+
+        int slot = 10;
+        for (int i = startIndex; i < endIndex; i++) {
+            Gang gang = allGangs.get(i);
+            ItemStack gangItem = createGangListItem(gang, player);
+            gui.setItem(slot, gangItem);
+
+            slot++;
+            if (slot == 17) slot = 19; // Skip to next row
+            if (slot == 26) slot = 28; // Skip to next row
+            if (slot == 35) slot = 37; // Skip to next row
+            if (slot >= 44) break; // Safety check
+        }
+
+        // Navigation
+        if (page > 0) {
+            ItemStack prevPage = new ItemStack(Material.ARROW);
+            ItemMeta prevMeta = prevPage.getItemMeta();
+            prevMeta.setDisplayName("§a⬅ §lPage Précédente");
+            prevPage.setItemMeta(prevMeta);
+            gui.setItem(45, prevPage);
+        }
+
+        if (page < totalPages - 1) {
+            ItemStack nextPage = new ItemStack(Material.ARROW);
+            ItemMeta nextMeta = nextPage.getItemMeta();
+            nextMeta.setDisplayName("§a➡ §lPage Suivante");
+            nextPage.setItemMeta(nextMeta);
+            gui.setItem(53, nextPage);
+        }
+
+        // Retour au menu principal
+        gui.setItem(49, createBackButton());
+
+        player.openInventory(gui);
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.0f);
+    }
+
+    /**
+     * Gère les clics dans le menu des talents
+     */
+    private void handleTalentsMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+        if (gang == null) return;
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        boolean canBuy = (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER);
+
+        if (!canBuy) {
+            player.sendMessage("§c❌ Seuls le chef et les officiers peuvent acheter des talents!");
+            return;
+        }
+
+        // Identifier le talent cliqué basé sur le slot
+        String talentId = getTalentIdFromSlot(slot);
+        if (talentId != null) {
+            GangTalent talent = plugin.getGangManager().getTalent(talentId);
+            if (talent != null && !gang.getTalents().containsKey(talentId)) {
+                if (plugin.getGangManager().buyTalent(gang, player, talentId)) {
+                    player.sendMessage("§a✅ Talent " + talent.getName() + " acheté!");
+                    openTalentsMenu(player, gang); // Rafraîchir
+                }
+            }
+        }
+
+        // Boutons de navigation
+        switch (slot) {
+            case 45 -> openMainMenu(player); // Retour
+            case 53 -> player.closeInventory(); // Fermer
+        }
+    }
+
+    /**
+     * Identifie le talent basé sur le slot cliqué
+     */
+    private String getTalentIdFromSlot(int slot) {
+        // SellBoost talents (slots 10-16, 19-25)
+        if ((slot >= 10 && slot <= 16) || (slot >= 19 && slot <= 25)) {
+            int index;
+            if (slot <= 16) {
+                index = slot - 10;
+            } else {
+                index = slot - 19 + 7;
+            }
+            if (index < 10) {
+                return "sell_boost_" + (index + 1);
+            }
+        }
+
+        // Gang Collectif talents (slots 28-32)
+        if (slot >= 28 && slot <= 32) {
+            int index = slot - 28;
+            if (index < 5) {
+                return "gang_collectif_" + (index + 1);
+            }
+        }
+
+        // Beacon Multiplier talents (slots 37-41)
+        if (slot >= 37 && slot <= 41) {
+            int index = slot - 37;
+            if (index < 5) {
+                return "beacon_multiplier_" + (index + 1);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gère les clics dans le menu des membres
+     */
+    private void handleMembersMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+        if (gang == null) return;
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        boolean canManage = (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER);
+
+        if (slot == 49 && canManage) { // Inviter un joueur
+            player.closeInventory();
+            player.sendMessage("§e💡 Utilisez §a/gang invite <joueur> §epour inviter un nouveau membre!");
+            return;
+        }
+
+        // Gestion des membres
+        if (item != null && item.getType() == Material.PLAYER_HEAD && canManage) {
+            String memberName = extractPlayerNameFromItem(item);
+            if (memberName != null) {
+                UUID memberId = getPlayerUUIDByName(memberName);
+                if (memberId != null && !memberId.equals(player.getUniqueId())) {
+                    GangRole memberRole = gang.getMemberRole(memberId);
+
+                    if (clickType == ClickType.LEFT) {
+                        // Promouvoir
+                        if (memberRole == GangRole.MEMBRE && playerRole == GangRole.CHEF) {
+                            gang.setMemberRole(memberId, GangRole.OFFICIER);
+                            plugin.getGangManager().saveGang(gang);
+                            player.sendMessage("§a✅ " + memberName + " promu officier!");
+                            openMembersMenu(player, gang); // Rafraîchir
+                        }
+                    } else if (clickType == ClickType.RIGHT) {
+                        // Rétrograder
+                        if (memberRole == GangRole.OFFICIER && playerRole == GangRole.CHEF) {
+                            gang.setMemberRole(memberId, GangRole.MEMBRE);
+                            plugin.getGangManager().saveGang(gang);
+                            player.sendMessage("§a✅ " + memberName + " rétrogradé membre!");
+                            openMembersMenu(player, gang); // Rafraîchir
+                        }
+                    } else if (clickType == ClickType.SHIFT_LEFT) {
+                        // Expulser
+                        if (memberRole != GangRole.CHEF) {
+                            if (plugin.getGangManager().removePlayer(gang, player.getUniqueId())) {
+                                player.sendMessage("§a✅ " + memberName + " expulsé du gang!");
+                                openMembersMenu(player, gang); // Rafraîchir
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Boutons de navigation
+        switch (slot) {
+            case 45 -> openMainMenu(player); // Retour
+            case 53 -> player.closeInventory(); // Fermer
+        }
+    }
+
+    /**
+     * Extrait le nom du joueur depuis l'ItemStack
+     */
+    private String extractPlayerNameFromItem(ItemStack item) {
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            String displayName = item.getItemMeta().getDisplayName();
+            // Extraire le nom après l'emoji et l'espace
+            String[] parts = displayName.split(" ");
+            if (parts.length >= 2) {
+                return parts[1];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gère les clics dans le menu des paramètres
+     */
+    private void handleSettingsMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
+        if (gang == null) return;
+
+        GangRole playerRole = gang.getMemberRole(player.getUniqueId());
+        boolean isLeader = (playerRole == GangRole.CHEF);
+
+        switch (slot) {
+            case 10 -> { // Modifier description
+                if (isLeader) {
+                    player.closeInventory();
+                    player.sendMessage("§e💡 Utilisez §a/gang description <texte> §epour modifier la description!");
+                } else {
+                    player.sendMessage("§c❌ Seul le chef peut modifier la description!");
+                }
+            }
+            case 12 -> { // Renommer
+                if (isLeader) {
+                    player.closeInventory();
+                    player.sendMessage("§e💡 Utilisez §a/gang rename <nom> §epour renommer le gang!");
+                    player.sendMessage("§7Coût: §65,000 beacons");
+                } else {
+                    player.sendMessage("§c❌ Seul le chef peut renommer le gang!");
+                }
+            }
+            case 14 -> { // Créateur de bannière
+                if (isLeader && gang.getLevel() >= 10) {
+                    openBannerCreator(player, gang);
+                } else if (!isLeader) {
+                    player.sendMessage("§c❌ Seul le chef peut modifier la bannière!");
+                } else {
+                    player.sendMessage("§c❌ Niveau 10 requis pour cette fonctionnalité!");
+                }
+            }
+            case 16 -> { // Transférer leadership
+                if (isLeader) {
+                    player.closeInventory();
+                    player.sendMessage("§e💡 Utilisez §a/gang transfer <joueur> §epour transférer le leadership!");
+                } else {
+                    player.sendMessage("§c❌ Seul le chef peut transférer le leadership!");
+                }
+            }
+            case 32 -> { // Dissoudre
+                if (isLeader) {
+                    player.closeInventory();
+                    player.sendMessage("§c⚠️ Pour dissoudre le gang, utilisez §e/gang disband");
+                    player.sendMessage("§c⚠️ Cette action est irréversible!");
+                } else {
+                    player.sendMessage("§c❌ Seul le chef peut dissoudre le gang!");
+                }
+            }
+            case 36 -> openMainMenu(player); // Retour
+            case 44 -> player.closeInventory(); // Fermer
+        }
+    }
+
+    /**
+     * Méthode utilitaire pour obtenir l'UUID d'un joueur par son nom
+     */
+    private UUID getPlayerUUIDByName(String name) {
+        Player player = Bukkit.getPlayer(name);
+        if (player != null) {
+            return player.getUniqueId();
+        }
+        return null;
+    }
+
+    /**
+     * Mise à jour de la méthode principale handleGangMenuClick pour inclure tous les handlers
+     */
+    public void handleGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        String guiType = openGuis.get(player.getUniqueId());
+        if (guiType == null) return;
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        switch (guiType) {
+            case "no_gang_menu" -> handleNoGangMenuClick(player, slot, item, clickType);
+            case "gang_menu" -> handleMainGangMenuClick(player, slot, item, clickType);
+            case "gang_info" -> handleGangInfoClick(player, slot, item, clickType);
+            case "upgrade_menu" -> handleUpgradeMenuClick(player, slot, item, clickType);
+            case "gang_shop" -> handleShopClick(player, slot, item, clickType);
+            case "banner_creator" -> handleBannerCreatorClick(player, slot, item, clickType);
+            case "talents_menu" -> handleTalentsMenuClick(player, slot, item, clickType);
+            case "members_menu" -> handleMembersMenuClick(player, slot, item, clickType);
+            case "settings_menu" -> handleSettingsMenuClick(player, slot, item, clickType);
+            default -> {
+                if (guiType.startsWith("gang_list:")) {
+                    int page = Integer.parseInt(guiType.split(":")[1]);
+                    handleGangListClick(player, slot, item, clickType, page);
+                }
+            }
+        }
+    }
 }

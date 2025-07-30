@@ -153,7 +153,7 @@ public class PlayerDataManager {
                 data.getAutoUpgradeEnabled().addAll(gson.fromJson(rs.getString("auto_upgrade"), stringSetType));
                 data.getMobilityEnchantmentsDisabled().addAll(gson.fromJson(rs.getString("mobility_disabled"), stringSetType));
                 data.getPickaxeCristals().putAll(gson.fromJson(rs.getString("pickaxe_cristals"), stringStringMapType));
-                data.getCustomPermissions().addAll(gson.fromJson(rs.getString("custom_permissions"), stringSetType));
+                data.setCustomPermissions(gson.fromJson(rs.getString("custom_permissions"), stringSetType));
                 data.getSanctionHistory().addAll(gson.fromJson(rs.getString("sanctions"), sanctionListType));
                 data.getActiveEnchantmentBooks().addAll(gson.fromJson(rs.getString("active_enchantments"), stringSetType));
                 data.getPLayerEnchantmentBooks().addAll(gson.fromJson(rs.getString("pickaxe_enchantment_books"), stringSetType));

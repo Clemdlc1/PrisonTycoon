@@ -2,6 +2,7 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.boosts.BoostType;
+import fr.prisontycoon.gangs.GangBoostType; // Import ajouté
 import fr.prisontycoon.cristaux.CristalType;
 import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.PlayerData;
@@ -60,20 +61,27 @@ public class GlobalBonusManager {
             details.addDetailedSource("Talent Prestige", prestigeBonus);
         }
 
-        // 4. Bonus des boosts temporaires
+        // 4. Bonus des boosts temporaires (joueur)
         double boostBonus = getTemporaryBoostBonus(player, category);
         details.setTemporaryBoostBonus(boostBonus);
         if (boostBonus > 0) {
-            details.addDetailedSource("Boosts Temporaires", boostBonus);
+            details.addDetailedSource("Boosts Personnels", boostBonus);
         }
 
-        // 5. Bonus du gang
+        // 5. Bonus permanents du gang (niveaux, talents)
         double gangBonus = getGangBonus(player, category);
         details.setGangBonus(gangBonus);
         if (gangBonus > 0) {
             Gang gang = getPlayerGang(player);
             String gangName = gang != null ? gang.getName() : "Gang";
             details.addDetailedSource("Gang " + gangName, gangBonus);
+        }
+
+        // 6. Bonus du boost de gang (temporaire)
+        double temporaryGangBoost = getTemporaryGangBoostBonus(player, category);
+        details.setTemporaryGangBoostBonus(temporaryGangBoost);
+        if (temporaryGangBoost > 0) {
+            details.addDetailedSource("Boost de Gang (Temporaire)", temporaryGangBoost);
         }
 
         return details;
@@ -112,6 +120,7 @@ public class GlobalBonusManager {
         double multiplier = getTotalBonusMultiplier(player, BonusCategory.MONEY_BONUS);
         return Math.round(baseMoney * multiplier);
     }
+
 
     // ========================================
     // MÉTHODES D'APPLICATION DES BONUS
@@ -160,6 +169,10 @@ public class GlobalBonusManager {
         double multiplier = getTotalBonusMultiplier(player, BonusCategory.BEACON_MULTIPLIER);
         return baseEfficiency * multiplier;
     }
+
+    // ========================================
+    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
+    // ========================================
 
     /**
      * Calcule le bonus des cristaux pour une catégorie
@@ -249,22 +262,15 @@ public class GlobalBonusManager {
         return bonus;
     }
 
-    // ========================================
-    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
-    // ========================================
-
     /**
      * Calcule le bonus des talents de prestige pour une catégorie
      */
     private double getPrestigeTalentBonus(Player player, BonusCategory category) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Utilise getPrestigeTalents() pour obtenir tous les talents actifs
         Map<PrestigeTalent, Integer> talents = playerData.getPrestigeTalents();
-
         double bonus = 0.0;
 
-        // Calcule le bonus selon la catégorie demandée
         switch (category) {
             case MONEY_BONUS -> {
                 int level = talents.getOrDefault(PrestigeTalent.MONEY_GREED_BONUS, 0);
@@ -296,7 +302,7 @@ public class GlobalBonusManager {
     }
 
     /**
-     * Calcule le bonus des boosts temporaires pour une catégorie
+     * Calcule le bonus des boosts temporaires (joueur & admin) pour une catégorie
      */
     private double getTemporaryBoostBonus(Player player, BonusCategory category) {
         if (plugin.getBoostManager() == null) return 0.0;
@@ -304,8 +310,70 @@ public class GlobalBonusManager {
         BoostType boostType = getBoostTypeForCategory(category);
         if (boostType == null) return 0.0;
 
+        // Cette méthode prend déjà en compte les boosts admin globaux
         return plugin.getBoostManager().getTotalBoostBonus(player, boostType);
     }
+
+    /**
+     * Calcule le bonus des boosts de gang temporaires pour une catégorie
+     */
+    private double getTemporaryGangBoostBonus(Player player, BonusCategory category) {
+        if (plugin.getBoostManager() == null) return 0.0;
+
+        Gang gang = getPlayerGang(player);
+        if (gang == null) return 0.0;
+
+        GangBoostType gangBoostType = getGangBoostTypeForCategory(category);
+        if (gangBoostType == null) return 0.0;
+
+        double multiplier = plugin.getBoostManager().getGangBoostMultiplier(gang.getId(), gangBoostType);
+
+        if (multiplier > 1.0) {
+            return (multiplier - 1.0) * 100.0; // Convertit le multiplicateur en bonus en pourcentage (ex: 1.5 -> +50%)
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Calcule le bonus permanent de gang (niveaux, talents) pour une catégorie
+     */
+    private double getGangBonus(Player player, BonusCategory category) {
+        Gang gang = getPlayerGang(player);
+        if (gang == null) return 0.0;
+
+        double bonus = 0.0;
+
+        // Bonus de niveau de gang
+        switch (category) {
+            case SELL_BONUS -> {
+                int levelBonus = plugin.getGangManager().getSellBonus(gang.getLevel());
+                bonus += levelBonus;
+            }
+            case BEACON_MULTIPLIER -> {
+                double multiplier = plugin.getGangManager().getBeaconMultiplier(gang);
+                if (multiplier > 1.0) {
+                    bonus += (multiplier - 1.0) * 100; // Convertir en pourcentage
+                }
+            }
+        }
+
+        // Bonus des talents de gang
+        for (Map.Entry<String, Integer> entry : gang.getTalents().entrySet()) {
+            String talentId = entry.getKey();
+            if (talentId.startsWith("sell_boost_") && category == BonusCategory.SELL_BONUS) {
+                bonus += entry.getValue();
+            }
+            // Ajouter d'autres talents de gang permanents ici si nécessaire
+        }
+
+        return bonus;
+    }
+
+
+    // ========================================
+    // MÉTHODES UTILITAIRES DE MAPPING
+    // ========================================
 
     /**
      * Mappe une catégorie de bonus vers un type de cristal
@@ -336,9 +404,19 @@ public class GlobalBonusManager {
         };
     }
 
-    // ========================================
-    // MÉTHODES UTILITAIRES DE MAPPING
-    // ========================================
+    /**
+     * Mappe une catégorie de bonus vers un type de boost de gang
+     */
+    private GangBoostType getGangBoostTypeForCategory(BonusCategory category) {
+        return switch (category) {
+            case SELL_BONUS -> GangBoostType.VENTE;
+            case TOKEN_BONUS -> GangBoostType.TOKEN;
+            case EXPERIENCE_BONUS -> GangBoostType.XP;
+            case BEACON_MULTIPLIER -> GangBoostType.BEACONS;
+            default -> null;
+        };
+    }
+
 
     /**
      * Obtient le nom du type de cristal pour l'affichage
@@ -347,6 +425,20 @@ public class GlobalBonusManager {
         CristalType cristalType = getCristalTypeForCategory(category);
         return cristalType != null ? cristalType.name() : "Unknown";
     }
+
+    /**
+     * Obtient le gang du joueur
+     */
+    private Gang getPlayerGang(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (playerData.getGangId() == null) return null;
+
+        return plugin.getGangManager().getGang(playerData.getGangId());
+    }
+
+    // ========================================
+    // MÉTHODES DE DEBUG
+    // ========================================
 
     /**
      * Debug: Affiche tous les bonus actifs pour un joueur
@@ -364,8 +456,8 @@ public class GlobalBonusManager {
                 BonusSourceDetails details = entry.getValue();
 
                 plugin.getPluginLogger().info(category.getDisplayName() + ": ×" +
-                        String.format("%.3f", details.getTotalMultiplier()) +
-                        " (+" + String.format("%.1f", details.getTotalBonus()) + "%)");
+                                              String.format("%.3f", details.getTotalMultiplier()) +
+                                              " (+" + String.format("%.1f", details.getTotalBonus()) + "%)");
 
                 // Détails des sources
                 if (details.getCristalBonus() > 0) {
@@ -378,30 +470,16 @@ public class GlobalBonusManager {
                     plugin.getPluginLogger().info("  - Prestige: +" + String.format("%.1f", details.getPrestigeBonus()) + "%");
                 }
                 if (details.getTemporaryBoostBonus() > 0) {
-                    plugin.getPluginLogger().info("  - Boosts: +" + String.format("%.1f", details.getTemporaryBoostBonus()) + "%");
+                    plugin.getPluginLogger().info("  - Boosts Perso: +" + String.format("%.1f", details.getTemporaryBoostBonus()) + "%");
+                }
+                if (details.getGangBonus() > 0) {
+                    plugin.getPluginLogger().info("  - Gang (Perm): +" + String.format("%.1f", details.getGangBonus()) + "%");
+                }
+                if (details.getTemporaryGangBoostBonus() > 0) {
+                    plugin.getPluginLogger().info("  - Gang (Temp): +" + String.format("%.1f", details.getTemporaryGangBoostBonus()) + "%");
                 }
             }
         }
-    }
-
-    /**
-     * NOUVEAU: Méthode utilitaire unifiée pour obtenir un bonus de prestige spécifique
-     * Remplace les anciennes méthodes getPrestigeXxxBonus() de PlayerData
-     */
-    public double getPrestigeBonus(Player player, BonusCategory category) {
-        return getPrestigeTalentBonus(player, category);
-    }
-
-    // ========================================
-    // MÉTHODES DE DEBUG
-    // ========================================
-
-    /**
-     * MIGRÉ: Calcule le bonus Money Greed total du prestige
-     * Remplace PlayerData.getPrestigeMoneyGreedBonus()
-     */
-    public double getPrestigeMoneyGreedBonus(Player player) {
-        return getPrestigeBonus(player, BonusCategory.MONEY_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
     }
 
     // ========================================
@@ -409,28 +487,39 @@ public class GlobalBonusManager {
     // ========================================
 
     /**
+     * NOUVEAU: Méthode utilitaire unifiée pour obtenir un bonus de prestige spécifique
+     */
+    public double getPrestigeBonus(Player player, BonusCategory category) {
+        return getPrestigeTalentBonus(player, category);
+    }
+
+    /**
+     * MIGRÉ: Calcule le bonus Money Greed total du prestige
+     */
+    public double getPrestigeMoneyGreedBonus(Player player) {
+        return getPrestigeBonus(player, BonusCategory.MONEY_BONUS) / 100.0;
+    }
+
+    /**
      * MIGRÉ: Calcule le bonus Token Greed total du prestige
-     * Remplace PlayerData.getPrestigeTokenGreedBonus()
      */
     public double getPrestigeTokenGreedBonus(Player player) {
-        return getPrestigeBonus(player, BonusCategory.TOKEN_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
+        return getPrestigeBonus(player, BonusCategory.TOKEN_BONUS) / 100.0;
     }
 
     /**
      * MIGRÉ: Calcule la réduction de taxe du prestige
-     * Remplace PlayerData.getPrestigeTaxReduction()
      */
     public double getPrestigeTaxReduction(Player player) {
-        double reduction = getPrestigeBonus(player, BonusCategory.TAX_REDUCTION) / 100.0; // Retourne en multiplicateur (0.01 pour 1%)
+        double reduction = getPrestigeBonus(player, BonusCategory.TAX_REDUCTION) / 100.0;
         return Math.min(reduction, 0.99); // Maximum 99% de réduction
     }
 
     /**
      * MIGRÉ: Calcule le bonus de prix de vente du prestige
-     * Remplace PlayerData.getPrestigeSellBonus()
      */
     public double getPrestigeSellBonus(Player player) {
-        return getPrestigeBonus(player, BonusCategory.SELL_BONUS) / 100.0; // Retourne en multiplicateur (0.03 pour 3%)
+        return getPrestigeBonus(player, BonusCategory.SELL_BONUS) / 100.0;
     }
 
     /**
@@ -449,126 +538,18 @@ public class GlobalBonusManager {
 
     /**
      * NOUVEAU: Obtient tous les bonus de prestige d'un joueur
-     * Méthode de commodité pour obtenir tous les bonus en une fois
      */
     public Map<String, Double> getAllPrestigeBonuses(Player player) {
         Map<String, Double> bonuses = new HashMap<>();
-
         bonuses.put("money_greed", getPrestigeMoneyGreedBonus(player));
         bonuses.put("token_greed", getPrestigeTokenGreedBonus(player));
         bonuses.put("tax_reduction", getPrestigeTaxReduction(player));
         bonuses.put("sell_bonus", getPrestigeSellBonus(player));
         bonuses.put("outpost_bonus", getPrestigeOutpostBonus(player));
         bonuses.put("pvp_merchant_reduction", getPrestigePvpMerchantReduction(player));
-
         return bonuses;
     }
 
-    /**
-     * Calcule le bonus de gang pour une catégorie
-     */
-    private double getGangBonus(Player player, BonusCategory category) {
-        Gang gang = getPlayerGang(player);
-        if (gang == null) return 0.0;
-
-        double bonus = 0.0;
-
-        // Bonus de niveau de gang
-        switch (category) {
-            case SELL_BONUS -> {
-                int levelBonus = plugin.getGangManager().getSellBonus(gang.getLevel());
-                bonus += levelBonus;
-            }
-            case MONEY_BONUS, TOKEN_BONUS, EXPERIENCE_BONUS -> {
-            }
-            case BEACON_MULTIPLIER -> {
-                double multiplier = plugin.getGangManager().getBeaconMultiplier(gang);
-                if (multiplier > 1.0) {
-                    bonus += (multiplier - 1.0) * 100; // Convertir en pourcentage
-                }
-            }
-        }
-
-        // Bonus des talents de gang
-        for (Map.Entry<String, Integer> entry : gang.getTalents().entrySet()) {
-            String talentId = entry.getKey();
-
-            if (talentId.startsWith("sell_boost_") && category == BonusCategory.SELL_BONUS) {
-                bonus += entry.getValue();
-            }
-            // Autres talents selon les besoins
-        }
-
-        return bonus;
-    }
-
-    /**
-     * Obtient le gang du joueur
-     */
-    private Gang getPlayerGang(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        if (playerData.getGangId() == null) return null;
-
-        return plugin.getGangManager().getGang(playerData.getGangId());
-    }
-
-    /**
-     * Applique le bonus de vente incluant les bonus de gang
-     */
-    public double applySellBonusWithGang(Player player, double basePrice) {
-        if (basePrice <= 0) return basePrice;
-
-        // Bonus classiques
-        double multiplier = getTotalBonusMultiplier(player, BonusCategory.SELL_BONUS);
-
-        // Bonus de gang (niveau + talents)
-        Gang gang = getPlayerGang(player);
-        if (gang != null) {
-            double gangMultiplier = plugin.getGangManager().getTotalSellMultiplier(gang);
-            multiplier *= gangMultiplier;
-        }
-
-        return basePrice * multiplier;
-    }
-
-    /**
-     * Applique le multiplicateur de beacons de gang
-     */
-    public long applyGangBeaconMultiplier(Player player, long baseBeacons) {
-        if (baseBeacons <= 0) return baseBeacons;
-
-        Gang gang = getPlayerGang(player);
-        if (gang == null) return baseBeacons;
-
-        double multiplier = plugin.getGangManager().getBeaconMultiplier(gang);
-        return Math.round(baseBeacons * multiplier);
-    }
-
-    /**
-     * Applique tous les bonus (incluant gang) sur une valeur
-     */
-    public long applyAllBonuses(Player player, long baseValue, BonusCategory category) {
-        if (baseValue <= 0) return baseValue;
-
-        double multiplier = getTotalBonusMultiplier(player, category);
-
-        // Bonus spéciaux de gang
-        Gang gang = getPlayerGang(player);
-        if (gang != null) {
-            switch (category) {
-                case SELL_BONUS -> {
-                    double gangSellMultiplier = plugin.getGangManager().getTotalSellMultiplier(gang);
-                    multiplier *= gangSellMultiplier;
-                }
-                case BEACON_MULTIPLIER -> {
-                    double beaconMultiplier = plugin.getGangManager().getBeaconMultiplier(gang);
-                    multiplier *= beaconMultiplier;
-                }
-            }
-        }
-
-        return Math.round(baseValue * multiplier);
-    }
 
     /**
      * Types de bonus unifiés - Un seul type par finalité
@@ -631,10 +612,11 @@ public class GlobalBonusManager {
         private double professionBonus = 0.0;
         private double prestigeBonus = 0.0;
         private double temporaryBoostBonus = 0.0;
-        private double gangBonus = 0.0;
+        private double gangBonus = 0.0; // Bonus permanents (niveaux, talents)
+        private double temporaryGangBoostBonus = 0.0; // Bonus temporaires (activables)
 
         public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus;
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus;
         }
 
         public double getTotalMultiplier() {
@@ -642,46 +624,22 @@ public class GlobalBonusManager {
         }
 
         // Getters
-        public double getCristalBonus() {
-            return cristalBonus;
-        }
+        public double getCristalBonus() { return cristalBonus; }
+        public double getProfessionBonus() { return professionBonus; }
+        public double getPrestigeBonus() { return prestigeBonus; }
+        public double getTemporaryBoostBonus() { return temporaryBoostBonus; }
+        public double getGangBonus() { return gangBonus; }
+        public double getTemporaryGangBoostBonus() { return temporaryGangBoostBonus; }
 
-        public double getProfessionBonus() {
-            return professionBonus;
-        }
-
-        public double getPrestigeBonus() {
-            return prestigeBonus;
-        }
-
-        public double getTemporaryBoostBonus() {
-            return temporaryBoostBonus;
-        }
-
-        public double getGangBonus() {
-            return gangBonus;
-        }
 
         // Setters
-        public void setCristalBonus(double cristalBonus) {
-            this.cristalBonus = cristalBonus;
-        }
+        public void setCristalBonus(double cristalBonus) { this.cristalBonus = cristalBonus; }
+        public void setProfessionBonus(double professionBonus) { this.professionBonus = professionBonus; }
+        public void setPrestigeBonus(double prestigeBonus) { this.prestigeBonus = prestigeBonus; }
+        public void setTemporaryBoostBonus(double temporaryBoostBonus) { this.temporaryBoostBonus = temporaryBoostBonus; }
+        public void setGangBonus(double gangBonus) { this.gangBonus = gangBonus; }
+        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) { this.temporaryGangBoostBonus = temporaryGangBoostBonus; }
 
-        public void setProfessionBonus(double professionBonus) {
-            this.professionBonus = professionBonus;
-        }
-
-        public void setPrestigeBonus(double prestigeBonus) {
-            this.prestigeBonus = prestigeBonus;
-        }
-
-        public void setTemporaryBoostBonus(double temporaryBoostBonus) {
-            this.temporaryBoostBonus = temporaryBoostBonus;
-        }
-
-        public void setGangBonus(double gangBonus) {
-            this.gangBonus = gangBonus;
-        }
 
         public Map<String, Double> getDetailedSources() {
             return detailedSources;
