@@ -160,7 +160,7 @@ public class GUIListener implements Listener {
             plugin.getBankGUI().handleMainMenuClick(player, slot, item);
         } else if (title.contains("📈 Investissements")) {
             plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
-        } else if (title.contains("GANG") || title.contains("Gang")) {
+        } else if (title.contains("GANG") || title.contains("Gang") || title.contains("☠")) {
             plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
         } else if (title.contains("Boutique - ") || title.contains("Amélioration - ")) {
             plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
@@ -227,7 +227,7 @@ public class GUIListener implements Listener {
         }
 
         ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem != null && clickedItem.getType().name().contains("BANNER")) {
+        if (clickedItem != null && clickedItem.getItemMeta() instanceof org.bukkit.inventory.meta.BannerMeta) {
             plugin.getGangGUI().handleBannerSelection(player, clickedItem);
             event.setCancelled(true);
         }
@@ -276,6 +276,7 @@ public class GUIListener implements Listener {
                 title.contains("Boutique - ") ||
                 title.contains("Amélioration - ") ||
                 title.contains("Liste des Gangs") ||
-                title.contains("Créateur de Bannière");
+                title.contains("Créateur de Bannière") ||
+                title.contains("☠");
     }
 }

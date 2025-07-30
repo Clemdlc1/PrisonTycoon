@@ -144,7 +144,7 @@ public class GangGUI {
      * Menu principal pour les membres d'un gang
      */
     private void openGangMenu(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6⭐ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6⭐");
+        Inventory gui = Bukkit.createInventory(null, 54, "§6☠ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6☠");
         openGuis.put(player.getUniqueId(), "gang_menu");
 
         fillWithGlass(gui, DyeColor.YELLOW);
