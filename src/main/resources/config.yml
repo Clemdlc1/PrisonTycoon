@@ -1258,15 +1258,16 @@ security:
 # ========================================
 
 database:
-  # Type: YAML (fichiers), MySQL, SQLite (futures versions)
-  type: "YAML"
+  # Type: POSTGRESQL, YAML (fichiers), MySQL, SQLite (futures versions)
+  type: "POSTGRESQL"
 
-  # Options pour YAML
-  yaml:
-    pretty-print: true        # Formatage lisible
-    auto-backup: true         # Sauvegarde automatique
-    backup-interval: 3600     # Intervalle de sauvegarde (secondes)
-    max-backups: 5            # Nombre maximum de sauvegardes
+  # Options pour PostgreSQL
+  postgresql:
+    host: "localhost"
+    port: 5432
+    name: "prisontycoon"
+    user: "user"
+    password: "password"
 
 # ========================================
 #           HOOKS ET API

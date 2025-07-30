@@ -26,29 +26,26 @@ import java.util.*;
  */
 public class TankGUI implements Listener {
 
-    private final PrisonTycoon plugin;
-    private final Map<UUID, String> openTankGUIs = new HashMap<>();
-    private final Map<UUID, String> awaitingPriceInput = new HashMap<>();
-    private final Map<UUID, Material> awaitingPriceMaterial = new HashMap<>();
-    private final Map<UUID, String> awaitingNameInput = new HashMap<>();
-
     // Matériaux disponibles pour filtres
     private static final Material[] COMMON_ORES = {
             Material.COAL_ORE, Material.IRON_ORE, Material.GOLD_ORE,
             Material.DIAMOND_ORE, Material.EMERALD_ORE, Material.LAPIS_ORE,
             Material.REDSTONE_ORE, Material.COPPER_ORE
     };
-
     private static final Material[] DEEPSLATE_ORES = {
             Material.DEEPSLATE_COAL_ORE, Material.DEEPSLATE_IRON_ORE, Material.DEEPSLATE_GOLD_ORE,
             Material.DEEPSLATE_DIAMOND_ORE, Material.DEEPSLATE_EMERALD_ORE, Material.DEEPSLATE_LAPIS_ORE,
             Material.DEEPSLATE_REDSTONE_ORE, Material.DEEPSLATE_COPPER_ORE
     };
-
     private static final Material[] NETHER_MATERIALS = {
             Material.NETHER_QUARTZ_ORE, Material.NETHER_GOLD_ORE, Material.ANCIENT_DEBRIS,
             Material.NETHERRACK, Material.SOUL_SAND, Material.SOUL_SOIL
     };
+    private final PrisonTycoon plugin;
+    private final Map<UUID, String> openTankGUIs = new HashMap<>();
+    private final Map<UUID, String> awaitingPriceInput = new HashMap<>();
+    private final Map<UUID, Material> awaitingPriceMaterial = new HashMap<>();
+    private final Map<UUID, String> awaitingNameInput = new HashMap<>();
 
     public TankGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -812,6 +809,7 @@ public class TankGUI implements Listener {
 
     /**
      * Vérifie si un joueur est en attente de saisie pour le nom ou le prix d'un tank.
+     *
      * @param player Le joueur à vérifier.
      * @return true si le joueur est en attente de saisie, false sinon.
      */

@@ -99,6 +99,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutominerCondHeadGUI autominerCondHeadGUI;
     private AutominerTask autominerTask;
     private AutominerEnchantUpgradeGUI autominerEnchantUpgradeGUI;
+    private DatabaseManager databaseManager;
 
 
     public static PrisonTycoon getInstance() {
@@ -133,7 +134,6 @@ public final class PrisonTycoon extends JavaPlugin {
             PrisonTycoonAPI.initialize(this);
 
             chatLogger = new ChatLogger(this);
-
 
             // Démarrage des tâches asynchrones
             startTasks();
@@ -177,6 +177,11 @@ public final class PrisonTycoon extends JavaPlugin {
                 logger.info("§7ChatLogger arrêté");
             }
 
+            if (databaseManager != null) {
+                databaseManager.close();
+                logger.info("§7Database connection closed");
+            }
+
         } catch (Exception e) {
             logger.severe("§cErreur lors de la désactivation:");
             e.printStackTrace();
@@ -205,6 +210,7 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§7Initialisation des managers...");
 
         // Ordre d'initialisation important pour les dépendances
+        databaseManager = new DatabaseManager(this);
         playerDataManager = new PlayerDataManager(this);
         economyManager = new EconomyManager(this);
         enchantmentManager = new EnchantmentManager(this);
@@ -360,7 +366,6 @@ public final class PrisonTycoon extends JavaPlugin {
 
         getCommand("tankadmin").setExecutor(new TankAdminCommand(this));
         getCommand("tankadmin").setTabCompleter(new TankAdminCommand(this));
-
 
 
         logger.info("§aCommandes enregistrées.");
@@ -703,6 +708,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
         return autominerEnchantUpgradeGUI;
     }
+
     public BankManager getBankManager() {
         return bankManager;
     }
@@ -710,6 +716,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public BankGUI getBankGUI() {
         return bankGUI;
     }
+
     /**
      * Obtient le gestionnaire des crates
      */
@@ -728,10 +735,16 @@ public final class PrisonTycoon extends JavaPlugin {
         return tankManager;
     }
 
-    public TankGUI getTankGUI() {return tankGUI;}
+    public TankGUI getTankGUI() {
+        return tankGUI;
+    }
 
     public SellHandManager getSellHandManager() {
         return sellHandManager;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
     }
 }
 

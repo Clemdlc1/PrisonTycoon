@@ -117,7 +117,7 @@ public class EnchantmentManager {
             updateCombustion(player, playerData);
             plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
             String activeProfession = playerData.getActiveProfession();
-            if (activeProfession.equals("mineur")) {
+            if (activeProfession != null && activeProfession.equals("mineur")) {
                 Random rand = new Random();
                 if (rand.nextInt(100) == 0) {
                     plugin.getProfessionManager().addProfessionXP(player, "mineur", 1);

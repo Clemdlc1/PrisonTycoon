@@ -7,8 +7,6 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
@@ -311,9 +309,9 @@ public class CrateManager {
 
         // Animation de particules pendant l'ouverture
         BukkitRunnable animation = new BukkitRunnable() {
-            int ticks = 0;
             final int maxTicks = 80; // 4 secondes
             final List<CrateType.CrateReward> allRewards = crateType.getAllRewards();
+            int ticks = 0;
 
             @Override
             public void run() {

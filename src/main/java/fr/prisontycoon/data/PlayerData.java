@@ -45,6 +45,8 @@ public class PlayerData {
     // NOUVEAUX ajouts pour le système amélioré
     private final Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private final Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
+    // Investissements - Map<Material, Quantité> avec support grandes valeurs
+    private final Map<Material, Long> investments = new ConcurrentHashMap<>();
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -102,15 +104,11 @@ public class PlayerData {
     private long autominerPendingTokens;
     private long autominerPendingExperience;
     private long autominerPendingBeacons;
-
     private long savingsBalance = 0;
     private long safeBalance = 0;
     private int bankLevel = 1;
     private long totalBankDeposits = 0;
     private long lastInterestTime = System.currentTimeMillis();
-
-    // Investissements - Map<Material, Quantité> avec support grandes valeurs
-    private final Map<Material, Long> investments = new ConcurrentHashMap<>();
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -1545,12 +1543,6 @@ public class PlayerData {
         return amount;
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
     /**
      * Vérifie si le joueur a un rang spécifique ou supérieur
      */
@@ -1603,10 +1595,6 @@ public class PlayerData {
         }
     }
 
-// ===============================
-// MÉTHODES COFFRE-FORT
-// ===============================
-
     public long getSafeBalance() {
         synchronized (dataLock) {
             return safeBalance;
@@ -1618,6 +1606,10 @@ public class PlayerData {
             this.safeBalance = Math.max(0, balance);
         }
     }
+
+// ===============================
+// MÉTHODES COFFRE-FORT
+// ===============================
 
     public void addSafeBalance(long amount) {
         synchronized (dataLock) {
@@ -1631,10 +1623,6 @@ public class PlayerData {
         }
     }
 
-// ===============================
-// MÉTHODES NIVEAU BANCAIRE
-// ===============================
-
     public int getBankLevel() {
         synchronized (dataLock) {
             return bankLevel;
@@ -1646,6 +1634,10 @@ public class PlayerData {
             this.bankLevel = Math.max(1, Math.min(10, level));
         }
     }
+
+// ===============================
+// MÉTHODES NIVEAU BANCAIRE
+// ===============================
 
     public long getTotalBankDeposits() {
         synchronized (dataLock) {
@@ -1671,10 +1663,6 @@ public class PlayerData {
         }
     }
 
-// ===============================
-// MÉTHODES INVESTISSEMENTS (avec support grandes valeurs)
-// ===============================
-
     public Map<Material, Long> getAllInvestments() {
         synchronized (dataLock) {
             return new HashMap<>(investments);
@@ -1686,6 +1674,10 @@ public class PlayerData {
             return investments.getOrDefault(material, 0L);
         }
     }
+
+// ===============================
+// MÉTHODES INVESTISSEMENTS (avec support grandes valeurs)
+// ===============================
 
     public void addInvestment(Material material, long quantity) {
         synchronized (dataLock) {
@@ -1714,5 +1706,11 @@ public class PlayerData {
                 investments.put(material, quantity);
             }
         }
+    }
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

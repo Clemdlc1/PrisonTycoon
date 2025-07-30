@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-// Importation statique des types de récompenses pour un code plus propre dans le registre
 import static fr.prisontycoon.crates.CrateType.RewardType.*;
 
 /**
@@ -112,9 +111,17 @@ public enum CrateType {
         return key;
     }
 
-    public String getDisplayName() { return displayName; }
-    public String getColor() { return color; }
-    public int getTier() { return tier; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public int getTier() {
+        return tier;
+    }
 
     // ================================================================= //
     //                CLASSES ET ENUMS INTERNES
@@ -164,17 +171,49 @@ public enum CrateType {
             return minAmount + new Random().nextInt(maxAmount - minAmount + 1);
         }
 
-        public RewardType getType() { return type; }
-        public double getProbability() { return probability; }
-        public int getContainerTier() { return containerTier != null ? containerTier : 1; }
-        public String getKeyType() { return keyType; }
-        public String getVoucherType() { return voucherType; }
-        public String getBoostType() { return boostType; }
-        public int getBoostMultiplier() { return boostMultiplier; }
-        public int getBoostDuration() { return boostDuration; }
-        public String getBookType() { return bookType; }
-        public String getAutominerType() { return autominerType; }
-        public int getCristaltLevel() { return cristalLevel; }
+        public RewardType getType() {
+            return type;
+        }
+
+        public double getProbability() {
+            return probability;
+        }
+
+        public int getContainerTier() {
+            return containerTier != null ? containerTier : 1;
+        }
+
+        public String getKeyType() {
+            return keyType;
+        }
+
+        public String getVoucherType() {
+            return voucherType;
+        }
+
+        public String getBoostType() {
+            return boostType;
+        }
+
+        public int getBoostMultiplier() {
+            return boostMultiplier;
+        }
+
+        public int getBoostDuration() {
+            return boostDuration;
+        }
+
+        public String getBookType() {
+            return bookType;
+        }
+
+        public String getAutominerType() {
+            return autominerType;
+        }
+
+        public int getCristaltLevel() {
+            return cristalLevel;
+        }
 
         public static class Builder {
             private final RewardType type;
@@ -198,19 +237,46 @@ public enum CrateType {
                 this.probability = probability;
             }
 
-            public Builder containerTier(int tier) { this.containerTier = tier; return this; }
-            public Builder keyType(String type) { this.keyType = type; return this; }
-            public Builder voucherType(String type) { this.voucherType = type; return this; }
-            public Builder book(String type) { this.bookType = type; return this; }
-            public Builder autominer(String type) { this.autominerType = type; return this; }
+            public Builder containerTier(int tier) {
+                this.containerTier = tier;
+                return this;
+            }
+
+            public Builder keyType(String type) {
+                this.keyType = type;
+                return this;
+            }
+
+            public Builder voucherType(String type) {
+                this.voucherType = type;
+                return this;
+            }
+
+            public Builder book(String type) {
+                this.bookType = type;
+                return this;
+            }
+
+            public Builder autominer(String type) {
+                this.autominerType = type;
+                return this;
+            }
+
             public Builder boost(String type, int multiplier, int duration) {
                 this.boostType = type;
                 this.boostMultiplier = multiplier;
                 this.boostDuration = duration;
                 return this;
             }
-            public Builder cristalLevel(int level) { this.cristalLevel = level; return this; }
-            public CrateReward build() { return new CrateReward(this); }
+
+            public Builder cristalLevel(int level) {
+                this.cristalLevel = level;
+                return this;
+            }
+
+            public CrateReward build() {
+                return new CrateReward(this);
+            }
         }
     }
 

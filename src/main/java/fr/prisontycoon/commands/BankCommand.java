@@ -13,7 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Commande /bank - Système bancaire complet
@@ -31,13 +30,12 @@ import java.util.stream.Collectors;
  */
 public class BankCommand implements CommandExecutor, TabCompleter {
 
-    private final PrisonTycoon plugin;
-    private final BankManager bankManager;
-
     // Matériaux d'investissement pour l'autocomplétion
     private static final List<String> INVESTMENT_MATERIALS = Arrays.asList(
             "cobblestone", "stone", "coal", "iron", "cuivre", "gold", "diamond", "emerauld", "beacon"
     );
+    private final PrisonTycoon plugin;
+    private final BankManager bankManager;
 
     public BankCommand(PrisonTycoon plugin) {
         this.plugin = plugin;

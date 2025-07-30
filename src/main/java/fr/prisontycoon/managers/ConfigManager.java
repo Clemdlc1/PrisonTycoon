@@ -432,6 +432,11 @@ public class ConfigManager {
         return sellPrices.getOrDefault(material, 0L);
     }
 
+    @SuppressWarnings("unchecked")
+    public <T> T get(String path, T def) {
+        return (T) config.get(path, def);
+    }
+
     /**
      * Recharge la configuration depuis le fichier
      */

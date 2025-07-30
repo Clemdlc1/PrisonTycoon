@@ -24,22 +24,21 @@ import java.util.Map;
  */
 public class BankGUI {
 
-    private final PrisonTycoon plugin;
-    private final BankManager bankManager;
-
     // Slots pour le menu principal
     private static final int SAVINGS_SLOT = 20;
     private static final int INVESTMENT_SLOT = 22;
     private static final int SAFE_SLOT = 24;
     private static final int BANK_LEVEL_SLOT = 40;
     private static final int CLOSE_SLOT = 44;
-
     // Slots pour le menu d'investissement
     private static final int[] INVESTMENT_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 25};
+    private final PrisonTycoon plugin;
+    private final BankManager bankManager;
 
     public BankGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.bankManager = plugin.getBankManager();}
+        this.bankManager = plugin.getBankManager();
+    }
 
     /**
      * Ouvre le menu principal de la banque

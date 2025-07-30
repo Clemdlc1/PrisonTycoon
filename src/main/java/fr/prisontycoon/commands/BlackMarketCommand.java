@@ -83,15 +83,6 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
                 player.sendMessage("§a✅ Relocalisation forcée du marché noir!");
                 return true;
             }
-            case "debug" -> {
-                if (!player.hasPermission("blackmarket.admin")) {
-                    player.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");
-                    return true;
-                }
-                plugin.getBlackMarketManager().debugStock();
-                player.sendMessage("§a✅ Informations de debug affichées dans la console!");
-                return true;
-            }
             case "teleport", "tp" -> {
                 if (!player.hasPermission("blackmarket.admin")) {
                     player.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");

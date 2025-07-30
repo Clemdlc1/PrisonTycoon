@@ -905,7 +905,9 @@ public class PrisonTycoonAPI {
         return playerDataManager;
     }
 
-    public int getReputation(UUID playerId) { return plugin.getReputationManager().getReputation(playerId); }
+    public int getReputation(UUID playerId) {
+        return plugin.getReputationManager().getReputation(playerId);
+    }
 
     public String getActiveProfession(UUID playerId) {
         PlayerData playerData = playerDataManager.getPlayerData(playerId);
@@ -914,7 +916,7 @@ public class PrisonTycoonAPI {
 
     public int getProfessionLevel(UUID playerId) {
         PlayerData playerData = playerDataManager.getPlayerData(playerId);
-                return playerData.getProfessionLevel(playerData.getActiveProfession());
+        return playerData.getProfessionLevel(playerData.getActiveProfession());
     }
 
     public double getTotalBonusMultiplier(Player player, GlobalBonusManager.BonusCategory category) {
@@ -925,7 +927,7 @@ public class PrisonTycoonAPI {
         return plugin.getPermissionManager();
     }
 
-    public int AuctionHouseSlot (Player player) {
+    public int AuctionHouseSlot(Player player) {
         return (int) plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.HDV_SLOT);
     }
 

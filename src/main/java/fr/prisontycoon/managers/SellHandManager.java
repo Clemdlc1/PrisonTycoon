@@ -219,6 +219,17 @@ public class SellHandManager {
             this.maxDurability = maxDurability;
         }
 
+        /**
+         * Récupère le type de Sell Hand par son niveau (0-6)
+         */
+        public static SellHandType getByLevel(int level) {
+            SellHandType[] types = values();
+            if (level < 0 || level >= types.length) {
+                return WOOD; // Par défaut
+            }
+            return types[level];
+        }
+
         public String getDisplayName() {
             return displayName;
         }
@@ -229,17 +240,6 @@ public class SellHandManager {
 
         public int getMaxDurability() {
             return maxDurability;
-        }
-
-        /**
-         * Récupère le type de Sell Hand par son niveau (0-6)
-         */
-        public static SellHandType getByLevel(int level) {
-            SellHandType[] types = values();
-            if (level < 0 || level >= types.length) {
-                return WOOD; // Par défaut
-            }
-            return types[level];
         }
 
         /**

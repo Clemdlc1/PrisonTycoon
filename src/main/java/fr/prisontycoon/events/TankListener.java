@@ -253,7 +253,8 @@ public class TankListener implements Listener {
             if (item == null || item.getType() == Material.AIR) continue;
             if (plugin.getTankManager().isTank(item)) continue; // Ignorer les autres tanks
             if (plugin.getPickaxeManager() != null && plugin.getPickaxeManager().isLegendaryPickaxe(item)) continue;
-            if (plugin.getSellHandManager() != null && plugin.getSellHandManager().isSellHand(item)) continue; // Ignorer les sell hands
+            if (plugin.getSellHandManager() != null && plugin.getSellHandManager().isSellHand(item))
+                continue; // Ignorer les sell hands
 
             Material material = item.getType();
 

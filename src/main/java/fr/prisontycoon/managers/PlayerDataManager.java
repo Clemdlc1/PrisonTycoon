@@ -1,791 +1,359 @@
 package fr.prisontycoon.managers;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.boosts.BoostType;
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.io.File;
-import java.io.IOException;
+import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Gestionnaire des données des joueurs
- * CORRIGÉ : Synchronisation exp vanilla lors du chargement et expérience mise à jour
- */
 public class PlayerDataManager {
 
     private final PrisonTycoon plugin;
-    private final File playerDataFolder;
+    private final DatabaseManager databaseManager;
+    private final Gson gson = new Gson();
 
-    // Cache mémoire des données joueurs (UUID -> PlayerData)
-    private final Map<UUID, PlayerData> playerDataCache;
-
-    // Set des joueurs avec données modifiées (pour sauvegarde optimisée)
-    private final Set<UUID> dirtyPlayers;
+    private final Map<UUID, PlayerData> playerDataCache = new ConcurrentHashMap<>();
+    private final Set<UUID> dirtyPlayers = ConcurrentHashMap.newKeySet();
 
     public PlayerDataManager(PrisonTycoon plugin) {
         this.plugin = plugin;
-        this.playerDataCache = new ConcurrentHashMap<>();
-        this.dirtyPlayers = ConcurrentHashMap.newKeySet();
-
-        // Crée le dossier des données joueurs
-        this.playerDataFolder = new File(plugin.getDataFolder(), "playerdata");
-        if (!playerDataFolder.exists()) {
-            playerDataFolder.mkdirs();
-            plugin.getPluginLogger().info("§7Dossier playerdata créé.");
-        }
-
-        plugin.getPluginLogger().info("§aPlayerDataManager initialisé.");
+        this.databaseManager = plugin.getDatabaseManager();
+        createPlayersTable();
     }
 
-    /**
-     * CORRIGÉ : Charge les données d'un joueur avec synchronisation exp vanilla
-     */
+    private void createPlayersTable() {
+        String query = """
+                    CREATE TABLE IF NOT EXISTS players (
+                        uuid VARCHAR(36) PRIMARY KEY,
+                        name VARCHAR(16),
+                        coins BIGINT,
+                        tokens BIGINT,
+                        experience BIGINT,
+                        beacons BIGINT,
+                        coins_via_pickaxe BIGINT,
+                        tokens_via_pickaxe BIGINT,
+                        experience_via_pickaxe BIGINT,
+                        active_profession VARCHAR(255),
+                        last_profession_change BIGINT,
+                        enchantments TEXT,
+                        auto_upgrade TEXT,
+                        mobility_disabled TEXT,
+                        pickaxe_cristals TEXT,
+                        custom_permissions TEXT,
+                        sanctions TEXT,
+                        active_enchantments TEXT,
+                        pickaxe_enchantment_books TEXT,
+                        profession_levels TEXT,
+                        profession_xp TEXT,
+                        talent_levels TEXT,
+                        kit_levels TEXT,
+                        profession_rewards TEXT,
+                        chosen_prestige_columns TEXT,
+                        chosen_special_rewards TEXT,
+                        reputation INT,
+                        boosts TEXT,
+                        autominer_active_slot_1 TEXT,
+                        autominer_active_slot_2 TEXT,
+                        autominer_fuel_reserve DOUBLE PRECISION,
+                        autominer_current_world VARCHAR(255),
+                        autominer_storage_level INT,
+                        autominer_storage_contents TEXT,
+                        autominer_stored_keys TEXT,
+                        autominer_pending_coins BIGINT,
+                        autominer_pending_tokens BIGINT,
+                        autominer_pending_experience BIGINT,
+                        autominer_pending_beacons BIGINT,
+                        bank_savings_balance BIGINT,
+                        bank_safe_balance BIGINT,
+                        bank_level INT,
+                        bank_total_deposits BIGINT,
+                        bank_last_interest BIGINT,
+                        bank_investments TEXT,
+                        statistics_total_blocks_mined BIGINT,
+                        statistics_total_blocks_destroyed BIGINT,
+                        statistics_total_greed_triggers BIGINT,
+                        statistics_total_keys_obtained BIGINT
+                    );
+                """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.execute();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Could not create players table: " + e.getMessage());
+        }
+    }
+
     public PlayerData getPlayerData(UUID playerId) {
-        // Vérifie d'abord le cache
-        PlayerData cached = playerDataCache.get(playerId);
-        if (cached != null) {
-            return cached;
+        if (playerDataCache.containsKey(playerId)) {
+            return playerDataCache.get(playerId);
         }
 
-        // Charge depuis le fichier
-        PlayerData loaded = loadPlayerDataFromFile(playerId);
-        if (loaded != null) {
-            playerDataCache.put(playerId, loaded);
-
-            // NOUVEAU : Synchronise l'exp vanilla si le joueur est en ligne
-            Player player = plugin.getServer().getPlayer(playerId);
-            if (player != null && player.isOnline()) {
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.getEconomyManager().updateVanillaExpFromCustom(player, loaded.getExperience()), 1L); // Petit délai pour s'assurer que tout est initialisé
-            }
-
-            return loaded;
-        }
-
-        // Crée de nouvelles données si aucun fichier trouvé
-        String playerName = getPlayerName(playerId);
-        PlayerData newData = new PlayerData(playerId, playerName);
-        playerDataCache.put(playerId, newData);
-        markDirty(playerId);
-
-        plugin.getPluginLogger().info("§7Nouvelles données créées pour: " + playerName);
-        return newData;
+        PlayerData playerData = loadPlayerDataFromDatabase(playerId);
+        playerDataCache.put(playerId, playerData);
+        return playerData;
     }
 
-    /**
-     * CORRIGÉ: Charge les données d'un joueur depuis le fichier YAML avec TOUTES les nouvelles données
-     */
-    private PlayerData loadPlayerDataFromFile(UUID playerId) {
-        File playerFile = new File(playerDataFolder, playerId.toString() + ".yml");
-        if (!playerFile.exists()) {
-            return null;
+    private PlayerData loadPlayerDataFromDatabase(UUID playerId) {
+        String query = "SELECT * FROM players WHERE uuid = ?";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, playerId.toString());
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String playerName = rs.getString("name");
+                PlayerData data = new PlayerData(playerId, playerName);
+
+                data.setCoins(rs.getLong("coins"));
+                data.setTokens(rs.getLong("tokens"));
+                data.setExperience(rs.getLong("experience"));
+                data.setBeacons(rs.getLong("beacons"));
+                data.setCoinsViaPickaxe(rs.getLong("coins_via_pickaxe"));
+                data.setTokensViaPickaxe(rs.getLong("tokens_via_pickaxe"));
+                data.setExperienceViaPickaxe(rs.getLong("experience_via_pickaxe"));
+                data.setActiveProfession(rs.getString("active_profession"));
+                data.setLastProfessionChange(rs.getLong("last_profession_change"));
+
+                Type stringIntegerMapType = new TypeToken<Map<String, Integer>>() {
+                }.getType();
+                Type stringStringMapType = new TypeToken<Map<String, String>>() {
+                }.getType();
+                Type stringSetType = new TypeToken<Set<String>>() {
+                }.getType();
+                Type sanctionListType = new TypeToken<List<PlayerData.SanctionData>>() {
+                }.getType();
+                Type stringMapMapType = new TypeToken<Map<String, Map<String, Integer>>>() {
+                }.getType();
+                Type intTalentMapType = new TypeToken<Map<Integer, PrestigeTalent>>() {
+                }.getType();
+                Type intStringMapType = new TypeToken<Map<Integer, String>>() {
+                }.getType();
+                Type stringBoostMapType = new TypeToken<Map<String, PlayerBoost>>() {
+                }.getType();
+                Type materialLongMapType = new TypeToken<Map<Material, Long>>() {
+                }.getType();
+
+                data.getEnchantmentLevels().putAll(gson.fromJson(rs.getString("enchantments"), stringIntegerMapType));
+                data.getAutoUpgradeEnabled().addAll(gson.fromJson(rs.getString("auto_upgrade"), stringSetType));
+                data.getMobilityEnchantmentsDisabled().addAll(gson.fromJson(rs.getString("mobility_disabled"), stringSetType));
+                data.getPickaxeCristals().putAll(gson.fromJson(rs.getString("pickaxe_cristals"), stringStringMapType));
+                data.getCustomPermissions().addAll(gson.fromJson(rs.getString("custom_permissions"), stringSetType));
+                data.getSanctionHistory().addAll(gson.fromJson(rs.getString("sanctions"), sanctionListType));
+                data.getActiveEnchantmentBooks().addAll(gson.fromJson(rs.getString("active_enchantments"), stringSetType));
+                data.getPLayerEnchantmentBooks().addAll(gson.fromJson(rs.getString("pickaxe_enchantment_books"), stringSetType));
+                data.getAllProfessionLevels().putAll(gson.fromJson(rs.getString("profession_levels"), stringIntegerMapType));
+                data.getAllProfessionXP().putAll(gson.fromJson(rs.getString("profession_xp"), stringIntegerMapType));
+                data.getAllTalentLevels().putAll(gson.fromJson(rs.getString("talent_levels"), stringMapMapType));
+                data.getAllKitLevels().putAll(gson.fromJson(rs.getString("kit_levels"), stringIntegerMapType));
+                data.getAllClaimedProfessionRewards().putAll(gson.fromJson(rs.getString("profession_rewards"), new TypeToken<Map<String, Set<Integer>>>() {
+                }.getType()));
+                data.getChosenPrestigeColumns().putAll(gson.fromJson(rs.getString("chosen_prestige_columns"), intTalentMapType));
+                data.getChosenSpecialRewards().putAll(gson.fromJson(rs.getString("chosen_special_rewards"), intStringMapType));
+                data.setReputation(rs.getInt("reputation"));
+                data.getActiveBoosts().putAll(gson.fromJson(rs.getString("boosts"), stringBoostMapType));
+                data.setActiveAutominerSlot1(gson.fromJson(rs.getString("autominer_active_slot_1"), ItemStack.class));
+                data.setActiveAutominerSlot2(gson.fromJson(rs.getString("autominer_active_slot_2"), ItemStack.class));
+                data.setAutominerFuelReserve(rs.getDouble("autominer_fuel_reserve"));
+                data.setAutominerCurrentWorld(rs.getString("autominer_current_world"));
+                data.setAutominerStorageLevel(rs.getInt("autominer_storage_level"));
+                data.getAutominerStorageContents().putAll(gson.fromJson(rs.getString("autominer_storage_contents"), materialLongMapType));
+                data.getAutominerStoredKeys().putAll(gson.fromJson(rs.getString("autominer_stored_keys"), stringIntegerMapType));
+                data.setAutominerPendingCoins(rs.getLong("autominer_pending_coins"));
+                data.setAutominerPendingTokens(rs.getLong("autominer_pending_tokens"));
+                data.setAutominerPendingExperience(rs.getLong("autominer_pending_experience"));
+                data.setAutominerPendingBeacons(rs.getLong("autominer_pending_beacons"));
+                data.setSavingsBalance(rs.getLong("bank_savings_balance"));
+                data.setSafeBalance(rs.getLong("bank_safe_balance"));
+                data.setBankLevel(rs.getInt("bank_level"));
+                data.setTotalBankDeposits(rs.getLong("bank_total_deposits"));
+                data.setLastInterestTime(rs.getLong("bank_last_interest"));
+                data.getAllInvestments().putAll(gson.fromJson(rs.getString("bank_investments"), materialLongMapType));
+                data.setTotalBlocksMined(rs.getLong("statistics_total_blocks_mined"));
+                data.setTotalBlocksDestroyed(rs.getLong("statistics_total_blocks_destroyed"));
+                data.setTotalGreedTriggers(rs.getLong("statistics_total_greed_triggers"));
+                data.setTotalKeysObtained(rs.getLong("statistics_total_keys_obtained"));
+
+                return data;
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Could not load player data from database: " + e.getMessage());
+        }
+        return new PlayerData(playerId, getPlayerName(playerId));
+    }
+
+    public void savePlayerData(UUID playerId) {
+        PlayerData data = playerDataCache.get(playerId);
+        if (data == null) {
+            return;
         }
 
-        try {
-            FileConfiguration config = YamlConfiguration.loadConfiguration(playerFile);
+        String query = """
+                    INSERT INTO players (uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, tokens_via_pickaxe, experience_via_pickaxe, active_profession, last_profession_change, enchantments, auto_upgrade, mobility_disabled, pickaxe_cristals, custom_permissions, sanctions, active_enchantments, pickaxe_enchantment_books, profession_levels, profession_xp, talent_levels, kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, autominer_fuel_reserve, autominer_current_world, autominer_storage_level, autominer_storage_contents, autominer_stored_keys, autominer_pending_coins, autominer_pending_tokens, autominer_pending_experience, autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (uuid) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        coins = EXCLUDED.coins,
+                        tokens = EXCLUDED.tokens,
+                        experience = EXCLUDED.experience,
+                        beacons = EXCLUDED.beacons,
+                        coins_via_pickaxe = EXCLUDED.coins_via_pickaxe,
+                        tokens_via_pickaxe = EXCLUDED.tokens_via_pickaxe,
+                        experience_via_pickaxe = EXCLUDED.experience_via_pickaxe,
+                        active_profession = EXCLUDED.active_profession,
+                        last_profession_change = EXCLUDED.last_profession_change,
+                        enchantments = EXCLUDED.enchantments,
+                        auto_upgrade = EXCLUDED.auto_upgrade,
+                        mobility_disabled = EXCLUDED.mobility_disabled,
+                        pickaxe_cristals = EXCLUDED.pickaxe_cristals,
+                        custom_permissions = EXCLUDED.custom_permissions,
+                        sanctions = EXCLUDED.sanctions,
+                        active_enchantments = EXCLUDED.active_enchantments,
+                        pickaxe_enchantment_books = EXCLUDED.pickaxe_enchantment_books,
+                        profession_levels = EXCLUDED.profession_levels,
+                        profession_xp = EXCLUDED.profession_xp,
+                        talent_levels = EXCLUDED.talent_levels,
+                        kit_levels = EXCLUDED.kit_levels,
+                        profession_rewards = EXCLUDED.profession_rewards,
+                        chosen_prestige_columns = EXCLUDED.chosen_prestige_columns,
+                        chosen_special_rewards = EXCLUDED.chosen_special_rewards,
+                        reputation = EXCLUDED.reputation,
+                        boosts = EXCLUDED.boosts,
+                        autominer_active_slot_1 = EXCLUDED.autominer_active_slot_1,
+                        autominer_active_slot_2 = EXCLUDED.autominer_active_slot_2,
+                        autominer_fuel_reserve = EXCLUDED.autominer_fuel_reserve,
+                        autominer_current_world = EXCLUDED.autominer_current_world,
+                        autominer_storage_level = EXCLUDED.autominer_storage_level,
+                        autominer_storage_contents = EXCLUDED.autominer_storage_contents,
+                        autominer_stored_keys = EXCLUDED.autominer_stored_keys,
+                        autominer_pending_coins = EXCLUDED.autominer_pending_coins,
+                        autominer_pending_tokens = EXCLUDED.autominer_pending_tokens,
+                        autominer_pending_experience = EXCLUDED.autominer_pending_experience,
+                        autominer_pending_beacons = EXCLUDED.autominer_pending_beacons,
+                        bank_savings_balance = EXCLUDED.bank_savings_balance,
+                        bank_safe_balance = EXCLUDED.bank_safe_balance,
+                        bank_level = EXCLUDED.bank_level,
+                        bank_total_deposits = EXCLUDED.bank_total_deposits,
+                        bank_last_interest = EXCLUDED.bank_last_interest,
+                        bank_investments = EXCLUDED.bank_investments,
+                        statistics_total_blocks_mined = EXCLUDED.statistics_total_blocks_mined,
+                        statistics_total_blocks_destroyed = EXCLUDED.statistics_total_blocks_destroyed,
+                        statistics_total_greed_triggers = EXCLUDED.statistics_total_greed_triggers,
+                        statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained;
+                """;
 
-            String playerName = config.getString("name", "Unknown");
-            PlayerData data = new PlayerData(playerId, playerName);
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
 
-            // Monnaies TOTALES
-            long savedCoins = config.getLong("coins", 0);
-            long savedTokens = config.getLong("tokens", 0);
-            long savedExperience = config.getLong("experience", 0);
-            long savedBeacons = config.getLong("beacons", 0);
+            ps.setString(1, data.getPlayerId().toString());
+            ps.setString(2, data.getPlayerName());
+            ps.setLong(3, data.getCoins());
+            ps.setLong(4, data.getTokens());
+            ps.setLong(5, data.getExperience());
+            ps.setLong(6, data.getBeacons());
+            ps.setLong(7, data.getCoinsViaPickaxe());
+            ps.setLong(8, data.getTokensViaPickaxe());
+            ps.setLong(9, data.getExperienceViaPickaxe());
+            ps.setString(10, data.getActiveProfession());
+            ps.setLong(11, data.getLastProfessionChange());
+            ps.setString(12, gson.toJson(data.getEnchantmentLevels()));
+            ps.setString(13, gson.toJson(data.getAutoUpgradeEnabled()));
+            ps.setString(14, gson.toJson(data.getMobilityEnchantmentsDisabled()));
+            ps.setString(15, gson.toJson(data.getPickaxeCristals()));
+            ps.setString(16, gson.toJson(data.getCustomPermissions()));
+            ps.setString(17, gson.toJson(data.getSanctionHistory()));
+            ps.setString(18, gson.toJson(data.getActiveEnchantmentBooks()));
+            ps.setString(19, gson.toJson(data.getPLayerEnchantmentBooks()));
+            ps.setString(20, gson.toJson(data.getAllProfessionLevels()));
+            ps.setString(21, gson.toJson(data.getAllProfessionXP()));
+            ps.setString(22, gson.toJson(data.getAllTalentLevels()));
+            ps.setString(23, gson.toJson(data.getAllKitLevels()));
+            ps.setString(24, gson.toJson(data.getAllClaimedProfessionRewards()));
+            ps.setString(25, gson.toJson(data.getChosenPrestigeColumns()));
+            ps.setString(26, gson.toJson(data.getChosenSpecialRewards()));
+            ps.setInt(27, data.getReputation());
+            ps.setString(28, gson.toJson(data.getActiveBoosts()));
+            ps.setString(29, gson.toJson(data.getActiveAutominerSlot1()));
+            ps.setString(30, gson.toJson(data.getActiveAutominerSlot2()));
+            ps.setDouble(31, data.getAutominerFuelReserve());
+            ps.setString(32, data.getAutominerCurrentWorld());
+            ps.setInt(33, data.getAutominerStorageLevel());
+            ps.setString(34, gson.toJson(data.getAutominerStorageContents()));
+            ps.setString(35, gson.toJson(data.getAutominerStoredKeys()));
+            ps.setLong(36, data.getAutominerPendingCoins());
+            ps.setLong(37, data.getAutominerPendingTokens());
+            ps.setLong(38, data.getAutominerPendingExperience());
+            ps.setLong(39, data.getAutominerPendingBeacons());
+            ps.setLong(40, data.getSavingsBalance());
+            ps.setLong(41, data.getSafeBalance());
+            ps.setInt(42, data.getBankLevel());
+            ps.setLong(43, data.getTotalBankDeposits());
+            ps.setLong(44, data.getLastInterestTime());
+            ps.setString(45, gson.toJson(data.getAllInvestments()));
+            ps.setLong(46, data.getTotalBlocksMined());
+            ps.setLong(47, data.getTotalBlocksDestroyed());
+            ps.setLong(48, data.getTotalGreedTriggers());
+            ps.setLong(49, data.getTotalKeysObtained());
 
-            if (savedCoins > 0) data.setCoins(savedCoins);
-            if (savedTokens > 0) data.setTokens(savedTokens);
-            if (savedExperience > 0) data.setExperience(savedExperience);
-            if (savedBeacons > 0) data.setBeacons(savedBeacons);
-
-
-            // NOUVEAU: Gains spécifiques VIA PIOCHE
-            long coinsViaPickaxe = config.getLong("coins-via-pickaxe", 0);
-            long tokensViaPickaxe = config.getLong("tokens-via-pickaxe", 0);
-            long experienceViaPickaxe = config.getLong("experience-via-pickaxe", 0);
-
-            if (coinsViaPickaxe > 0) data.setCoinsViaPickaxe(coinsViaPickaxe);
-            if (tokensViaPickaxe > 0) data.setTokensViaPickaxe(tokensViaPickaxe);
-            if (experienceViaPickaxe > 0) data.setExperienceViaPickaxe(experienceViaPickaxe);
-
-            //metier
-            data.setActiveProfession(config.getString("active-profession"));
-            data.setLastProfessionChange(config.getLong("last-profession-change", 0));
-
-            // Enchantements
-            if (config.contains("enchantments")) {
-                for (String enchName : config.getConfigurationSection("enchantments").getKeys(false)) {
-                    int level = config.getInt("enchantments." + enchName, 0);
-                    if (level > 0) {
-                        data.setEnchantmentLevel(enchName, level);
-                    }
-                }
-            }
-
-            // Auto-upgrade
-            if (config.contains("auto-upgrade")) {
-                List<String> autoUpgradeList = config.getStringList("auto-upgrade");
-                for (String enchName : autoUpgradeList) {
-                    data.setAutoUpgrade(enchName, true);
-                }
-            }
-
-            // NOUVEAU: Enchantements mobilité désactivés
-            if (config.contains("mobility-disabled")) {
-                List<String> disabledMobility = config.getStringList("mobility-disabled");
-                for (String enchName : disabledMobility) {
-                    data.setMobilityEnchantmentEnabled(enchName, false);
-                }
-            }
-
-            if (config.contains("pickaxe-cristals")) {
-                for (String cristalUuid : config.getConfigurationSection("pickaxe-cristals").getKeys(false)) {
-                    String cristalData = config.getString("pickaxe-cristals." + cristalUuid);
-                    if (cristalData != null && !cristalData.isEmpty()) {
-                        data.setPickaxeCristal(cristalUuid, cristalData);
-                    }
-                }
-            }
-
-            if (config.contains("custom-permissions")) {
-                List<String> permissions = config.getStringList("custom-permissions");
-                Set<String> permissionSet = new HashSet<>(permissions);
-                data.setCustomPermissions(permissionSet);
-            }
-
-            // NOUVEAU: Historique des sanctions
-            if (config.contains("sanctions")) {
-                for (String sanctionId : config.getConfigurationSection("sanctions").getKeys(false)) {
-                    String path = "sanctions." + sanctionId + ".";
-                    String type = config.getString(path + "type");
-                    String reason = config.getString(path + "reason");
-                    String moderator = config.getString(path + "moderator");
-                    long startTime = config.getLong(path + "startTime");
-                    long endTime = config.getLong(path + "endTime");
-
-                    data.addSanction(type, reason, moderator, startTime, endTime);
-                }
-            }
-
-            if (config.contains("active-enchantments")) {
-                List<String> activeEnchants = config.getStringList("active-enchantments");
-                data.setActiveEnchantmentBooks(new HashSet<>(activeEnchants));
-            }
-
-            if (config.contains("pickaxe-enchantment-books")) {
-                List<String> books = config.getStringList("pickaxe-enchantment-books");
-                Set<String> booksSet = new HashSet<>(books);
-                data.setPickaxeEnchantmentBook(booksSet);
-            }
-
-            // Niveaux de métiers
-            if (config.contains("profession-levels")) {
-                for (String profession : config.getConfigurationSection("profession-levels").getKeys(false)) {
-                    int level = config.getInt("profession-levels." + profession);
-                    data.setProfessionLevel(profession, level);
-                }
-            }
-
-            // XP des métiers
-            if (config.contains("profession-xp")) {
-                for (String profession : config.getConfigurationSection("profession-xp").getKeys(false)) {
-                    int xp = config.getInt("profession-xp." + profession);
-                    data.setProfessionXP(profession, xp);
-                }
-            }
-
-            // Talents
-            if (config.contains("talent-levels")) {
-                for (String profession : config.getConfigurationSection("talent-levels").getKeys(false)) {
-                    for (String talent : config.getConfigurationSection("talent-levels." + profession).getKeys(false)) {
-                        int level = config.getInt("talent-levels." + profession + "." + talent);
-                        data.setTalentLevel(profession, talent, level);
-                    }
-                }
-            }
-
-            if (config.contains("kit-levels")) {
-                for (String profession : config.getConfigurationSection("kit-levels").getKeys(false)) {
-                    int level = config.getInt("kit-levels." + profession);
-                    data.setKitLevel(profession, level);
-                }
-            }
-
-            if (config.contains("profession-rewards")) {
-                for (String profession : config.getConfigurationSection("profession-rewards").getKeys(false)) {
-                    List<Integer> claimedLevels = config.getIntegerList("profession-rewards." + profession);
-                    for (int level : claimedLevels) {
-                        data.claimProfessionReward(profession, level);
-                    }
-                }
-            }
-
-            ConfigurationSection columnsSection = config.getConfigurationSection("prestige.chosen-columns");
-            if (columnsSection != null) {
-                Map<Integer, PrestigeTalent> chosenColumns = new HashMap<>();
-                Map<PrestigeTalent, Integer> activeTalents = new HashMap<>();
-
-                for (String key : columnsSection.getKeys(false)) {
-                    try {
-                        int level = Integer.parseInt(key);
-                        String talentName = columnsSection.getString(key);
-                        PrestigeTalent talent = PrestigeTalent.valueOf(talentName);
-
-                        chosenColumns.put(level, talent);
-                        // Compter pour les bonus actifs
-                        activeTalents.put(talent, activeTalents.getOrDefault(talent, 0) + 1);
-
-                    } catch (Exception e) {
-                        plugin.getPluginLogger().warning("Choix de colonne invalide: " + key);
-                    }
-                }
-
-                data.setChosenPrestigeColumns(chosenColumns);
-                data.setPrestigeTalents(activeTalents);
-            }
-
-            // Charger les choix de récompenses spéciales (nouveau système)
-            ConfigurationSection rewardsSection = config.getConfigurationSection("prestige.chosen-special-rewards");
-            if (rewardsSection != null) {
-                Map<Integer, String> chosenRewards = new HashMap<>();
-                Map<String, Boolean> unlockedRewards = new HashMap<>();
-
-                for (String key : rewardsSection.getKeys(false)) {
-                    try {
-                        int level = Integer.parseInt(key);
-                        String rewardId = rewardsSection.getString(key);
-
-                        chosenRewards.put(level, rewardId);
-                        unlockedRewards.put(rewardId, true);
-                        data.markPrestigeLevelCompleted(level);
-
-                    } catch (Exception e) {
-                        plugin.getPluginLogger().warning("Choix de récompense invalide: " + key);
-                    }
-                }
-
-                data.setChosenSpecialRewards(chosenRewards);
-                data.setUnlockedPrestigeRewards(unlockedRewards);
-            }
-
-            int savedReputation = config.getInt("reputation", 0);
-            if (savedReputation != 0) {
-                data.setReputation(savedReputation);
-            }
-
-            if (config.contains("boosts")) {
-                Map<String, PlayerBoost> loadedBoosts = new HashMap<>();
-                for (String boostKey : config.getConfigurationSection("boosts").getKeys(false)) {
-                    try {
-                        String typeName = config.getString("boosts." + boostKey + ".type");
-                        long startTime = config.getLong("boosts." + boostKey + ".start-time");
-                        long endTime = config.getLong("boosts." + boostKey + ".end-time");
-                        double bonus = config.getDouble("boosts." + boostKey + ".bonus");
-
-                        BoostType type = BoostType.valueOf(typeName);
-                        PlayerBoost boost = new PlayerBoost(type, startTime, endTime, bonus);
-
-                        // Seulement charge les boosts encore actifs
-                        if (boost.isActive()) {
-                            loadedBoosts.put(boostKey, boost);
-                        }
-                    } catch (Exception e) {
-                        plugin.getPluginLogger().warning("Erreur chargement boost " + boostKey +
-                                " pour " + playerName + ": " + e.getMessage());
-                    }
-                }
-
-                if (!loadedBoosts.isEmpty()) {
-                    data.setActiveBoosts(loadedBoosts);
-                    plugin.getPluginLogger().debug("Boosts chargés pour " + playerName + ": " + loadedBoosts.size());
-                }
-            }
-
-            if (config.contains("autominer.active-slot-1")) {
-                ItemStack slot1 = config.getItemStack("autominer.active-slot-1");
-                if (slot1 != null) {
-                    data.setActiveAutominerSlot1(slot1);
-                }
-            }
-
-            if (config.contains("autominer.active-slot-2")) {
-                ItemStack slot2 = config.getItemStack("autominer.active-slot-2");
-                if (slot2 != null) {
-                    data.setActiveAutominerSlot2(slot2);
-                }
-            }
-
-            data.setAutominerFuelReserve(config.getDouble("autominer.fuel-reserve", 0.0));
-            data.setAutominerCurrentWorld(config.getString("autominer.current-world", "mine-a"));
-            data.setAutominerStorageLevel(config.getInt("autominer.storage-level", 0));
-
-            // Charger le contenu du stockage
-            if (config.contains("autominer.storage-contents")) {
-                Map<Material, Long> storageContents = new HashMap<>();
-                ConfigurationSection storageSection = config.getConfigurationSection("autominer.storage-contents");
-                for (String materialName : storageSection.getKeys(false)) {
-                    try {
-                        Material material = Material.valueOf(materialName.toUpperCase());
-                        long amount = storageSection.getLong(materialName);
-                        storageContents.put(material, amount);
-                    } catch (IllegalArgumentException e) {
-                        plugin.getPluginLogger().warning("§cMatériel invalide dans le stockage automineur: " + materialName);
-                    }
-                }
-                data.setAutominerStorageContents(storageContents);
-            }
-
-            // Charger les clés stockées
-            if (config.contains("autominer.stored-keys")) {
-                Map<String, Integer> storedKeys = new HashMap<>();
-                ConfigurationSection keysSection = config.getConfigurationSection("autominer.stored-keys");
-                for (String keyType : keysSection.getKeys(false)) {
-                    int amount = keysSection.getInt(keyType);
-                    storedKeys.put(keyType, amount);
-                }
-                data.setAutominerStoredKeys(storedKeys);
-            }
-
-            // NOUVEAU: Charger les gains en attente
-            data.setAutominerPendingCoins(config.getLong("autominer.pending-coins", 0));
-            data.setAutominerPendingTokens(config.getLong("autominer.pending-tokens", 0));
-            data.setAutominerPendingExperience(config.getLong("autominer.pending-experience", 0));
-            data.setAutominerPendingBeacons(config.getLong("autominer.pending-beacons", 0));
-
-            long savedSavingsBalance = config.getLong("bank.savings-balance", 0);
-            long savedSafeBalance = config.getLong("bank.safe-balance", 0);
-            int savedBankLevel = config.getInt("bank.level", 1);
-            long savedTotalDeposits = config.getLong("bank.total-deposits", 0);
-            long savedLastInterest = config.getLong("bank.last-interest", System.currentTimeMillis());
-
-            if (savedSavingsBalance > 0) data.setSavingsBalance(savedSavingsBalance);
-            if (savedSafeBalance > 0) data.setSafeBalance(savedSafeBalance);
-            if (savedBankLevel > 1) data.setBankLevel(savedBankLevel);
-            if (savedTotalDeposits > 0) data.setTotalBankDeposits(savedTotalDeposits);
-            data.setLastInterestTime(savedLastInterest);
-
-            // Investissements avec support grandes valeurs
-            if (config.contains("bank.investments")) {
-                ConfigurationSection investSection = config.getConfigurationSection("bank.investments");
-                for (String materialName : investSection.getKeys(false)) {
-                    try {
-                        Material material = Material.valueOf(materialName.toUpperCase());
-                        long quantity = investSection.getLong(materialName); // Changé en getLong
-                        if (quantity > 0L) {
-                            data.setInvestment(material, quantity);
-                        }
-                    } catch (IllegalArgumentException e) {
-                        // Matériau invalide, ignore
-                    }
-                }
-            }
-
-            // Statistiques de base
-            data.setTotalBlocksMined(config.getLong("statistics.total-blocks-mined", 0));
-            data.setTotalBlocksDestroyed(config.getLong("statistics.total-blocks-destroyed",
-                    config.getLong("statistics.total-blocks-mined", 0))); // Fallback pour compatibilité
-
-            // Statistiques spécialisées
-            data.setTotalGreedTriggers(config.getLong("statistics.total-greed-triggers", 0));
-            data.setTotalKeysObtained(config.getLong("statistics.total-keys-obtained", 0));
-
-            // Reset des stats de la dernière minute après chargement
-            data.resetLastMinuteStats();
-
-            plugin.getPluginLogger().info("§7Données chargées pour: " + playerName +
-                    " (" + savedCoins + " coins, " + savedTokens + " tokens, " + savedExperience + " exp)" +
-                    " [Pioche: " + coinsViaPickaxe + "c, " + tokensViaPickaxe + "t, " + experienceViaPickaxe + "e]");
-
-            return data;
-
-        } catch (Exception e) {
-            plugin.getPluginLogger().severe("§cErreur lors du chargement des données pour " + playerId + ":");
-            e.printStackTrace();
-            return null;
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Could not save player data to database: " + e.getMessage());
         }
     }
 
-    /**
-     * CORRIGÉ: Sauvegarde les données d'un joueur avec TOUTES les nouvelles données
-     */
-    private void savePlayerDataToFile(UUID playerId, PlayerData data) {
-        File playerFile = new File(playerDataFolder, playerId.toString() + ".yml");
-
-        try {
-            FileConfiguration config = new YamlConfiguration();
-
-            // Informations de base
-            config.set("name", data.getPlayerName());
-            config.set("uuid", playerId.toString());
-            config.set("last-save", System.currentTimeMillis());
-
-            // Monnaies TOTALES
-            config.set("coins", data.getCoins());
-            config.set("tokens", data.getTokens());
-            config.set("experience", data.getExperience());
-            config.set("beacons", data.getBeacons());
-
-            // NOUVEAU: Gains spécifiques VIA PIOCHE
-            config.set("coins-via-pickaxe", data.getCoinsViaPickaxe());
-            config.set("tokens-via-pickaxe", data.getTokensViaPickaxe());
-            config.set("experience-via-pickaxe", data.getExperienceViaPickaxe());
-
-            plugin.getPluginLogger().debug("Sauvegarde de " + data.getPlayerName() +
-                    ": " + data.getCoins() + " coins (" + data.getCoinsViaPickaxe() + " pioche), " +
-                    data.getTokens() + " tokens (" + data.getTokensViaPickaxe() + " pioche), " +
-                    data.getExperience() + " exp (" + data.getExperienceViaPickaxe() + " pioche)" +
-                    data.getBeacons() + " beacons");
-
-            // Enchantements
-            Map<String, Integer> enchantments = data.getEnchantmentLevels();
-            if (!enchantments.isEmpty()) {
-                for (Map.Entry<String, Integer> entry : enchantments.entrySet()) {
-                    config.set("enchantments." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            // Auto-upgrade activé
-            Set<String> autoUpgrade = data.getAutoUpgradeEnabled();
-            if (!autoUpgrade.isEmpty()) {
-                config.set("auto-upgrade", new ArrayList<>(autoUpgrade));
-            }
-
-            // NOUVEAU: Enchantements mobilité désactivés
-            Set<String> mobilityDisabled = data.getMobilityEnchantmentsDisabled();
-            if (!mobilityDisabled.isEmpty()) {
-                config.set("mobility-disabled", new ArrayList<>(mobilityDisabled));
-            }
-
-            Map<String, String> pickaxeCristals = data.getPickaxeCristals();
-            if (!pickaxeCristals.isEmpty()) {
-                for (Map.Entry<String, String> entry : pickaxeCristals.entrySet()) {
-                    config.set("pickaxe-cristals." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            // NOUVEAU: Historique des sanctions
-            List<PlayerData.SanctionData> sanctions = data.getSanctionHistory();
-            if (!sanctions.isEmpty()) {
-                for (int i = 0; i < sanctions.size(); i++) {
-                    PlayerData.SanctionData sanction = sanctions.get(i);
-                    String path = "sanctions." + i + ".";
-                    config.set(path + "type", sanction.type());
-                    config.set(path + "reason", sanction.reason());
-                    config.set(path + "moderator", sanction.moderator());
-                    config.set(path + "startTime", sanction.startTime());
-                    config.set(path + "endTime", sanction.endTime());
-                }
-            }
-
-            Set<String> permissions = data.getCustomPermissions();
-            if (!permissions.isEmpty()) {
-                config.set("custom-permissions", new ArrayList<>(permissions));
-            }
-
-            Set<String> pickaxeEnchantmentBooks = data.getPLayerEnchantmentBooks();
-            if (!pickaxeEnchantmentBooks.isEmpty()) {
-                config.set("pickaxe-enchantment-books", new ArrayList<>(pickaxeEnchantmentBooks));
-            }
-
-            Set<String> activeEnchants = data.getActiveEnchantmentBooks();
-            if (!activeEnchants.isEmpty()) {
-                config.set("active-enchantments", new ArrayList<>(activeEnchants));
-            }
-
-            // Système de métiers
-            if (data.getActiveProfession() != null) {
-                config.set("active-profession", data.getActiveProfession());
-            }
-            config.set("last-profession-change", data.getLastProfessionChange());
-
-            // Niveaux de métiers
-            Map<String, Integer> professionLevels = data.getAllProfessionLevels();
-            if (!professionLevels.isEmpty()) {
-                for (Map.Entry<String, Integer> entry : professionLevels.entrySet()) {
-                    config.set("profession-levels." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            // XP des métiers
-            Map<String, Integer> professionXP = data.getAllProfessionXP();
-            if (!professionXP.isEmpty()) {
-                for (Map.Entry<String, Integer> entry : professionXP.entrySet()) {
-                    config.set("profession-xp." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            // Talents métier
-            Map<String, Map<String, Integer>> talentLevels = data.getAllTalentLevels();
-            if (!talentLevels.isEmpty()) {
-                for (Map.Entry<String, Map<String, Integer>> professionEntry : talentLevels.entrySet()) {
-                    for (Map.Entry<String, Integer> talentEntry : professionEntry.getValue().entrySet()) {
-                        config.set("talent-levels." + professionEntry.getKey() + "." + talentEntry.getKey(), talentEntry.getValue());
-                    }
-                }
-            }
-
-            Map<String, Integer> kitLevels = data.getAllKitLevels();
-            if (!kitLevels.isEmpty()) {
-                for (Map.Entry<String, Integer> entry : kitLevels.entrySet()) {
-                    config.set("kit-levels." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            if (!data.getAllClaimedProfessionRewards().isEmpty()) {
-                for (Map.Entry<String, Set<Integer>> entry : data.getAllClaimedProfessionRewards().entrySet()) {
-                    String profession = entry.getKey();
-                    Set<Integer> claimedLevels = entry.getValue();
-                    if (!claimedLevels.isEmpty()) {
-                        config.set("profession-rewards." + profession, new ArrayList<>(claimedLevels));
-                    }
-                }
-            }
-
-            Map<Integer, PrestigeTalent> chosenColumns = data.getChosenPrestigeColumns();
-            if (!chosenColumns.isEmpty()) {
-                for (Map.Entry<Integer, PrestigeTalent> entry : chosenColumns.entrySet()) {
-                    config.set("prestige.chosen-columns." + entry.getKey(), entry.getValue().name());
-                }
-            }
-
-            // Nouveau système : Choix de récompenses spéciales (exclusif)
-            Map<Integer, String> chosenRewards = data.getChosenSpecialRewards();
-            if (!chosenRewards.isEmpty()) {
-                for (Map.Entry<Integer, String> entry : chosenRewards.entrySet()) {
-                    config.set("prestige.chosen-special-rewards." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            Map<String, PlayerBoost> boosts = data.getActiveBoosts();
-            if (!boosts.isEmpty()) {
-                for (Map.Entry<String, PlayerBoost> entry : boosts.entrySet()) {
-                    PlayerBoost boost = entry.getValue();
-                    String path = "boosts." + entry.getKey();
-                    config.set(path + ".type", boost.getType().name());
-                    config.set(path + ".start-time", boost.getStartTime());
-                    config.set(path + ".end-time", boost.getEndTime());
-                    config.set(path + ".bonus", boost.getBonusPercentage());
-                }
-            }
-
-            config.set("reputation", data.getReputation());
-
-            if (data.getActiveAutominerSlot1() != null) {
-                config.set("autominer.active-slot-1", data.getActiveAutominerSlot1());
-            }
-
-            if (data.getActiveAutominerSlot2() != null) {
-                config.set("autominer.active-slot-2", data.getActiveAutominerSlot2());
-            }
-
-            config.set("autominer.fuel-reserve", data.getAutominerFuelReserve());
-            config.set("autominer.current-world", data.getAutominerCurrentWorld());
-            config.set("autominer.storage-level", data.getAutominerStorageLevel());
-
-            // Sauvegarder le contenu du stockage
-            Map<Material, Long> storageContents = data.getAutominerStorageContents();
-            if (!storageContents.isEmpty()) {
-                for (Map.Entry<Material, Long> entry : storageContents.entrySet()) {
-                    config.set("autominer.storage-contents." + entry.getKey().name().toLowerCase(), entry.getValue());
-                }
-            }
-
-            // Sauvegarder les clés stockées
-            Map<String, Integer> storedKeys = data.getAutominerStoredKeys();
-            if (!storedKeys.isEmpty()) {
-                for (Map.Entry<String, Integer> entry : storedKeys.entrySet()) {
-                    config.set("autominer.stored-keys." + entry.getKey(), entry.getValue());
-                }
-            }
-
-            config.set("bank.savings-balance", data.getSavingsBalance());
-            config.set("bank.safe-balance", data.getSafeBalance());
-            config.set("bank.level", data.getBankLevel());
-            config.set("bank.total-deposits", data.getTotalBankDeposits());
-            config.set("bank.last-interest", data.getLastInterestTime());
-
-            // Investissements avec support grandes valeurs
-            Map<Material, Long> investments = data.getAllInvestments();
-            if (!investments.isEmpty()) {
-                for (Map.Entry<Material, Long> entry : investments.entrySet()) {
-                    config.set("bank.investments." + entry.getKey().name().toLowerCase(), entry.getValue());
-                }
-            }
-
-            // NOUVEAU: Sauvegarder les gains en attente
-            config.set("autominer.pending-coins", data.getAutominerPendingCoins());
-            config.set("autominer.pending-tokens", data.getAutominerPendingTokens());
-            config.set("autominer.pending-experience", data.getAutominerPendingExperience());
-            config.set("autominer.pending-beacons", data.getAutominerPendingBeacons());
-
-
-            // Statistiques complètes
-            config.set("statistics.total-blocks-mined", data.getTotalBlocksMined());
-            config.set("statistics.total-blocks-destroyed", data.getTotalBlocksDestroyed());
-            config.set("statistics.total-greed-triggers", data.getTotalGreedTriggers());
-            config.set("statistics.total-keys-obtained", data.getTotalKeysObtained());
-
-            // Sauvegarde le fichier
-            config.save(playerFile);
-
-            plugin.getPluginLogger().debug("Fichier sauvegardé pour " + data.getPlayerName() +
-                    " avec " + data.getTotalGreedTriggers() + " Greeds et " + data.getTotalKeysObtained() + " clés");
-
-        } catch (IOException e) {
-            plugin.getPluginLogger().severe("§cErreur lors de la sauvegarde pour " + data.getPlayerName() + ":");
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Marque un joueur comme ayant des données modifiées
-     */
     public void markDirty(UUID playerId) {
         dirtyPlayers.add(playerId);
-        plugin.getPluginLogger().debug("Joueur marqué dirty: " + playerId);
     }
 
-    /**
-     * Sauvegarde asynchrone de tous les joueurs avec données modifiées
-     */
     public CompletableFuture<Void> saveAllPlayersAsync() {
         return CompletableFuture.runAsync(() -> {
-            int savedCount = 0;
-
-            // Copie la liste des joueurs à sauvegarder
-            Set<UUID> toSave = new HashSet<>(dirtyPlayers);
-
-            for (UUID playerId : toSave) {
-                PlayerData data = playerDataCache.get(playerId);
-                if (data != null) {
-                    savePlayerDataToFile(playerId, data);
-                    dirtyPlayers.remove(playerId);
-                    savedCount++;
-                }
+            for (UUID playerId : dirtyPlayers) {
+                savePlayerData(playerId);
             }
-
-            if (savedCount > 0) {
-                plugin.getPluginLogger().info("§7Sauvegarde asynchrone: " + savedCount + " joueurs.");
-            }
+            dirtyPlayers.clear();
         });
     }
 
-    /**
-     * Sauvegarde synchrone de tous les joueurs (utiliser uniquement à l'arrêt)
-     */
     public void saveAllPlayersSync() {
-        int savedCount = 0;
-
-        for (Map.Entry<UUID, PlayerData> entry : playerDataCache.entrySet()) {
-            savePlayerDataToFile(entry.getKey(), entry.getValue());
-            savedCount++;
+        for (UUID playerId : playerDataCache.keySet()) {
+            savePlayerData(playerId);
         }
-
         dirtyPlayers.clear();
-        plugin.getPluginLogger().info("§aSauvegarde synchrone terminée: " + savedCount + " joueurs.");
     }
 
-    /**
-     * Sauvegarde un joueur spécifique immédiatement
-     */
     public void savePlayerNow(UUID playerId) {
-        PlayerData data = playerDataCache.get(playerId);
-        if (data != null) {
-            savePlayerDataToFile(playerId, data);
-            dirtyPlayers.remove(playerId);
-        }
+        savePlayerData(playerId);
+        dirtyPlayers.remove(playerId);
     }
 
-    /**
-     * CORRIGÉ : Retire un joueur du cache avec sauvegarde forcée et sync exp finale
-     */
     public void unloadPlayer(UUID playerId) {
-        // NOUVEAU : Synchronisation finale de l'expérience avant sauvegarde
-        Player player = plugin.getServer().getPlayer(playerId);
-        PlayerData data = playerDataCache.get(playerId);
-
-        if (player != null && player.isOnline() && data != null) {
-            try {
-                // Sync finale pour s'assurer que l'exp vanilla est à jour
-                plugin.getEconomyManager().updateVanillaExpFromCustom(player, data.getExperience());
-            } catch (Exception e) {
-                plugin.getPluginLogger().warning("Erreur sync exp finale pour " +
-                        data.getPlayerName() + ": " + e.getMessage());
-            }
-        }
-
-        // Sauvegarde FORCÉE avant de décharger
-        if (data != null) {
-            savePlayerDataToFile(playerId, data);
-            dirtyPlayers.remove(playerId);
-            plugin.getPluginLogger().info("§7Données sauvegardées pour: " + data.getPlayerName() +
-                    " (" + data.getCoins() + " coins, " + data.getTokens() + " tokens, " +
-                    data.getTotalGreedTriggers() + " Greeds)");
-        }
-
+        savePlayerNow(playerId);
         playerDataCache.remove(playerId);
-        plugin.getPluginLogger().info("§7Joueur déchargé du cache: " + playerId);
     }
 
-    /**
-     * Obtient le nom d'un joueur
-     */
     private String getPlayerName(UUID playerId) {
         Player player = plugin.getServer().getPlayer(playerId);
-        if (player != null) {
-            return player.getName();
-        }
-
-        // Essaie de récupérer depuis l'historique
-        return plugin.getServer().getOfflinePlayer(playerId).getName();
+        return player != null ? player.getName() : "Unknown";
     }
 
-    /**
-     * Retourne tous les joueurs en cache
-     */
     public Collection<PlayerData> getAllCachedPlayers() {
-        return new ArrayList<>(playerDataCache.values());
+        return playerDataCache.values();
     }
 
-    /**
-     * Nettoie le cache des joueurs déconnectés
-     */
     public void cleanupCache() {
-        Set<UUID> onlinePlayerIds = new HashSet<>();
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            onlinePlayerIds.add(player.getUniqueId());
-        }
-
-        // Sauvegarde et retire les joueurs hors ligne
-        int removedCount = 0;
-        Iterator<Map.Entry<UUID, PlayerData>> iterator = playerDataCache.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, PlayerData> entry = iterator.next();
-            UUID playerId = entry.getKey();
-
-            if (!onlinePlayerIds.contains(playerId)) {
-                // Sauvegarde avant suppression
-                savePlayerDataToFile(playerId, entry.getValue());
-                dirtyPlayers.remove(playerId);
-
-                iterator.remove();
-                removedCount++;
-            }
-        }
-
-        if (removedCount > 0) {
-            plugin.getPluginLogger().info("§7Cache nettoyé: " + removedCount + " joueurs hors ligne retirés.");
-        }
+        // No-op with database
     }
 }

@@ -28,15 +28,13 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class CrateListener implements Listener {
 
+    // Délai minimum entre les interactions (en millisecondes)
+    private static final long INTERACTION_COOLDOWN = 1000; // 1 seconde
     private final PrisonTycoon plugin;
     private final CrateManager crateManager;
     private final CrateGUI crateGUI;
-
     // Cache pour éviter le spam de clics
     private final ConcurrentMap<Player, Long> lastInteraction;
-
-    // Délai minimum entre les interactions (en millisecondes)
-    private static final long INTERACTION_COOLDOWN = 1000; // 1 seconde
 
     public CrateListener(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -274,8 +272,8 @@ public class CrateListener implements Listener {
 
         // Animation prolongée
         new BukkitRunnable() {
-            int ticks = 0;
             final int maxTicks = intensity * 2;
+            int ticks = 0;
 
             @Override
             public void run() {

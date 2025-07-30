@@ -106,8 +106,6 @@ public class VipCommand implements CommandExecutor, TabCompleter {
 
         if (isAlreadyVip) {
             sender.sendMessage("§c❌ Ce joueur est déjà VIP!");
-            // La cible est forcément en ligne, donc la vérification target.isOnline() est inutile
-            sender.sendMessage("§7Status: §e" + plugin.getVipManager().getVipStatusDetailed(target.getUniqueId()));
             return;
         }
 

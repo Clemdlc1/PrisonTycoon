@@ -348,7 +348,7 @@ commands:
     usage: /bank [deposit|withdraw|invest|safe|improve|help] [args...]
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [banque, banco, bank]
+    aliases: [ banque, banco, bank ]
 
   tankadmin:
     description: "Commandes d'administration pour les Tanks et Sell Hands"
