@@ -1,5 +1,6 @@
 package fr.prisontycoon.boosts;
 
+import fr.prisontycoon.gangs.GangBoostType;
 import org.bukkit.Material;
 
 /**
@@ -26,7 +27,17 @@ public enum BoostType {
             Material.ANVIL, 75.0, 3600),
 
     GLOBAL_BOOST("Global", "§c🌟 Boost Global", "§7+25% sur tous les gains",
-            Material.NETHER_STAR, 25.0, 1800);
+            Material.NETHER_STAR, 25.0, 1800),
+
+    TOKEN_BOOST("Token Boost", "§b💎 Boost Token", "§7+50% de gains de tokens",
+            Material.DIAMOND, 50.0, 3600),
+
+    EXPERIENCE_BOOST("Experience Boost", "§a⭐ Boost XP", "§7+50% de gains d'expérience",
+            Material.EXPERIENCE_BOTTLE, 50.0, 3600),
+
+    BEACON_BOOST("Beacon Boost", "§c🔥 Boost Beacon", "§7+50% de gains de beacons",
+            Material.BEACON, 50.0, 3600);
+
 
     private final String displayName;
     private final String itemName;
@@ -89,13 +100,13 @@ public enum BoostType {
      */
     public String getColor() {
         return switch (this) {
-            case TOKEN_GREED -> "§b";
+            case TOKEN_GREED, TOKEN_BOOST -> "§b";
             case MONEY_GREED -> "§6";
-            case EXP_GREED -> "§a";
+            case EXP_GREED, EXPERIENCE_BOOST -> "§a";
             case SELL_BOOST -> "§e";
             case MINERAL_GREED -> "§9";
             case JOB_XP_BOOST -> "§d";
-            case GLOBAL_BOOST -> "§c";
+            case GLOBAL_BOOST, BEACON_BOOST -> "§c";
         };
     }
 
@@ -104,13 +115,27 @@ public enum BoostType {
      */
     public String getEmoji() {
         return switch (this) {
-            case TOKEN_GREED -> "💎";
+            case TOKEN_GREED, TOKEN_BOOST -> "💎";
             case MONEY_GREED -> "💰";
-            case EXP_GREED -> "⭐";
+            case EXP_GREED, EXPERIENCE_BOOST -> "⭐";
             case SELL_BOOST -> "💸";
             case MINERAL_GREED -> "⛏️";
             case JOB_XP_BOOST -> "🔨";
             case GLOBAL_BOOST -> "🌟";
+            case BEACON_BOOST -> "🔥";
+        };
+    }
+
+    /**
+     * Obtient le GangBoostType correspondant à ce BoostType
+     */
+    public GangBoostType getCorrespondingGangBoostType() {
+        return switch (this) {
+            case SELL_BOOST -> fr.prisontycoon.gangs.GangBoostType.VENTE;
+            case TOKEN_BOOST -> fr.prisontycoon.gangs.GangBoostType.TOKEN;
+            case EXPERIENCE_BOOST -> fr.prisontycoon.gangs.GangBoostType.XP;
+            case BEACON_BOOST -> fr.prisontycoon.gangs.GangBoostType.BEACONS;
+            default -> null;
         };
     }
 

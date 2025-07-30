@@ -442,7 +442,7 @@ public class MineManager {
     /**
      * Vérifie si un rang est suffisant pour accéder à une mine
      */
-    private boolean isRankSufficient(String currentRank, String requiredRank) {
+    public boolean isRankSufficient(String currentRank, String requiredRank) {
         if (currentRank == null || requiredRank == null) return false;
         return currentRank.compareToIgnoreCase(requiredRank) >= 0;
     }

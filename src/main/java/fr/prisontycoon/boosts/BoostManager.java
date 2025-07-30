@@ -1,7 +1,9 @@
 package fr.prisontycoon.boosts;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.gangs.GangBoostType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -27,6 +29,7 @@ public class BoostManager {
 
     // Boosts actifs par joueur (non-admin uniquement)
     private final Map<UUID, Map<BoostType, PlayerBoost>> activePlayerBoosts;
+    private final Map<String, Map<GangBoostType, GangBoost>> activeGangBoosts; // gangId -> boosts
 
     // Boosts admin globaux (temporaires, non sauvegardés)
     private final Map<BoostType, PlayerBoost> globalAdminBoosts;
@@ -38,6 +41,8 @@ public class BoostManager {
         this.boostBonusKey = new NamespacedKey(plugin, "boost_bonus");
 
         this.activePlayerBoosts = new ConcurrentHashMap<>();
+        this.activeGangBoosts = new ConcurrentHashMap<>();
+
         this.globalAdminBoosts = new ConcurrentHashMap<>();
 
         // Lance la tâche de nettoyage des boosts expirés
@@ -373,5 +378,143 @@ public class BoostManager {
             }
             return false;
         });
+
+        
+        // Nettoie les boosts de gang expirés
+        for (Map.Entry<String, Map<GangBoostType, GangBoost>> gangEntry : activeGangBoosts.entrySet()) {
+            String gangId = gangEntry.getKey();
+            Map<GangBoostType, GangBoost> gangBoosts = gangEntry.getValue();
+
+            Iterator<Map.Entry<GangBoostType, GangBoost>> iterator = gangBoosts.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<GangBoostType, GangBoost> entry = iterator.next();
+                if (entry.getValue().isExpired()) {
+                    iterator.remove();
+
+                    // Notifier le gang de l'expiration
+                    Gang gang = plugin.getGangManager().getGang(gangId);
+                    if (gang != null) {
+                        gang.broadcast("§c⏰ Boost " + entry.getKey().getDisplayName() + " §cexpiré!", null);
+                    }
+                }
+            }
+
+            // Supprimer les maps vides
+            if (gangBoosts.isEmpty()) {
+                activeGangBoosts.remove(gangId);
+            }
+        }
+    }
+
+    /**
+     * Ajoute un boost de gang
+     */
+    public void addGangBoost(Gang gang, GangBoostType boostType, int tier) {
+        double[] multipliers = {1.5, 2.0, 3.0};
+        int[] durations = {30, 60, 180}; // minutes
+
+        long durationMs = durations[tier - 1] * 60 * 1000;
+        long expirationTime = System.currentTimeMillis() + durationMs;
+
+        GangBoost boostData = new GangBoost(
+                boostType,
+                multipliers[tier - 1],
+                expirationTime,
+                gang.getLeader()
+        );
+
+        activeGangBoosts.computeIfAbsent(gang.getId(), k -> new ConcurrentHashMap<>())
+                .put(boostType, boostData);
+
+        plugin.getPluginLogger().info("Boost de gang activé: " + boostType + " x" + multipliers[tier - 1] +
+                " pour " + gang.getName() + " (" + durations[tier - 1] + " min)");
+    }
+
+    /**
+     * Vérifie si un gang a un boost actif
+     */
+    public boolean hasActiveGangBoost(String gangId, GangBoostType boostType) {
+        Map<GangBoostType, GangBoost> gangBoosts = activeGangBoosts.get(gangId);
+        if (gangBoosts == null) return false;
+
+        GangBoost boostData = gangBoosts.get(boostType);
+        if (boostData == null || boostData.isExpired()) {
+            if (boostData != null) {
+                gangBoosts.remove(boostType);
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Obtient le multiplicateur d'un boost de gang
+     */
+    public double getGangBoostMultiplier(String gangId, GangBoostType boostType) {
+        if (!hasActiveGangBoost(gangId, boostType)) return 1.0;
+
+        Map<GangBoostType, GangBoost> gangBoosts = activeGangBoosts.get(gangId);
+        GangBoost boostData = gangBoosts.get(boostType);
+
+        return boostData != null ? boostData.getMultiplier() : 1.0;
+    }
+
+    /**
+     * Obtient le bonus total incluant les boosts individuels et de gang
+     */
+    public double getTotalBoostBonusWithGang(Player player, BoostType type) {
+        double totalBonus = getTotalBoostBonus(player, type);
+
+        // Ajouter les boosts de gang
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (playerData.getGangId() != null) {
+            GangBoostType gangBoostType = mapBoostTypeToGangBoostType(type);
+            if (gangBoostType != null) {
+                double gangMultiplier = getGangBoostMultiplier(playerData.getGangId(), gangBoostType);
+                if (gangMultiplier > 1.0) {
+                    totalBonus += (gangMultiplier - 1.0) * 100; // Convertir multiplicateur en pourcentage
+                }
+            }
+        }
+
+        return totalBonus;
+    }
+
+    /**
+     * Mappe un BoostType vers un GangBoostType
+     */
+    private GangBoostType mapBoostTypeToGangBoostType(BoostType type) {
+        return switch (type) {
+            case SELL_BOOST -> GangBoostType.VENTE;
+            case TOKEN_BOOST -> GangBoostType.TOKEN;
+            case EXPERIENCE_BOOST -> GangBoostType.XP;
+            case BEACON_BOOST -> GangBoostType.BEACONS;
+            default -> null;
+        };
+    }
+
+    /**
+     * Obtient tous les boosts de gang actifs pour un gang
+     */
+    public List<GangBoost> getActiveGangBoosts(String gangId) {
+        Map<GangBoostType, GangBoost> gangBoosts = activeGangBoosts.get(gangId);
+        if (gangBoosts == null) return new ArrayList<>();
+
+        List<GangBoost> activeBoosts = new ArrayList<>();
+        Iterator<Map.Entry<GangBoostType, GangBoost>> iterator = gangBoosts.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<GangBoostType, GangBoost> entry = iterator.next();
+            GangBoost boostData = entry.getValue();
+
+            if (boostData.isExpired()) {
+                iterator.remove();
+            } else {
+                activeBoosts.add(boostData);
+            }
+        }
+
+        return activeBoosts;
     }
 }

@@ -356,6 +356,15 @@ commands:
     permission: prisontycoon.tankadmin
     aliases: [ "ta", "tanks" ]
 
+  gang:
+    description: "Commandes principales des gangs"
+    usage: "/gang [help|create|invite|...]"
+    aliases: [ ]
+  g:
+    description: "Chat du gang"
+    usage: "/g <message>"
+    aliases: [ ]
+
 # Compatibilité
 depend-bootstrap: false
 

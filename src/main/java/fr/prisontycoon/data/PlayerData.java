@@ -110,6 +110,9 @@ public class PlayerData {
     private long totalBankDeposits = 0;
     private long lastInterestTime = System.currentTimeMillis();
 
+    private String gangId;
+    private String gangInvitation; // ID du gang qui a invité ce joueur
+
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
         this.playerName = playerName;
@@ -163,6 +166,9 @@ public class PlayerData {
         this.autominerPendingTokens = 0L;
         this.autominerPendingExperience = 0L;
         this.autominerPendingBeacons = 0L;
+
+        this.gangId = null;
+        this.gangInvitation = null;
 
         // Reset stats dernière minute
         resetLastMinuteStats();
@@ -1712,5 +1718,47 @@ public class PlayerData {
     }
 
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    /**
+     * Obtient l'ID du gang du joueur
+     */
+    public String getGangId() {
+        return gangId;
+    }
+
+    /**
+     * Définit l'ID du gang du joueur
+     */
+    public void setGangId(String gangId) {
+        this.gangId = gangId;
+    }
+
+    /**
+     * Obtient l'invitation de gang en attente
+     */
+    public String getGangInvitation() {
+        return gangInvitation;
+    }
+
+    /**
+     * Définit l'invitation de gang en attente
+     */
+    public void setGangInvitation(String gangInvitation) {
+        this.gangInvitation = gangInvitation;
+    }
+
+    /**
+     * Vérifie si le joueur est dans un gang
+     */
+    public boolean hasGang() {
+        return gangId != null;
+    }
+
+    /**
+     * Vérifie si le joueur a une invitation de gang en attente
+     */
+    public boolean hasPendingGangInvitation() {
+        return gangInvitation != null;
     }
 }

@@ -85,7 +85,9 @@ public class PlayerDataManager {
                         statistics_total_blocks_mined BIGINT,
                         statistics_total_blocks_destroyed BIGINT,
                         statistics_total_greed_triggers BIGINT,
-                        statistics_total_keys_obtained BIGINT
+                        statistics_total_keys_obtained BIGINT,
+                        gang_id VARCHAR(36),
+                        gang_invitation VARCHAR(36)
                     );
                 """;
 
@@ -186,6 +188,8 @@ public class PlayerDataManager {
                 data.setTotalBlocksDestroyed(rs.getLong("statistics_total_blocks_destroyed"));
                 data.setTotalGreedTriggers(rs.getLong("statistics_total_greed_triggers"));
                 data.setTotalKeysObtained(rs.getLong("statistics_total_keys_obtained"));
+                data.setGangId(rs.getString("gang_id"));
+                data.setGangInvitation(rs.getString("gang_invitation"));
 
                 return data;
             }
@@ -202,8 +206,8 @@ public class PlayerDataManager {
         }
 
         String query = """
-                    INSERT INTO players (uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, tokens_via_pickaxe, experience_via_pickaxe, active_profession, last_profession_change, enchantments, auto_upgrade, mobility_disabled, pickaxe_cristals, custom_permissions, sanctions, active_enchantments, pickaxe_enchantment_books, profession_levels, profession_xp, talent_levels, kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, autominer_fuel_reserve, autominer_current_world, autominer_storage_level, autominer_storage_contents, autominer_stored_keys, autominer_pending_coins, autominer_pending_tokens, autominer_pending_experience, autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO players (uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, tokens_via_pickaxe, experience_via_pickaxe, active_profession, last_profession_change, enchantments, auto_upgrade, mobility_disabled, pickaxe_cristals, custom_permissions, sanctions, active_enchantments, pickaxe_enchantment_books, profession_levels, profession_xp, talent_levels, kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, autominer_fuel_reserve, autominer_current_world, autominer_storage_level, autominer_storage_contents, autominer_stored_keys, autominer_pending_coins, autominer_pending_tokens, autominer_pending_experience, autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, gang_id, gang_invitation)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
                         coins = EXCLUDED.coins,
@@ -252,7 +256,9 @@ public class PlayerDataManager {
                         statistics_total_blocks_mined = EXCLUDED.statistics_total_blocks_mined,
                         statistics_total_blocks_destroyed = EXCLUDED.statistics_total_blocks_destroyed,
                         statistics_total_greed_triggers = EXCLUDED.statistics_total_greed_triggers,
-                        statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained;
+                        statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained,
+                        gang_id = EXCLUDED.gang_id,
+                        gang_invitation = EXCLUDED.gang_invitation;
                 """;
 
         try (Connection conn = databaseManager.getConnection();
@@ -307,6 +313,8 @@ public class PlayerDataManager {
             ps.setLong(47, data.getTotalBlocksDestroyed());
             ps.setLong(48, data.getTotalGreedTriggers());
             ps.setLong(49, data.getTotalKeysObtained());
+            ps.setString(50, data.getGangId());
+            ps.setString(51, data.getGangInvitation());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -344,7 +352,7 @@ public class PlayerDataManager {
         playerDataCache.remove(playerId);
     }
 
-    private String getPlayerName(UUID playerId) {
+    public String getPlayerName(UUID playerId) {
         Player player = plugin.getServer().getPlayer(playerId);
         return player != null ? player.getName() : "Unknown";
     }

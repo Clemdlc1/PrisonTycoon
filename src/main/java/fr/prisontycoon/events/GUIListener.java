@@ -65,6 +65,10 @@ public class GUIListener implements Listener {
             return;
         }
 
+        if (event.getClickedInventory() == player.getInventory()) {
+            handleBannerCreationClick(player, event);
+        }
+
         // Si on arrive ici, le clic a eu lieu dans l'inventaire du haut (le GUI)
         if (!isPluginGUI(title)) return;
 
@@ -89,6 +93,8 @@ public class GUIListener implements Listener {
             plugin.getAutominerCondHeadGUI().handleCondensationClose(player, event.getInventory());
         } else if (title.contains("Ajout de Carburant")) {
             plugin.getAutominerCondHeadGUI().handleFuelClose(player, event.getInventory());
+        } else if (title.contains("Gang") || title.contains("GANG")) {
+            plugin.getGangGUI().closeGui(player);
         }
     }
 
@@ -154,6 +160,14 @@ public class GUIListener implements Listener {
             plugin.getBankGUI().handleMainMenuClick(player, slot, item);
         } else if (title.contains("📈 Investissements")) {
             plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
+        } else if (title.contains("GANG") || title.contains("Gang")) {
+            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Boutique - ") || title.contains("Amélioration - ")) {
+            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Liste des Gangs")) {
+            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
+        } else if (title.contains("Créateur de Bannière")) {
+            plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
         }
     }
 
@@ -205,6 +219,21 @@ public class GUIListener implements Listener {
     }
 
     /**
+     * Gère les clics dans l'inventaire du joueur pour les bannières de gang
+     */
+    private void handleBannerCreationClick(Player player, InventoryClickEvent event) {
+        if (!event.getView().getTitle().contains("Créateur de Bannière")) {
+            return;
+        }
+
+        ItemStack clickedItem = event.getCurrentItem();
+        if (clickedItem != null && clickedItem.getType().name().contains("BANNER")) {
+            plugin.getGangGUI().handleBannerSelection(player, clickedItem);
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * Vérifie si c'est un GUI du plugin (sauf conteneurs)
      */
     private boolean isPluginGUI(String title) {
@@ -241,6 +270,12 @@ public class GUIListener implements Listener {
                 title.contains("Stockage Automineur") ||
                 title.contains("🛠") ||
                 title.contains("📈 Investissements") ||
-                title.contains("🏦 Banque PrisonTycoon");
+                title.contains("🏦 Banque PrisonTycoon") ||
+                title.contains("GANG") ||
+                title.contains("Gang") ||
+                title.contains("Boutique - ") ||
+                title.contains("Amélioration - ") ||
+                title.contains("Liste des Gangs") ||
+                title.contains("Créateur de Bannière");
     }
 }

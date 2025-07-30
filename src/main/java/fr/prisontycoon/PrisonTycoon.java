@@ -56,6 +56,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private CrateManager crateManager;
     private TankManager tankManager;
     private SellHandManager sellHandManager;
+    private GangManager gangManager;
 
     private Logger logger;
 
@@ -75,6 +76,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private BankGUI bankGUI;
     private CrateGUI crateGUI;
     private TankGUI tankGUI;
+    private GangGUI gangGUI;
 
     //cristaux
     private CristalManager cristalManager;
@@ -240,6 +242,7 @@ public final class PrisonTycoon extends JavaPlugin {
         crateManager = new CrateManager(this);
         tankManager = new TankManager(this);
         sellHandManager = new SellHandManager(this);
+        gangManager = new GangManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -271,7 +274,7 @@ public final class PrisonTycoon extends JavaPlugin {
         bankGUI = new BankGUI(this);
         crateGUI = new CrateGUI(this);
         tankGUI = new TankGUI(this);
-
+        gangGUI = new GangGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -366,6 +369,8 @@ public final class PrisonTycoon extends JavaPlugin {
 
         getCommand("tankadmin").setExecutor(new TankAdminCommand(this));
         getCommand("tankadmin").setTabCompleter(new TankAdminCommand(this));
+        getCommand("gang").setExecutor(new GangCommand(this));
+        getCommand("g").setExecutor(new GangCommand(this));
 
 
         logger.info("§aCommandes enregistrées.");
@@ -478,6 +483,9 @@ public final class PrisonTycoon extends JavaPlugin {
         if (autominerTask != null) {
             autominerTask.cancel();
             getPluginLogger().info("§7Tâche d'automineur arrêtée.");
+        }
+        if (gangManager != null) {
+            gangManager.shutdown();
         }
     }
 
@@ -745,6 +753,20 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    /**
+     * Obtient le gestionnaire des gangs
+     */
+    public GangManager getGangManager() {
+        return gangManager;
+    }
+
+    /**
+     * Obtient l'interface graphique des gangs
+     */
+    public GangGUI getGangGUI() {
+        return gangGUI;
     }
 }
 
