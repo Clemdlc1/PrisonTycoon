@@ -637,11 +637,11 @@ mines:
       max-y: 60
       max-z: -100
     blocks:
-      gold_ore: 0.2
+      gold_ore: 0.1
       diamond_ore: 0.3
-      emerald_ore: 0.3
+      emerald_ore: 0.2
       ancient_debris: 0.2
-      netherite_block: 0.2
+      netherite_block: 0.1
       beacon: 0.03  # 3% de beacons
       coal_ore: 0.07
     display-name: "§d§lMine Prestige XXXI"
@@ -661,10 +661,10 @@ mines:
       max-z: 100
     blocks:
       gold_ore: 0.1
-      diamond_ore: 0.35
+      diamond_ore: 0.3
       emerald_ore: 0.20
       ancient_debris: 0.15
-      netherite_block: 0.20
+      netherite_block: 0.15
       beacon: 0.05  # 5% de beacons
       coal_ore: 0.05
     display-name: "§d§lMine Prestige XLI"
@@ -709,8 +709,8 @@ mines:
       max-z: -800
     blocks:
       diamond_ore: 0.35
-      emerald_ore: 0.35
-      ancient_debris: 0.2
+      emerald_ore: 0.3
+      ancient_debris: 0.15
       netherite_block: 0.15
       beacon: 0.025  # 2.5% de beacons
       gold_ore: 0.025
@@ -790,19 +790,56 @@ economy:
   max-tokens: 999999999999999
 
 # Valeurs de vente des blocs
+# ========================================
+#         CORRECTION CONFIGURATION
+# ========================================
+
+# ✅ FORMAT CORRECT ATTENDU PAR LE CODE:
 block-values:
-  coal_ore: 10
-  iron_ore: 25
-  gold_ore: 50
-  redstone_ore: 75
-  lapis_ore: 100
-  diamond_ore: 250
-  emerald_ore: 500
-  ancient_debris: 1000
-  netherite_block: 2000
-  beacon: 50000  # Beacons valent très cher
-  stone: 1
-  cobblestone: 1
+  coal_ore:
+    coins: 10
+    tokens: 0
+    experience: 0
+  iron_ore:
+    coins: 25
+    tokens: 0
+    experience: 0
+  gold_ore:
+    coins: 50
+    tokens: 0
+    experience: 0
+  redstone_ore:
+    coins: 75
+    tokens: 0
+    experience: 0
+  lapis_ore:
+    coins: 100
+    tokens: 0
+    experience: 0
+  diamond_ore:
+    coins: 250
+    tokens: 0
+    experience: 0
+  emerald_ore:
+    coins: 500
+    tokens: 0
+    experience: 0
+  ancient_debris:
+    coins: 1000
+    tokens: 0
+    experience: 0
+  netherite_block:
+    coins: 2000
+    tokens: 0
+    experience: 0
+  stone:
+    coins: 1
+    tokens: 0
+    experience: 0
+  cobblestone:
+    coins: 1
+    tokens: 0
+    experience: 0
 
 # ========================================
 #     PERMISSIONS ET GROUPES
@@ -1057,12 +1094,10 @@ sell-prices:
   # Items de craft
   iron_nugget: 1
   gold_nugget: 2
-  diamond_nugget: 4
 
   # Autres blocs utiles
   obsidian: 5
   quartz: 4
-  nether_quartz: 4
 
   # Blocs de construction
   oak_log: 2

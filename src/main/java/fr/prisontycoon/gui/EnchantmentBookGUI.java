@@ -49,6 +49,7 @@ public class EnchantmentBookGUI {
         displayEnchantmentBooks(gui, player);
         setupControlButtons(gui);
 
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.ENCHANTMENT_BOOK, gui);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
     }
