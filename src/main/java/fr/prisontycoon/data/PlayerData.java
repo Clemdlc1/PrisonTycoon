@@ -26,7 +26,7 @@ public class PlayerData {
     private final Map<Material, Long> blocksMinedByType;
     // Données thread-safe
     private final Object dataLock = new Object();
-    private final List<SanctionData> sanctionHistory;
+    private List<SanctionData> sanctionHistory;
     private final Map<String, Integer> professionLevels; // profession -> niveau (1-10)
     private final Map<String, Integer> professionXP; // profession -> XP métier
     private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
@@ -305,6 +305,15 @@ public class PlayerData {
         }
     }
 
+    public void setEnchantmentLevel(Map<String, Integer> enchantments) {
+        synchronized (dataLock) {
+            this.enchantmentLevels.clear();
+            if (enchantments != null) {
+                this.enchantmentLevels.putAll(enchantments);
+            }
+        }
+    }
+
     // NOUVEAU: Gestion des enchantements mobilité désactivés
     public boolean isMobilityEnchantmentEnabled(String enchantmentName) {
         return !mobilityEnchantmentsDisabled.contains(enchantmentName);
@@ -315,6 +324,15 @@ public class PlayerData {
             mobilityEnchantmentsDisabled.remove(enchantmentName);
         } else {
             mobilityEnchantmentsDisabled.add(enchantmentName);
+        }
+    }
+
+    public void setMobilityEnchantmentEnabled(Set<String> mobilityDisabled) {
+        synchronized (dataLock) {
+            this.mobilityEnchantmentsDisabled.clear();
+            if (mobilityDisabled != null) {
+                this.mobilityEnchantmentsDisabled.addAll(mobilityDisabled);
+            }
         }
     }
 
@@ -449,6 +467,15 @@ public class PlayerData {
 
     public boolean isAutoUpgradeEnabled(String enchantmentName) {
         return autoUpgradeEnabled.contains(enchantmentName);
+    }
+
+    public void setAutoUpgradeEnabled(Set<String> autoUpgrade) {
+        synchronized (dataLock) {
+            this.autoUpgradeEnabled.clear();
+            if (autoUpgrade != null) {
+                this.autoUpgradeEnabled.addAll(autoUpgrade);
+            }
+        }
     }
 
     // Combustion
@@ -791,6 +818,15 @@ public class PlayerData {
         }
     }
 
+    public void setPickaxeCristal(Map<String, String> cristals) {
+        synchronized (dataLock) {
+            this.pickaxeCristals.clear();
+            if (cristals != null) {
+                this.pickaxeCristals.putAll(cristals);
+            }
+        }
+    }
+
     public void removePickaxeCristal(String cristalUuid) {
         synchronized (dataLock) {
             pickaxeCristals.remove(cristalUuid);
@@ -962,6 +998,15 @@ public class PlayerData {
         return new ArrayList<>(sanctionHistory);
     }
 
+    public void setSanctionHistory(List<SanctionData> sanctions) {
+        synchronized (dataLock) {
+            this.sanctionHistory.clear();
+            if (sanctions != null) {
+                this.sanctionHistory.addAll(sanctions);
+            }
+        }
+    }
+
     /**
      * Obtient le nombre total de sanctions
      */
@@ -1068,11 +1113,29 @@ public class PlayerData {
         return result;
     }
 
+    public void setTalentLevels(Map<String, Map<String, Integer>> talents) {
+        synchronized (dataLock) {
+            this.talentLevels.clear();
+            if (talents != null) {
+                this.talentLevels.putAll(talents);
+            }
+        }
+    }
+
     /**
      * NOUVEAU: Obtient tous les niveaux de kits
      */
     public Map<String, Integer> getAllKitLevels() {
         return new HashMap<>(kitLevels);
+    }
+
+    public void setKitLevels(Map<String, Integer> kits) {
+        synchronized (dataLock) {
+            this.kitLevels.clear();
+            if (kits != null) {
+                this.kitLevels.putAll(kits);
+            }
+        }
     }
 
     /**
@@ -1119,6 +1182,15 @@ public class PlayerData {
             result.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
         return result;
+    }
+
+    public void setClaimedProfessionRewards(Map<String, Set<Integer>> rewards) {
+        synchronized (dataLock) {
+            this.claimedProfessionRewards.clear();
+            if (rewards != null) {
+                this.claimedProfessionRewards.putAll(rewards);
+            }
+        }
     }
 
     /**
@@ -1531,6 +1603,16 @@ public class PlayerData {
         }
     }
 
+    public void setAutominerStorageContents(Material material, long value) {
+        synchronized (dataLock) {
+            if (value <= 0) {
+                autominerStorageContents.remove(material);
+            } else {
+                autominerStorageContents.put(material, value);
+            }
+        }
+    }
+
     // Clés stockées
     public Map<String, Integer> getAutominerStoredKeys() {
         return new HashMap<>(autominerStoredKeys);
@@ -1787,6 +1869,47 @@ public class PlayerData {
                 investments.put(material, quantity);
             }
         }
+    }
+
+    public void setBankInvestment(String materialStr, long value) {
+        try {
+            Material material = Material.valueOf(materialStr);
+            setInvestment(material, value);
+        } catch (IllegalArgumentException e) {
+            // Material not found, handle error
+        }
+    }
+
+    public Map<String, Long> getBankInvestments() {
+        Map<String, Long> stringInvestments = new HashMap<>();
+        for (Map.Entry<Material, Long> entry : investments.entrySet()) {
+            stringInvestments.put(entry.getKey().name(), entry.getValue());
+        }
+        return stringInvestments;
+    }
+
+    public long getBankSavingsBalance() {
+        return getSavingsBalance();
+    }
+
+    public void setBankSavingsBalance(long balance) {
+        setSavingsBalance(balance);
+    }
+
+    public long getBankSafeBalance() {
+        return getSafeBalance();
+    }
+
+    public void setBankSafeBalance(long balance) {
+        setSafeBalance(balance);
+    }
+
+    public long getBankLastInterest() {
+        return getLastInterestTime();
+    }
+
+    public void setBankLastInterest(long time) {
+        setLastInterestTime(time);
     }
 
     /**

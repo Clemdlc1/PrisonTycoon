@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * - Protection contre la corruption JSON
  * - Gestion appropriée de la concurrence
  * - Logique de cache optimisée
- * - Utilisation des vraies méthodes de PlayerData
+ * - BUG FIXÉ: Utilisation des setters au lieu des copies défensives
  */
 public class PlayerDataManager {
 
@@ -67,63 +67,62 @@ public class PlayerDataManager {
     }
 
     /**
-     * Crée la table des joueurs si elle n'existe pas
+     * Création/vérification de la table players avec tous les champs nécessaires
      */
     private void createPlayersTable() {
         String query = """
-                    CREATE TABLE IF NOT EXISTS players (
-                        uuid VARCHAR(36) PRIMARY KEY,
-                        name VARCHAR(16),
-                        coins BIGINT DEFAULT 0,
-                        tokens BIGINT DEFAULT 0,
-                        experience BIGINT DEFAULT 0,
-                        beacons BIGINT DEFAULT 0,
-                        coins_via_pickaxe BIGINT DEFAULT 0,
-                        tokens_via_pickaxe BIGINT DEFAULT 0,
-                        experience_via_pickaxe BIGINT DEFAULT 0,
-                        active_profession VARCHAR(255),
-                        last_profession_change BIGINT DEFAULT 0,
-                        enchantments TEXT DEFAULT '{}',
-                        auto_upgrade TEXT DEFAULT '[]',
-                        mobility_disabled TEXT DEFAULT '[]',
-                        pickaxe_cristals TEXT DEFAULT '{}',
-                        custom_permissions TEXT DEFAULT '[]',
-                        sanctions TEXT DEFAULT '[]',
-                        active_enchantments TEXT DEFAULT '[]',
-                        pickaxe_enchantment_book_levels TEXT DEFAULT '[]',
-                        profession_levels TEXT DEFAULT '{}',
-                        profession_xp TEXT DEFAULT '{}',
-                        talent_levels TEXT DEFAULT '{}',
-                        kit_levels TEXT DEFAULT '{}',
-                        profession_rewards TEXT DEFAULT '{}',
-                        chosen_prestige_columns TEXT DEFAULT '{}',
-                        chosen_special_rewards TEXT DEFAULT '{}',
-                        reputation INT DEFAULT 0,
-                        boosts TEXT DEFAULT '{}',
-                        autominer_active_slot_1 TEXT,
-                        autominer_active_slot_2 TEXT,
-                        autominer_fuel_reserve DOUBLE PRECISION DEFAULT 0,
-                        autominer_current_world VARCHAR(255),
-                        autominer_storage_level INT DEFAULT 1,
-                        autominer_storage_contents TEXT DEFAULT '{}',
-                        autominer_stored_keys TEXT DEFAULT '{}',
-                        autominer_pending_coins BIGINT DEFAULT 0,
-                        autominer_pending_tokens BIGINT DEFAULT 0,
-                        autominer_pending_experience BIGINT DEFAULT 0,
-                        autominer_pending_beacons BIGINT DEFAULT 0,
-                        bank_savings_balance BIGINT DEFAULT 0,
-                        bank_safe_balance BIGINT DEFAULT 0,
-                        bank_level INT DEFAULT 1,
-                        bank_total_deposits BIGINT DEFAULT 0,
-                        bank_last_interest BIGINT DEFAULT 0,
-                        bank_investments TEXT DEFAULT '{}',
-                        statistics_total_blocks_mined BIGINT DEFAULT 0,
-                        statistics_total_blocks_destroyed BIGINT DEFAULT 0,
-                        statistics_total_greed_triggers BIGINT DEFAULT 0,
-                        statistics_total_keys_obtained BIGINT DEFAULT 0,
-                        gang_id VARCHAR(36),
-                        gang_invitation VARCHAR(36)
-                    );
+                CREATE TABLE IF NOT EXISTS players (
+                    uuid VARCHAR(36) PRIMARY KEY,
+                    name VARCHAR(16) NOT NULL,
+                    coins BIGINT DEFAULT 0,
+                    tokens BIGINT DEFAULT 0,
+                    experience BIGINT DEFAULT 0,
+                    beacons BIGINT DEFAULT 0,
+                    coins_via_pickaxe BIGINT DEFAULT 0,
+                    tokens_via_pickaxe BIGINT DEFAULT 0,
+                    experience_via_pickaxe BIGINT DEFAULT 0,
+                    active_profession TEXT DEFAULT 'mineur',
+                    last_profession_change BIGINT DEFAULT 0,
+                    enchantments TEXT DEFAULT '{}',
+                    auto_upgrade TEXT DEFAULT '[]',
+                    mobility_disabled TEXT DEFAULT '[]',
+                    pickaxe_cristals TEXT DEFAULT '{}',
+                    custom_permissions TEXT DEFAULT '[]',
+                    sanctions TEXT DEFAULT '[]',
+                    active_enchantments TEXT DEFAULT '[]',
+                    pickaxe_enchantment_book_levels TEXT DEFAULT '{}',
+                    profession_levels TEXT DEFAULT '{}',
+                    profession_xp TEXT DEFAULT '{}',
+                    talent_levels TEXT DEFAULT '{}',
+                    kit_levels TEXT DEFAULT '{}',
+                    profession_rewards TEXT DEFAULT '{}',
+                    chosen_prestige_columns TEXT DEFAULT '{}',
+                    chosen_special_rewards TEXT DEFAULT '{}',
+                    reputation INT DEFAULT 0,
+                    boosts TEXT DEFAULT '{}',
+                    autominer_active_slot_1 TEXT DEFAULT NULL,
+                    autominer_active_slot_2 TEXT DEFAULT NULL,
+                    autominer_fuel_reserve DOUBLE DEFAULT 0.0,
+                    autominer_current_world VARCHAR(100) DEFAULT NULL,
+                    autominer_storage_level INT DEFAULT 1,
+                    autominer_storage_items TEXT DEFAULT '{}',
+                    autominer_pending_coins BIGINT DEFAULT 0,
+                    autominer_pending_tokens BIGINT DEFAULT 0,
+                    autominer_pending_experience BIGINT DEFAULT 0,
+                    autominer_pending_beacons BIGINT DEFAULT 0,
+                    bank_savings_balance BIGINT DEFAULT 0,
+                    bank_safe_balance BIGINT DEFAULT 0,
+                    bank_level INT DEFAULT 1,
+                    bank_total_deposits BIGINT DEFAULT 0,
+                    bank_last_interest BIGINT DEFAULT 0,
+                    bank_investments TEXT DEFAULT '{}',
+                    statistics_total_blocks_mined BIGINT DEFAULT 0,
+                    statistics_total_blocks_destroyed BIGINT DEFAULT 0,
+                    statistics_total_greed_triggers BIGINT DEFAULT 0,
+                    statistics_total_keys_obtained BIGINT DEFAULT 0,
+                    gang_id VARCHAR(36),
+                    gang_invitation VARCHAR(36)
+                );
                 """;
 
         try (Connection conn = databaseManager.getConnection();
@@ -171,7 +170,8 @@ public class PlayerDataManager {
     }
 
     /**
-     * MÉTHODE CORRIGÉE : Charge complètement les données depuis la base avec gestion d'erreurs
+     * 🔥 MÉTHODE CORRIGÉE : Charge complètement les données depuis la base avec gestion d'erreurs
+     * BUG FIXÉ: Utilisation des setters au lieu des copies défensives
      */
     private PlayerData loadPlayerDataFromDatabase(UUID playerId) {
         String query = "SELECT * FROM players WHERE uuid = ?";
@@ -197,32 +197,91 @@ public class PlayerDataManager {
                 data.setActiveProfession(rs.getString("active_profession"));
                 data.setLastProfessionChange(rs.getLong("last_profession_change"));
 
-                // CORRECTION : Chargement complet de tous les champs JSON avec protection d'erreurs
-                loadJsonFieldToMap(rs, "enchantments", stringIntegerMapType, data.getEnchantmentLevels());
-                loadJsonFieldToSet(rs, "auto_upgrade", stringSetType, data.getAutoUpgradeEnabled());
-                loadJsonFieldToSet(rs, "mobility_disabled", stringSetType, data.getMobilityEnchantmentsDisabled());
-                loadJsonFieldToMap(rs, "pickaxe_cristals", stringStringMapType, data.getPickaxeCristals());
+                // 🔥 CORRECTION PRINCIPALE : Chargement avec setters au lieu de copies défensives
+                Map<String, Integer> enchantments = loadJsonValue(rs, "enchantments", stringIntegerMapType);
+                if (enchantments != null) {
+                    data.setEnchantmentLevel(enchantments);
+                }
 
-                // Permissions custom (a un setter)
+                Set<String> autoUpgrade = loadJsonValue(rs, "auto_upgrade", stringSetType);
+                if (autoUpgrade != null) {
+                    data.setAutoUpgradeEnabled(autoUpgrade);
+                }
+
+                Set<String> mobilityDisabled = loadJsonValue(rs, "mobility_disabled", stringSetType);
+                if (mobilityDisabled != null) {
+                    data.setMobilityEnchantmentEnabled(mobilityDisabled);
+                }
+
+                Map<String, String> pickaxeCristals = loadJsonValue(rs, "pickaxe_cristals", stringStringMapType);
+                if (pickaxeCristals != null) {
+                    data.setPickaxeCristal(pickaxeCristals);
+                }
+
+                // Permissions custom (conservé tel quel - fonctionne déjà correctement)
                 Set<String> customPermissions = loadJsonValue(rs, "custom_permissions", stringSetType);
                 if (customPermissions != null) {
                     data.setCustomPermissions(customPermissions);
                 }
 
-                loadJsonFieldToList(rs, "sanctions", sanctionListType, data.getSanctionHistory());
-                loadJsonFieldToSet(rs, "active_enchantments", stringSetType, data.getActiveEnchantmentBooks());
-                loadJsonFieldToMap(rs, "pickaxe_enchantment_book_levels", stringIntegerMapType, data.getPickaxeEnchantmentBookLevels());
-                loadJsonFieldToMap(rs, "profession_levels", stringIntegerMapType, data.getAllProfessionLevels());
-                loadJsonFieldToMap(rs, "profession_xp", stringIntegerMapType, data.getAllProfessionXP());
-                loadJsonFieldToMap(rs, "talent_levels", stringMapMapType, data.getAllTalentLevels());
-                loadJsonFieldToMap(rs, "kit_levels", stringIntegerMapType, data.getAllKitLevels());
-                loadJsonFieldToMap(rs, "profession_rewards", stringSetIntegerMapType, data.getAllClaimedProfessionRewards());
-                loadJsonFieldToMap(rs, "chosen_prestige_columns", intTalentMapType, data.getChosenPrestigeColumns());
-                loadJsonFieldToMap(rs, "chosen_special_rewards", intStringMapType, data.getChosenSpecialRewards());
+                List<PlayerData.SanctionData> sanctions = loadJsonValue(rs, "sanctions", sanctionListType);
+                if (sanctions != null) {
+                    data.setSanctionHistory(sanctions);
+                }
+
+                // 🔥 CORRECTIF PRINCIPAL : Enchantements actifs
+                Set<String> activeEnchantments = loadJsonValue(rs, "active_enchantments", stringSetType);
+                if (activeEnchantments != null) {
+                    data.setActiveEnchantmentBooks(activeEnchantments);
+                }
+
+                // 🔥 CORRECTIF PRINCIPAL : Niveaux des livres d'enchantement
+                Map<String, Integer> pickaxeEnchantmentBookLevels = loadJsonValue(rs, "pickaxe_enchantment_book_levels", stringIntegerMapType);
+                if (pickaxeEnchantmentBookLevels != null) {
+                    data.setPickaxeEnchantmentBookLevels(pickaxeEnchantmentBookLevels);
+                }
+
+                Map<String, Integer> professionLevels = loadJsonValue(rs, "profession_levels", stringIntegerMapType);
+                if (professionLevels != null) {
+                    data.setProfessionLevel(professionLevels.toString(), 0);
+                }
+
+                Map<String, Integer> professionXP = loadJsonValue(rs, "profession_xp", stringIntegerMapType);
+                if (professionXP != null) {
+                    data.setProfessionXP(professionXP.toString(), 0);
+                }
+
+                Map<String, Map<String, Integer>> talentLevels = loadJsonValue(rs, "talent_levels", stringMapMapType);
+                if (talentLevels != null) {
+                    data.setTalentLevels(talentLevels);
+                }
+
+                Map<String, Integer> kitLevels = loadJsonValue(rs, "kit_levels", stringIntegerMapType);
+                if (kitLevels != null) {
+                    data.setKitLevels(kitLevels);
+                }
+
+                Map<String, Set<Integer>> professionRewards = loadJsonValue(rs, "profession_rewards", stringSetIntegerMapType);
+                if (professionRewards != null) {
+                    data.setClaimedProfessionRewards(professionRewards);
+                }
+
+                Map<Integer, PrestigeTalent> chosenPrestigeColumns = loadJsonValue(rs, "chosen_prestige_columns", intTalentMapType);
+                if (chosenPrestigeColumns != null) {
+                    data.setChosenPrestigeColumns(chosenPrestigeColumns);
+                }
+
+                Map<Integer, String> chosenSpecialRewards = loadJsonValue(rs, "chosen_special_rewards", intStringMapType);
+                if (chosenSpecialRewards != null) {
+                    data.setChosenSpecialRewards(chosenSpecialRewards);
+                }
 
                 data.setReputation(rs.getInt("reputation"));
 
-                loadJsonFieldToMap(rs, "boosts", stringBoostMapType, data.getActiveBoosts());
+                Map<String, PlayerBoost> boosts = loadJsonValue(rs, "boosts", stringBoostMapType);
+                if (boosts != null) {
+                    data.setActiveBoosts(boosts);
+                }
 
                 // AutoMiner ItemStacks (gestion spéciale)
                 loadAutominerSlot(rs, "autominer_active_slot_1", data, 1);
@@ -232,32 +291,28 @@ public class PlayerDataManager {
                 data.setAutominerCurrentWorld(rs.getString("autominer_current_world"));
                 data.setAutominerStorageLevel(rs.getInt("autominer_storage_level"));
 
-                loadJsonFieldToMap(rs, "autominer_storage_contents", materialLongMapType, data.getAutominerStorageContents());
-                loadJsonFieldToMap(rs, "autominer_stored_keys", stringIntegerMapType, data.getAutominerStoredKeys());
+                Map<Material, Long> autominerStorageItems = loadJsonValue(rs, "autominer_storage_items", materialLongMapType);
+                if (autominerStorageItems != null) {
+                    for (Map.Entry<Material, Long> entry : autominerStorageItems.entrySet()) {
+                        data.setAutominerStorageContents(entry.getKey(), entry.getValue());
+                    }
+                }
 
                 data.setAutominerPendingCoins(rs.getLong("autominer_pending_coins"));
                 data.setAutominerPendingTokens(rs.getLong("autominer_pending_tokens"));
                 data.setAutominerPendingExperience(rs.getLong("autominer_pending_experience"));
                 data.setAutominerPendingBeacons(rs.getLong("autominer_pending_beacons"));
-                data.setSavingsBalance(rs.getLong("bank_savings_balance"));
-                data.setSafeBalance(rs.getLong("bank_safe_balance"));
+
+                data.setBankSavingsBalance(rs.getLong("bank_savings_balance"));
+                data.setBankSafeBalance(rs.getLong("bank_safe_balance"));
                 data.setBankLevel(rs.getInt("bank_level"));
                 data.setTotalBankDeposits(rs.getLong("bank_total_deposits"));
-                data.setLastInterestTime(rs.getLong("bank_last_interest"));
+                data.setBankLastInterest(rs.getLong("bank_last_interest"));
 
-                // Investments (gestion spéciale - conversion String -> Material/Long)
-                Map<String, String> investmentStrings = loadJsonValue(rs, "bank_investments", stringStringMapType);
-                if (investmentStrings != null) {
-                    Map<Material, Long> investments = data.getAllInvestments();
-                    investments.clear();
-                    for (Map.Entry<String, String> entry : investmentStrings.entrySet()) {
-                        try {
-                            Material material = Material.valueOf(entry.getKey());
-                            Long amount = Long.valueOf(entry.getValue());
-                            investments.put(material, amount);
-                        } catch (IllegalArgumentException e) {
-                            plugin.getPluginLogger().warning("§eInvestissement invalide ignoré: " + entry.getKey() + " = " + entry.getValue());
-                        }
+                Map<String, Long> bankInvestments = loadJsonValue(rs, "bank_investments", new TypeToken<Map<String, Long>>(){}.getType());
+                if (bankInvestments != null) {
+                    for (Map.Entry<String, Long> entry : bankInvestments.entrySet()) {
+                        data.setBankInvestment(entry.getKey(), entry.getValue());
                     }
                 }
 
@@ -282,54 +337,6 @@ public class PlayerDataManager {
     }
 
     /**
-     * NOUVELLE MÉTHODE : Charge un champ JSON vers une Map avec protection d'erreurs
-     */
-    @SuppressWarnings("unchecked")
-    private <K, V> void loadJsonFieldToMap(ResultSet rs, String columnName, Type type, Map<K, V> targetMap) {
-        try {
-            Map<K, V> loadedData = loadJsonValue(rs, columnName, type);
-            if (loadedData != null) {
-                targetMap.clear();
-                targetMap.putAll(loadedData);
-            }
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("§eErreur lors du chargement de " + columnName + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * NOUVELLE MÉTHODE : Charge un champ JSON vers un Set avec protection d'erreurs
-     */
-    @SuppressWarnings("unchecked")
-    private <T> void loadJsonFieldToSet(ResultSet rs, String columnName, Type type, Set<T> targetSet) {
-        try {
-            Set<T> loadedData = loadJsonValue(rs, columnName, type);
-            if (loadedData != null) {
-                targetSet.clear();
-                targetSet.addAll(loadedData);
-            }
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("§eErreur lors du chargement de " + columnName + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * NOUVELLE MÉTHODE : Charge un champ JSON vers une List avec protection d'erreurs
-     */
-    @SuppressWarnings("unchecked")
-    private <T> void loadJsonFieldToList(ResultSet rs, String columnName, Type type, List<T> targetList) {
-        try {
-            List<T> loadedData = loadJsonValue(rs, columnName, type);
-            if (loadedData != null) {
-                targetList.clear();
-                targetList.addAll(loadedData);
-            }
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("§eErreur lors du chargement de " + columnName + ": " + e.getMessage());
-        }
-    }
-
-    /**
      * NOUVELLE MÉTHODE : Charge et désérialise une valeur JSON avec protection d'erreurs
      */
     private <T> T loadJsonValue(ResultSet rs, String columnName, Type type) {
@@ -340,7 +347,7 @@ public class PlayerDataManager {
                     return gson.fromJson(jsonValue, type);
                 } catch (JsonSyntaxException e) {
                     plugin.getPluginLogger().warning("§eDonnées JSON corrompues pour " + columnName +
-                                                     ". Valeurs par défaut utilisées.");
+                            ". Valeurs par défaut utilisées.");
                 }
             }
         } catch (SQLException e) {
@@ -392,77 +399,51 @@ public class PlayerDataManager {
                 return;
             }
 
-            // CORRECTION MAJEURE : Utilise INSERT ... ON CONFLICT ... DO UPDATE au lieu d'INSERT simple
+            // Requête UPSERT pour éviter les conflits de clés primaires
             String query = """
-            INSERT INTO players (uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, 
-                               tokens_via_pickaxe, experience_via_pickaxe, active_profession, 
-                               last_profession_change, enchantments, auto_upgrade, mobility_disabled, 
-                               pickaxe_cristals, custom_permissions, sanctions, active_enchantments, 
-                               pickaxe_enchantment_book_levels, profession_levels, profession_xp, talent_levels, 
-                               kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, 
-                               reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, 
-                               autominer_fuel_reserve, autominer_current_world, autominer_storage_level, 
-                               autominer_storage_contents, autominer_stored_keys, autominer_pending_coins, 
-                               autominer_pending_tokens, autominer_pending_experience, autominer_pending_beacons, 
-                               bank_savings_balance, bank_safe_balance, bank_level, bank_total_deposits, 
-                               bank_last_interest, bank_investments, statistics_total_blocks_mined, 
-                               statistics_total_blocks_destroyed, statistics_total_greed_triggers, 
-                               statistics_total_keys_obtained, gang_id, gang_invitation)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (uuid) DO UPDATE SET
-                                name = EXCLUDED.name,
-                                coins = EXCLUDED.coins,
-                                tokens = EXCLUDED.tokens,
-                                experience = EXCLUDED.experience,
-                                beacons = EXCLUDED.beacons,
-                                coins_via_pickaxe = EXCLUDED.coins_via_pickaxe,
-                                tokens_via_pickaxe = EXCLUDED.tokens_via_pickaxe,
-                                experience_via_pickaxe = EXCLUDED.experience_via_pickaxe,
-                                active_profession = EXCLUDED.active_profession,
-                                last_profession_change = EXCLUDED.last_profession_change,
-                                enchantments = EXCLUDED.enchantments,
-                                auto_upgrade = EXCLUDED.auto_upgrade,
-                                mobility_disabled = EXCLUDED.mobility_disabled,
-                                pickaxe_cristals = EXCLUDED.pickaxe_cristals,
-                                custom_permissions = EXCLUDED.custom_permissions,
-                                sanctions = EXCLUDED.sanctions,
-                                active_enchantments = EXCLUDED.active_enchantments,
-                                pickaxe_enchantment_book_levels = EXCLUDED.pickaxe_enchantment_book_levels,
-                                profession_levels = EXCLUDED.profession_levels,
-                                profession_xp = EXCLUDED.profession_xp,
-                                talent_levels = EXCLUDED.talent_levels,
-                                kit_levels = EXCLUDED.kit_levels,
-                                profession_rewards = EXCLUDED.profession_rewards,
-                                chosen_prestige_columns = EXCLUDED.chosen_prestige_columns,
-                                chosen_special_rewards = EXCLUDED.chosen_special_rewards,
-                                reputation = EXCLUDED.reputation,
-                                boosts = EXCLUDED.boosts,
-                                autominer_active_slot_1 = EXCLUDED.autominer_active_slot_1,
-                                autominer_active_slot_2 = EXCLUDED.autominer_active_slot_2,
-                                autominer_fuel_reserve = EXCLUDED.autominer_fuel_reserve,
-                                autominer_current_world = EXCLUDED.autominer_current_world,
-                                autominer_storage_level = EXCLUDED.autominer_storage_level,
-                                autominer_storage_contents = EXCLUDED.autominer_storage_contents,
-                                autominer_stored_keys = EXCLUDED.autominer_stored_keys,
-                                autominer_pending_coins = EXCLUDED.autominer_pending_coins,
-                                autominer_pending_tokens = EXCLUDED.autominer_pending_tokens,
-                                autominer_pending_experience = EXCLUDED.autominer_pending_experience,
-                                autominer_pending_beacons = EXCLUDED.autominer_pending_beacons,
-                                bank_savings_balance = EXCLUDED.bank_savings_balance,
-                                bank_safe_balance = EXCLUDED.bank_safe_balance,
-                                bank_level = EXCLUDED.bank_level,
-                                bank_total_deposits = EXCLUDED.bank_total_deposits,
-                                bank_last_interest = EXCLUDED.bank_last_interest,
-                                bank_investments = EXCLUDED.bank_investments,
-                                statistics_total_blocks_mined = EXCLUDED.statistics_total_blocks_mined,
-                                statistics_total_blocks_destroyed = EXCLUDED.statistics_total_blocks_destroyed,
-                                statistics_total_greed_triggers = EXCLUDED.statistics_total_greed_triggers,
-                                statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained,
-                                gang_id = EXCLUDED.gang_id,
-                                gang_invitation = EXCLUDED.gang_invitation
-                                """;
+                INSERT INTO players (
+                    uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, tokens_via_pickaxe, 
+                    experience_via_pickaxe, active_profession, last_profession_change, enchantments, 
+                    auto_upgrade, mobility_disabled, pickaxe_cristals, custom_permissions, sanctions, 
+                    active_enchantments, pickaxe_enchantment_book_levels, profession_levels, profession_xp, 
+                    talent_levels, kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, 
+                    reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, autominer_fuel_reserve, 
+                    autominer_current_world, autominer_storage_level, autominer_storage_items, 
+                    autominer_pending_coins, autominer_pending_tokens, autominer_pending_experience, 
+                    autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, 
+                    bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
+                    statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
+                    gang_id, gang_invitation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    name = VALUES(name), coins = VALUES(coins), tokens = VALUES(tokens), experience = VALUES(experience),
+                    beacons = VALUES(beacons), coins_via_pickaxe = VALUES(coins_via_pickaxe), 
+                    tokens_via_pickaxe = VALUES(tokens_via_pickaxe), experience_via_pickaxe = VALUES(experience_via_pickaxe),
+                    active_profession = VALUES(active_profession), last_profession_change = VALUES(last_profession_change),
+                    enchantments = VALUES(enchantments), auto_upgrade = VALUES(auto_upgrade), 
+                    mobility_disabled = VALUES(mobility_disabled), pickaxe_cristals = VALUES(pickaxe_cristals),
+                    custom_permissions = VALUES(custom_permissions), sanctions = VALUES(sanctions),
+                    active_enchantments = VALUES(active_enchantments), 
+                    pickaxe_enchantment_book_levels = VALUES(pickaxe_enchantment_book_levels),
+                    profession_levels = VALUES(profession_levels), profession_xp = VALUES(profession_xp),
+                    talent_levels = VALUES(talent_levels), kit_levels = VALUES(kit_levels),
+                    profession_rewards = VALUES(profession_rewards), chosen_prestige_columns = VALUES(chosen_prestige_columns),
+                    chosen_special_rewards = VALUES(chosen_special_rewards), reputation = VALUES(reputation),
+                    boosts = VALUES(boosts), autominer_active_slot_1 = VALUES(autominer_active_slot_1),
+                    autominer_active_slot_2 = VALUES(autominer_active_slot_2), autominer_fuel_reserve = VALUES(autominer_fuel_reserve),
+                    autominer_current_world = VALUES(autominer_current_world), autominer_storage_level = VALUES(autominer_storage_level),
+                    autominer_storage_items = VALUES(autominer_storage_items), autominer_pending_coins = VALUES(autominer_pending_coins),
+                    autominer_pending_tokens = VALUES(autominer_pending_tokens), autominer_pending_experience = VALUES(autominer_pending_experience),
+                    autominer_pending_beacons = VALUES(autominer_pending_beacons), bank_savings_balance = VALUES(bank_savings_balance),
+                    bank_safe_balance = VALUES(bank_safe_balance), bank_level = VALUES(bank_level),
+                    bank_total_deposits = VALUES(bank_total_deposits), bank_last_interest = VALUES(bank_last_interest),
+                    bank_investments = VALUES(bank_investments), statistics_total_blocks_mined = VALUES(statistics_total_blocks_mined),
+                    statistics_total_blocks_destroyed = VALUES(statistics_total_blocks_destroyed), 
+                    statistics_total_greed_triggers = VALUES(statistics_total_greed_triggers),
+                    statistics_total_keys_obtained = VALUES(statistics_total_keys_obtained), gang_id = VALUES(gang_id),
+                    gang_invitation = VALUES(gang_invitation)
+                """;
 
-            // CORRECTION : Transaction atomique pour assurer la cohérence
             try (Connection conn = databaseManager.getConnection()) {
                 conn.setAutoCommit(false); // Début de transaction
 
@@ -498,37 +479,33 @@ public class PlayerDataManager {
                     ps.setString(26, gson.toJson(data.getChosenSpecialRewards()));
                     ps.setInt(27, data.getReputation());
                     ps.setString(28, gson.toJson(data.getActiveBoosts()));
-
-                    // Sérialisation spéciale pour ItemStacks
                     ps.setString(29, serializeItemStack(data.getActiveAutominerSlot1()));
                     ps.setString(30, serializeItemStack(data.getActiveAutominerSlot2()));
-
                     ps.setDouble(31, data.getAutominerFuelReserve());
                     ps.setString(32, data.getAutominerCurrentWorld());
                     ps.setInt(33, data.getAutominerStorageLevel());
                     ps.setString(34, gson.toJson(data.getAutominerStorageContents()));
-                    ps.setString(35, gson.toJson(data.getAutominerStoredKeys()));
-                    ps.setLong(36, data.getAutominerPendingCoins());
-                    ps.setLong(37, data.getAutominerPendingTokens());
-                    ps.setLong(38, data.getAutominerPendingExperience());
-                    ps.setLong(39, data.getAutominerPendingBeacons());
-                    ps.setLong(40, data.getSavingsBalance());
-                    ps.setLong(41, data.getSafeBalance());
-                    ps.setInt(42, data.getBankLevel());
-                    ps.setLong(43, data.getTotalBankDeposits());
-                    ps.setLong(44, data.getLastInterestTime());
-                    ps.setString(45, gson.toJson(data.getAllInvestments()));
-                    ps.setLong(46, data.getTotalBlocksMined());
-                    ps.setLong(47, data.getTotalBlocksDestroyed());
-                    ps.setLong(48, data.getTotalGreedTriggers());
-                    ps.setLong(49, data.getTotalKeysObtained());
-                    ps.setString(50, data.getGangId());
-                    ps.setString(51, data.getGangInvitation());
+                    ps.setLong(35, data.getAutominerPendingCoins());
+                    ps.setLong(36, data.getAutominerPendingTokens());
+                    ps.setLong(37, data.getAutominerPendingExperience());
+                    ps.setLong(38, data.getAutominerPendingBeacons());
+                    ps.setLong(39, data.getBankSavingsBalance());
+                    ps.setLong(40, data.getBankSafeBalance());
+                    ps.setInt(41, data.getBankLevel());
+                    ps.setLong(42, data.getTotalBankDeposits());
+                    ps.setLong(43, data.getBankLastInterest());
+                    ps.setString(44, gson.toJson(data.getBankInvestments()));
+                    ps.setLong(45, data.getTotalBlocksMined());
+                    ps.setLong(46, data.getTotalBlocksDestroyed());
+                    ps.setLong(47, data.getTotalGreedTriggers());
+                    ps.setLong(48, data.getTotalKeysObtained());
+                    ps.setString(49, data.getGangId());
+                    ps.setString(50, data.getGangInvitation());
 
                     ps.executeUpdate();
-                    conn.commit(); // Validation de la transaction
-
+                    conn.commit();
                     lastSaveTime.put(playerId, currentTime);
+
                     plugin.getPluginLogger().debug("§aDonnées sauvegardées avec succès pour " + data.getPlayerName());
 
                 } catch (SQLException e) {
