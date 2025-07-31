@@ -858,7 +858,7 @@ public class PlayerData {
         this.pickaxeEnchantmentBooks = new HashSet<>(bookId);
     }
 
-    public Set<String> getPLayerEnchantmentBooks() {
+    public Set<String> getPlayerEnchantmentBooks() {
         return new HashSet<>(pickaxeEnchantmentBooks);
     }
 
