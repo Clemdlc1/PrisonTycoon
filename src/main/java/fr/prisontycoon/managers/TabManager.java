@@ -2,7 +2,6 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.events.ChatListener;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -22,17 +21,9 @@ public class TabManager {
     private static final String PLAYER_TEAM = "03_joueur";
     private final PrisonTycoon plugin;
     private BukkitRunnable tabUpdateTask;
-    private ChatListener chatListener; // Référence au ChatListener pour la méthode commune
 
     public TabManager(PrisonTycoon plugin) {
         this.plugin = plugin;
-    }
-
-    /**
-     * NOUVEAU: Définit la référence au ChatListener pour utiliser les méthodes communes
-     */
-    public void setChatListener(ChatListener chatListener) {
-        this.chatListener = chatListener;
     }
 
     /**
@@ -155,7 +146,7 @@ public class TabManager {
     }
 
     /**
-     * MÉTHODE COMMUNE - Obtient la couleur selon le niveau de prestige (copiée du ChatListener)
+     * MÉTHODE COMMUNE - Obtient la couleur selon le niveau de prestige
      */
     private String getPrestigeColor(int prestigeLevel) {
         if (prestigeLevel >= 50) return "§c"; // Rouge - Prestige légendaire
@@ -189,8 +180,7 @@ public class TabManager {
     private void updatePlayerTeam(Scoreboard scoreboard, Player player) {
         String teamName = getTeamName(player);
 
-        // Utilise la méthode commune pour obtenir le préfixe complet
-        String prefix = getPlayerPrefixForTab(player);
+        String prefix = getPlayerPrefix(player);
 
         removePlayerFromAllTeams(scoreboard, player);
 
@@ -199,32 +189,14 @@ public class TabManager {
             team = scoreboard.registerNewTeam(teamName);
         }
 
-        // Limite le préfixe à 16 caractères (limitation Bukkit)
-        if (prefix.length() > 16) {
-            prefix = prefix.substring(0, 16);
-        }
-
         team.setPrefix(prefix + " ");
         team.addEntry(player.getName());
     }
 
     /**
-     * NOUVELLE MÉTHODE COMMUNE - Obtient le préfixe pour le tab (utilise la même logique que le chat)
+     * Implémentation de secours pour le préfixe
      */
-    private String getPlayerPrefixForTab(Player player) {
-        // Si chatListener est disponible, utilise sa méthode
-        if (chatListener != null) {
-            return chatListener.getPlayerPrefix(player);
-        }
-
-        // Sinon, implémentation de secours avec la même logique
-        return getPlayerPrefixFallback(player);
-    }
-
-    /**
-     * Implémentation de secours pour le préfixe (même logique que ChatListener)
-     */
-    private String getPlayerPrefixFallback(Player player) {
+    public String getPlayerPrefix(Player player) {
         // Détermine le type de joueur et sa couleur de base
         String playerType;
         String playerTypeColor;

@@ -196,12 +196,12 @@ public class GangTalent {
     @Override
     public String toString() {
         return "GangTalent{" +
-               "id='" + id + '\'' +
-               ", name='" + name + '\'' +
-               ", category='" + category + '\'' +
-               ", cost=" + cost +
-               ", value=" + value +
-               '}';
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", category='" + category + '\'' +
+                ", cost=" + cost +
+                ", value=" + value +
+                '}';
     }
 
     @Override

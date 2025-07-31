@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * GESTIONNAIRE DE DONNÉES JOUEURS - VERSION CORRIGÉE
- *
+ * <p>
  * ✅ CORRECTIONS APPORTÉES :
  * - Requête UPSERT pour éviter les conflits de clés primaires
  * - Chargement complet des données avec gestion d'erreurs robuste
@@ -48,16 +48,26 @@ public class PlayerDataManager {
     private final Map<UUID, ReentrantReadWriteLock> playerLocks = new ConcurrentHashMap<>();
 
     // Types Gson pré-compilés pour les performances
-    private final Type stringIntegerMapType = new TypeToken<Map<String, Integer>>() {}.getType();
-    private final Type stringStringMapType = new TypeToken<Map<String, String>>() {}.getType();
-    private final Type stringSetType = new TypeToken<Set<String>>() {}.getType();
-    private final Type sanctionListType = new TypeToken<List<PlayerData.SanctionData>>() {}.getType();
-    private final Type stringMapMapType = new TypeToken<Map<String, Map<String, Integer>>>() {}.getType();
-    private final Type intTalentMapType = new TypeToken<Map<Integer, PrestigeTalent>>() {}.getType();
-    private final Type intStringMapType = new TypeToken<Map<Integer, String>>() {}.getType();
-    private final Type stringBoostMapType = new TypeToken<Map<String, PlayerBoost>>() {}.getType();
-    private final Type materialLongMapType = new TypeToken<Map<Material, Long>>() {}.getType();
-    private final Type stringSetIntegerMapType = new TypeToken<Map<String, Set<Integer>>>() {}.getType();
+    private final Type stringIntegerMapType = new TypeToken<Map<String, Integer>>() {
+    }.getType();
+    private final Type stringStringMapType = new TypeToken<Map<String, String>>() {
+    }.getType();
+    private final Type stringSetType = new TypeToken<Set<String>>() {
+    }.getType();
+    private final Type sanctionListType = new TypeToken<List<PlayerData.SanctionData>>() {
+    }.getType();
+    private final Type stringMapMapType = new TypeToken<Map<String, Map<String, Integer>>>() {
+    }.getType();
+    private final Type intTalentMapType = new TypeToken<Map<Integer, PrestigeTalent>>() {
+    }.getType();
+    private final Type intStringMapType = new TypeToken<Map<Integer, String>>() {
+    }.getType();
+    private final Type stringBoostMapType = new TypeToken<Map<String, PlayerBoost>>() {
+    }.getType();
+    private final Type materialLongMapType = new TypeToken<Map<Material, Long>>() {
+    }.getType();
+    private final Type stringSetIntegerMapType = new TypeToken<Map<String, Set<Integer>>>() {
+    }.getType();
 
     public PlayerDataManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -309,7 +319,8 @@ public class PlayerDataManager {
                 data.setTotalBankDeposits(rs.getLong("bank_total_deposits"));
                 data.setBankLastInterest(rs.getLong("bank_last_interest"));
 
-                Map<String, Long> bankInvestments = loadJsonValue(rs, "bank_investments", new TypeToken<Map<String, Long>>(){}.getType());
+                Map<String, Long> bankInvestments = loadJsonValue(rs, "bank_investments", new TypeToken<Map<String, Long>>() {
+                }.getType());
                 if (bankInvestments != null) {
                     for (Map.Entry<String, Long> entry : bankInvestments.entrySet()) {
                         data.setBankInvestment(entry.getKey(), entry.getValue());
@@ -365,7 +376,8 @@ public class PlayerDataManager {
             if (jsonValue != null && !jsonValue.trim().isEmpty() && !jsonValue.equals("null")) {
                 try {
                     // Désérialise l'ItemStack depuis le JSON
-                    Map<String, Object> itemData = gson.fromJson(jsonValue, new TypeToken<Map<String, Object>>(){}.getType());
+                    Map<String, Object> itemData = gson.fromJson(jsonValue, new TypeToken<Map<String, Object>>() {
+                    }.getType());
                     if (itemData != null) {
                         ItemStack item = ItemStack.deserialize(itemData);
                         if (slotNumber == 1) {
@@ -401,71 +413,71 @@ public class PlayerDataManager {
 
             // Requête UPSERT pour éviter les conflits de clés primaires
             String query = """
-                INSERT INTO players (
-                    uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, tokens_via_pickaxe, 
-                    experience_via_pickaxe, active_profession, last_profession_change, enchantments, 
-                    auto_upgrade, mobility_disabled, pickaxe_cristals, custom_permissions, sanctions, 
-                    active_enchantments, pickaxe_enchantment_book_levels, profession_levels, profession_xp, 
-                    talent_levels, kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, 
-                    reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, autominer_fuel_reserve, 
-                    autominer_current_world, autominer_storage_level, autominer_storage_items, 
-                    autominer_pending_coins, autominer_pending_tokens, autominer_pending_experience, 
-                    autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, 
-                    bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
-                    statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
-                    gang_id, gang_invitation
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (uuid) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    coins = EXCLUDED.coins,
-                    tokens = EXCLUDED.tokens,
-                    experience = EXCLUDED.experience,
-                    beacons = EXCLUDED.beacons,
-                    coins_via_pickaxe = EXCLUDED.coins_via_pickaxe,
-                    tokens_via_pickaxe = EXCLUDED.tokens_via_pickaxe,
-                    experience_via_pickaxe = EXCLUDED.experience_via_pickaxe,
-                    active_profession = EXCLUDED.active_profession,
-                    last_profession_change = EXCLUDED.last_profession_change,
-                    enchantments = EXCLUDED.enchantments,
-                    auto_upgrade = EXCLUDED.auto_upgrade,
-                    mobility_disabled = EXCLUDED.mobility_disabled,
-                    pickaxe_cristals = EXCLUDED.pickaxe_cristals,
-                    custom_permissions = EXCLUDED.custom_permissions,
-                    sanctions = EXCLUDED.sanctions,
-                    active_enchantments = EXCLUDED.active_enchantments,
-                    pickaxe_enchantment_book_levels = EXCLUDED.pickaxe_enchantment_book_levels,
-                    profession_levels = EXCLUDED.profession_levels,
-                    profession_xp = EXCLUDED.profession_xp,
-                    talent_levels = EXCLUDED.talent_levels,
-                    kit_levels = EXCLUDED.kit_levels,
-                    profession_rewards = EXCLUDED.profession_rewards,
-                    chosen_prestige_columns = EXCLUDED.chosen_prestige_columns,
-                    chosen_special_rewards = EXCLUDED.chosen_special_rewards,
-                    reputation = EXCLUDED.reputation,
-                    boosts = EXCLUDED.boosts,
-                    autominer_active_slot_1 = EXCLUDED.autominer_active_slot_1,
-                    autominer_active_slot_2 = EXCLUDED.autominer_active_slot_2,
-                    autominer_fuel_reserve = EXCLUDED.autominer_fuel_reserve,
-                    autominer_current_world = EXCLUDED.autominer_current_world,
-                    autominer_storage_level = EXCLUDED.autominer_storage_level,
-                    autominer_storage_items = EXCLUDED.autominer_storage_items,
-                    autominer_pending_coins = EXCLUDED.autominer_pending_coins,
-                    autominer_pending_tokens = EXCLUDED.autominer_pending_tokens,
-                    autominer_pending_experience = EXCLUDED.autominer_pending_experience,
-                    autominer_pending_beacons = EXCLUDED.autominer_pending_beacons,
-                    bank_savings_balance = EXCLUDED.bank_savings_balance,
-                    bank_safe_balance = EXCLUDED.bank_safe_balance,
-                    bank_level = EXCLUDED.bank_level,
-                    bank_total_deposits = EXCLUDED.bank_total_deposits,
-                    bank_last_interest = EXCLUDED.bank_last_interest,
-                    bank_investments = EXCLUDED.bank_investments,
-                    statistics_total_blocks_mined = EXCLUDED.statistics_total_blocks_mined,
-                    statistics_total_blocks_destroyed = EXCLUDED.statistics_total_blocks_destroyed,
-                    statistics_total_greed_triggers = EXCLUDED.statistics_total_greed_triggers,
-                    statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained,
-                    gang_id = EXCLUDED.gang_id,
-                    gang_invitation = EXCLUDED.gang_invitation
-                """;
+                    INSERT INTO players (
+                        uuid, name, coins, tokens, experience, beacons, coins_via_pickaxe, tokens_via_pickaxe, 
+                        experience_via_pickaxe, active_profession, last_profession_change, enchantments, 
+                        auto_upgrade, mobility_disabled, pickaxe_cristals, custom_permissions, sanctions, 
+                        active_enchantments, pickaxe_enchantment_book_levels, profession_levels, profession_xp, 
+                        talent_levels, kit_levels, profession_rewards, chosen_prestige_columns, chosen_special_rewards, 
+                        reputation, boosts, autominer_active_slot_1, autominer_active_slot_2, autominer_fuel_reserve, 
+                        autominer_current_world, autominer_storage_level, autominer_storage_items, 
+                        autominer_pending_coins, autominer_pending_tokens, autominer_pending_experience, 
+                        autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, 
+                        bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
+                        statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
+                        gang_id, gang_invitation
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (uuid) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        coins = EXCLUDED.coins,
+                        tokens = EXCLUDED.tokens,
+                        experience = EXCLUDED.experience,
+                        beacons = EXCLUDED.beacons,
+                        coins_via_pickaxe = EXCLUDED.coins_via_pickaxe,
+                        tokens_via_pickaxe = EXCLUDED.tokens_via_pickaxe,
+                        experience_via_pickaxe = EXCLUDED.experience_via_pickaxe,
+                        active_profession = EXCLUDED.active_profession,
+                        last_profession_change = EXCLUDED.last_profession_change,
+                        enchantments = EXCLUDED.enchantments,
+                        auto_upgrade = EXCLUDED.auto_upgrade,
+                        mobility_disabled = EXCLUDED.mobility_disabled,
+                        pickaxe_cristals = EXCLUDED.pickaxe_cristals,
+                        custom_permissions = EXCLUDED.custom_permissions,
+                        sanctions = EXCLUDED.sanctions,
+                        active_enchantments = EXCLUDED.active_enchantments,
+                        pickaxe_enchantment_book_levels = EXCLUDED.pickaxe_enchantment_book_levels,
+                        profession_levels = EXCLUDED.profession_levels,
+                        profession_xp = EXCLUDED.profession_xp,
+                        talent_levels = EXCLUDED.talent_levels,
+                        kit_levels = EXCLUDED.kit_levels,
+                        profession_rewards = EXCLUDED.profession_rewards,
+                        chosen_prestige_columns = EXCLUDED.chosen_prestige_columns,
+                        chosen_special_rewards = EXCLUDED.chosen_special_rewards,
+                        reputation = EXCLUDED.reputation,
+                        boosts = EXCLUDED.boosts,
+                        autominer_active_slot_1 = EXCLUDED.autominer_active_slot_1,
+                        autominer_active_slot_2 = EXCLUDED.autominer_active_slot_2,
+                        autominer_fuel_reserve = EXCLUDED.autominer_fuel_reserve,
+                        autominer_current_world = EXCLUDED.autominer_current_world,
+                        autominer_storage_level = EXCLUDED.autominer_storage_level,
+                        autominer_storage_items = EXCLUDED.autominer_storage_items,
+                        autominer_pending_coins = EXCLUDED.autominer_pending_coins,
+                        autominer_pending_tokens = EXCLUDED.autominer_pending_tokens,
+                        autominer_pending_experience = EXCLUDED.autominer_pending_experience,
+                        autominer_pending_beacons = EXCLUDED.autominer_pending_beacons,
+                        bank_savings_balance = EXCLUDED.bank_savings_balance,
+                        bank_safe_balance = EXCLUDED.bank_safe_balance,
+                        bank_level = EXCLUDED.bank_level,
+                        bank_total_deposits = EXCLUDED.bank_total_deposits,
+                        bank_last_interest = EXCLUDED.bank_last_interest,
+                        bank_investments = EXCLUDED.bank_investments,
+                        statistics_total_blocks_mined = EXCLUDED.statistics_total_blocks_mined,
+                        statistics_total_blocks_destroyed = EXCLUDED.statistics_total_blocks_destroyed,
+                        statistics_total_greed_triggers = EXCLUDED.statistics_total_greed_triggers,
+                        statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained,
+                        gang_id = EXCLUDED.gang_id,
+                        gang_invitation = EXCLUDED.gang_invitation
+                    """;
 
             try (Connection conn = databaseManager.getConnection()) {
                 conn.setAutoCommit(false); // Début de transaction

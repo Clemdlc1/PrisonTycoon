@@ -50,7 +50,7 @@ public class GUIListener implements Listener {
 
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem != null && clickedItem.getType() == Material.ENCHANTED_BOOK &&
-                clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
+                    clickedItem.hasItemMeta() && clickedItem.getItemMeta().getPersistentDataContainer().has(
                     new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING) && guiType == GUIType.ENCHANTMENT_BOOK) {
                 event.setCancelled(true);
                 plugin.getEnchantmentBookGUI().handlePhysicalBookApplication(player, clickedItem);
@@ -189,6 +189,6 @@ public class GUIListener implements Listener {
      */
     private boolean isContainerGUI(GUIType guiType) {
         return guiType == GUIType.CONTAINER_CONFIG ||
-               guiType == GUIType.CONTAINER_FILTER;
+                guiType == GUIType.CONTAINER_FILTER;
     }
 }
