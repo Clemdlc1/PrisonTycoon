@@ -63,7 +63,6 @@ public class GUIManager {
             openGUIs.remove(playerId);
             guiData.remove(playerId);
         }
-        // Sinon, c'est probablement un ancien GUI qui se ferme pendant une transition - on ignore
     }
 
     /**

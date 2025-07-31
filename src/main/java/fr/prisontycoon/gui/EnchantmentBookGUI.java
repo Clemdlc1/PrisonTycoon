@@ -30,7 +30,6 @@ public class EnchantmentBookGUI {
     private static final int[] EXTRA_BOOK_SLOTS = {20, 21, 22, 23, 24};
     private static final int SUMMARY_SLOT = 4;
     // Slots des boutons de contrôle
-    private static final int BACK_BUTTON_SLOT = 27;
     private static final int INFO_SLOT = 31;
     private static final int SHOP_SLOT = 35;
     private final PrisonTycoon plugin;
@@ -185,14 +184,6 @@ public class EnchantmentBookGUI {
      * Configure les boutons de contrôle
      */
     private void setupControlButtons(Inventory gui) {
-        // Bouton retour
-        ItemStack backButton = new ItemStack(Material.ARROW);
-        ItemMeta backMeta = backButton.getItemMeta();
-        backMeta.setDisplayName("§c⬅ §lRetour");
-        backMeta.setLore(List.of("§7Retour au menu principal"));
-        backButton.setItemMeta(backMeta);
-        gui.setItem(BACK_BUTTON_SLOT, backButton);
-
         // Bouton boutique
         ItemStack shopButton = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shopButton.getItemMeta();
@@ -408,13 +399,6 @@ public class EnchantmentBookGUI {
      * NOUVEAU : Gère les achats de livres épées/armures dans la boutique
      */
     public void handleBookShopClick(Player player, int slot, ItemStack clickedItem) {
-        // Bouton retour
-        if (slot == 27) {
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            openEnchantmentBookMenu(player);
-            return;
-        }
-
         if (clickedItem == null || !clickedItem.hasItemMeta()) {
             return;
         }
@@ -498,13 +482,6 @@ public class EnchantmentBookGUI {
                 new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING)) {
 
             handlePhysicalBookApplication(player, cursor);
-            return;
-        }
-
-        // Bouton retour
-        if (slot == BACK_BUTTON_SLOT) {
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            plugin.getMainMenuGUI().openEnchantmentMenu(player);
             return;
         }
 

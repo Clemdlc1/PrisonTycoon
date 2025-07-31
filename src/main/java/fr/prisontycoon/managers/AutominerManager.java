@@ -64,7 +64,7 @@ public class AutominerManager {
             String enchant = entry.getKey();
             int limit = entry.getValue();
             if (limit == Integer.MAX_VALUE) {
-                lore.add("§8• " + enchant + ": §a∞");
+                lore.add("§8• " + enchant + ": §7∞");
             } else {
                 lore.add("§8• " + enchant + ": §70/" + limit);
             }

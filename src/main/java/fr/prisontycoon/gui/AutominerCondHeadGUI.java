@@ -665,7 +665,6 @@ public class AutominerCondHeadGUI {
     }
 
     private void reopenMainMenu(Player player) {
-        // Petit délai pour éviter les conflits d'inventaire
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 plugin.getAutominerGUI().openMainMenu(player);

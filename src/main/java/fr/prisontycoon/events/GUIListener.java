@@ -79,13 +79,18 @@ public class GUIListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
-        GUIType guiType = guiManager.getOpenGUIType(player);
-        if (guiType == null) return;
 
-        // Gère les fermetures spéciales
-        handleGUIClose(player, guiType, event);
+        GUIType registeredType = guiManager.getOpenGUIType(player);
+        org.bukkit.inventory.Inventory registeredInventory = guiManager.getOpenGUIInventory(player);
 
-        // Supprime l'enregistrement
+        if (registeredType == null) {
+            return;
+        }
+
+        if (event.getInventory().equals(registeredInventory)) {
+            handleGUIClose(player, registeredType, event);
+        }
+
         guiManager.unregisterGUI(player, event.getInventory());
     }
 
@@ -175,7 +180,6 @@ public class GUIListener implements Listener {
             case GANG_MAIN, GANG_MANAGEMENT -> plugin.getGangGUI().closeGui(player);
 
             default -> {
-                // La plupart des GUIs n'ont pas besoin de traitement spécial à la fermeture
             }
         }
     }
