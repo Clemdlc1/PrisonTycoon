@@ -175,7 +175,7 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
      * CORRIGÉ: Définit la permission de mine au rang spécifique (non-cumulatif).
      * Retire les anciennes permissions de rang et ajoute la nouvelle.
      */
-    private void setMinePermissionToRank(Player player, String targetRank) {
+    public void setMinePermissionToRank(Player player, String targetRank) {
         // Validation du rang
         if (targetRank == null || targetRank.length() != 1) {
             plugin.getPluginLogger().warning("Tentative de définir un rang invalide: " + targetRank);

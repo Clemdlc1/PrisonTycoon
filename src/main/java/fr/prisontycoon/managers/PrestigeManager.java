@@ -126,29 +126,12 @@ public class PrestigeManager {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         // Retirer toutes les permissions de mine via PermissionManager
-        clearAllMinePermissions(player);
-
-        // Remettre uniquement la permission de base (rang A) via PermissionManager
-        plugin.getPermissionManager().attachPermission(player, "specialmine.mine.a");
+        plugin.getRankupCommand().setMinePermissionToRank(player, "a");
 
         // Reset des coins
         playerData.setCoins(0);
 
         plugin.getPluginLogger().info("Reset de prestige effectué pour: " + player.getName() + " (retour au rang A)");
-    }
-
-    /**
-     * CORRIGÉ: Retire toutes les permissions de mine d'un joueur via PermissionManager (plus de FREE)
-     */
-    private void clearAllMinePermissions(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        for (char c = 'a'; c <= 'z'; c++) {
-            String minePermission = "specialmine.mine." + c;
-            if (playerData.hasCustomPermission(minePermission)) {
-                plugin.getPermissionManager().detachPermission(player, minePermission);
-            }
-        }
     }
 
     /**
