@@ -62,7 +62,7 @@ public class CombustionDecayTask extends BukkitRunnable {
                         }
 
                         plugin.getPluginLogger().debug("Combustion decay pour " + playerData.getPlayerName() +
-                                                       ": " + currentCombustion + " → " + newCombustionLevel + " (decay: " + finalDecay + ")");
+                                ": " + currentCombustion + " → " + newCombustionLevel + " (decay: " + finalDecay + ")");
                     }
                 }
             }
@@ -72,8 +72,8 @@ public class CombustionDecayTask extends BukkitRunnable {
             // Log périodique pour le debug
             if (decayProcessed % 60 == 0) { // Toutes les minutes
                 plugin.getPluginLogger().debug("CombustionDecay cycle #" + decayProcessed +
-                                               ": " + playersWithCombustion + " joueurs avec combustion, " +
-                                               totalDecayPoints + " points décrémentés au total");
+                        ": " + playersWithCombustion + " joueurs avec combustion, " +
+                        totalDecayPoints + " points décrémentés au total");
             }
 
         } catch (Exception e) {

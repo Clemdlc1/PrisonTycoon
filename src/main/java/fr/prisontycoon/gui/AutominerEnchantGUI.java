@@ -213,7 +213,7 @@ public class AutominerEnchantGUI {
         if (slot1 != null) {
             Map<String, String> crystals1 = plugin.getAutominerManager().getAutominerCrystals(slot1);
             if (crystals1.get("slot_1") == null || crystals1.get("slot_1").equals("null") ||
-                crystals1.get("slot_2") == null || crystals1.get("slot_2").equals("null")) {
+                    crystals1.get("slot_2") == null || crystals1.get("slot_2").equals("null")) {
                 targetAutominer = slot1;
                 targetSlotNumber = 1;
             }
@@ -222,7 +222,7 @@ public class AutominerEnchantGUI {
         if (targetAutominer == null && slot2 != null) {
             Map<String, String> crystals2 = plugin.getAutominerManager().getAutominerCrystals(slot2);
             if (crystals2.get("slot_1") == null || crystals2.get("slot_1").equals("null") ||
-                crystals2.get("slot_2") == null || crystals2.get("slot_2").equals("null")) {
+                    crystals2.get("slot_2") == null || crystals2.get("slot_2").equals("null")) {
                 targetAutominer = slot2;
                 targetSlotNumber = 2;
             }
@@ -460,9 +460,9 @@ public class AutominerEnchantGUI {
         // Vérifier que c'est un cristal de type "Greed"
         String crystalName = extractCrystalName(crystal);
         return crystalName.contains("MoneyBoost") ||
-               crystalName.contains("TokenBoost") ||
-               crystalName.contains("XPBoost") ||
-               crystalName.contains("MineralGreed");
+                crystalName.contains("TokenBoost") ||
+                crystalName.contains("XPBoost") ||
+                crystalName.contains("MineralGreed");
     }
 
     private String extractCrystalName(ItemStack crystal) {

@@ -167,7 +167,7 @@ public class SellHandManager {
             double durabilityPercent = (double) (currentDurability - 1) / type.getMaxDurability() * 100;
             if (durabilityPercent <= 25) {
                 player.sendMessage("§7▸ Durabilité: " + (durabilityPercent <= 10 ? "§c" : "§e") +
-                                   String.format("%.1f%%", durabilityPercent));
+                        String.format("%.1f%%", durabilityPercent));
             }
         }
 
@@ -187,7 +187,7 @@ public class SellHandManager {
         List<String> lore = Arrays.asList(
                 "§7Multiplicateur: §6" + String.format("%.1f", type.getMultiplier()) + "x",
                 "§7Durabilité: " + durabilityColor + currentDurability + "§7/" + type.getMaxDurability() +
-                " §7(" + String.format("%.1f", durabilityPercent) + "%)",
+                        " §7(" + String.format("%.1f", durabilityPercent) + "%)",
                 "",
                 "§7Clic droit sur un Tank pour",
                 "§7vendre tout son contenu au serveur",

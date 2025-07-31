@@ -13,10 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -123,14 +120,14 @@ public class CrateListener implements Listener {
 
         if (keyCount == 0) {
             player.sendMessage("§c❌ Vous n'avez aucune clé " + crateType.getColor() +
-                               crateType.getDisplayName() + " §cpour ouvrir cette crate!");
+                    crateType.getDisplayName() + " §cpour ouvrir cette crate!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
             return;
         }
 
         // Confirmation avec le nombre de clés
         player.sendMessage("§6🔑 Ouverture de la crate " + crateType.getColor() +
-                           crateType.getDisplayName() + "§6... §7(" + keyCount + " clé(s) restante(s))");
+                crateType.getDisplayName() + "§6... §7(" + keyCount + " clé(s) restante(s))");
 
         // Ouvre la crate
         crateManager.openCrateWithAnimation(player, location, crateType);
@@ -148,7 +145,7 @@ public class CrateListener implements Listener {
 
         if (keyCount == 0) {
             player.sendMessage("§c❌ Vous n'avez aucune clé " + crateType.getColor() +
-                               crateType.getDisplayName() + " §cpour cette crate!");
+                    crateType.getDisplayName() + " §cpour cette crate!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
             return;
         }
@@ -173,7 +170,7 @@ public class CrateListener implements Listener {
                 10, 30, 10);
 
         player.sendMessage("§6🔥 Ouverture de §e" + keyCount + " §6clés " + crateType.getColor() +
-                           crateType.getDisplayName() + "§6!");
+                crateType.getDisplayName() + "§6!");
         player.sendMessage("§7💡 L'ouverture s'arrêtera si votre inventaire se remplit.");
 
         // Ouvre toutes les clés
@@ -188,7 +185,7 @@ public class CrateListener implements Listener {
      */
     private void handleShowRewards(Player player, CrateType crateType) {
         player.sendMessage("§6📋 Ouverture du menu des récompenses pour la crate " +
-                           crateType.getColor() + crateType.getDisplayName() + "§6...");
+                crateType.getColor() + crateType.getDisplayName() + "§6...");
 
         // Ouvre le GUI des récompenses
         crateGUI.openRewardsGUI(player, crateType);
@@ -350,68 +347,5 @@ public class CrateListener implements Listener {
                 }
             }
         }.runTaskTimer(plugin, 0L, 40L); // Toutes les 2 secondes
-    }
-
-    /**
-     * Empêche la destruction des blocs de crates
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockBreak(BlockBreakEvent event) {
-        Block block = event.getBlock();
-        Location blockLocation = block.getLocation();
-
-        if (crateManager.isCrateLocation(blockLocation)) {
-            event.setCancelled(true);
-
-            Player player = event.getPlayer();
-            CrateType crateType = crateManager.getCrateTypeAtLocation(blockLocation);
-
-            player.sendMessage("§c❌ Vous ne pouvez pas détruire cette crate " +
-                               (crateType != null ? crateType.getColor() + crateType.getDisplayName() : "inconnue") + "§c!");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
-        }
-    }
-
-    /**
-     * Empêche la pose de blocs sur les emplacements de crates
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockPlace(BlockPlaceEvent event) {
-        Block block = event.getBlock();
-        Location blockLocation = block.getLocation();
-
-        if (crateManager.isCrateLocation(blockLocation)) {
-            event.setCancelled(true);
-
-            Player player = event.getPlayer();
-            player.sendMessage("§c❌ Vous ne pouvez pas placer de bloc à cet emplacement!");
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
-        }
-    }
-
-    /**
-     * Message d'accueil sur les crates lors de la connexion
-     */
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-
-        // Message d'information sur les crates (avec délai pour éviter le spam au login)
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (player.isOnline()) {
-                    int totalCrates = crateManager.getCrateLocations().size();
-                    if (totalCrates > 0) {
-                        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-                        player.sendMessage("§6✨ Bienvenue! Il y a §e" + totalCrates + " crates §6disponibles sur le serveur!");
-                        player.sendMessage("§7💡 Utilisez vos clés pour obtenir des récompenses incroyables!");
-                        player.sendMessage("§7🔍 §eClic gauche §7= Voir récompenses | §eClic droit §7= Ouvrir");
-                        player.sendMessage("§7⚡ §eShift + Clic droit §7= Ouvrir toutes les clés");
-                        player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-                    }
-                }
-            }
-        }.runTaskLater(plugin, 60L); // 3 secondes après la connexion
     }
 }

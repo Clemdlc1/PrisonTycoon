@@ -260,8 +260,8 @@ public class BoostManager {
         // Annonce à tous les joueurs
         String message = "§6⚡ §lBOOST ADMIN ACTIVÉ!";
         String details = "§7Type: " + type.getFormattedName() +
-                         " §7Bonus: " + type.getColor() + "+" + String.format("%.0f", bonusPercentage) + "% " +
-                         "§7Durée: §e" + (durationSeconds / 60) + " minutes";
+                " §7Bonus: " + type.getColor() + "+" + String.format("%.0f", bonusPercentage) + "% " +
+                "§7Durée: §e" + (durationSeconds / 60) + " minutes";
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendMessage(message);
@@ -427,7 +427,7 @@ public class BoostManager {
                 .put(boostType, boostData);
 
         plugin.getPluginLogger().info("Boost de gang activé: " + boostType + " x" + multipliers[tier - 1] +
-                                      " pour " + gang.getName() + " (" + durations[tier - 1] + " min)");
+                " pour " + gang.getName() + " (" + durations[tier - 1] + " min)");
     }
 
     /**

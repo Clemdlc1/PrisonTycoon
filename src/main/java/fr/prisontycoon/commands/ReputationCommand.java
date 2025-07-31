@@ -137,7 +137,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
             if (shown >= 5) break; // Limite à 5 entrées
 
             player.sendMessage("§8• §7" + change.getFormattedTime() + " §8| " +
-                               change.getChangeDisplay() + " §8| §7" + change.reason());
+                    change.getChangeDisplay() + " §8| §7" + change.reason());
             shown++;
         }
 
@@ -202,7 +202,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e§lNIVEAUX DE RÉPUTATION:");
         for (ReputationTier tier : ReputationTier.values()) {
             player.sendMessage("§8• " + tier.getColoredTitle() + " §8(" +
-                               tier.getMinReputation() + " à " + tier.getMaxReputation() + ")");
+                    tier.getMinReputation() + " à " + tier.getMaxReputation() + ")");
         }
         player.sendMessage("");
 
@@ -311,7 +311,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
             reputationManager.modifyReputation(target.getUniqueId(), change, "Admin: " + admin.getName());
 
             admin.sendMessage("§aRéputation de " + target.getName() + " définie à " + value +
-                              " (ancien: " + oldReputation + ")");
+                    " (ancien: " + oldReputation + ")");
 
             target.sendMessage("§6Votre réputation a été modifiée par un administrateur.");
 
@@ -340,7 +340,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
             String changeColor = change >= 0 ? "§a+" : "§c";
 
             admin.sendMessage("§aRéputation de " + target.getName() + ": " + oldReputation +
-                              " → " + newReputation + " (" + changeColor + change + "§a)");
+                    " → " + newReputation + " (" + changeColor + change + "§a)");
 
             target.sendMessage("§6Votre réputation a été modifiée: " + changeColor + change + " §6(" + reason + ")");
 

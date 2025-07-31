@@ -87,8 +87,8 @@ public class PlayerBoost {
      */
     public String getDescription() {
         return type.getFormattedName() + " " +
-               type.getColor() + "+" + String.format("%.0f", bonusPercentage) + "% " +
-               "§7(" + getFormattedTimeRemaining() + ")";
+                type.getColor() + "+" + String.format("%.0f", bonusPercentage) + "% " +
+                "§7(" + getFormattedTimeRemaining() + ")";
     }
 
     /**
@@ -122,10 +122,10 @@ public class PlayerBoost {
     @Override
     public String toString() {
         return "PlayerBoost{" +
-               "type=" + type +
-               ", bonus=" + bonusPercentage + "%" +
-               ", remaining=" + getTimeRemainingSeconds() + "s" +
-               ", admin=" + isAdminBoost +
-               '}';
+                "type=" + type +
+                ", bonus=" + bonusPercentage + "%" +
+                ", remaining=" + getTimeRemainingSeconds() + "s" +
+                ", admin=" + isAdminBoost +
+                '}';
     }
 }

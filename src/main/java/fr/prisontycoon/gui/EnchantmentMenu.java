@@ -128,9 +128,10 @@ public class EnchantmentMenu {
                 lore.add("§7");
                 lore.add("§e📊 §lEffets principaux:");
                 lore.add("§7▸ §6Tokens, Coins, Expérience bonus via Greeds");
-                lore.add("§7▸ §6Clés de coffres rares (Key Greed)");
                 lore.add("§7▸ §6Multiplicateurs temporaires (Combustion)");
                 lore.add("§7▸ §6Effets d'abondance (x2 gains temporaire)");
+                lore.add("§7▸ §6Bonus de vente permanent (Sell Greed)"); // NOUVEAU
+                lore.add("§7▸ §6Expérience pour pets (Pet XP)");
             }
             case UTILITY -> {
                 lore.add("§7Enchantements qui améliorent l'utilité");
@@ -159,8 +160,9 @@ public class EnchantmentMenu {
                 lore.add("§e✨ §lEffets principaux:");
                 lore.add("§7▸ §dExplosions de minage destructrices");
                 lore.add("§7▸ §dLaser destructeur en ligne droite");
-                lore.add("§7▸ §dAugmentation globale de chance");
-                lore.add("§7▸ §dEffets spéciaux uniques");
+                lore.add("§7▸ §dCouches entières détruites (Jackhammer)"); // NOUVEAU
+                lore.add("§7▸ §dClés de coffres rares (Key Greed)"); // DÉPLACÉ
+                lore.add("§7▸ §dAugmentation globale de chance (Luck)");
             }
         }
 
@@ -203,7 +205,6 @@ public class EnchantmentMenu {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§e✨ Cliquez pour explorer cette catégorie!");
-        lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);
         item.setItemMeta(meta);

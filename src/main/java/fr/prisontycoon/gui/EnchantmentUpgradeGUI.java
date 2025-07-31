@@ -272,31 +272,31 @@ public class EnchantmentUpgradeGUI {
                 long fromTokens = fromLevel * 5L;
                 long toTokens = toLevel * 5L;
                 lore.add("§7▸ Tokens/Greed: §e" + NumberFormatter.format(fromTokens) +
-                         " §7→ §a" + NumberFormatter.format(toTokens));
+                        " §7→ §a" + NumberFormatter.format(toTokens));
             }
             case "exp_greed" -> {
                 long fromExp = fromLevel * 50L;
                 long toExp = toLevel * 50L;
                 lore.add("§7▸ XP/Greed: §e" + NumberFormatter.format(fromExp) +
-                         " §7→ §a" + NumberFormatter.format(toExp));
+                        " §7→ §a" + NumberFormatter.format(toExp));
             }
             case "money_greed" -> {
                 long fromCoins = fromLevel * 10L;
                 long toCoins = toLevel * 10L;
                 lore.add("§7▸ Coins/Greed: §e" + NumberFormatter.format(fromCoins) +
-                         " §7→ §a" + NumberFormatter.format(toCoins));
+                        " §7→ §a" + NumberFormatter.format(toCoins));
             }
             case "key_greed" -> {
                 double fromChance = fromLevel * 1.0;
                 double toChance = toLevel * 1.0;
                 lore.add("§7▸ Chance clé: §e" + String.format("%.1f%%", fromChance) +
-                         " §7→ §a" + String.format("%.1f%%", toChance));
+                        " §7→ §a" + String.format("%.1f%%", toChance));
             }
             case "abundance" -> {
                 double fromChance = fromLevel * 0.0001;
                 double toChance = toLevel * 0.0001;
                 lore.add("§7▸ Chance activation: §e" + String.format("%.4f%%", fromChance) +
-                         " §7→ §a" + String.format("%.4f%%", toChance));
+                        " §7→ §a" + String.format("%.4f%%", toChance));
             }
             case "combustion" -> {
                 int fromGain = Math.max(1, fromLevel / 10);
@@ -307,20 +307,20 @@ public class EnchantmentUpgradeGUI {
                 long fromBonus = fromLevel * 10L;
                 long toBonus = toLevel * 10L;
                 lore.add("§7▸ Bonus Pet XP: §e+" + NumberFormatter.format(fromBonus) +
-                         " §7→ §a+" + NumberFormatter.format(toBonus));
+                        " §7→ §a+" + NumberFormatter.format(toBonus));
             }
             case "efficiency" -> lore.add("§7▸ Vitesse minage: §eFast+" + fromLevel + " §7→ §aFast+" + toLevel);
             case "fortune" -> {
                 double fromMult = 1.0 + (fromLevel * 0.2);
                 double toMult = 1.0 + (toLevel * 0.2);
                 lore.add("§7▸ Multiplicateur: §ex" + String.format("%.1f", fromMult) +
-                         " §7→ §ax" + String.format("%.1f", toMult));
+                        " §7→ §ax" + String.format("%.1f", toMult));
             }
             case "durability" -> {
                 double fromBonus = fromLevel * 10;
                 double toBonus = toLevel * 10;
                 lore.add("§7▸ Durabilité: §e+" + String.format("%.0f%%", fromBonus) +
-                         " §7→ §a+" + String.format("%.0f%%", toBonus));
+                        " §7→ §a+" + String.format("%.0f%%", toBonus));
             }
             case "night_vision" -> {
                 if (fromLevel == 0 && toLevel == 1) {
@@ -343,22 +343,22 @@ public class EnchantmentUpgradeGUI {
                 double fromBonus = fromLevel * 0.2;
                 double toBonus = toLevel * 0.2;
                 lore.add("§7▸ Bonus chance: §e+" + String.format("%.1f%%", fromBonus) +
-                         " §7→ §a+" + String.format("%.1f%%", toBonus));
+                        " §7→ §a+" + String.format("%.1f%%", toBonus));
             }
             case "laser" -> {
                 double fromChance = fromLevel * 0.002;
                 double toChance = toLevel * 0.002;
                 lore.add("§7▸ Chance laser: §e" + String.format("%.3f%%", fromChance) +
-                         " §7→ §a" + String.format("%.3f%%", toChance));
+                        " §7→ §a" + String.format("%.3f%%", toChance));
             }
             case "explosion" -> {
                 double fromChance = fromLevel * 0.05;
                 double toChance = toLevel * 0.05;
                 lore.add("§7▸ Chance explosion: §e" + String.format("%.2f%%", fromChance) +
-                         " §7→ §a" + String.format("%.2f%%", toChance));
+                        " §7→ §a" + String.format("%.2f%%", toChance));
             }
             default -> lore.add("§7▸ Amélioration de §2+" + (toLevel - fromLevel) + " niveau" +
-                                (toLevel - fromLevel > 1 ? "x" : ""));
+                    (toLevel - fromLevel > 1 ? "x" : ""));
         }
     }
 

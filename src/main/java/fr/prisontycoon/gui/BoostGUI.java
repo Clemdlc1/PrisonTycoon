@@ -102,7 +102,7 @@ public class BoostGUI {
                 "",
                 "§7Type: " + boost.getType().getFormattedName(),
                 "§7Bonus: " + boost.getType().getColor() + "+" +
-                String.format("%.0f", boost.getBonusPercentage()) + "%",
+                        String.format("%.0f", boost.getBonusPercentage()) + "%",
                 "",
                 "§7Temps restant: " + boost.getFormattedTimeRemaining(),
                 "§7Durée totale: §e" + (boost.getTotalDurationSeconds() / 60) + " minutes",
@@ -176,8 +176,8 @@ public class BoostGUI {
                     var details = entry.getValue();
 
                     lore.add(category.getColor() + category.getEmoji() + " " + category.getDisplayName() +
-                             "§7: §f×" + String.format("%.2f", details.getTotalMultiplier()) +
-                             " §7(+" + String.format("%.1f", details.getTotalBonus()) + "%)");
+                            "§7: §f×" + String.format("%.2f", details.getTotalMultiplier()) +
+                            " §7(+" + String.format("%.1f", details.getTotalBonus()) + "%)");
                 }
             }
         } else {
@@ -370,7 +370,7 @@ public class BoostGUI {
                 // Crée le composant du multiplicateur
                 TextComponent multiplierComponent = new TextComponent(
                         "  §7Multiplicateur: §f×" + String.format("%.3f", details.getTotalMultiplier()) +
-                        " " + arrow + " §f+" + String.format("%.1f", details.getTotalBonus()) + "%");
+                                " " + arrow + " §f+" + String.format("%.1f", details.getTotalBonus()) + "%");
 
                 // Crée le texte de survol avec les sources détaillées (simplifié!)
                 ComponentBuilder hoverText = createBonusHoverText(category, details);
@@ -439,7 +439,7 @@ public class BoostGUI {
             builder.append("\n\n§8Détails:");
             for (var source : details.getDetailedSources().entrySet()) {
                 builder.append("\n§8• " + source.getKey() + ": +" +
-                               String.format("%.1f", source.getValue()) + "%");
+                        String.format("%.1f", source.getValue()) + "%");
             }
         }
 

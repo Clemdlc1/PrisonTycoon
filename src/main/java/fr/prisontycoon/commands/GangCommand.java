@@ -93,7 +93,7 @@ public class GangCommand implements CommandExecutor, TabCompleter {
 
         if (playerData.getBeacons() < 10000) {
             player.sendMessage("§c❌ Création d'un gang: §e10,000 beacons §c(vous avez: §e" +
-                               NumberFormatter.format(playerData.getBeacons()) + "§c)");
+                    NumberFormatter.format(playerData.getBeacons()) + "§c)");
             return;
         }
 
@@ -664,10 +664,10 @@ public class GangCommand implements CommandExecutor, TabCompleter {
             );
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("invite") ||
-                                        args[0].equalsIgnoreCase("kick") ||
-                                        args[0].equalsIgnoreCase("promote") ||
-                                        args[0].equalsIgnoreCase("demote") ||
-                                        args[0].equalsIgnoreCase("transfer"))) {
+                args[0].equalsIgnoreCase("kick") ||
+                args[0].equalsIgnoreCase("promote") ||
+                args[0].equalsIgnoreCase("demote") ||
+                args[0].equalsIgnoreCase("transfer"))) {
             // Auto-complétion des noms de joueurs
             for (Player player : Bukkit.getOnlinePlayers()) {
                 completions.add(player.getName());

@@ -367,11 +367,11 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                         }
 
                         player.sendMessage("§7• " + blockName + ": §e" + NumberFormatter.format(quantity) + "x §7(§a" +
-                                           NumberFormatter.format(value) + " coins§7)" + evolutionText);
+                                NumberFormatter.format(value) + " coins§7)" + evolutionText);
                     } else {
                         // Informations basiques pour les non-commerçants
                         player.sendMessage("§7• " + blockName + ": §e" + NumberFormatter.format(quantity) + "x §7(§a" +
-                                           NumberFormatter.format(value) + " coins§7)");
+                                NumberFormatter.format(value) + " coins§7)");
                     }
                 }
             }
@@ -464,10 +464,10 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("");
         player.sendMessage("§7Dépôts requis: §e" + NumberFormatter.format(requiredDeposits));
         player.sendMessage("§7Vos dépôts: " + (totalDeposits >= requiredDeposits ? "§a" : "§c") +
-                           NumberFormatter.format(totalDeposits));
+                NumberFormatter.format(totalDeposits));
         player.sendMessage("§7Coût en XP: §b" + NumberFormatter.format(experienceCost));
         player.sendMessage("§7Votre XP: " + (playerData.getExperience() >= experienceCost ? "§a" : "§c") +
-                           NumberFormatter.format(playerData.getExperience()));
+                NumberFormatter.format(playerData.getExperience()));
         player.sendMessage("");
 
         if (totalDeposits >= requiredDeposits && playerData.getExperience() >= experienceCost) {

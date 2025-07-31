@@ -206,7 +206,7 @@ public class BoostCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7Tous les joueurs en ligne ont été notifiés.");
 
             plugin.getPluginLogger().info("Boost admin activé par " + player.getName() +
-                                          ": " + type.name() + " +" + bonus + "% pour " + duration + " minutes");
+                    ": " + type.name() + " +" + bonus + "% pour " + duration + " minutes");
 
             return true;
 

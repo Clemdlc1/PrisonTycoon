@@ -57,7 +57,7 @@ public class CrateGUI {
         // Message informatif
         int keyCount = crateManager.countKeys(player, crateType.getDisplayName());
         player.sendMessage("§7Vous possédez §e" + keyCount + " §7clé(s) " +
-                           crateType.getColor() + crateType.getDisplayName());
+                crateType.getColor() + crateType.getDisplayName());
     }
 
     /**
@@ -301,7 +301,7 @@ public class CrateGUI {
 
         crateInfoLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         crateInfoLore.add("§7Clés possédées: §e" +
-                          crateManager.countKeys(player, crateType.getDisplayName()));
+                crateManager.countKeys(player, crateType.getDisplayName()));
         crateInfoLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         crateInfoLore.add("§cFermez ce menu pour retourner au jeu");
 

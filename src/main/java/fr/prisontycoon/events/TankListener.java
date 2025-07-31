@@ -326,7 +326,7 @@ public class TankListener implements Listener {
 
         if (soldSomething) {
             player.sendMessage("§a✓ Vendu " + totalItemsSold + " items pour " +
-                               NumberFormatter.format(totalMoneyEarned) + "$!");
+                    NumberFormatter.format(totalMoneyEarned) + "$!");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
 
             // Sauvegarder et mettre à jour le nametag

@@ -723,7 +723,7 @@ public class ProfessionGUI {
         boolean isCurrent = professionId.equals(currentProfession);
 
         meta.setDisplayName((isCurrent ? "§e" : "§a") + profession.displayName() +
-                            (isCurrent ? " §7(Actuel)" : ""));
+                (isCurrent ? " §7(Actuel)" : ""));
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + profession.description());

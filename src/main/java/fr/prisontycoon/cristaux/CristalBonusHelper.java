@@ -66,7 +66,7 @@ public class CristalBonusHelper {
         ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
         if (pickaxe == null) return baseDuration;
 
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(pickaxe);
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.ABONDANCE_CRISTAL) {
                 int bonus = cristal.getType().getAbondanceDurationBonus(cristal.getNiveau());
@@ -84,7 +84,7 @@ public class CristalBonusHelper {
         ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
         if (pickaxe == null) return baseEfficiency;
 
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(pickaxe);
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.COMBUSTION_CRISTAL) {
                 double bonus = cristal.getType().getCombustionEfficiencyBonus(cristal.getNiveau());
@@ -102,7 +102,7 @@ public class CristalBonusHelper {
         ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
         if (pickaxe == null) return baseDecay;
 
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(pickaxe);
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.COMBUSTION_CRISTAL) {
                 double reduction = cristal.getType().getCombustionDecayReduction(cristal.getNiveau());
@@ -114,53 +114,26 @@ public class CristalBonusHelper {
     }
 
     /**
-     * Vérifie si l'enchantement Laser ou Explosion doit créer des échos
-     */
-    public boolean shouldTriggerEcho(Player player) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return false;
-
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(pickaxe);
-        for (Cristal cristal : cristals) {
-            if (cristal.getType() == CristalType.ECHO_CRISTAL) {
-                double[] chances = cristal.getType().getEchoChances(cristal.getNiveau());
-
-                // Vérifie chaque niveau d'écho
-                for (double chance : chances) {
-                    if (random.nextDouble() * 100.0 < chance) {
-                        return true; // Au moins un écho se déclenche
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Calcule le nombre d'échos à déclencher pour EchoCristal
+     * Calcule le nombre d'échos à déclencher pour EchoCristal.
+     * Teste les probabilités du plus grand nombre d'échos (le plus rare) au plus petit.
+     *
+     * @param player Le joueur concerné.
+     * @return Le nombre d'échos (ex: de 1 à 5), ou 0 si aucun ne se déclenche.
      */
     public int getEchoCount(Player player) {
         ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
         if (pickaxe == null) return 0;
-
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(pickaxe);
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.ECHO_CRISTAL) {
                 double[] chances = cristal.getType().getEchoChances(cristal.getNiveau());
-
-                int echoCount = 0;
-                // Vérifie chaque niveau d'écho (de 1 à 5)
-                for (int i = 0; i < chances.length; i++) {
+                for (int i = chances.length - 1; i >= 0; i--) {
                     if (random.nextDouble() * 100.0 < chances[i]) {
-                        echoCount = i + 1; // +1 car l'index commence à 0
+                        return i + 1;
                     }
                 }
-
-                return echoCount;
             }
         }
-
         return 0;
     }
 
@@ -171,7 +144,7 @@ public class CristalBonusHelper {
         ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
         if (pickaxe == null) return 0;
 
-        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(pickaxe);
+        List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         for (Cristal cristal : cristals) {
             if (cristal.getType() == type) {
                 return cristal.getNiveau();

@@ -25,11 +25,11 @@ public class VipManager {
 
     private void createTable() {
         String vipTable = "CREATE TABLE IF NOT EXISTS vips (" +
-                          "uuid VARCHAR(36) PRIMARY KEY," +
-                          "player_name VARCHAR(16)," +
-                          "added_by VARCHAR(16)," +
-                          "added_at BIGINT" +
-                          ");";
+                "uuid VARCHAR(36) PRIMARY KEY," +
+                "player_name VARCHAR(16)," +
+                "added_by VARCHAR(16)," +
+                "added_at BIGINT" +
+                ");";
         try (Connection conn = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = conn.prepareStatement(vipTable)) {
             ps.execute();
         } catch (SQLException e) {

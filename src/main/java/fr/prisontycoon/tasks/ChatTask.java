@@ -47,7 +47,7 @@ public class ChatTask extends BukkitRunnable {
         int summariesSent = 0;
 
         plugin.getPluginLogger().debug("Vérification récapitulatif minute pour " +
-                                       plugin.getServer().getOnlinePlayers().size() + " joueurs (cycle #" + summaryCycles + ")");
+                plugin.getServer().getOnlinePlayers().size() + " joueurs (cycle #" + summaryCycles + ")");
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (sendMinuteSummaryIfActive(player)) {
@@ -70,24 +70,24 @@ public class ChatTask extends BukkitRunnable {
 
         // CORRIGÉ : Critères basés sur les gains VIA PIOCHE et auto-upgrades
         boolean hasBlockActivity = playerData.getLastMinuteBlocksMined() > 0 ||
-                                   playerData.getLastMinuteBlocksDestroyed() > 0;
+                playerData.getLastMinuteBlocksDestroyed() > 0;
         boolean hasPickaxeEconomicActivity = playerData.getLastMinuteCoinsViaPickaxe() > 0 ||
-                                             playerData.getLastMinuteTokensViaPickaxe() > 0 ||
-                                             playerData.getLastMinuteExperienceViaPickaxe() > 0;
+                playerData.getLastMinuteTokensViaPickaxe() > 0 ||
+                playerData.getLastMinuteExperienceViaPickaxe() > 0;
         boolean hasEnchantActivity = playerData.getLastMinuteGreedTriggers() > 0 ||
-                                     playerData.getLastMinuteKeysObtained() > 0;
+                playerData.getLastMinuteKeysObtained() > 0;
 
         boolean hasActivity = hasBlockActivity || hasPickaxeEconomicActivity || hasEnchantActivity;
 
         plugin.getPluginLogger().debug("Activité pour " + player.getName() + ": " +
-                                       "blocs=" + hasBlockActivity + " (" + playerData.getLastMinuteBlocksMined() + " minés, " +
-                                       playerData.getLastMinuteBlocksDestroyed() + " détruits), " +
-                                       "économie VIA PIOCHE=" + hasPickaxeEconomicActivity + " (" +
-                                       playerData.getLastMinuteCoinsViaPickaxe() + "c, " +
-                                       playerData.getLastMinuteTokensViaPickaxe() + "t, " +
-                                       playerData.getLastMinuteExperienceViaPickaxe() + "e), " +
-                                       "enchants=" + hasEnchantActivity + " (" + playerData.getLastMinuteGreedTriggers() + " greeds, " +
-                                       playerData.getLastMinuteAutoUpgrades() + " auto-upgrades)");
+                "blocs=" + hasBlockActivity + " (" + playerData.getLastMinuteBlocksMined() + " minés, " +
+                playerData.getLastMinuteBlocksDestroyed() + " détruits), " +
+                "économie VIA PIOCHE=" + hasPickaxeEconomicActivity + " (" +
+                playerData.getLastMinuteCoinsViaPickaxe() + "c, " +
+                playerData.getLastMinuteTokensViaPickaxe() + "t, " +
+                playerData.getLastMinuteExperienceViaPickaxe() + "e), " +
+                "enchants=" + hasEnchantActivity + " (" + playerData.getLastMinuteGreedTriggers() + " greeds, " +
+                playerData.getLastMinuteAutoUpgrades() + " auto-upgrades)");
 
         if (!hasActivity) {
             plugin.getPluginLogger().debug("Aucune activité VIA PIOCHE pour " + player.getName() + " cette minute");

@@ -109,7 +109,7 @@ public class TankGUI implements Listener {
      */
     public void openPricesViewGUI(Player player, TankData tankData) {
         Inventory gui = Bukkit.createInventory(null, 54, "§6💰 Prix - Tank de " +
-                                                         plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName());
+                plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName());
         plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_PRICES, gui);
 
         // Informations
@@ -324,7 +324,7 @@ public class TankGUI implements Listener {
                     break;
                 }
                 lore.add("§8▸ §b" + NumberFormatter.format(entry.getValue()) + "x §7" +
-                         entry.getKey().name().toLowerCase());
+                        entry.getKey().name().toLowerCase());
                 count++;
             }
         }
@@ -362,7 +362,7 @@ public class TankGUI implements Listener {
                     break;
                 }
                 lore.add("§8▸ §7" + entry.getKey().name().toLowerCase() + " §a" +
-                         NumberFormatter.format(entry.getValue()) + "$/item");
+                        NumberFormatter.format(entry.getValue()) + "$/item");
                 count++;
             }
         }
@@ -785,8 +785,8 @@ public class TankGUI implements Listener {
      */
     private boolean isMaterialFilterItem(ItemStack item) {
         return Arrays.asList(COMMON_ORES).contains(item.getType()) ||
-               Arrays.asList(DEEPSLATE_ORES).contains(item.getType()) ||
-               Arrays.asList(NETHER_MATERIALS).contains(item.getType());
+                Arrays.asList(DEEPSLATE_ORES).contains(item.getType()) ||
+                Arrays.asList(NETHER_MATERIALS).contains(item.getType());
     }
 
     @EventHandler

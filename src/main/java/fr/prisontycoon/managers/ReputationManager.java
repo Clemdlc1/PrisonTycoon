@@ -98,7 +98,7 @@ public class ReputationManager {
         }
 
         plugin.getPluginLogger().debug("Réputation de " + playerData.getPlayerName() +
-                                       ": " + currentReputation + " → " + newReputation + " (" + reason + ")");
+                ": " + currentReputation + " → " + newReputation + " (" + reason + ")");
     }
 
     /**

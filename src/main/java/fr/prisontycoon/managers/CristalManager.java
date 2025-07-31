@@ -187,7 +187,7 @@ public class CristalManager {
         for (Cristal existing : currentCristals) {
             if (!cristal.getType().isCompatibleWith(existing.getType())) {
                 player.sendMessage("§cUn cristal de type §d" + existing.getType().getDisplayName() +
-                                   " §cest déjà appliqué sur cette pioche!");
+                        " §cest déjà appliqué sur cette pioche!");
                 return false;
             }
         }
@@ -220,7 +220,7 @@ public class CristalManager {
         }, 1L);
 
         player.sendMessage("§d✨ Cristal §d" + cristal.getType().getDisplayName() +
-                           " §7(Niveau " + cristal.getNiveau() + ") §aappliqué!");
+                " §7(Niveau " + cristal.getNiveau() + ") §aappliqué!");
         player.sendMessage("§7Coût: §c-" + cost + " XP");
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
 
@@ -305,15 +305,6 @@ public class CristalManager {
         }
 
         return cristals;
-    }
-
-    /**
-     * MODIFIÉ : Récupère les cristaux de la pioche depuis PlayerData (overload pour ItemStack)
-     */
-    public List<Cristal> getPickaxeCristals(ItemStack pickaxe) {
-        // Cette méthode n'est plus utilisée car on récupère depuis PlayerData
-        // Garde pour compatibilité, mais retourne une liste vide
-        return new ArrayList<>();
     }
 
     /**

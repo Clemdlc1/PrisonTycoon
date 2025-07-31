@@ -318,9 +318,9 @@ public class AutominerEnchantUpgradeGUI {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
         player.sendMessage("§a✓ " + getEnchantmentDisplayName(enchantmentName) + " amélioré de " +
-                           actualLevels + " niveau" + (actualLevels > 1 ? "x" : "") + "!");
+                actualLevels + " niveau" + (actualLevels > 1 ? "x" : "") + "!");
         player.sendMessage("§7Nouveau niveau: §f" + (currentLevel + actualLevels) +
-                           "§7/§f" + (maxLevel == Integer.MAX_VALUE ? "∞" : maxLevel));
+                "§7/§f" + (maxLevel == Integer.MAX_VALUE ? "∞" : maxLevel));
         player.sendMessage("§7Coût: §6" + NumberFormatter.format(totalCost) + " tokens");
 
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
@@ -489,7 +489,7 @@ public class AutominerEnchantUpgradeGUI {
         lore.add("§7│ §eTokens: §6" + NumberFormatter.format(playerData.getTokens()));
         lore.add("§7│ §aExpérience: §2" + NumberFormatter.format(playerData.getExperience()));
         lore.add("§7└ §7Enchantement: §f" + currentLevel + "§7/" +
-                 (maxLevel == Integer.MAX_VALUE ? "∞" : maxLevel));
+                (maxLevel == Integer.MAX_VALUE ? "∞" : maxLevel));
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         meta.setLore(lore);

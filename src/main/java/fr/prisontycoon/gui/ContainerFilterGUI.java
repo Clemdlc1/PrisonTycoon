@@ -152,8 +152,8 @@ public class ContainerFilterGUI {
         activeFilterGUIs.remove(title);
 
         plugin.getPluginLogger().debug("Filtres sauvegardés pour " + player.getName() +
-                                       " (UUID: " + containerUUID.substring(0, 8) + "): " +
-                                       totalStacks + " slots utilisés.");
+                " (UUID: " + containerUUID.substring(0, 8) + "): " +
+                totalStacks + " slots utilisés.");
     }
 
     /**

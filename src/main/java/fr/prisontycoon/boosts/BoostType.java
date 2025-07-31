@@ -87,7 +87,7 @@ public enum BoostType {
             // Essaie avec le display name
             for (BoostType type : values()) {
                 if (type.displayName.equalsIgnoreCase(name) ||
-                    type.name().equalsIgnoreCase(name.replace(" ", "_"))) {
+                        type.name().equalsIgnoreCase(name.replace(" ", "_"))) {
                     return type;
                 }
             }

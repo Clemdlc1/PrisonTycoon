@@ -120,10 +120,10 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
 
         // Annonce aux admins
         broadcastToAdmins("§7[ADMIN] §e" + sender.getName() + " §7a muté §c" + target.getName() +
-                          " §7pour " + durationText + " (Raison: " + reason + ")", sender);
+                " §7pour " + durationText + " (Raison: " + reason + ")", sender);
 
         plugin.getPluginLogger().info("Joueur muté: " + target.getName() + " par " + sender.getName() +
-                                      " pour " + durationText + " (Raison: " + reason + ")");
+                " pour " + durationText + " (Raison: " + reason + ")");
     }
 
     /**
@@ -217,10 +217,10 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         String durationText = banDuration == 0 ? "permanent" : formatDuration(banDuration);
         if (target.isOnline()) {
             String kickMessage = "§c§l=== BANNISSEMENT ===\n\n" +
-                                 "§cVous avez été banni du serveur\n" +
-                                 "§7Durée: §e" + durationText + "\n" +
-                                 "§7Raison: §e" + reason + "\n" +
-                                 "§7Par: §e" + sender.getName();
+                    "§cVous avez été banni du serveur\n" +
+                    "§7Durée: §e" + durationText + "\n" +
+                    "§7Raison: §e" + reason + "\n" +
+                    "§7Par: §e" + sender.getName();
             target.getPlayer().kickPlayer(kickMessage);
         }
 
@@ -229,10 +229,10 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
 
         // Annonce aux admins
         broadcastToAdmins("§7[ADMIN] §e" + sender.getName() + " §7a banni §c" + target.getName() +
-                          " §7pour " + durationText + " (Raison: " + reason + ")", sender);
+                " §7pour " + durationText + " (Raison: " + reason + ")", sender);
 
         plugin.getPluginLogger().info("Joueur banni: " + target.getName() + " par " + sender.getName() +
-                                      " pour " + durationText + " (Raison: " + reason + ")");
+                " pour " + durationText + " (Raison: " + reason + ")");
     }
 
     /**
@@ -459,7 +459,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("mute") || args[0].equalsIgnoreCase("unmute") ||
-                args[0].equalsIgnoreCase("ban") || args[0].equalsIgnoreCase("unban")) {
+                    args[0].equalsIgnoreCase("ban") || args[0].equalsIgnoreCase("unban")) {
                 // Suggestions de noms de joueurs
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     completions.add(player.getName());

@@ -309,7 +309,7 @@ public class GangManager {
      */
     public boolean gangExists(String name, String tag) {
         return gangNameToId.containsKey(name.toLowerCase()) ||
-               gangTagToId.containsKey(tag.toLowerCase());
+                gangTagToId.containsKey(tag.toLowerCase());
     }
 
     /**
@@ -732,7 +732,7 @@ public class GangManager {
         // Notifier
         String[] multipliers = {"1.5x", "2x", "3x"};
         gang.broadcast("§6⚡ Boost " + boostType.getDisplayName() + " " + multipliers[tier - 1] +
-                       " §6activé par §e" + activator.getName() + "§6!", null);
+                " §6activé par §e" + activator.getName() + "§6!", null);
 
         return true;
     }

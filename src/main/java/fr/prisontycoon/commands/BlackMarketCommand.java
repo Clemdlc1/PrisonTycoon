@@ -166,7 +166,7 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7▸ Direction: §e" + direction);
         player.sendMessage("§7▸ Monde: §e" + marketLocation.getWorld().getName());
         player.sendMessage("§7▸ Coordonnées: §e" + (int) marketLocation.getX() + ", " +
-                           (int) marketLocation.getY() + ", " + (int) marketLocation.getZ());
+                (int) marketLocation.getY() + ", " + (int) marketLocation.getZ());
 
         // Indications de proximité
         if (distance <= 10) {
@@ -210,7 +210,7 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e👤 Votre situation:");
         player.sendMessage("§7┃ Réputation: " + reputation.getColoredTitle());
         player.sendMessage("§7┃ Modificateur de prix: §e" + (reputation.getBlackMarketPriceModifier() > 0 ? "+" : "") +
-                           Math.round(reputation.getBlackMarketPriceModifier() * 100) + "%");
+                Math.round(reputation.getBlackMarketPriceModifier() * 100) + "%");
 
         if (reputation == ReputationTier.EXEMPLAIRE) {
             player.sendMessage("§7┃ §c❌ Accès refusé (réputation trop propre)");
@@ -292,7 +292,7 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7┃ Items achetés: §a" + purchases.size());
         player.sendMessage("§7┃ Réputation: " + reputation.getColoredTitle());
         player.sendMessage("§7┃ Modificateur prix: §e" + (reputation.getBlackMarketPriceModifier() > 0 ? "+" : "") +
-                           Math.round(reputation.getBlackMarketPriceModifier() * 100) + "%");
+                Math.round(reputation.getBlackMarketPriceModifier() * 100) + "%");
 
         player.sendMessage("");
         player.sendMessage("§e🛡️ Statut d'accès:");

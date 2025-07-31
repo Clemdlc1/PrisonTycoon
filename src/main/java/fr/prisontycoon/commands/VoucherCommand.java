@@ -70,7 +70,7 @@ public class VoucherCommand implements CommandExecutor, TabCompleter {
         VoucherType type = null;
         for (VoucherType voucherType : VoucherType.values()) {
             if (voucherType.name().equalsIgnoreCase(typeStr) ||
-                voucherType.getDisplayName().equalsIgnoreCase(typeStr)) {
+                    voucherType.getDisplayName().equalsIgnoreCase(typeStr)) {
                 type = voucherType;
                 break;
             }
@@ -116,7 +116,7 @@ public class VoucherCommand implements CommandExecutor, TabCompleter {
 
             // Log
             plugin.getPluginLogger().info("Voucher donné par " + sender.getName() +
-                                          " à " + target.getName() + ": " + amount + "x " + type.name() + " tier " + tier);
+                    " à " + target.getName() + ": " + amount + "x " + type.name() + " tier " + tier);
         } else {
             sender.sendMessage("§cErreur lors de la création du voucher.");
         }

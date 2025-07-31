@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Gestionnaire unifié des bonus (cristaux, talents, boosts)
@@ -83,6 +84,13 @@ public class GlobalBonusManager {
         if (temporaryGangBoost > 0) {
             details.addDetailedSource("Boost de Gang (Temporaire)", temporaryGangBoost);
         }
+
+        double enchantmentBonus = getEnchantmentBonus(player, category);
+        details.setEnchantmentBonus(enchantmentBonus);
+        if (enchantmentBonus > 0) {
+            details.addDetailedSource("Enchantements", enchantmentBonus);
+        }
+
 
         return details;
     }
@@ -370,6 +378,20 @@ public class GlobalBonusManager {
         return bonus;
     }
 
+    /**
+     * NOUVEAU : Calcule le bonus des enchantements pour une catégorie
+     */
+    private double getEnchantmentBonus(Player player, BonusCategory category) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        double bonus = 0.0;
+        if (Objects.requireNonNull(category) == BonusCategory.SELL_BONUS) {
+            int sellGreedLevel = playerData.getEnchantmentLevel("sell_greed");
+            if (sellGreedLevel > 0) {
+                bonus += sellGreedLevel * 0.01; // 0,01% par niveau
+            }
+        }
+        return bonus;
+    }
 
     // ========================================
     // MÉTHODES UTILITAIRES DE MAPPING
@@ -456,8 +478,8 @@ public class GlobalBonusManager {
                 BonusSourceDetails details = entry.getValue();
 
                 plugin.getPluginLogger().info(category.getDisplayName() + ": ×" +
-                                              String.format("%.3f", details.getTotalMultiplier()) +
-                                              " (+" + String.format("%.1f", details.getTotalBonus()) + "%)");
+                        String.format("%.3f", details.getTotalMultiplier()) +
+                        " (+" + String.format("%.1f", details.getTotalBonus()) + "%)");
 
                 // Détails des sources
                 if (details.getCristalBonus() > 0) {
@@ -614,13 +636,22 @@ public class GlobalBonusManager {
         private double temporaryBoostBonus = 0.0;
         private double gangBonus = 0.0; // Bonus permanents (niveaux, talents)
         private double temporaryGangBoostBonus = 0.0; // Bonus temporaires (activables)
+        private double enchantmentBonus = 0.0;
 
         public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus;
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus;
         }
 
         public double getTotalMultiplier() {
             return 1.0 + (getTotalBonus() / 100.0);
+        }
+
+        public double getEnchantmentBonus() {
+            return enchantmentBonus;
+        }
+
+        public void setEnchantmentBonus(double enchantmentBonus) {
+            this.enchantmentBonus = enchantmentBonus;
         }
 
         // Getters

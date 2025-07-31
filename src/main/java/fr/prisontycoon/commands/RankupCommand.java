@@ -129,8 +129,8 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
         }
 
         plugin.getPluginLogger().info("Rankup effectué: " + player.getName() + " " +
-                                      currentRank.toUpperCase() + " → " + nextRank.toUpperCase() +
-                                      " (coût: " + NumberFormatter.format(price) + " coins)");
+                currentRank.toUpperCase() + " → " + nextRank.toUpperCase() +
+                " (coût: " + NumberFormatter.format(price) + " coins)");
 
         return true;
     }
@@ -206,7 +206,7 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
         plugin.getPermissionManager().reloadPlayerPermissions(player);
 
         plugin.getPluginLogger().info("Permission de mine définie pour " + player.getName() + ": " + targetRank.toUpperCase() +
-                                      " (les permissions précédentes ont été supprimées)");
+                " (les permissions précédentes ont été supprimées)");
     }
 
     /**
@@ -272,8 +272,8 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             }
 
             plugin.getPluginLogger().info("Rankup All effectué: " + player.getName() + " " +
-                                          originalRank.toUpperCase() + " → " + finalRank.toUpperCase() +
-                                          " (" + rankupsCount + " rankups, coût: " + totalCost + " coins)");
+                    originalRank.toUpperCase() + " → " + finalRank.toUpperCase() +
+                    " (" + rankupsCount + " rankups, coût: " + totalCost + " coins)");
         } else {
             player.sendMessage("§cVous n'avez pas assez d'argent pour le prochain rang ou vous êtes déjà au rang maximum.");
         }
@@ -293,8 +293,8 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
         if (rankupsCount > 0) {
             String finalRank = getCurrentRank(player);
             player.sendMessage("§a🔄 Auto-rankup: §e" + originalRank.toUpperCase() + " §7→ §a" +
-                               finalRank.toUpperCase() + " §7(" + rankupsCount + " niveau" +
-                               (rankupsCount > 1 ? "x" : "") + ")");
+                    finalRank.toUpperCase() + " §7(" + rankupsCount + " niveau" +
+                    (rankupsCount > 1 ? "x" : "") + ")");
             plugin.getPluginLogger().info("Auto-rankup effectué pour " + player.getName() + ": " + rankupsCount + " niveau(x).");
         }
     }
@@ -360,7 +360,7 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
         if (player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin")) {
             boolean autoRankupEnabled = playerData.hasAutoRankup();
             player.sendMessage("§7Auto-rankup VIP: " +
-                               (autoRankupEnabled ? "§a✅ Activé" : "§c❌ Désactivé"));
+                    (autoRankupEnabled ? "§a✅ Activé" : "§c❌ Désactivé"));
         }
 
         player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");

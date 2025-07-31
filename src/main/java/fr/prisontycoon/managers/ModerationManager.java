@@ -26,15 +26,15 @@ public class ModerationManager {
 
     private void createTable() {
         String moderationTable = "CREATE TABLE IF NOT EXISTS moderation (" +
-                                 "id SERIAL PRIMARY KEY," +
-                                 "uuid VARCHAR(36) NOT NULL," +
-                                 "player_name VARCHAR(16)," +
-                                 "type VARCHAR(16) NOT NULL," +
-                                 "reason VARCHAR(255)," +
-                                 "moderator VARCHAR(16)," +
-                                 "start_time BIGINT," +
-                                 "end_time BIGINT" +
-                                 ");";
+                "id SERIAL PRIMARY KEY," +
+                "uuid VARCHAR(36) NOT NULL," +
+                "player_name VARCHAR(16)," +
+                "type VARCHAR(16) NOT NULL," +
+                "reason VARCHAR(255)," +
+                "moderator VARCHAR(16)," +
+                "start_time BIGINT," +
+                "end_time BIGINT" +
+                ");";
         try (Connection conn = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = conn.prepareStatement(moderationTable)) {
             ps.execute();
         } catch (SQLException e) {

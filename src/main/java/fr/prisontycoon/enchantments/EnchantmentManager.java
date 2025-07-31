@@ -3,7 +3,6 @@ package fr.prisontycoon.enchantments;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.managers.PickaxeManager;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,8 +17,8 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Gestionnaire des 18 enchantements custom
- * CORRIGÉ : Explosion/laser cassent visuellement, Fortune implémenté, Durability vérifié
+ * Gestionnaire des enchantements custom
+ * MODIFIÉ : KeyGreed déplacé dans SPECIAL, ajout de Jackhammer et SellGreed
  */
 public class EnchantmentManager {
 
@@ -42,10 +41,12 @@ public class EnchantmentManager {
         registerEnchantment(new TokenGreedEnchantment());
         registerEnchantment(new ExpGreedEnchantment());
         registerEnchantment(new MoneyGreedEnchantment());
-        registerEnchantment(new KeyGreedEnchantment());
+        // MODIFIÉ : KeyGreed retiré d'ici et déplacé dans SPECIAL
         registerEnchantment(new AbondanceEnchantment());
         registerEnchantment(new CombustionEnchantment());
         registerEnchantment(new PetXpEnchantment());
+        // NOUVEAU : SellGreed ajouté dans ECONOMIC
+        registerEnchantment(new SellGreedEnchantment());
 
         // CATÉGORIE UTILITÉS
         registerEnchantment(new EfficiencyEnchantment());
@@ -63,6 +64,10 @@ public class EnchantmentManager {
         registerEnchantment(new LuckEnchantment());
         registerEnchantment(new LaserEnchantment());
         registerEnchantment(new ExplosionEnchantment());
+        // MODIFIÉ : KeyGreed déplacé ici depuis ECONOMIC
+        registerEnchantment(new KeyGreedEnchantment());
+        // NOUVEAU : Jackhammer ajouté dans SPECIAL
+        registerEnchantment(new JackhammerEnchantment());
     }
 
     /**
@@ -73,66 +78,428 @@ public class EnchantmentManager {
     }
 
     /**
-     * Obtient un enchantement par son nom
-     */
-    public CustomEnchantment getEnchantment(String name) {
-        return enchantments.get(name);
-    }
-
-    /**
-     * Obtient tous les enchantements
-     */
-    public Collection<CustomEnchantment> getAllEnchantments() {
-        return enchantments.values();
-    }
-
-    /**
-     * Obtient les enchantements par catégorie
-     */
-    public List<CustomEnchantment> getEnchantmentsByCategory(EnchantmentCategory category) {
-        return enchantments.values().stream()
-                .filter(ench -> ench.getCategory() == category)
-                .sorted(Comparator.comparing(CustomEnchantment::getName))
-                .toList();
-    }
-
-    /**
-     * NOUVEAU : Traite un bloc MINÉ directement par le joueur (dans une mine) avec Fortune sur blocs
+     * MODIFIÉ : Traite un bloc miné dans une mine avec tous les enchantements
      */
     public void processBlockMined(Player player, Location blockLocation, Material blockType, String mineName) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // Ajoute aux statistiques de minage (MINÉ)
+        // Ajoute aux statistiques de minage
         playerData.addMinedBlock(blockType);
 
-        int blocksToGive = calculateFortuneBlocks(player, playerData, blockType);
+        processGreedEnchantments(player, playerData, blockType, true);
 
-        // Ajoute les blocs à l'inventaire (quantité augmentée par Fortune)
+        if (isPlayerPickaxeBroken(player)) {
+            addBlocksToInventory(player, blockType, 1, blockLocation);
+            return;
+        }
+        // Applique Fortune
+        int fortuneBlocks = calculateFortuneBlocks(player, playerData, blockType);
+        int blocksToGive = fortuneBlocks + 1;
         addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
 
-        boolean pickaxeBroken = PickaxeManager.isPickaxeBroken(player);
-        if (!pickaxeBroken) {
-            processGreedEnchantments(player, playerData, blockType, true);
-            processSpecialEnchantments(player, playerData, blockLocation, mineName);
-            updateCombustion(player, playerData);
-            plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
-            String activeProfession = playerData.getActiveProfession();
-            if (activeProfession != null && activeProfession.equals("mineur")) {
-                Random rand = new Random();
-                if (rand.nextInt(100) == 0) {
-                    plugin.getProfessionManager().addProfessionXP(player, "mineur", 1);
-                }
+
+        // Met à jour la combustion
+        updateCombustion(player, playerData);
+
+        // Traite les enchantements spéciaux (laser, explosion, jackhammer)
+        processSpecialEnchantments(player, playerData, blockLocation, mineName);
+        plugin.getEnchantmentBookManager().processMiningEnchantments(player, blockLocation);
+        processKeyGreed(player, playerData);
+        processAbondance(player, playerData);
+
+        String activeProfession = playerData.getActiveProfession();
+        if (activeProfession != null && activeProfession.equals("mineur")) {
+            Random rand = new Random();
+            if (rand.nextInt(100) == 0) {
+                plugin.getProfessionManager().addProfessionXP(player, "mineur", 1);
             }
         }
-
-        processTokenGreedWithPenalty(player, blockType, playerData);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
     }
 
     /**
-     * NOUVEAU & MODIFIÉ : Calcule le nombre de blocs à donner avec Fortune (formule rééquilibrée)
+     * MODIFIÉ : Traite les enchantements spéciaux (laser, explosion, jackhammer)
+     */
+    private void processSpecialEnchantments(Player player, PlayerData playerData, Location blockLocation, String mineName) {
+        int laserLevel = playerData.getEnchantmentLevel("laser");
+        int explosionLevel = playerData.getEnchantmentLevel("explosion");
+        int jackhammerLevel = playerData.getEnchantmentLevel("jackhammer"); // CORRIGÉ : était "explosion"
+
+        // Laser
+        if (laserLevel > 0) {
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.001) * laserLevel;
+            if (ThreadLocalRandom.current().nextDouble() < chance) {
+                activateLaser(player, blockLocation, mineName, false);
+            }
+        }
+
+        // Explosion
+        if (explosionLevel > 0) {
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.explosion.base-chance", 0.0005) * explosionLevel;
+            if (ThreadLocalRandom.current().nextDouble() < chance) {
+                activateExplosion(player, blockLocation, mineName);
+            }
+        }
+
+        // NOUVEAU : Jackhammer
+        if (jackhammerLevel > 0) {
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.jackhammer.base-chance", 0.0005) * jackhammerLevel;
+            if (ThreadLocalRandom.current().nextDouble() < chance) {
+                activateJackhammer(player, blockLocation, mineName, false);
+            }
+        }
+    }
+
+    /**
+     * NOUVEAU : Active l'effet Jackhammer (casse une couche)
+     */
+    private int activateJackhammer(Player player, Location center, String mineName, boolean isEcho) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        var mineData = plugin.getConfigManager().getMineData(mineName);
+        if (mineData == null) return 0;
+
+        // Choisir aléatoirement entre couche horizontale ou verticale
+        boolean isHorizontal = ThreadLocalRandom.current().nextBoolean();
+
+        int blocksDestroyed = 0;
+
+        if (isHorizontal) {
+            // Couche horizontale (même Y) - casse jusqu'aux limites de la mine
+            int y = center.getBlockY();
+
+            // Détermine les limites de la mine
+            int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+            int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+
+            // Trouve les limites en testant progressivement
+            for (int x = center.getBlockX(); x >= center.getBlockX() - 1000; x--) {
+                Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
+                if (!mineData.contains(testLoc)) {
+                    minX = x + 1;
+                    break;
+                }
+            }
+            for (int x = center.getBlockX(); x <= center.getBlockX() + 1000; x++) {
+                Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
+                if (!mineData.contains(testLoc)) {
+                    maxX = x - 1;
+                    break;
+                }
+            }
+            for (int z = center.getBlockZ(); z >= center.getBlockZ() - 1000; z--) {
+                Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
+                if (!mineData.contains(testLoc)) {
+                    minZ = z + 1;
+                    break;
+                }
+            }
+            for (int z = center.getBlockZ(); z <= center.getBlockZ() + 1000; z++) {
+                Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
+                if (!mineData.contains(testLoc)) {
+                    maxZ = z - 1;
+                    break;
+                }
+            }
+
+            // Casse toute la couche horizontale
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    Location loc = new Location(center.getWorld(), x, y, z);
+                    if (mineData.contains(loc)) {
+                        Material blockType = loc.getBlock().getType();
+                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                            loc.getBlock().setType(Material.AIR);
+                            blocksDestroyed++;
+
+                            // Traiter comme un bloc cassé (processBlockDestroyed)
+                            processBlockDestroyed(player, loc, blockType, mineName);
+
+                            // Effets visuels
+                            center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, blockType.createBlockData());
+                        }
+                    }
+                }
+            }
+        } else {
+            // Couche verticale (même X ou Z, choisi aléatoirement)
+            boolean sameX = ThreadLocalRandom.current().nextBoolean();
+
+            if (sameX) {
+                // Plan vertical selon X - casse jusqu'aux limites de la mine
+                int x = center.getBlockX();
+
+                // Détermine les limites de la mine
+                int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+                int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+
+                // Trouve les limites en testant progressivement
+                for (int y = center.getBlockY(); y >= center.getBlockY() - 1000; y--) {
+                    Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
+                    if (!mineData.contains(testLoc)) {
+                        minY = y + 1;
+                        break;
+                    }
+                }
+                for (int y = center.getBlockY(); y <= center.getBlockY() + 1000; y++) {
+                    Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
+                    if (!mineData.contains(testLoc)) {
+                        maxY = y - 1;
+                        break;
+                    }
+                }
+                for (int z = center.getBlockZ(); z >= center.getBlockZ() - 1000; z--) {
+                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
+                    if (!mineData.contains(testLoc)) {
+                        minZ = z + 1;
+                        break;
+                    }
+                }
+                for (int z = center.getBlockZ(); z <= center.getBlockZ() + 1000; z++) {
+                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
+                    if (!mineData.contains(testLoc)) {
+                        maxZ = z - 1;
+                        break;
+                    }
+                }
+
+                // Casse tout le plan vertical selon X
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        Location loc = new Location(center.getWorld(), x, y, z);
+                        if (mineData.contains(loc)) {
+                            Material blockType = loc.getBlock().getType();
+                            if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                                loc.getBlock().setType(Material.AIR);
+                                blocksDestroyed++;
+
+                                // Traiter comme un bloc cassé (processBlockDestroyed)
+                                processBlockDestroyed(player, loc, blockType, mineName);
+
+                                // Effets visuels
+                                center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, blockType.createBlockData());
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Plan vertical selon Z - casse jusqu'aux limites de la mine
+                int z = center.getBlockZ();
+
+                // Détermine les limites de la mine
+                int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+                int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+
+                // Trouve les limites en testant progressivement
+                for (int x = center.getBlockX(); x >= center.getBlockX() - 1000; x--) {
+                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
+                    if (!mineData.contains(testLoc)) {
+                        minX = x + 1;
+                        break;
+                    }
+                }
+                for (int x = center.getBlockX(); x <= center.getBlockX() + 1000; x++) {
+                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
+                    if (!mineData.contains(testLoc)) {
+                        maxX = x - 1;
+                        break;
+                    }
+                }
+                for (int y = center.getBlockY(); y >= center.getBlockY() - 1000; y--) {
+                    Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
+                    if (!mineData.contains(testLoc)) {
+                        minY = y + 1;
+                        break;
+                    }
+                }
+                for (int y = center.getBlockY(); y <= center.getBlockY() + 1000; y++) {
+                    Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
+                    if (!mineData.contains(testLoc)) {
+                        maxY = y - 1;
+                        break;
+                    }
+                }
+
+                // Casse tout le plan vertical selon Z
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        Location loc = new Location(center.getWorld(), x, y, z);
+                        if (mineData.contains(loc)) {
+                            Material blockType = loc.getBlock().getType();
+                            if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                                loc.getBlock().setType(Material.AIR);
+                                blocksDestroyed++;
+
+                                // Traiter comme un bloc cassé (processBlockDestroyed)
+                                processBlockDestroyed(player, loc, blockType, mineName);
+
+                                // Effets visuels
+                                center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, blockType.createBlockData());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Son et effet pour l'activation
+        center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.8f);
+        center.getWorld().spawnParticle(Particle.EXPLOSION, center.add(0.5, 0.5, 0.5), 3, 2, 2, 2);
+
+        // Gestion des échos seulement si ce n'est pas déjà un écho
+        if (!isEcho) {
+            // On appelle directement getEchoCount. Un seul appel, une seule vérification.
+            int echoCount = plugin.getCristalBonusHelper().getEchoCount(player);
+
+            if (echoCount > 0) {
+                int echoBlocks = triggerEchos(player, center, echoCount, mineName, "jackhammer");
+                player.sendMessage("§6⚡ §lJACKHAMMER §6avec " + echoCount + " écho(s) ! " +
+                        "§e" + (blocksDestroyed + echoBlocks) + " blocs détruits au total !");
+            } else {
+                // Ce message s'affichera si getEchoCount a renvoyé 0
+                player.sendMessage("§6⚡ §lJACKHAMMER §6activé ! §e" + blocksDestroyed + " blocs détruits !");
+            }
+        }
+        return blocksDestroyed;
+    }
+
+    /**
+     * NOUVEAU & CORRIGÉ : Déclenche les échos pour Laser/Explosion/Jackhammer et retourne le nombre total
+     * de blocs détruits par ces échos. (Version exacte utilisateur)
+     */
+    private int triggerEchos(Player player, Location origin, int echoCount, String mineName, String enchantmentType) {
+        int totalEchoBlocks = 0;
+        for (int i = 0; i < echoCount; i++) {
+            // Calculer direction aléatoire
+            Vector randomDirection = new Vector(
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2,
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2,
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2
+            ).normalize();
+
+            Location echoLocation = origin.clone().add(randomDirection.multiply(3 + i));
+
+            // Déclencher à nouveau l'enchantement à cette position (en mode écho)
+            if ("laser".equalsIgnoreCase(enchantmentType)) {
+                totalEchoBlocks += activateLaser(player, echoLocation, mineName, true);
+            }
+
+            if ("jackhammer".equalsIgnoreCase(enchantmentType)) {
+                totalEchoBlocks += activateJackhammer(player, echoLocation, mineName, true);
+            }
+        }
+        return totalEchoBlocks;
+    }
+
+    /**
+     * Active l'effet laser
+     */
+    private int activateLaser(Player player, Location start, String mineName, boolean isEcho) {
+        var mineData = plugin.getConfigManager().getMineData(mineName);
+        if (mineData == null) return 0;
+
+        Vector direction = player.getLocation().getDirection();
+        Location current = start.clone();
+        int blocksDestroyed = 0;
+
+        for (int i = 0; i < 20; i++) {
+            current.add(direction);
+
+            if (mineData.contains(current)) {
+                Material blockType = current.getBlock().getType();
+                if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                    current.getBlock().setType(Material.AIR);
+                    blocksDestroyed++;
+                    processBlockDestroyed(player, current, blockType, mineName);
+
+                    // Effets visuels
+                    current.getWorld().spawnParticle(Particle.WHITE_SMOKE, current.add(0.5, 0.5, 0.5), 5);
+                }
+            } else {
+                break;
+            }
+        }
+
+        if (!isEcho) {
+            int echoCount = plugin.getCristalBonusHelper().getEchoCount(player);
+
+            if (echoCount > 0) {
+                int echoBlocks = triggerEchos(player, start, echoCount, mineName, "laser");
+                player.sendMessage("§c⚡ §lLASER §cavec " + echoCount + " écho(s) ! " +
+                        "§e" + (blocksDestroyed + echoBlocks) + " blocs détruits au total !");
+            } else {
+                player.sendMessage("§c⚡ §lLASER §cactivé ! §e" + blocksDestroyed + " blocs détruits !");
+            }
+        }
+        return blocksDestroyed;
+    }
+
+    /**
+     * Active l'effet explosion
+     */
+    private void activateExplosion(Player player, Location center, String mineName) {
+        var mineData = plugin.getConfigManager().getMineData(mineName);
+        if (mineData == null) return;
+
+        int blocksDestroyed = 0;
+
+        for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+                for (int z = -1; z <= 1; z++) {
+                    Location loc = center.clone().add(x, y, z);
+
+                    if (mineData.contains(loc)) {
+                        Material blockType = loc.getBlock().getType();
+                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                            loc.getBlock().setType(Material.AIR);
+                            blocksDestroyed++;
+                            processBlockDestroyed(player, loc, blockType, mineName);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Effets visuels et sonores
+        center.getWorld().spawnParticle(Particle.EXPLOSION, center.add(0.5, 0.5, 0.5), 1);
+        center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+
+        player.sendMessage("§4💥 §lEXPLOSION §4déclenchée ! §e" + blocksDestroyed + " blocs détruits !");
+    }
+
+    /**
+     * Retourne tous les enchantements
+     */
+    public Collection<CustomEnchantment> getAllEnchantments() {
+        return enchantments.values();
+    }
+
+    /**
+     * Retourne les enchantements par catégorie
+     */
+    public List<CustomEnchantment> getEnchantmentsByCategory(EnchantmentCategory category) {
+        return enchantments.values().stream()
+                .filter(ench -> ench.getCategory() == category)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Retourne un enchantement par nom
+     */
+    public CustomEnchantment getEnchantment(String name) {
+        return enchantments.get(name);
+    }
+
+    /**
+     * Vérifie si l'auto-upgrade est disponible
+     */
+    public boolean canUseAutoUpgrade(Player player) {
+        return plugin.getVipManager().isVip(player.getUniqueId());
+    }
+
+    /**
+     * Calcule les blocs bonus de Fortune
      */
     public int calculateFortuneBlocks(Player player, PlayerData playerData, Material blockType) {
         if (isPlayerPickaxeBroken(player)) {
@@ -159,9 +526,16 @@ public class EnchantmentManager {
         int finalBonusBlocks = plugin.getGlobalBonusManager().applyFortuneBonus(player, baseBonusBlocks);
 
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
-                                       ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
+                ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
 
         return 1 + finalBonusBlocks;
+    }
+
+    /**
+     * Vérifie si la pioche du joueur est cassée
+     */
+    public boolean isPlayerPickaxeBroken(Player player) {
+        return player.hasMetadata("pickaxe_broken");
     }
 
     /**
@@ -228,7 +602,7 @@ public class EnchantmentManager {
 
                 // Message d'avertissement moins fréquent pour l'inventaire plein
                 if (!player.hasMetadata("inventory_full_warning") ||
-                    System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
+                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
 
                     int droppedCount = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
                     player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items droppés au sol.");
@@ -246,205 +620,132 @@ public class EnchantmentManager {
         }
 
         plugin.getPluginLogger().debug("Blocs ajoutés au total: " + actuallyAdded + "/" + quantity + "x " + material.name() +
-                                       " (conteneurs + inventaire + droppés)");
+                " (conteneurs + inventaire + droppés)");
     }
 
     /**
-     * MODIFIÉ : Traite un bloc CASSÉ par laser/explosion et applique Fortune
-     */
-    public void processBlockDestroyed(Player player, Location blockLocation, Material blockType, String mineName) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Ajoute aux statistiques de destruction (CASSÉ)
-        playerData.addDestroyedBlocks(1);
-
-        // NOUVEAU: Applique Fortune sur les blocs cassés
-        int blocksfortune = calculateFortuneBlocks(player, playerData, blockType);
-        int blocksToGive = blocksfortune + 1;
-        addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
-
-        // LIMITATION : Seuls Money/Token/Exp Greed s'appliquent sur les gains de base
-        processGreedEnchantments(player, playerData, blockType, false);
-
-        // Marque les données comme modifiées
-        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-    }
-
-    /**
-     * NOUVEAU : Traite un bloc miné HORS mine (restrictions)
-     */
-    public void processBlockMinedOutsideMine(Player player, Material blockType) {
-        plugin.getPluginLogger().debug("Bloc miné hors mine: " + blockType + " par " + player.getName() +
-                                       " (seuls efficacité/solidité/mobilité actifs)");
-    }
-
-    /**
-     * MODIFIÉ : Traite les enchantements Greed avec le nouveau GlobalBonusManager
+     * Traite les enchantements Greed
      */
     private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType, boolean isMinedBlock) {
-
         int luckLevel = playerData.getEnchantmentLevel("luck");
-
-        // MODIFIÉ: Utilise le GlobalBonusManager pour l'efficacité de combustion
         double baseCombustionMultiplier = playerData.getCombustionMultiplier();
         double combustionMultiplier = plugin.getCristalBonusHelper().applyCombustionEfficiency(player, baseCombustionMultiplier);
-
         double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
+
         BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
 
-        // Token Greed - Toujours actif (blocs minés ET cassés)
-        int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
-        if (tokenGreedLevel > 0) {
-            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-            double totalChance = baseChance + luckBonus;
-
-            if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                long blockTokens = blockValue.tokens();
-                long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * combustionMultiplier * abundanceMultiplier);
-
-                // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                long finalGains = plugin.getGlobalBonusManager().applyTokenBonus(player, baseGains);
-
-                playerData.addTokensViaPickaxe(finalGains);
-                playerData.addGreedTrigger();
-
-            }
+        // Token Greed
+        if (isPlayerPickaxeBroken(player)) {
+            processTokenGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
+            return;
         }
 
-        // Exp Greed - Seulement sur blocs MINÉS
-        int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
-        if (expGreedLevel > 0) {
-            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-            double totalChance = baseChance + luckBonus;
+        processTokenGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
 
-            if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                long blockExp = blockValue.experience();
-                long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
+        // Money Greed
+        processMoneyGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
 
-                // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                long finalGains = plugin.getGlobalBonusManager().applyExperienceBonus(player, baseGains);
-
-                playerData.addExperienceViaPickaxe(finalGains);
-                playerData.addGreedTrigger();
-
-                // Met à jour l'expérience vanilla
-                plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
-            }
-        }
-
-        // Money Greed - Toujours actif (blocs minés ET cassés)
-        int moneyGreedLevel = playerData.getEnchantmentLevel("money_greed");
-        if (moneyGreedLevel > 0) {
-            double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-            double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-            double totalChance = baseChance + luckBonus;
-
-            if (ThreadLocalRandom.current().nextDouble() < totalChance) {
-                long blockCoins = blockValue.coins();
-                long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
-
-                // MODIFIÉ: Utilise le GlobalBonusManager au lieu de CristalBonusHelper
-                long finalGains = plugin.getGlobalBonusManager().applyMoneyBonus(player, baseGains);
-
-                playerData.addCoinsViaPickaxe(finalGains);
-                playerData.addGreedTrigger();
-            }
-        }
-
-
-        if (isMinedBlock) {
-            // Key Greed - chance fixe (pas affectée par Luck selon demande)
-            int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
-            if (keyGreedLevel > 0) {
-                double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.0001) * keyGreedLevel;
-                if (ThreadLocalRandom.current().nextDouble() < chance) {
-                    giveRandomKey(player);
-                    playerData.addKeyObtained();
-                }
-            }
-
-            // CORRIGÉ : Abundance avec vérification du cooldown
-            int abundanceLevel = playerData.getEnchantmentLevel("abundance");
-            if (abundanceLevel > 0 && !playerData.isAbundanceActive() && !playerData.isAbundanceOnCooldown()) {
-                double chance = plugin.getConfigManager().getEnchantmentSetting("abundance.base-chance", 0.000001) * abundanceLevel;
-                if (ThreadLocalRandom.current().nextDouble() < chance) {
-                    // MODIFIÉ: Calcule la durée avec le bonus du cristal
-                    int duration = plugin.getCristalBonusHelper().getAbondanceDuration(player, 60); // 60s de base
-
-                    playerData.activateAbundance(duration * 1000L);
-                    player.sendMessage("§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant " + duration + " secondes!");
-                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
-
-                    plugin.getPluginLogger().info("Abondance activée pour " + player.getName() +
-                                                  " (niveau " + abundanceLevel + ", durée " + duration + "s)");
-                }
-            }
-        }
+        processExpGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
     }
 
     /**
-     * MODIFIÉ : Applique les enchantements spéciaux SEULEMENT sur les blocs MINÉS
+     * Traite Token Greed
      */
-    private void processSpecialEnchantments(Player player, PlayerData playerData,
-                                            Location blockLocation, String mineName) {
-
-        int laserLevel = playerData.getEnchantmentLevel("laser");
-        int explosionLevel = playerData.getEnchantmentLevel("explosion");
-
-        // Laser
-        if (laserLevel > 0) {
-            double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.00002) * laserLevel;
-            if (ThreadLocalRandom.current().nextDouble() < chance) {
-                activateLaser(player, blockLocation, mineName, false);
-            }
-        }
-
-        // Explosion
-        if (explosionLevel > 0) {
-            double chance = plugin.getConfigManager().getEnchantmentSetting("special.explosion.base-chance", 0.0005) * explosionLevel;
-            if (ThreadLocalRandom.current().nextDouble() < chance) {
-                activateExplosion(player, blockLocation, mineName);
-            }
-        }
-    }
-
-    /**
-     * NOUVEAU : Traite Token Greed avec malus de 90% quand la pioche est cassée
-     */
-    private void processTokenGreedWithPenalty(Player player, Material blockType, PlayerData playerData) {
+    private void processTokenGreed(Player player, PlayerData playerData, BlockValueData blockValue, int luckLevel, double combustionMultiplier, double abundanceMultiplier) {
         int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
         if (tokenGreedLevel <= 0) return;
 
-        double chance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-        double penaltyMultiplier = PickaxeManager.getPickaxePenaltyMultiplier(player);
+        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+        double totalChance = baseChance + luckBonus;
 
-        if (ThreadLocalRandom.current().nextDouble() < chance) {
-            BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
+        if (ThreadLocalRandom.current().nextDouble() < totalChance) {
             long blockTokens = blockValue.tokens();
-            long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * penaltyMultiplier);
+            long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * combustionMultiplier * abundanceMultiplier);
 
-            // MODIFIÉ: Utilise le GlobalBonusManager même avec la malus
             long finalGains = plugin.getGlobalBonusManager().applyTokenBonus(player, baseGains);
-
-            plugin.getEconomyManager().addTokens(player, finalGains);
+            if (isPlayerPickaxeBroken(player)) {
+                finalGains = (long) (finalGains * 0.05);
+            }
+            playerData.addTokensViaPickaxe(finalGains);
             playerData.addGreedTrigger();
         }
     }
 
     /**
-     * MODIFIÉ : Met à jour la combustion SEULEMENT si la pioche n'est pas cassée
+     * Traite Money Greed
      */
-    private void updateCombustion(Player player, PlayerData playerData) {
-        if (isPlayerPickaxeBroken(player)) {
-            return;
-        }
+    private void processMoneyGreed(Player player, PlayerData playerData, BlockValueData blockValue, int luckLevel, double combustionMultiplier, double abundanceMultiplier) {
+        int moneyGreedLevel = playerData.getEnchantmentLevel("money_greed");
+        if (moneyGreedLevel <= 0) return;
 
-        int combustionLevel = playerData.getEnchantmentLevel("combustion");
-        if (combustionLevel > 0) {
-            int gainPerBlock = Math.max(1, combustionLevel / 10);
-            playerData.updateCombustion(gainPerBlock);
+        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+        double totalChance = baseChance + luckBonus;
+
+        if (ThreadLocalRandom.current().nextDouble() < totalChance) {
+            long blockCoins = blockValue.coins();
+            long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
+
+            long finalGains = plugin.getGlobalBonusManager().applyMoneyBonus(player, baseGains);
+            plugin.getEconomyManager().addCoins(player, finalGains);
+            playerData.addGreedTrigger();
+        }
+    }
+
+    /**
+     * Traite Exp Greed
+     */
+    private void processExpGreed(Player player, PlayerData playerData, BlockValueData blockValue, int luckLevel, double combustionMultiplier, double abundanceMultiplier) {
+        int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
+        if (expGreedLevel <= 0) return;
+
+        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+        double totalChance = baseChance + luckBonus;
+
+        if (ThreadLocalRandom.current().nextDouble() < totalChance) {
+            long blockExp = blockValue.experience();
+            long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
+
+            long finalGains = plugin.getGlobalBonusManager().applyExperienceBonus(player, baseGains);
+            playerData.addExperienceViaPickaxe(finalGains);
+            playerData.addGreedTrigger();
+
+            plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
+        }
+    }
+
+    /**
+     * Traite Key Greed (maintenant dans SPECIAL)
+     */
+    private void processKeyGreed(Player player, PlayerData playerData) {
+        int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
+        if (keyGreedLevel <= 0) return;
+        double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.0001) * keyGreedLevel;
+
+        if (ThreadLocalRandom.current().nextDouble() < chance) {
+            giveRandomKey(player);
+            player.sendMessage("§6🗝️ Vous avez trouvé une clé de coffre !");
+            playerData.addGreedTrigger();
+        }
+    }
+
+    private void processAbondance(Player player, PlayerData playerdata) {
+        int abundanceLevel = playerdata.getEnchantmentLevel("abundance");
+        if (abundanceLevel > 0 && !playerdata.isAbundanceActive() && !playerdata.isAbundanceOnCooldown()) {
+            double chance = plugin.getConfigManager().getEnchantmentSetting("abundance.base-chance", 0.000001) * abundanceLevel;
+            if (ThreadLocalRandom.current().nextDouble() < chance) {
+                // MODIFIÉ: Calcule la durée avec le bonus du cristal
+                int duration = plugin.getCristalBonusHelper().getAbondanceDuration(player, 60); // 60s de base
+
+                playerdata.activateAbundance(duration * 1000L);
+                player.sendMessage("§6🌟 ABONDANCE ACTIVÉE! §eGains doublés pendant " + duration + " secondes!");
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
+
+                plugin.getPluginLogger().info("Abondance activée pour " + player.getName() +
+                        " (niveau " + abundanceLevel + ", durée " + duration + "s)");
+            }
         }
     }
 
@@ -533,6 +834,42 @@ public class EnchantmentManager {
     }
 
     /**
+     * Met à jour la combustion
+     */
+    private void updateCombustion(Player player, PlayerData playerData) {
+        if (isPlayerPickaxeBroken(player)) {
+            return;
+        }
+
+        int combustionLevel = playerData.getEnchantmentLevel("combustion");
+        if (combustionLevel > 0) {
+            int gainPerBlock = Math.max(1, combustionLevel / 10);
+            playerData.updateCombustion(gainPerBlock);
+        }
+    }
+
+    /**
+     * MODIFIÉ : Traite un bloc CASSÉ par laser/explosion et applique Fortune
+     */
+    public void processBlockDestroyed(Player player, Location blockLocation, Material blockType, String mineName) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
+        // Ajoute aux statistiques de destruction (CASSÉ)
+        playerData.addDestroyedBlocks(1);
+
+        // NOUVEAU: Applique Fortune sur les blocs cassés
+        int blocksfortune = calculateFortuneBlocks(player, playerData, blockType);
+        int blocksToGive = blocksfortune + 1;
+        addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
+
+        // LIMITATION : Seuls Money/Token Greed s'appliquent sur les gains de base
+        processGreedEnchantments(player, playerData, blockType, false);
+
+        // Marque les données comme modifiées
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+    }
+
+    /**
      * NOUVEAU : Désactive de force l'abondance et reset la combustion quand la pioche est cassée
      */
     public void forceDisableAbundanceAndResetCombustion(Player player) {
@@ -560,195 +897,6 @@ public class EnchantmentManager {
         if (changed) {
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
         }
-    }
-
-    /**
-     * NOUVEAU : Vérifie si la pioche du joueur est cassée (méthode helper)
-     */
-    public boolean isPlayerPickaxeBroken(Player player) {
-        return player.hasMetadata("pickaxe_broken");
-    }
-
-    /**
-     * CORRIGÉ : Active l'effet laser. Le message final est envoyé après que tous les échos
-     * se soient déclenchés, et il inclut le total des blocs détruits par le laser initial et les échos.
-     * La fonction retourne le nombre de blocs détruits par CET appel spécifique de laser.
-     */
-    private int activateLaser(Player player, Location start, String mineName, boolean isEcho) {
-        var mineData = plugin.getConfigManager().getMineData(mineName);
-        if (mineData == null) return 0;
-
-        var direction = player.getLocation().getDirection().normalize();
-        int blocksDestroyed = 0;
-        int maxDistance = plugin.getConfigManager().getEnchantmentSetting("special.laser.max-distance", 1000);
-
-        // CORRIGÉ : Continue jusqu'au bout de la mine, ne s'arrête pas aux blocs d'air
-        for (int distance = 1; distance <= maxDistance; distance++) {
-            Location target = start.clone().add(direction.clone().multiply(distance));
-
-            // Arrête si on sort de la mine
-            if (!mineData.contains(target)) {
-                break;
-            }
-
-            Material originalType = target.getBlock().getType();
-
-            // NOUVEAU : Protection beacon - arrête le laser
-            if (originalType == Material.BEACON) {
-                plugin.getPluginLogger().debug("Laser arrêté par un beacon à " + target);
-                break;
-            }
-
-            if (originalType != Material.AIR) {
-                // CORRECTION : CASSE visuellement (met en AIR)
-                target.getBlock().setType(Material.AIR);
-                blocksDestroyed++;
-
-                // Animation de particules
-                target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
-                        10, 0.3, 0.3, 0.3, 0.1, originalType.createBlockData());
-
-                // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
-                processBlockDestroyed(player, target, originalType, mineName);
-            }
-
-            // Animation du rayon laser sur TOUS les blocs (air et solides)
-            target.getWorld().spawnParticle(Particle.DUST, target.clone().add(0.5, 0.5, 0.5), 2,
-                    0.1, 0.1, 0.1, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.5f));
-        }
-
-        // Animation du rayon laser complet
-        for (int i = 0; i < maxDistance && i < 100; i++) {
-            Location particleLocation = start.clone().add(direction.clone().multiply(i));
-
-            // Arrête l'animation si on sort de la mine
-            if (!mineData.contains(particleLocation)) {
-                break;
-            }
-
-            particleLocation.getWorld().spawnParticle(Particle.DUST, particleLocation, 1,
-                    0.05, 0.05, 0.05, 0, new Particle.DustOptions(org.bukkit.Color.RED, 1.0f));
-        }
-
-        // Si c'est l'appel initial (pas un écho), on gère les échos et le message final.
-        if (!isEcho) {
-            int totalBlocks = blocksDestroyed;
-            int echoCount = 0;
-
-            if (plugin.getCristalBonusHelper().shouldTriggerEcho(player)) {
-                int potentialEchos = plugin.getCristalBonusHelper().getEchoCount(player);
-                if (potentialEchos > 0) {
-                    echoCount = potentialEchos;
-                    // Déclenche les échos et ajoute les blocs détruits au total
-                    totalBlocks += triggerEchos(player, start, echoCount, mineName, "laser");
-                }
-            }
-
-            // Envoie le message final basé sur la présence d'échos
-            if (echoCount > 0) {
-                player.sendMessage("§c⚡ Laser (+" + echoCount + " échos) activé! §e" + totalBlocks + " blocs détruits au total !");
-            } else {
-                player.sendMessage("§c⚡ Laser activé! §e" + blocksDestroyed + " blocs détruits en ligne !");
-            }
-            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 2.0f);
-        }
-
-        return blocksDestroyed;
-    }
-
-    /**
-     * MODIFIÉ : Active l'effet explosion avec protection beacon
-     */
-    private void activateExplosion(Player player, Location center, String mineName) {
-        var mineData = plugin.getConfigManager().getMineData(mineName);
-        if (mineData == null) return;
-
-        // Rayon aléatoire selon config
-        int minRadius = plugin.getConfigManager().getEnchantmentSetting("special.explosion.min-radius", 1);
-        int maxRadius = plugin.getConfigManager().getEnchantmentSetting("special.explosion.max-radius", 3);
-        int radius = ThreadLocalRandom.current().nextInt(minRadius, maxRadius + 1);
-        int blocksDestroyed = 0;
-
-        // Animation d'explosion
-        center.getWorld().spawnParticle(Particle.EXPLOSION, center, 3, 0.5, 0.5, 0.5, 0.1);
-
-        // Explosion sphérique centrée sur le bloc miné
-        for (int x = -radius; x <= radius; x++) {
-            for (int y = -radius; y <= radius; y++) {
-                for (int z = -radius; z <= radius; z++) {
-                    // Vérifie si le bloc est dans le rayon sphérique
-                    if (x * x + y * y + z * z <= radius * radius) {
-                        Location target = center.clone().add(x, y, z);
-
-                        // Vérifie si dans la mine
-                        if (mineData.contains(target)) {
-                            Material originalType = target.getBlock().getType();
-
-                            // NOUVEAU : Protection beacon - ne peut pas être cassé
-                            if (originalType == Material.BEACON) {
-                                plugin.getPluginLogger().debug("Explosion bloquée par beacon à " + target);
-                                continue; // Ignore ce bloc
-                            }
-
-                            // Ne casse que les blocs solides (pas l'air)
-                            if (originalType != Material.AIR) {
-                                // CORRECTION : CASSE visuellement (met en AIR)
-                                target.getBlock().setType(Material.AIR);
-                                blocksDestroyed++;
-
-                                // Animation de particules d'explosion
-                                target.getWorld().spawnParticle(Particle.BLOCK, target.clone().add(0.5, 0.5, 0.5),
-                                        8, 0.4, 0.4, 0.4, 0.1, originalType.createBlockData());
-
-                                // IMPORTANT : Bloc CASSÉ (pas miné) - pas de récursion enchants spéciaux
-                                processBlockDestroyed(player, target, originalType, mineName);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        player.sendMessage("§4💥 Explosion rayon " + radius + "! §e" + blocksDestroyed + " blocs détruits!");
-        player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
-    }
-
-    /**
-     * NOUVEAU & CORRIGÉ : Déclenche les échos pour Laser/Explosion et retourne le nombre total
-     * de blocs détruits par ces échos.
-     */
-    private int triggerEchos(Player player, Location origin, int echoCount, String mineName, String enchantmentType) {
-        int totalEchoBlocks = 0;
-        for (int i = 0; i < echoCount; i++) {
-            // Calculer direction aléatoire
-            Vector randomDirection = new Vector(
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2,
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2,
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * 2
-            ).normalize();
-
-            Location echoLocation = origin.clone().add(randomDirection.multiply(3 + i));
-
-            // Déclencher à nouveau l'enchantement à cette position (en mode écho)
-            if ("laser".equalsIgnoreCase(enchantmentType)) {
-                // Ajoute le nombre de blocs détruits par l'écho au total
-                totalEchoBlocks += activateLaser(player, echoLocation, mineName, true);
-            }
-
-            // Effets visuels pour distinguer les échos
-            player.getWorld().spawnParticle(Particle.DUST, echoLocation, 20, 0.5, 0.5, 0.5);
-        }
-        return totalEchoBlocks;
-    }
-
-    /**
-     * Calcule le coût d'amélioration d'un enchantement
-     */
-    public long getUpgradeCost(String enchantmentName, int currentLevel) {
-        CustomEnchantment enchantment = getEnchantment(enchantmentName);
-        if (enchantment == null) return 0;
-
-        return enchantment.getUpgradeCost(currentLevel + 1);
     }
 
     /**
@@ -796,8 +944,8 @@ public class EnchantmentManager {
             playerData.setEnchantmentLevel(enchantmentName, currentLevel + actualLevels);
 
             player.sendMessage("§a✅ " + enchantment.getDisplayName() + " amélioré de " + actualLevels +
-                               " niveau" + (actualLevels > 1 ? "x" : "") + " au niveau " + (currentLevel + actualLevels) +
-                               " §7(-" + NumberFormatter.format(totalCost) + " tokens)");
+                    " niveau" + (actualLevels > 1 ? "x" : "") + " au niveau " + (currentLevel + actualLevels) +
+                    " §7(-" + NumberFormatter.format(totalCost) + " tokens)");
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -806,17 +954,124 @@ public class EnchantmentManager {
 
         return false;
     }
+}
 
-    /**
-     * NOUVEAU : Vérifie si un joueur peut utiliser l'auto-upgrade
-     */
-    public boolean canUseAutoUpgrade(Player player) {
-        return player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
+// NOUVEAU : Enchantement SellGreed
+class SellGreedEnchantment implements CustomEnchantment {
+    @Override
+    public String getName() {
+        return "sell_greed";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Sell Greed";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.ECONOMIC;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Bonus de vente permanent";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        // Prix exponentiel comme demandé
+        return Math.round(5000 * Math.pow(2, level));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.GOLD_BLOCK;
     }
 }
 
+// NOUVEAU : Enchantement Jackhammer
+class JackhammerEnchantment implements CustomEnchantment {
+    @Override
+    public String getName() {
+        return "jackhammer";
+    }
 
-// Implémentations des enchantements avec coûts depuis config
+    @Override
+    public String getDisplayName() {
+        return "Jackhammer";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Chance de casser une couche entière";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 2000;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return Math.round(10000 * Math.pow(level, 1.8));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.DIAMOND_PICKAXE;
+    }
+}
+
+// MODIFIÉ : KeyGreed maintenant dans la catégorie SPECIAL
+class KeyGreedEnchantment implements CustomEnchantment {
+    @Override
+    public String getName() {
+        return "key_greed";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Key Greed";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL; // MODIFIÉ : changé de ECONOMIC vers SPECIAL
+    }
+
+    @Override
+    public String getDescription() {
+        return "Chance d'obtenir des clés de coffres";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 10;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return Math.round(500000 * Math.pow(level, 1.8));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.TRIPWIRE_HOOK;
+    }
+}
+
+// Les autres classes d'enchantements restent inchangées...
 class TokenGreedEnchantment implements CustomEnchantment {
     public String getName() {
         return "token_greed";
@@ -904,36 +1159,6 @@ class MoneyGreedEnchantment implements CustomEnchantment {
 
     public Material getDisplayMaterial() {
         return Material.GOLD_INGOT;
-    }
-}
-
-class KeyGreedEnchantment implements CustomEnchantment {
-    public String getName() {
-        return "key_greed";
-    }
-
-    public String getDisplayName() {
-        return "Key Greed";
-    }
-
-    public EnchantmentCategory getCategory() {
-        return EnchantmentCategory.ECONOMIC;
-    }
-
-    public String getDescription() {
-        return "Chance d'obtenir des clés de coffres";
-    }
-
-    public int getMaxLevel() {
-        return 10;
-    }
-
-    public long getUpgradeCost(int level) {
-        return Math.round(500000 * Math.pow(level, 1.8));
-    }
-
-    public Material getDisplayMaterial() {
-        return Material.TRIPWIRE_HOOK;
     }
 }
 
@@ -1027,7 +1252,6 @@ class PetXpEnchantment implements CustomEnchantment {
     }
 }
 
-// Enchantements d'efficacité
 class EfficiencyEnchantment implements CustomEnchantment {
     public String getName() {
         return "efficiency";
@@ -1118,7 +1342,6 @@ class DurabilityEnchantment implements CustomEnchantment {
     }
 }
 
-// Enchantements de mobilité
 class NightVisionEnchantment implements CustomEnchantment {
     public String getName() {
         return "night_vision";
@@ -1269,7 +1492,6 @@ class EscalatorEnchantment implements CustomEnchantment {
     }
 }
 
-// Enchantements spéciaux
 class LuckEnchantment implements CustomEnchantment {
     public String getName() {
         return "luck";

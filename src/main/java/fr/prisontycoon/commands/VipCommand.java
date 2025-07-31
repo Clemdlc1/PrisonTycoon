@@ -213,7 +213,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
                     String timeAgo = formatTimeAgo(System.currentTimeMillis() - vipData.addedAt());
 
                     sender.sendMessage("§e• " + status + " §6" + vipData.playerName() +
-                                       " §7(ajouté par §e" + vipData.addedBy() + " §7il y a " + timeAgo + ")");
+                            " §7(ajouté par §e" + vipData.addedBy() + " §7il y a " + timeAgo + ")");
                     count++;
 
                     // Limite l'affichage pour éviter le spam
@@ -394,7 +394,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("remove") ||
-                args[0].equalsIgnoreCase("check") || args[0].equalsIgnoreCase("syncplayer")) {
+                    args[0].equalsIgnoreCase("check") || args[0].equalsIgnoreCase("syncplayer")) {
                 // Suggestions de noms de joueurs
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     completions.add(player.getName());

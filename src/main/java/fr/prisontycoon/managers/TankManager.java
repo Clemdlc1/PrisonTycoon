@@ -69,12 +69,12 @@ public class TankManager {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
         return meta.getPersistentDataContainer().has(tankKey, PersistentDataType.BOOLEAN) &&
-               meta.getPersistentDataContainer().has(tankIdKey, PersistentDataType.STRING);
+                meta.getPersistentDataContainer().has(tankIdKey, PersistentDataType.STRING);
     }
 
     public boolean isTankBlock(Location location) {
         return tankLocations.containsKey(location) &&
-               location.getBlock().getType() == Material.BARREL;
+                location.getBlock().getType() == Material.BARREL;
     }
 
     public TankData getTankAt(Location location) {
@@ -275,12 +275,12 @@ public class TankManager {
         }
         tankData.addItems(material, amount);
         seller.sendMessage("§a✓ Vendu " + amount + "x " + material.name().toLowerCase() +
-                           " pour " + NumberFormatter.format(totalPrice) + "$!");
+                " pour " + NumberFormatter.format(totalPrice) + "$!");
         seller.playSound(seller.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         if (owner != null && !owner.equals(seller)) {
             owner.sendMessage("§7📦 " + seller.getName() + " a vendu " + amount + "x " +
-                              material.name().toLowerCase() + " à votre tank pour " +
-                              NumberFormatter.format(totalPrice) + "$");
+                    material.name().toLowerCase() + " à votre tank pour " +
+                    NumberFormatter.format(totalPrice) + "$");
         }
         updateTankNameTag(tankData);
         saveTank(tankData);

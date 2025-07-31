@@ -104,7 +104,7 @@ public class CristalGUI {
             lore.add("§d✨ Bonus actifs:");
             for (Cristal cristal : cristals) {
                 lore.add("§8• §d" + cristal.getType().getDisplayName() + " " + cristal.getNiveau() +
-                         "§8: §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
+                        "§8: §a" + cristal.getType().getBonusDescription(cristal.getNiveau()));
             }
             lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         }
@@ -416,7 +416,7 @@ public class CristalGUI {
      */
     public void refreshCristalGUI(Player player) {
         if (player.getOpenInventory() != null &&
-            player.getOpenInventory().getTitle().equals("§d✨ Gestion des Cristaux ✨")) {
+                player.getOpenInventory().getTitle().equals("§d✨ Gestion des Cristaux ✨")) {
 
             // Actualiser seulement les parties dynamiques du GUI
             Inventory inv = player.getOpenInventory().getTopInventory();

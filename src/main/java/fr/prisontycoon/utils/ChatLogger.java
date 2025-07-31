@@ -19,14 +19,14 @@ public class ChatLogger {
 
     private void createTable() {
         String query = "CREATE TABLE IF NOT EXISTS chat_logs (" +
-                       "id SERIAL PRIMARY KEY," +
-                       "timestamp BIGINT NOT NULL," +
-                       "type VARCHAR(16) NOT NULL," +
-                       "player_name VARCHAR(16) NOT NULL," +
-                       "uuid VARCHAR(36) NOT NULL," +
-                       "raw_message TEXT NOT NULL," +
-                       "formatted_message TEXT" +
-                       ");";
+                "id SERIAL PRIMARY KEY," +
+                "timestamp BIGINT NOT NULL," +
+                "type VARCHAR(16) NOT NULL," +
+                "player_name VARCHAR(16) NOT NULL," +
+                "uuid VARCHAR(36) NOT NULL," +
+                "raw_message TEXT NOT NULL," +
+                "formatted_message TEXT" +
+                ");";
         try (Connection conn = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = conn.prepareStatement(query)) {
             ps.execute();
         } catch (SQLException e) {

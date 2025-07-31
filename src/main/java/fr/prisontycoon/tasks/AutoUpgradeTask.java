@@ -71,7 +71,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
                     playerData.setLastMinuteAutoUpgrades(playerUpgrades);
 
                     plugin.getPluginLogger().debug("Auto-upgrades effectués pour " + playerData.getPlayerName() +
-                                                   ": " + playerUpgrades + " (total minute: " + playerData.getLastMinuteAutoUpgrades() + ")");
+                            ": " + playerUpgrades + " (total minute: " + playerData.getLastMinuteAutoUpgrades() + ")");
 
                     // Marque le joueur comme modifié
                     plugin.getPlayerDataManager().markDirty(playerId);
@@ -88,7 +88,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
             // Log périodique des statistiques
             if (cycleCount % 30 == 0 || totalUpgrades > 0) {
                 plugin.getPluginLogger().info("AutoUpgrade cycle #" + cycleCount +
-                                              ": " + totalUpgrades + " améliorations pour " + playersProcessed + " joueurs");
+                        ": " + totalUpgrades + " améliorations pour " + playersProcessed + " joueurs");
             }
 
         } catch (Exception e) {
@@ -136,7 +136,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
             }
 
             plugin.getPluginLogger().debug("Auto-upgrades désactivés pour " + playerData.getPlayerName() +
-                                           " (permission manquante)");
+                    " (permission manquante)");
         }
     }
 
@@ -151,7 +151,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
         }
 
         plugin.getPluginLogger().debug("Joueur " + playerData.getPlayerName() +
-                                       " a " + autoUpgradeEnabled.size() + " auto-upgrades actifs: " + autoUpgradeEnabled);
+                " a " + autoUpgradeEnabled.size() + " auto-upgrades actifs: " + autoUpgradeEnabled);
 
         // Récupère le joueur pour les améliorations
         Player player = plugin.getServer().getPlayer(playerData.getPlayerId());
@@ -164,7 +164,7 @@ public class AutoUpgradeTask extends BukkitRunnable {
             CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
             if (enchantment == null) {
                 plugin.getPluginLogger().warning("§cEnchantement invalide dans auto-upgrade: '" +
-                                                 enchantmentName + "' pour " + playerData.getPlayerName());
+                        enchantmentName + "' pour " + playerData.getPlayerName());
                 playerData.setAutoUpgrade(enchantmentName, false);
                 continue;
             }
@@ -172,14 +172,14 @@ public class AutoUpgradeTask extends BukkitRunnable {
             int currentLevel = playerData.getEnchantmentLevel(enchantmentName);
 
             plugin.getPluginLogger().debug("Auto-upgrade check: " + enchantmentName +
-                                           " niveau " + currentLevel + "/" + enchantment.getMaxLevel() +
-                                           " pour " + playerData.getPlayerName());
+                    " niveau " + currentLevel + "/" + enchantment.getMaxLevel() +
+                    " pour " + playerData.getPlayerName());
 
             // Vérifie si peut encore être amélioré
             if (currentLevel >= enchantment.getMaxLevel()) {
                 playerData.setAutoUpgrade(enchantmentName, false);
                 plugin.getPluginLogger().info("Auto-upgrade désactivé pour " + enchantmentName +
-                                              " (niveau max atteint) - " + playerData.getPlayerName());
+                        " (niveau max atteint) - " + playerData.getPlayerName());
                 continue;
             }
 
@@ -200,11 +200,11 @@ public class AutoUpgradeTask extends BukkitRunnable {
                 );
 
                 plugin.getPluginLogger().info("Auto-amélioration silencieuse réussie: " + playerData.getPlayerName() +
-                                              " - " + enchantment.getDisplayName() + " +" + levelsGained + " niveaux (niveau " +
-                                              newLevel + ")");
+                        " - " + enchantment.getDisplayName() + " +" + levelsGained + " niveaux (niveau " +
+                        newLevel + ")");
             } else {
                 plugin.getPluginLogger().debug("Auto-upgrade bloqué pour " + playerData.getPlayerName() +
-                                               " - " + enchantmentName + ": pas assez de tokens");
+                        " - " + enchantmentName + ": pas assez de tokens");
             }
         }
 

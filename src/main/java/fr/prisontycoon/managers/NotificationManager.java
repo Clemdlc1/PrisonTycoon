@@ -50,7 +50,7 @@ public class NotificationManager {
         player.sendActionBar(message);
 
         plugin.getPluginLogger().debug("Notification temporaire de durabilité envoyée à " + player.getName() +
-                                       " pour " + durationMs + "ms: " + message);
+                " pour " + durationMs + "ms: " + message);
     }
 
     /**

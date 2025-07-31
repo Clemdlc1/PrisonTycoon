@@ -49,7 +49,13 @@ public class CategoryMenuGUI {
 
         // Enchantements de la catégorie
         var enchantments = plugin.getEnchantmentManager().getEnchantmentsByCategory(category);
-        int[] slots = {10, 11, 12, 13, 14, 15, 16};
+        int[] slots;
+
+        if (category == EnchantmentCategory.UTILITY) {
+            slots = new int[]{11, 13, 15};
+        } else {
+            slots = new int[]{10, 11, 12, 13, 14, 15, 16};
+        }
 
         for (int i = 0; i < enchantments.size() && i < slots.length; i++) {
             CustomEnchantment enchantment = enchantments.get(i);
@@ -129,7 +135,7 @@ public class CategoryMenuGUI {
         }
 
         plugin.getPluginLogger().debug("Enchantement mobilité " + enchantmentName +
-                                       " " + (newState ? "activé" : "désactivé") + " pour " + player.getName());
+                " " + (newState ? "activé" : "désactivé") + " pour " + player.getName());
     }
 
     /**
@@ -228,7 +234,7 @@ public class CategoryMenuGUI {
 
         // Auto-upgrade status
         if (plugin.getEnchantmentManager().canUseAutoUpgrade(player) &&
-            playerData.isAutoUpgradeEnabled(enchantment.getName())) {
+                playerData.isAutoUpgradeEnabled(enchantment.getName())) {
             lore.add("§a🔄 §lAUTO-AMÉLIORATION ACTIVE");
             lore.add("§7▸ Se met à niveau automatiquement");
             lore.add("");
@@ -319,6 +325,17 @@ public class CategoryMenuGUI {
             case "escalator" -> {
                 lore.add("§7▸ §dTéléportation vers la surface");
                 lore.add("§7▸ §7Shift + clic droit avec la pioche");
+            }
+            case "sell_greed" -> {
+                double bonusPercent = level * 0.01; // 0,01% par niveau
+                lore.add("§7▸ §6+" + String.format("%.1f%%", bonusPercent) + " bonus de vente permanent");
+                lore.add("§7▸ §eAppliqué via GlobalBonusManager");
+            }
+            case "jackhammer" -> {
+                double chance = Math.min(2.0, level / 1000.0); // Max 2% au niveau 2000
+                lore.add("§7▸ §d" + String.format("%.1f%%", chance) + " chance de casser une couche");
+                lore.add("§7▸ §dRayon: " + " blocs");
+                lore.add("§7▸ §dSusceptible à Echo (plusieurs couches)");
             }
             default -> lore.add("§7▸ §7Effet de niveau " + level + " actif");
         }

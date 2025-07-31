@@ -26,7 +26,6 @@ public class PlayerData {
     private final Map<Material, Long> blocksMinedByType;
     // Données thread-safe
     private final Object dataLock = new Object();
-    private List<SanctionData> sanctionHistory;
     private final Map<String, Integer> professionLevels; // profession -> niveau (1-10)
     private final Map<String, Integer> professionXP; // profession -> XP métier
     private final Map<String, Map<String, Integer>> talentLevels; // profession -> (talent -> niveau)
@@ -47,6 +46,8 @@ public class PlayerData {
     private final Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     // Investissements - Map<Material, Quantité> avec support grandes valeurs
     private final Map<Material, Long> investments = new ConcurrentHashMap<>();
+    private final Map<String, Integer> pickaxeEnchantmentBookLevels = new ConcurrentHashMap<>();
+    private List<SanctionData> sanctionHistory;
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -86,7 +87,6 @@ public class PlayerData {
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
     private Set<String> customPermissions;
-    private final Map<String, Integer> pickaxeEnchantmentBookLevels = new ConcurrentHashMap<>();
     private Set<String> activeEnchantmentBooks = new HashSet<>();
     // Système de métiers
     private String activeProfession; // null si aucun métier choisi
@@ -469,17 +469,6 @@ public class PlayerData {
         return autoUpgradeEnabled.contains(enchantmentName);
     }
 
-    public void setAutoUpgradeEnabled(Set<String> autoUpgrade) {
-        synchronized (dataLock) {
-            this.autoUpgradeEnabled.clear();
-            if (autoUpgrade != null) {
-                this.autoUpgradeEnabled.addAll(autoUpgrade);
-            }
-        }
-    }
-
-    // Combustion
-
     public void setAutoUpgrade(String enchantmentName, boolean enabled) {
         if (enabled) {
             autoUpgradeEnabled.add(enchantmentName);
@@ -487,6 +476,8 @@ public class PlayerData {
             autoUpgradeEnabled.remove(enchantmentName);
         }
     }
+
+    // Combustion
 
     /**
      * Ajoute un détail d'auto-upgrade
@@ -513,14 +504,14 @@ public class PlayerData {
         }
     }
 
-    // Auto-upgrade
-
     // Setters directs pour la sauvegarde/chargement
     public void setCoins(long coins) {
         synchronized (dataLock) {
             this.coins = Math.max(0, coins);
         }
     }
+
+    // Auto-upgrade
 
     public long getTokens() {
         synchronized (dataLock) {
@@ -546,13 +537,13 @@ public class PlayerData {
         }
     }
 
-    // Mine
-
     public long getBeacons() {
         synchronized (dataLock) {
             return beacons;
         }
     }
+
+    // Mine
 
     public void setBeacons(long beacons) {
         synchronized (dataLock) {
@@ -597,13 +588,13 @@ public class PlayerData {
         }
     }
 
-    // Getters thread-safe
-
     public void setExperienceViaPickaxe(long experienceViaPickaxe) {
         synchronized (dataLock) {
             this.experienceViaPickaxe = Math.max(0, experienceViaPickaxe);
         }
     }
+
+    // Getters thread-safe
 
     public long getCombustionLevel() {
         synchronized (dataLock) {
@@ -782,6 +773,15 @@ public class PlayerData {
 
     public Set<String> getAutoUpgradeEnabled() {
         return new HashSet<>(autoUpgradeEnabled);
+    }
+
+    public void setAutoUpgradeEnabled(Set<String> autoUpgrade) {
+        synchronized (dataLock) {
+            this.autoUpgradeEnabled.clear();
+            if (autoUpgrade != null) {
+                this.autoUpgradeEnabled.addAll(autoUpgrade);
+            }
+        }
     }
 
     public Set<String> getMobilityEnchantmentsDisabled() {

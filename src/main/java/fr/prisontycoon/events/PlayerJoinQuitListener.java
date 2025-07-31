@@ -40,7 +40,7 @@ public class PlayerJoinQuitListener implements Listener {
 
                         // Log l'attempt de connexion
                         plugin.getPluginLogger().info("Joueur banni refusé: " + player.getName() +
-                                                      " (Raison: " + banData.reason() + ")");
+                                " (Raison: " + banData.reason() + ")");
                     }
                 }, 5L);
 

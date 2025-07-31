@@ -107,8 +107,8 @@ public class MiningListener implements Listener {
         Location blockLocation = event.getBlock().getLocation();
         Material material = event.getBlock().getType();
         if (material == Material.BEACON &&
-            plugin.getEnchantmentBookManager() != null &&
-            plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !PickaxeManager.isPickaxeBroken(player)) {
+                plugin.getEnchantmentBookManager() != null &&
+                plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker") && !PickaxeManager.isPickaxeBroken(player)) {
 
             blockLocation.getBlock().setType(Material.AIR);
             double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.BEACON_MULTIPLIER);
@@ -243,7 +243,7 @@ public class MiningListener implements Listener {
             plugin.getNotificationManager().sendTemporaryDurabilityNotification(player, notificationMessage, 2000);
 
             plugin.getPluginLogger().debug("Notification de durabilité envoyée à " + player.getName() +
-                                           " après " + currentCount + " blocs (fréquence: " + notificationFrequency + ")");
+                    " après " + currentCount + " blocs (fréquence: " + notificationFrequency + ")");
         }
     }
 
@@ -316,9 +316,6 @@ public class MiningListener implements Listener {
             player.sendMessage("§c⚠️ Hors mine: seuls efficacité, solidité et mobilité actifs!");
             player.setMetadata("outside_mine_warning_shown", new FixedMetadataValue(plugin, true));
         }
-
-        // Traite le bloc MINÉ hors mine (restrictions)
-        plugin.getEnchantmentManager().processBlockMinedOutsideMine(player, material);
     }
 
     /**

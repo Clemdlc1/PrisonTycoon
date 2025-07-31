@@ -102,8 +102,8 @@ public class ConfigManager {
                 minesData.put(mineName, mineData);
 
                 plugin.getPluginLogger().info("§aMine '" + mineName + "' chargée: " +
-                                              mineData.getBlockComposition().size() + " types de blocs, volume: " +
-                                              mineData.getVolume() + " blocs");
+                        mineData.getBlockComposition().size() + " types de blocs, volume: " +
+                        mineData.getVolume() + " blocs");
 
             } catch (Exception e) {
                 plugin.getPluginLogger().severe("§cErreur lors du chargement de la mine '" + mineName + "':");
@@ -139,7 +139,7 @@ public class ConfigManager {
 
         if (world == null) {
             plugin.getPluginLogger().warning("§cMonde '" + worldName + "' introuvable pour la mine " + name +
-                                             ", utilisation du monde principal");
+                    ", utilisation du monde principal");
             world = plugin.getServer().getWorlds().getFirst();
         }
 
@@ -155,7 +155,7 @@ public class ConfigManager {
         Location maxCorner = new Location(world, maxX, maxY, maxZ);
 
         plugin.getPluginLogger().debug("Mine " + name + " - Coordonnées: " +
-                                       minX + "," + minY + "," + minZ + " à " + maxX + "," + maxY + "," + maxZ);
+                minX + "," + minY + "," + minZ + " à " + maxX + "," + maxY + "," + maxZ);
 
         // Validation des coordonnées
         if (minX == maxX && minY == maxY && minZ == maxZ) {
@@ -182,7 +182,7 @@ public class ConfigManager {
 
                 if (probability <= 0.0 || probability > 1.0) {
                     throw new IllegalArgumentException("Probabilité invalide pour " + blockName +
-                                                       " dans la mine " + name + ": " + probability + " (doit être entre 0.0 et 1.0)");
+                            " dans la mine " + name + ": " + probability + " (doit être entre 0.0 et 1.0)");
                 }
 
                 composition.put(material, probability);
@@ -193,7 +193,7 @@ public class ConfigManager {
             } catch (IllegalArgumentException e) {
                 if (e.getMessage().contains("No enum constant")) {
                     plugin.getPluginLogger().warning("§cMatériau invalide ignoré: " + blockName +
-                                                     " dans la mine " + name + " (matériau inexistant dans Minecraft 1.21)");
+                            " dans la mine " + name + " (matériau inexistant dans Minecraft 1.21)");
                 } else {
                     throw e;
                 }
@@ -207,7 +207,7 @@ public class ConfigManager {
         // Validation de la probabilité totale
         if (Math.abs(totalProbability - 1.0) > 0.01) { // Tolérance de 1%
             plugin.getPluginLogger().warning("§eAttention: Probabilité totale pour la mine '" + name +
-                                             "' = " + String.format("%.3f", totalProbability) + " (devrait être proche de 1.0)");
+                    "' = " + String.format("%.3f", totalProbability) + " (devrait être proche de 1.0)");
         }
 
         return new MineData(name, minCorner, maxCorner, composition);
@@ -241,7 +241,7 @@ public class ConfigManager {
                 blockValues.put(material, valueData);
 
                 plugin.getPluginLogger().debug("Valeur chargée: " + blockName + " -> " +
-                                               coins + " coins, " + tokens + " tokens, " + experience + " XP");
+                        coins + " coins, " + tokens + " tokens, " + experience + " XP");
 
             } catch (IllegalArgumentException e) {
                 plugin.getPluginLogger().warning("§cMatériau invalide ignoré dans block-values: " + blockName);
@@ -310,7 +310,7 @@ public class ConfigManager {
         MineData data = minesData.get(mineName);
         if (data == null) {
             plugin.getPluginLogger().debug("Mine non trouvée: " + mineName +
-                                           ". Mines disponibles: " + minesData.keySet());
+                    ". Mines disponibles: " + minesData.keySet());
         }
         return data;
     }
@@ -362,7 +362,7 @@ public class ConfigManager {
         }
 
         plugin.getPluginLogger().debug("Joueur hors mine à: " + location.getWorld().getName() +
-                                       " " + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ());
+                " " + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ());
         return null;
     }
 

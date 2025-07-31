@@ -478,7 +478,7 @@ public class EnchantmentBookGUI {
         // NOUVEAU : Vérification si le joueur clique avec un livre physique dans la main
         ItemStack cursor = player.getItemOnCursor();
         if (cursor != null && cursor.getType() == Material.ENCHANTED_BOOK &&
-            cursor.hasItemMeta() && cursor.getItemMeta().getPersistentDataContainer().has(
+                cursor.hasItemMeta() && cursor.getItemMeta().getPersistentDataContainer().has(
                 new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING)) {
 
             handlePhysicalBookApplication(player, cursor);

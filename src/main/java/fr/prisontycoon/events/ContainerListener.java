@@ -71,8 +71,8 @@ public class ContainerListener implements Listener {
         }
 
         if (player.isSneaking() &&
-            (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
-             event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK)) {
+                (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_AIR ||
+                        event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK)) {
             event.setCancelled(true);
             var data = plugin.getContainerManager().getContainerData(item);
             if (data != null && data.isBroken()) {
@@ -114,7 +114,7 @@ public class ContainerListener implements Listener {
             ItemStack cursorItem = event.getCursor();
             ItemStack currentItem = event.getCurrentItem();
             if ((cursorItem != null && plugin.getContainerManager().isContainer(cursorItem)) ||
-                (currentItem != null && event.getAction().toString().contains("MOVE_TO_OTHER_INVENTORY") && plugin.getContainerManager().isContainer(currentItem))) {
+                    (currentItem != null && event.getAction().toString().contains("MOVE_TO_OTHER_INVENTORY") && plugin.getContainerManager().isContainer(currentItem))) {
                 event.setCancelled(true);
                 player.sendMessage("§c❌ Vous ne pouvez pas mettre un conteneur comme filtre!");
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);

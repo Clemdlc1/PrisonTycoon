@@ -43,7 +43,7 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
         // Vérification du rang F pour les sous-commandes non-admin
         boolean isAdmin = player.hasPermission("specialmine.admin");
         boolean needsRankCheck = args.length == 0 ||
-                                 (!args[0].equalsIgnoreCase("metierxp") && !args[0].equalsIgnoreCase("help"));
+                (!args[0].equalsIgnoreCase("metierxp") && !args[0].equalsIgnoreCase("help"));
 
         if (needsRankCheck && !plugin.getProfessionManager().canUnlockProfessions(player)) {
             player.sendMessage("§c❌ Les métiers se débloquent au rang F !");
@@ -157,7 +157,7 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e⚡ §lProgression:");
         player.sendMessage("§7Niveau: §e" + level + "§7/§e10");
         player.sendMessage("§7XP: §e" + NumberFormatter.format(xp) + "§7/§e" +
-                           (level < 10 ? NumberFormatter.format(nextLevelXP) : "MAX"));
+                (level < 10 ? NumberFormatter.format(nextLevelXP) : "MAX"));
 
         // Barre de progression
         if (level < 10) {
@@ -221,7 +221,7 @@ public class MetierCommand implements CommandExecutor, TabCompleter {
             plugin.getProfessionManager().addProfessionXP(player, activeProfession, xpAmount);
 
             player.sendMessage("§a✅ Vous avez reçu §e" + NumberFormatter.format(xpAmount) +
-                               " XP §apour le métier §e" + activeProfession + " §a!");
+                    " XP §apour le métier §e" + activeProfession + " §a!");
 
         } catch (NumberFormatException e) {
             player.sendMessage("§cNombre invalide !");
