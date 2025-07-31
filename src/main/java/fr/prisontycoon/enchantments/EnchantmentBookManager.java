@@ -58,11 +58,12 @@ public class EnchantmentBookManager {
 
     public void loadActiveEnchantments(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Set<String> activeEnchants = playerData.getActiveEnchantmentBooks();
+        Set<String> activeBooks = playerData.getActiveEnchantmentBooks();
 
-        if (activeEnchants != null && !activeEnchants.isEmpty()) {
-            activeEnchantments.put(player.getUniqueId(), new HashSet<>(activeEnchants));
-            plugin.getPluginLogger().debug("Enchantements actifs chargés pour " + player.getName() + ": " + activeEnchants.size());
+        if (activeBooks != null && !activeBooks.isEmpty()) {
+            activeEnchantments.put(player.getUniqueId(), new HashSet<>(activeBooks));
+        } else {
+            activeEnchantments.put(player.getUniqueId(), new HashSet<>());
         }
     }
 
@@ -70,12 +71,14 @@ public class EnchantmentBookManager {
      * NOUVEAU : Sauvegarde les enchantements actifs dans la data persistante
      */
     public void saveActiveEnchantments(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        Set<String> activeEnchants = activeEnchantments.getOrDefault(player.getUniqueId(), new HashSet<>());
+        Set<String> playerActiveEnchants = activeEnchantments.get(player.getUniqueId());
+        if (playerActiveEnchants == null) {
+            playerActiveEnchants = new HashSet<>();
+        }
 
-        playerData.setActiveEnchantmentBooks(activeEnchants);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        playerData.setActiveEnchantmentBooks(playerActiveEnchants);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-        plugin.getPluginLogger().debug("Enchantements actifs sauvegardés pour " + player.getName() + ": " + activeEnchants.size());
     }
 
     /**
@@ -245,12 +248,14 @@ public class EnchantmentBookManager {
         int currentLevel = getEnchantmentBookLevel(player, bookId);
 
         EnchantmentBook book = enchantmentBooks.get(bookId);
+        if (book == null) return;
+
         if (book.getMaxLevel() == 1) {
             // Pour les enchants à 1 niveau, on ne fait qu'activer
-            playerData.setEnchantmentLevel("unique_" + bookId, 1);
+            playerData.setPickaxeEnchantmentBookLevel(bookId, 1);
         } else {
             // Pour les enchants à plusieurs niveaux, on augmente
-            playerData.setEnchantmentLevel("unique_" + bookId, currentLevel + 1);
+            playerData.setPickaxeEnchantmentBookLevel(bookId, currentLevel + 1);
         }
 
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -272,12 +277,13 @@ public class EnchantmentBookManager {
     }
 
     public boolean hasEnchantmentBook(Player player, String bookId) {
-        return getEnchantmentBookLevel(player, bookId) > 0;
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        return playerData.hasPickaxeEnchantmentBook(bookId);
     }
 
     public int getEnchantmentBookLevel(Player player, String bookId) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        return playerData.getEnchantmentLevel("unique_" + bookId);
+        return playerData.getPickaxeEnchantmentBookLevel(bookId);
     }
 
     public boolean isEnchantmentActive(Player player, String bookId) {
@@ -286,7 +292,13 @@ public class EnchantmentBookManager {
     }
 
     public Set<String> getActiveEnchantments(Player player) {
-        return activeEnchantments.getOrDefault(player.getUniqueId(), new HashSet<>());
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        return playerData.getActiveEnchantmentBooks();
+    }
+
+    public Map<String, Integer> getAllEnchantmentBooksWithLevels(Player player) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        return playerData.getPickaxeEnchantmentBookLevels();
     }
 
     public Collection<EnchantmentBook> getAllEnchantmentBooks() {
@@ -352,6 +364,10 @@ public class EnchantmentBookManager {
         }
 
         return highestValueBlock != null ? highestValueBlock : Material.STONE; // Sécurité
+    }
+
+    public void clearActiveEnchantments(UUID playerId) {
+        activeEnchantments.remove(playerId);
     }
 
     // ===== Classes des livres d'enchantement =====

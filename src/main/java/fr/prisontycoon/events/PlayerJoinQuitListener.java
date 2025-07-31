@@ -135,6 +135,7 @@ public class PlayerJoinQuitListener implements Listener {
 
         // NOUVEAU : Sauvegarde les enchantements actifs avant déconnexion
         plugin.getEnchantmentBookManager().saveActiveEnchantments(player);
+        plugin.getEnchantmentBookManager().clearActiveEnchantments(player.getUniqueId());
 
         // Décharge les données du joueur (avec sauvegarde)
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());

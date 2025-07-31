@@ -304,19 +304,46 @@ public class PickaxeManager {
         }
 
         if (!isBroken) {
+            // CORRIGÉ : Utilise le nouveau système pour récupérer les enchantements actifs
             Set<String> activeBooks = plugin.getEnchantmentBookManager().getActiveEnchantments(player);
+
             if (!activeBooks.isEmpty()) {
                 lore.add("§7│ §5UNIQUES ACTIFS §l⚡ §l:");
                 for (String bookId : activeBooks) {
                     EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
                     if (book != null) {
+                        // CORRIGÉ : Utilise la nouvelle méthode pour récupérer le niveau
                         int level = plugin.getEnchantmentBookManager().getEnchantmentBookLevel(player, bookId);
-                        lore.add("§7│ §d" + book.getName() + " §7(Niv." + level + ")");
+                        String levelDisplay = level > 1 ? " §7(Niv." + level + ")" : "";
+                        lore.add("§7│ §d" + book.getName() + levelDisplay + " §a✓");
                     }
                 }
-                lore.add("");
+            }
+
+            // NOUVEAU : Affichage des livres possédés mais non actifs
+            Map<String, Integer> allBooks = plugin.getEnchantmentBookManager().getAllEnchantmentBooksWithLevels(player);
+            Set<String> inactiveBooks = new HashSet<>();
+
+            for (Map.Entry<String, Integer> entry : allBooks.entrySet()) {
+                String bookId = entry.getKey();
+                if (!activeBooks.contains(bookId)) {
+                    inactiveBooks.add(bookId);
+                }
+            }
+
+            if (!inactiveBooks.isEmpty()) {
+                lore.add("§7│ §8UNIQUES INACTIFS:");
+                for (String bookId : inactiveBooks) {
+                    EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(bookId);
+                    if (book != null) {
+                        int level = allBooks.get(bookId);
+                        String levelDisplay = level > 1 ? " §7(Niv." + level + ")" : "";
+                        lore.add("§7│ §8" + book.getName() + levelDisplay + " §c✗");
+                    }
+                }
             }
         }
+
         lore.add("§7└ §7Clic droit pour gérer vos enchantements");
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         if (!cristals.isEmpty()) {

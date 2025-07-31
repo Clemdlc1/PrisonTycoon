@@ -86,7 +86,7 @@ public class PlayerData {
     private long lastMinuteKeysObtained;
     private long lastMinuteBlocksAddedToInventory;
     private Set<String> customPermissions;
-    private Set<String> pickaxeEnchantmentBooks = new HashSet<>();
+    private final Map<String, Integer> pickaxeEnchantmentBookLevels = new ConcurrentHashMap<>();
     private Set<String> activeEnchantmentBooks = new HashSet<>();
     // Système de métiers
     private String activeProfession; // null si aucun métier choisi
@@ -850,16 +850,91 @@ public class PlayerData {
         }
     }
 
-    public void addPickaxeEnchantmentBook(String bookId) {
-        pickaxeEnchantmentBooks.add(bookId);
+    /**
+     * NOUVEAU : Définit le niveau d'un livre d'enchantement unique
+     */
+    public void setPickaxeEnchantmentBookLevel(String bookId, int level) {
+        synchronized (dataLock) {
+            if (level <= 0) {
+                pickaxeEnchantmentBookLevels.remove(bookId);
+            } else {
+                pickaxeEnchantmentBookLevels.put(bookId, level);
+            }
+        }
     }
 
-    public void setPickaxeEnchantmentBook(Set<String> bookId) {
-        this.pickaxeEnchantmentBooks = new HashSet<>(bookId);
+    /**
+     * NOUVEAU : Récupère le niveau d'un livre d'enchantement unique
+     */
+    public int getPickaxeEnchantmentBookLevel(String bookId) {
+        synchronized (dataLock) {
+            return pickaxeEnchantmentBookLevels.getOrDefault(bookId, 0);
+        }
     }
 
+    /**
+     * NOUVEAU : Ajoute un niveau à un livre d'enchantement unique existant
+     */
+    public void addPickaxeEnchantmentBookLevel(String bookId, int levels) {
+        synchronized (dataLock) {
+            int currentLevel = getPickaxeEnchantmentBookLevel(bookId);
+            setPickaxeEnchantmentBookLevel(bookId, currentLevel + levels);
+        }
+    }
+
+    /**
+     * NOUVEAU : Vérifie si le joueur possède un livre d'enchantement unique
+     */
+    public boolean hasPickaxeEnchantmentBook(String bookId) {
+        return getPickaxeEnchantmentBookLevel(bookId) > 0;
+    }
+
+    /**
+     * NOUVEAU : Récupère tous les niveaux des livres d'enchantements uniques
+     */
+    public Map<String, Integer> getPickaxeEnchantmentBookLevels() {
+        synchronized (dataLock) {
+            return new HashMap<>(pickaxeEnchantmentBookLevels);
+        }
+    }
+
+    /**
+     * NOUVEAU : Définit tous les niveaux des livres d'enchantements uniques (pour chargement)
+     */
+    public void setPickaxeEnchantmentBookLevels(Map<String, Integer> levels) {
+        synchronized (dataLock) {
+            this.pickaxeEnchantmentBookLevels.clear();
+            if (levels != null) {
+                this.pickaxeEnchantmentBookLevels.putAll(levels);
+            }
+        }
+    }
+
+    /**
+     * NOUVEAU : Récupère la liste des livres possédés (déduite des niveaux)
+     */
     public Set<String> getPlayerEnchantmentBooks() {
-        return new HashSet<>(pickaxeEnchantmentBooks);
+        synchronized (dataLock) {
+            Set<String> books = new HashSet<>();
+            for (Map.Entry<String, Integer> entry : pickaxeEnchantmentBookLevels.entrySet()) {
+                if (entry.getValue() > 0) {
+                    books.add(entry.getKey());
+                }
+            }
+            return books;
+        }
+    }
+
+    /**
+     * OPTIMISÉ : Remplace l'ancienne méthode addPickaxeEnchantmentBook
+     */
+    public void addPickaxeEnchantmentBook(String bookId) {
+        synchronized (dataLock) {
+            // Si pas de niveau défini, mettre niveau 1 par défaut
+            if (!pickaxeEnchantmentBookLevels.containsKey(bookId)) {
+                pickaxeEnchantmentBookLevels.put(bookId, 1);
+            }
+        }
     }
 
     public Set<String> getActiveEnchantmentBooks() {
