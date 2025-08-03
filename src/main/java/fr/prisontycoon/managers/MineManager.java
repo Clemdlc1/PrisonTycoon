@@ -5,7 +5,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import org.bukkit.*;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 
@@ -33,6 +32,7 @@ public class MineManager {
     private final Map<String, MineData> mines = new ConcurrentHashMap<>();
     private final Map<String, Long> mineResetTimes = new ConcurrentHashMap<>();
     private final Map<String, Boolean> mineGenerating = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> mineBeingChecked = new ConcurrentHashMap<>();
     private final Random random = new Random();
 
     public MineManager(PrisonTycoon plugin) {
@@ -79,12 +79,8 @@ public class MineManager {
     }
 
     /**
-     * Génération de mine via l'API FastAsyncWorldEdit. C'est la méthode la plus rapide.
-     *
-     * @param mineId L'ID de la mine à générer.
-     */
-    /**
-     * Génération de mine via l'API FastAsyncWorldEdit (Version API moderne et correcte).
+     * Génération de mine via l'API FastAsyncWorldEdit avec téléportation des joueurs
+     * et notification globale.
      *
      * @param mineId L'ID de la mine à générer.
      */
@@ -93,8 +89,14 @@ public class MineManager {
         if (mine == null) { /* ... */ return; }
         if (mineGenerating.getOrDefault(mineId, false)) { /* ... */ return; }
 
-        // --- CORRECTION CLÉ ---
-        // On utilise la méthode qui existe dans votre version de l'API.
+        // 1. Trouver les joueurs présents dans la mine AVANT de la modifier.
+        List<Player> playersInMine = new ArrayList<>();
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (mineId.equals(getPlayerCurrentMine(onlinePlayer))) {
+                playersInMine.add(onlinePlayer);
+            }
+        }
+
         World faweWorld = FaweAPI.getWorld(mine.getWorldName());
         if (faweWorld == null) {
             plugin.getPluginLogger().severe("§cMonde FAWE introuvable pour la mine " + mineId);
@@ -103,46 +105,140 @@ public class MineManager {
 
         mineGenerating.put(mineId, true);
         plugin.getPluginLogger().info("§b[FAWE] Démarrage de la génération de la mine " + mineId + "...");
-        notifyPlayersInMine(mineId, "§e⚠️ Régénération de la mine en cours...");
+
+        // 2. Téléporter en lieu sûr les joueurs qui étaient dans la mine.
+        if (!playersInMine.isEmpty()) {
+            plugin.getPluginLogger().info("Téléportation de " + playersInMine.size() + " joueur(s) hors de la mine " + mineId + " pour régénération.");
+            for (Player playerToMove : playersInMine) {
+                // On utilise la téléportation forcée pour les déplacer au point de spawn de la mine.
+                teleportToMine(playerToMove, mineId, true);
+            }
+        }
+
+        // 3. Notifier tous les joueurs dans le MONDE de la mine.
+        String broadcastMessage = "§e§l[!] §eLa mine '" + mine.getDisplayName() + "§e' se régénère !";
+        broadcastToWorld(mine.getWorldName(), broadcastMessage);
+
+        // --- FIN DES AJOUTS ---
+
         long startTime = System.currentTimeMillis();
 
-        // On utilise un try-with-resources pour s'assurer que l'EditSession est bien fermée.
-        // C'est compatible avec les anciennes et nouvelles versions.
         try (EditSession editSession = WorldEdit.getInstance().newEditSession(faweWorld)) {
-
-            // 1. Définir la région de la mine
             BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
             BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
             CuboidRegion region = new CuboidRegion(faweWorld, min, max);
 
-            // 2. Créer le "pattern" (modèle) aléatoire
             RandomPattern randomPattern = new RandomPattern();
             for (Map.Entry<Material, Double> entry : mine.getBlockComposition().entrySet()) {
                 randomPattern.add(BlockTypes.get(entry.getKey().name().toLowerCase()), entry.getValue());
             }
 
-            // 3. Exécuter l'opération !
-            // Le cast explicite vers (Region) peut être nécessaire avec certaines versions.
-            // Si votre IDE ne le demande pas, vous pouvez l'enlever.
             editSession.setBlocks((Region) region, randomPattern);
-
-            // 4. Forcer la soumission de la file d'attente.
-            // Avec les anciennes API et le newEditSession(world), il est plus sûr de le garder.
             editSession.flushQueue();
 
-            // ... reste du code de finalisation ...
             mineResetTimes.put(mineId, System.currentTimeMillis());
-            mineGenerating.put(mineId, false);
             long duration = System.currentTimeMillis() - startTime;
             plugin.getPluginLogger().info("§a[FAWE] Mine " + mineId + " générée : " + region.getVolume() +
                     " blocs en " + duration + "ms");
+
+            // 4. Le message de succès est envoyé aux joueurs concernés qui sont maintenant au point de spawn.
             notifyPlayersInMine(mineId, "§a✅ Mine régénérée avec succès !");
 
         } catch (Exception e) {
             plugin.getPluginLogger().severe("§cErreur lors de la génération FAWE de la mine " + mineId);
             e.printStackTrace();
+        } finally {
+            // Important: Toujours remettre à false, même en cas d'erreur.
             mineGenerating.put(mineId, false);
         }
+    }
+
+    /**
+     * NOUVEAU: Envoie un message à tous les joueurs dans un monde spécifique.
+     * @param worldName Le nom du monde.
+     * @param message Le message à envoyer.
+     */
+    private void broadcastToWorld(String worldName, String message) {
+        org.bukkit.World world = Bukkit.getWorld(worldName);
+        if (world == null) return;
+
+        for (Player player : world.getPlayers()) {
+            player.sendMessage(message);
+        }
+    }
+
+    /**
+     * NOUVEAU & CORRIGÉ: Vérifie si une mine doit être régénérée en se basant sur le pourcentage de blocs restants.
+     * La vérification est asynchrone et utilise les méthodes API non dépréciées.
+     *
+     * @param mineId L'ID de la mine à vérifier.
+     */
+    public void checkAndRegenerateMineIfNeeded(String mineId) {
+        // Condition 1: Ne rien faire si la mine est déjà en cours de génération.
+        // Condition 2: Ne rien faire si une vérification est déjà en cours pour cette mine (évite le spam de calculs).
+        // `putIfAbsent` est une méthode atomique parfaite pour ce "verrouillage".
+        if (isMineGenerating(mineId) || mineBeingChecked.putIfAbsent(mineId, true) != null) {
+            plugin.getPluginLogger().debug("La vérification pour la mine " + mineId + " est déjà en cours ou la mine se régénère.");
+            return;
+        }
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    MineData mine = getMine(mineId);
+                    if (mine == null) return;
+
+                    World faweWorld = FaweAPI.getWorld(mine.getWorldName());
+                    if (faweWorld == null) {
+                        plugin.getPluginLogger().warning("Monde introuvable pour le calcul des blocs de la mine " + mineId);
+                        return;
+                    }
+
+                    int totalVolume = mine.getVolume();
+                    if (totalVolume == 0) return; // Sécurité pour éviter la division par zéro
+
+                    int remainingBlocks = 0;
+                    BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
+                    BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
+
+                    // --- CORRECTION AVEC LES MÉTHODES MODERNES ---
+                    // Itération efficace sur la région de la mine en utilisant x(), y(), z()
+                    for (int x = min.x(); x <= max.x(); x++) {
+                        for (int y = min.y(); y <= max.y(); y++) {
+                            for (int z = min.z(); z <= max.z(); z++) {
+                                // On utilise l'API FAWE pour lire le bloc, car c'est plus cohérent avec la génération
+                                if (faweWorld.getBlock(BlockVector3.at(x, y, z)).getBlockType() != BlockTypes.AIR) {
+                                    remainingBlocks++;
+                                }
+                            }
+                        }
+                    }
+
+                    double percentageLeft = (double) remainingBlocks / totalVolume;
+
+                    // Si le pourcentage de blocs restants est inférieur ou égal à 30%
+                    if (percentageLeft <= 0.30) {
+                        plugin.getPluginLogger().info("Régénération auto de la mine " + mineId + " (restant: " + String.format("%.1f%%", percentageLeft * 100) + ")");
+
+                        // La génération de la mine doit se faire sur le thread principal de Bukkit
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                generateMine(mineId);
+                            }
+                        }.runTask(plugin);
+                    }
+
+                } catch (Exception e) {
+                    plugin.getPluginLogger().severe("Une erreur est survenue lors du calcul des blocs pour la mine " + mineId);
+                    e.printStackTrace();
+                } finally {
+
+                    mineBeingChecked.remove(mineId);
+                }
+            }
+        }.runTaskAsynchronously(plugin);
     }
 
     /**
@@ -181,10 +277,22 @@ public class MineManager {
     }
 
     /**
-     * Téléporte un joueur à une mine
+     * Téléporte un joueur à une mine (appel public avec vérification d'accès).
      */
     public boolean teleportToMine(Player player, String mineId) {
-        if (!canAccessMine(player, mineId)) {
+        // Appelle la méthode privée en spécifiant que ce n'est PAS une téléportation forcée
+        return teleportToMine(player, mineId, false);
+    }
+
+    /**
+     * Logique de téléportation interne, avec une option pour forcer le déplacement.
+     * @param player Le joueur à téléporter.
+     * @param mineId L'ID de la mine.
+     * @param isForced Si true, la vérification d'accès est ignorée (pour la régénération).
+     */
+    private boolean teleportToMine(Player player, String mineId, boolean isForced) {
+        // Si la téléportation n'est pas forcée, on vérifie si le joueur a le droit
+        if (!isForced && !canAccessMine(player, mineId)) {
             player.sendMessage("§c❌ Vous n'avez pas accès à cette mine!");
             return false;
         }
@@ -201,23 +309,19 @@ public class MineManager {
             return false;
         }
 
-        // Utilise la nouvelle méthode getCenterLocation
         Location teleportLocation = mine.getCenterLocation(world);
 
-        // S'assurer qu'il y a de l'air pour le joueur
-        Block airBlock1 = teleportLocation.getBlock();
-        Block airBlock2 = teleportLocation.clone().add(0, 1, 0).getBlock();
-
-        if (airBlock1.getType() != Material.AIR) {
-            airBlock1.setType(Material.AIR);
-        }
-        if (airBlock2.getType() != Material.AIR) {
-            airBlock2.setType(Material.AIR);
-        }
+        // On s'assure que la zone de spawn est dégagée
+        teleportLocation.getBlock().setType(Material.AIR);
+        teleportLocation.clone().add(0, 1, 0).getBlock().setType(Material.AIR);
 
         player.teleport(teleportLocation);
-        player.sendMessage("§a✅ Téléporté à la mine " + mine.getDisplayName());
-        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+
+        // On envoie le message de succès et le son uniquement lors d'une téléportation normale
+        if (!isForced) {
+            player.sendMessage("§a✅ Téléporté à la mine " + mine.getDisplayName());
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+        }
 
         return true;
     }

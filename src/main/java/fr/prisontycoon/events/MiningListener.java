@@ -298,6 +298,9 @@ public class MiningListener implements Listener {
         }
         // Traite ce bloc MINÉ directement par le joueur (avec Greeds, enchants spéciaux, etc.)
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
+
+        plugin.getMineManager().checkAndRegenerateMineIfNeeded(mineName);
+
     }
 
     /**
