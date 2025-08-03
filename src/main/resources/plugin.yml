@@ -1,11 +1,12 @@
 name: PrisonTycoon
-version: 2.0.0
+version: 1.0.0
 main: fr.prisontycoon.PrisonTycoon
 api-version: 1.21
 author: PrisonCore
 description: Plugin de prison avec système de prestige, mines spéciales et métiers
 depend:
   - Multiverse-Core
+  - FastAsyncWorldEdit
 
 # Permissions principales
 permissions:

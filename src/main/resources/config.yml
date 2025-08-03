@@ -22,14 +22,14 @@ mines:
   mine-a:
     world: MineA
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: 100
-      max-x: 150
-      max-y: 60
-      max-z: 150
+      min-x: 60
+      min-y: 33
+      min-z: -67
+      max-x: 12
+      max-y: 74
+      max-z: -19
     blocks:
-      stone: 0.6
+      stone: 0.60
       cobblestone: 0.25
       coal_ore: 0.10
       iron_ore: 0.05
@@ -38,517 +38,487 @@ mines:
 
   # Mine B
   mine-b:
-    world: world
+    world: MineB
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: 100
-      max-x: -100
-      max-y: 60
-      max-z: 150
+      min-x: 61
+      min-y: 33
+      min-z: -63
+      max-x: 13
+      max-y: 74
+      max-z: -15
     blocks:
-      stone: 0.5
-      cobblestone: 0.25
+      stone: 0.50
+      cobblestone: 0.20
       coal_ore: 0.15
-      iron_ore: 0.08
-      gold_ore: 0.02
+      iron_ore: 0.10
+      gold_ore: 0.05
     rankup-price: 1000
     display-name: "§fMine B"
     description: "Mine débutant+"
 
   # Mine C
   mine-c:
-    world: world
+    world: MineC
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: -150
-      max-x: 150
-      max-y: 60
-      max-z: -100
+      min-x: 58
+      min-y: 33
+      min-z: -62
+      max-x: 10
+      max-y: 74
+      max-z: -14
     blocks:
-      stone: 0.4
+      stone: 0.35
       coal_ore: 0.25
-      iron_ore: 0.2
-      gold_ore: 0.1
-      redstone_ore: 0.04
-      diamond_ore: 0.01
+      iron_ore: 0.20
+      gold_ore: 0.15
+      diamond_ore: 0.05
     rankup-price: 5000
     display-name: "§fMine C"
     description: "Mine intermédiaire"
 
   # Mine D
   mine-d:
-    world: world
+    world: MineD
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: -150
-      max-x: -100
-      max-y: 60
-      max-z: -100
+      min-x: 60
+      min-y: 32
+      min-z: -67
+      max-x: 12
+      max-y: 73
+      max-z: -19
     blocks:
-      stone: 0.3
+      stone: 0.20
       coal_ore: 0.25
-      iron_ore: 0.2
-      gold_ore: 0.15
-      redstone_ore: 0.05
-      lapis_ore: 0.03
-      diamond_ore: 0.02
+      iron_ore: 0.25
+      gold_ore: 0.20
+      lapis_ore: 0.05
+      diamond_ore: 0.05
     rankup-price: 15000
     display-name: "§fMine D"
     description: "Mine intermédiaire+"
 
   # Mine E
   mine-e:
-    world: world
+    world: MineE
     coordinates:
-      min-x: 200
-      min-y: 10
-      min-z: 100
-      max-x: 250
-      max-y: 60
-      max-z: 150
+      min-x: 62
+      min-y: 33
+      min-z: -69
+      max-x: 14
+      max-y: 74
+      max-z: -21
     blocks:
-      stone: 0.25
+      stone: 0.10
       coal_ore: 0.25
-      iron_ore: 0.25
-      gold_ore: 0.15
-      redstone_ore: 0.05
-      lapis_ore: 0.03
-      diamond_ore: 0.02
+      iron_ore: 0.30
+      gold_ore: 0.20
+      lapis_ore: 0.08
+      diamond_ore: 0.07
     rankup-price: 50000
     display-name: "§8Mine E"
     description: "Mine avancée"
 
   # Mine F
   mine-f:
-    world: world
+    world: MineF
     coordinates:
-      min-x: -250
-      min-y: 10
-      min-z: 100
-      max-x: -200
-      max-y: 60
-      max-z: 150
+      min-x: 58
+      min-y: 33
+      min-z: -62
+      max-x: 10
+      max-y: 74
+      max-z: -14
     blocks:
-      stone: 0.2
-      coal_ore: 0.25
-      iron_ore: 0.25
-      gold_ore: 0.18
-      redstone_ore: 0.06
-      lapis_ore: 0.03
-      diamond_ore: 0.03
+      coal_ore: 0.20
+      iron_ore: 0.30
+      gold_ore: 0.25
+      redstone_ore: 0.10
+      lapis_ore: 0.08
+      diamond_ore: 0.07
     rankup-price: 100000
     display-name: "§8Mine F"
     description: "Mine avancée+"
 
   # Mine G
   mine-g:
-    world: world
+    world: MineG
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: -250
-      max-x: 150
-      max-y: 60
-      max-z: -200
+      min-x: 63
+      min-y: 33
+      min-z: -62
+      max-x: 15
+      max-y: 74
+      max-z: -14
     blocks:
-      stone: 0.15
-      coal_ore: 0.25
+      coal_ore: 0.15
       iron_ore: 0.25
-      gold_ore: 0.2
-      redstone_ore: 0.08
-      lapis_ore: 0.04
-      diamond_ore: 0.03
+      gold_ore: 0.30
+      redstone_ore: 0.10
+      lapis_ore: 0.10
+      diamond_ore: 0.10
     rankup-price: 250000
     display-name: "§2Mine G"
     description: "Mine experte"
 
   # Mine H
   mine-h:
-    world: world
+    world: MineH
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: -250
-      max-x: -100
-      max-y: 60
-      max-z: -200
+      min-x: 58
+      min-y: 33
+      min-z: -74
+      max-x: 10
+      max-y: 74
+      max-z: -26
     blocks:
-      stone: 0.1
-      coal_ore: 0.25
       iron_ore: 0.25
-      gold_ore: 0.22
-      redstone_ore: 0.1
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      gold_ore: 0.35
+      redstone_ore: 0.10
+      lapis_ore: 0.10
+      diamond_ore: 0.15
+      emerald_ore: 0.05
     rankup-price: 500000
     display-name: "§2Mine H"
     description: "Mine experte+"
 
   # Mine I
   mine-i:
-    world: world
+    world: MineI
     coordinates:
-      min-x: 300
-      min-y: 10
-      min-z: 100
-      max-x: 350
-      max-y: 60
-      max-z: 150
+      min-x: 64
+      min-y: 33
+      min-z: -70
+      max-x: 16
+      max-y: 74
+      max-z: -22
     blocks:
-      stone: 0.05
-      coal_ore: 0.25
-      iron_ore: 0.25
-      gold_ore: 0.25
-      redstone_ore: 0.12
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      iron_ore: 0.15
+      gold_ore: 0.35
+      diamond_ore: 0.25
+      emerald_ore: 0.15
+      lapis_ore: 0.10
     rankup-price: 1000000
-    display-name: "§aMain I"
+    display-name: "§aMine I"
     description: "Mine professionnelle"
 
   # Mine J
   mine-j:
-    world: world
+    world: MineJ
     coordinates:
-      min-x: -350
-      min-y: 10
-      min-z: 100
-      max-x: -300
-      max-y: 60
-      max-z: 150
+      min-x: 62
+      min-y: 33
+      min-z: -64
+      max-x: 14
+      max-y: 74
+      max-z: -16
     blocks:
-      coal_ore: 0.3
-      iron_ore: 0.25
-      gold_ore: 0.25
-      redstone_ore: 0.12
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      gold_ore: 0.40
+      diamond_ore: 0.30
+      emerald_ore: 0.20
+      iron_ore: 0.10
     rankup-price: 2000000
     display-name: "§aMine J"
     description: "Mine professionnelle+"
 
   # Mine K
   mine-k:
-    world: world
+    world: MineK
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: -350
-      max-x: 150
-      max-y: 60
-      max-z: -300
+      min-x: 58
+      min-y: 33
+      min-z: -67
+      max-x: 10
+      max-y: 74
+      max-z: -19
     blocks:
-      coal_ore: 0.25
-      iron_ore: 0.25
-      gold_ore: 0.28
-      redstone_ore: 0.15
-      lapis_ore: 0.04
-      diamond_ore: 0.03
+      gold_ore: 0.35
+      diamond_ore: 0.35
+      emerald_ore: 0.25
+      ancient_debris: 0.05
     rankup-price: 5000000
     display-name: "§eMine K"
     description: "Mine élite"
 
   # Mine L
   mine-l:
-    world: world
+    world: MineL
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: -350
-      max-x: -100
-      max-y: 60
-      max-z: -300
+      min-x: 59
+      min-y: 33
+      min-z: -63
+      max-x: 11
+      max-y: 74
+      max-z: -15
     blocks:
-      coal_ore: 0.2
-      iron_ore: 0.25
-      gold_ore: 0.3
-      redstone_ore: 0.17
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      gold_ore: 0.30
+      diamond_ore: 0.40
+      emerald_ore: 0.20
+      ancient_debris: 0.10
     rankup-price: 10000000
     display-name: "§eMine L"
     description: "Mine élite+"
 
   # Mine M
   mine-m:
-    world: world
+    world: MineM
     coordinates:
-      min-x: 400
-      min-y: 10
-      min-z: 100
-      max-x: 450
-      max-y: 60
-      max-z: 150
+      min-x: 59
+      min-y: 33
+      min-z: -64
+      max-x: 11
+      max-y: 74
+      max-z: -16
     blocks:
-      coal_ore: 0.15
-      iron_ore: 0.25
-      gold_ore: 0.32
-      redstone_ore: 0.2
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.45
+      emerald_ore: 0.30
+      gold_ore: 0.15
+      ancient_debris: 0.10
     rankup-price: 25000000
     display-name: "§6Mine M"
     description: "Mine maîtrise"
 
   # Mine N
   mine-n:
-    world: world
+    world: MineN
     coordinates:
-      min-x: -450
-      min-y: 10
-      min-z: 100
-      max-x: -400
-      max-y: 60
-      max-z: 150
+      min-x: 61
+      min-y: 33
+      min-z: -68
+      max-x: 13
+      max-y: 74
+      max-z: -20
     blocks:
-      coal_ore: 0.1
-      iron_ore: 0.25
-      gold_ore: 0.35
-      redstone_ore: 0.22
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.50
+      emerald_ore: 0.25
+      gold_ore: 0.10
+      ancient_debris: 0.15
     rankup-price: 50000000
     display-name: "§6Mine N"
     description: "Mine maîtrise+"
 
   # Mine O
   mine-o:
-    world: world
+    world: MineO
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: -450
-      max-x: 150
-      max-y: 60
-      max-z: -400
+      min-x: 63
+      min-y: 33
+      min-z: -71
+      max-x: 15
+      max-y: 74
+      max-z: -23
     blocks:
-      coal_ore: 0.05
-      iron_ore: 0.25
-      gold_ore: 0.37
-      redstone_ore: 0.25
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.50
+      emerald_ore: 0.30
+      ancient_debris: 0.20
     rankup-price: 100000000
     display-name: "§cMine O"
     description: "Mine supérieure"
 
   # Mine P
   mine-p:
-    world: world
+    world: MineP
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: -450
-      max-x: -100
-      max-y: 60
-      max-z: -400
+      min-x: 59
+      min-y: 33
+      min-z: -63
+      max-x: 11
+      max-y: 74
+      max-z: -15
     blocks:
-      iron_ore: 0.25
-      gold_ore: 0.4
-      redstone_ore: 0.27
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.45
+      emerald_ore: 0.30
+      ancient_debris: 0.20
+      netherite_block: 0.05
     rankup-price: 200000000
     display-name: "§cMine P"
     description: "Mine supérieure+"
 
   # Mine Q
   mine-q:
-    world: world
+    world: MineQ
     coordinates:
-      min-x: 500
-      min-y: 10
-      min-z: 100
-      max-x: 550
-      max-y: 60
-      max-z: 150
+      min-x: 62
+      min-y: 33
+      min-z: -64
+      max-x: 14
+      max-y: 74
+      max-z: -16
     blocks:
-      iron_ore: 0.2
-      gold_ore: 0.42
-      redstone_ore: 0.3
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.40
+      emerald_ore: 0.30
+      ancient_debris: 0.20
+      netherite_block: 0.10
     rankup-price: 500000000
     display-name: "§4Mine Q"
     description: "Mine légendaire"
 
   # Mine R
   mine-r:
-    world: world
+    world: MineR
     coordinates:
-      min-x: -550
-      min-y: 10
-      min-z: 100
-      max-x: -500
-      max-y: 60
-      max-z: 150
+      min-x: 64
+      min-y: 33
+      min-z: -65
+      max-x: 16
+      max-y: 74
+      max-z: -17
     blocks:
-      iron_ore: 0.15
-      gold_ore: 0.45
-      redstone_ore: 0.32
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.40
+      emerald_ore: 0.25
+      ancient_debris: 0.25
+      netherite_block: 0.10
     rankup-price: 1000000000
     display-name: "§4Mine R"
     description: "Mine légendaire+"
 
   # Mine S
   mine-s:
-    world: world
+    world: MineS
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: -550
-      max-x: 150
-      max-y: 60
-      max-z: -500
+      min-x: 120
+      min-y: 67
+      min-z: 120
+      max-x: 42
+      max-y: 116
+      max-z: 42
     blocks:
-      iron_ore: 0.1
-      gold_ore: 0.47
-      redstone_ore: 0.35
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.35
+      emerald_ore: 0.30
+      ancient_debris: 0.20
+      netherite_block: 0.15
     rankup-price: 2500000000
     display-name: "§dMine S"
     description: "Mine mythique"
 
   # Mine T
   mine-t:
-    world: world
+    world: MineT
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: -550
-      max-x: -100
-      max-y: 60
-      max-z: -500
+      min-x: 120
+      min-y: 66
+      min-z: 120
+      max-x: 42
+      max-y: 115
+      max-z: 42
     blocks:
-      iron_ore: 0.05
-      gold_ore: 0.5
-      redstone_ore: 0.37
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.30
+      emerald_ore: 0.30
+      ancient_debris: 0.25
+      netherite_block: 0.15
     rankup-price: 5000000000
     display-name: "§dMine T"
     description: "Mine mythique+"
 
   # Mine U
   mine-u:
-    world: world
+    world: MineU
     coordinates:
-      min-x: 600
-      min-y: 10
-      min-z: 100
-      max-x: 650
-      max-y: 60
-      max-z: 150
+      min-x: 125
+      min-y: 65
+      min-z: 122
+      max-x: 47
+      max-y: 114
+      max-z: 44
     blocks:
-      gold_ore: 0.52
-      redstone_ore: 0.4
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.30
+      emerald_ore: 0.25
+      ancient_debris: 0.25
+      netherite_block: 0.20
     rankup-price: 10000000000
     display-name: "§5Mine U"
     description: "Mine divine"
 
   # Mine V
   mine-v:
-    world: world
+    world: MineV
     coordinates:
-      min-x: -650
-      min-y: 10
-      min-z: 100
-      max-x: -600
-      max-y: 60
-      max-z: 150
+      min-x: 42
+      min-y: 116
+      min-z: 43
+      max-x: 120
+      max-y: 67
+      max-z: 121
     blocks:
-      gold_ore: 0.55
-      redstone_ore: 0.37
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.25
+      emerald_ore: 0.25
+      ancient_debris: 0.25
+      netherite_block: 0.25
     rankup-price: 25000000000
     display-name: "§5Mine V"
     description: "Mine divine+"
 
   # Mine W
   mine-w:
-    world: world
+    world: MineW
     coordinates:
-      min-x: 100
-      min-y: 10
-      min-z: -650
-      max-x: 150
-      max-y: 60
-      max-z: -600
+      min-x: 42
+      min-y: 69
+      min-z: 42
+      max-x: 120
+      max-y: 118
+      max-z: 120
     blocks:
-      gold_ore: 0.57
-      redstone_ore: 0.35
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.20
+      emerald_ore: 0.25
+      ancient_debris: 0.30
+      netherite_block: 0.25
     rankup-price: 50000000000
     display-name: "§9Mine W"
     description: "Mine cosmique"
 
   # Mine X
   mine-x:
-    world: world
+    world: MineX
     coordinates:
-      min-x: -150
-      min-y: 10
-      min-z: -650
-      max-x: -100
-      max-y: 60
-      max-z: -600
+      min-x: 45
+      min-y: 71
+      min-z: 43
+      max-x: 123
+      max-y: 120
+      max-z: 121
     blocks:
-      gold_ore: 0.6
-      redstone_ore: 0.32
-      lapis_ore: 0.05
-      diamond_ore: 0.03
+      diamond_ore: 0.20
+      emerald_ore: 0.20
+      ancient_debris: 0.30
+      netherite_block: 0.30
     rankup-price: 100000000000
     display-name: "§9Mine X"
     description: "Mine cosmique+"
 
   # Mine Y
   mine-y:
-    world: world
+    world: MineY
     coordinates:
-      min-x: 700
-      min-y: 10
-      min-z: 100
-      max-x: 750
-      max-y: 60
-      max-z: 150
+      min-x: 178
+      min-y: 67
+      min-z: 175
+      max-x: 80
+      max-y: 126
+      max-z: 77
     blocks:
-      gold_ore: 0.55
-      redstone_ore: 0.25
-      lapis_ore: 0.05
-      diamond_ore: 0.05
-      emerald_ore: 0.05
-      ancient_debris: 0.05
+      diamond_ore: 0.20
+      emerald_ore: 0.20
+      ancient_debris: 0.30
+      netherite_block: 0.30
     rankup-price: 250000000000
     display-name: "§bMine Y"
     description: "Mine ultime"
 
   # Mine Z - Rang maximum avant FREE
   mine-z:
-    world: world
+    world: MineZ
     coordinates:
-      min-x: -750
-      min-y: 10
-      min-z: 100
-      max-x: -700
-      max-y: 60
-      max-z: 150
+      min-x: 174
+      min-y: 67
+      min-z: 181
+      max-x: 76
+      max-y: 126
+      max-z: 83
     blocks:
-      gold_ore: 0.5
-      redstone_ore: 0.2
-      lapis_ore: 0.05
-      diamond_ore: 0.1
-      emerald_ore: 0.1
-      ancient_debris: 0.05
+      diamond_ore: 0.15
+      emerald_ore: 0.15
+      ancient_debris: 0.35
+      netherite_block: 0.35
     rankup-price: 500000000000
     display-name: "§6§lMine Z"
     description: "Mine maximum"
@@ -559,22 +529,20 @@ mines:
 
   # Mine Prestige I (P1+)
   mine-prestige1:
-    world: world
+    world: MineP1
     coordinates:
-      min-x: 800
-      min-y: 10
-      min-z: 100
-      max-x: 900
-      max-y: 60
-      max-z: 200
+      min-x: 179
+      min-y: 126
+      min-z: 189
+      max-x: 81
+      max-y: 67
+      max-z: 91
     blocks:
-      gold_ore: 0.4
-      diamond_ore: 0.2
-      emerald_ore: 0.15
-      ancient_debris: 0.1
-      netherite_block: 0.05
-      beacon: 0.001  # 0.1% de beacons
-      coal_ore: 0.099
+      diamond_ore: 0.30
+      emerald_ore: 0.30
+      ancient_debris: 0.20
+      netherite_block: 0.199
+      beacon: 0.001
     display-name: "§d§lMine Prestige I"
     description: "Mine exclusive P1+ (0.1% beacons)"
     required-prestige: 1
@@ -582,22 +550,20 @@ mines:
 
   # Mine Prestige XI (P11+)
   mine-prestige11:
-    world: world
+    world: MineP11
     coordinates:
-      min-x: -900
-      min-y: 10
-      min-z: 100
-      max-x: -800
-      max-y: 60
-      max-z: 200
+      min-x: 180
+      min-y: 67
+      min-z: 184
+      max-x: 82
+      max-y: 126
+      max-z: 86
     blocks:
-      gold_ore: 0.30
-      diamond_ore: 0.2
-      emerald_ore: 0.15
-      ancient_debris: 0.15
-      netherite_block: 0.1
-      beacon: 0.005  # 0.5% de beacons
-      coal_ore: 0.095
+      diamond_ore: 0.25
+      emerald_ore: 0.25
+      ancient_debris: 0.25
+      netherite_block: 0.245
+      beacon: 0.005
     display-name: "§d§lMine Prestige XI"
     description: "Mine exclusive P11+ (0.5% beacons)"
     required-prestige: 11
@@ -605,22 +571,20 @@ mines:
 
   # Mine Prestige XXI (P21+)
   mine-prestige21:
-    world: world
+    world: MineP21
     coordinates:
-      min-x: 800
-      min-y: 10
-      min-z: -200
-      max-x: 900
-      max-y: 60
-      max-z: -100
+      min-x: 193
+      min-y: 82
+      min-z: 209
+      max-x: 95
+      max-y: 141
+      max-z: 111
     blocks:
-      gold_ore: 0.2
-      diamond_ore: 0.2
-      emerald_ore: 0.2
-      ancient_debris: 0.2
-      netherite_block: 0.1
-      beacon: 0.01  # 1% de beacons
-      coal_ore: 0.09
+      diamond_ore: 0.20
+      emerald_ore: 0.25
+      ancient_debris: 0.25
+      netherite_block: 0.29
+      beacon: 0.01
     display-name: "§d§lMine Prestige XXI"
     description: "Mine exclusive P21+ (1% beacons)"
     required-prestige: 21
@@ -628,22 +592,20 @@ mines:
 
   # Mine Prestige XXXI (P31+)
   mine-prestige31:
-    world: world
+    world: MineP31
     coordinates:
-      min-x: -900
-      min-y: 10
-      min-z: -200
-      max-x: -800
-      max-y: 60
-      max-z: -100
+      min-x: 184
+      min-y: 72
+      min-z: 168
+      max-x: 86
+      max-y: 131
+      max-z: 70
     blocks:
-      gold_ore: 0.1
-      diamond_ore: 0.3
-      emerald_ore: 0.2
-      ancient_debris: 0.2
-      netherite_block: 0.1
-      beacon: 0.03  # 3% de beacons
-      coal_ore: 0.07
+      diamond_ore: 0.15
+      emerald_ore: 0.25
+      ancient_debris: 0.27
+      netherite_block: 0.30
+      beacon: 0.03
     display-name: "§d§lMine Prestige XXXI"
     description: "Mine exclusive P31+ (3% beacons)"
     required-prestige: 31
@@ -651,22 +613,20 @@ mines:
 
   # Mine Prestige XLI (P41+)
   mine-prestige41:
-    world: world
+    world: MineP41
     coordinates:
-      min-x: 1000
-      min-y: 10
-      min-z: 0
-      max-x: 1100
-      max-y: 60
-      max-z: 100
+      min-x: 177
+      min-y: 82
+      min-z: 209
+      max-x: 79
+      max-y: 141
+      max-z: 111
     blocks:
-      gold_ore: 0.1
-      diamond_ore: 0.3
+      diamond_ore: 0.10
       emerald_ore: 0.20
-      ancient_debris: 0.15
-      netherite_block: 0.15
-      beacon: 0.05  # 5% de beacons
-      coal_ore: 0.05
+      ancient_debris: 0.30
+      netherite_block: 0.35
+      beacon: 0.05
     display-name: "§d§lMine Prestige XLI"
     description: "Mine exclusive P41+ (5% beacons)"
     required-prestige: 41
@@ -678,42 +638,40 @@ mines:
 
   # Mine VIP I
   mine-vip1:
-    world: world
+    world: MineVIP1
     coordinates:
-      min-x: 0
-      min-y: 10
-      min-z: 800
-      max-x: 100
-      max-y: 60
-      max-z: 900
+      min-x: 177
+      min-y: 77
+      min-z: 194
+      max-x: 79
+      max-y: 136
+      max-z: 96
     blocks:
-      diamond_ore: 0.4
-      emerald_ore: 0.3
-      ancient_debris: 0.15
-      netherite_block: 0.1
-      beacon: 0.02  # 2% de beacons
-      gold_ore: 0.03
+      diamond_ore: 0.35
+      emerald_ore: 0.30
+      ancient_debris: 0.13
+      netherite_block: 0.20
+      beacon: 0.02
     display-name: "§6§lMine VIP I"
     description: "Mine exclusive VIP (2% beacons)"
     required-permission: "specialmine.vip"
 
   # Mine VIP II
   mine-vip2:
-    world: world
+    world: MineVIP2
     coordinates:
-      min-x: 0
-      min-y: 10
-      min-z: -900
-      max-x: 100
-      max-y: 60
-      max-z: -800
+      min-x: 185
+      min-y: 77
+      min-z: 183
+      max-x: 87
+      max-y: 136
+      max-z: 85
     blocks:
-      diamond_ore: 0.35
-      emerald_ore: 0.3
-      ancient_debris: 0.15
-      netherite_block: 0.15
-      beacon: 0.025  # 2.5% de beacons
-      gold_ore: 0.025
+      diamond_ore: 0.30
+      emerald_ore: 0.30
+      ancient_debris: 0.125
+      netherite_block: 0.25
+      beacon: 0.025
     display-name: "§6§lMine VIP II"
     description: "Mine exclusive VIP+ (2.5% beacons)"
     required-permission: "specialmine.vip"

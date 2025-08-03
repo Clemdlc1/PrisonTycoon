@@ -1,5 +1,6 @@
 package fr.prisontycoon.managers;
 
+import com.sk89q.worldedit.regions.Region;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
@@ -7,6 +8,16 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachmentInfo;
+
+import com.fastasyncworldedit.core.FaweAPI;
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.function.pattern.RandomPattern;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.world.World;
+import com.sk89q.worldedit.world.block.BlockTypes;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,78 +79,70 @@ public class MineManager {
     }
 
     /**
-     * Génère une mine complète de manière optimisée
+     * Génération de mine via l'API FastAsyncWorldEdit. C'est la méthode la plus rapide.
+     *
+     * @param mineId L'ID de la mine à générer.
+     */
+    /**
+     * Génération de mine via l'API FastAsyncWorldEdit (Version API moderne et correcte).
+     *
+     * @param mineId L'ID de la mine à générer.
      */
     public void generateMine(String mineId) {
         MineData mine = mines.get(mineId);
-        if (mine == null) {
-            plugin.getPluginLogger().warning("§cTentative de génération d'une mine inexistante: " + mineId);
-            return;
-        }
+        if (mine == null) { /* ... */ return; }
+        if (mineGenerating.getOrDefault(mineId, false)) { /* ... */ return; }
 
-        // Vérification si déjà en cours de génération
-        if (mineGenerating.getOrDefault(mineId, false)) {
-            plugin.getPluginLogger().debug("Mine " + mineId + " déjà en cours de génération");
-            return;
-        }
-
-        World world = Bukkit.getWorld(mine.getWorldName());
-        if (world == null) {
-            plugin.getPluginLogger().severe("§cMonde introuvable pour la mine " + mineId + ": " + mine.getWorldName());
+        // --- CORRECTION CLÉ ---
+        // On utilise la méthode qui existe dans votre version de l'API.
+        World faweWorld = FaweAPI.getWorld(mine.getWorldName());
+        if (faweWorld == null) {
+            plugin.getPluginLogger().severe("§cMonde FAWE introuvable pour la mine " + mineId);
             return;
         }
 
         mineGenerating.put(mineId, true);
-        plugin.getPluginLogger().info("§7Génération de la mine " + mineId + "...");
-
-        // Notification aux joueurs dans la mine
+        plugin.getPluginLogger().info("§b[FAWE] Démarrage de la génération de la mine " + mineId + "...");
         notifyPlayersInMine(mineId, "§e⚠️ Régénération de la mine en cours...");
-
         long startTime = System.currentTimeMillis();
 
-        // Génération asynchrone pour éviter les lags
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                int blocksGenerated = 0;
+        // On utilise un try-with-resources pour s'assurer que l'EditSession est bien fermée.
+        // C'est compatible avec les anciennes et nouvelles versions.
+        try (EditSession editSession = WorldEdit.getInstance().newEditSession(faweWorld)) {
 
-                // Génération optimisée par chunks
-                for (int x = mine.getMinX(); x <= mine.getMaxX(); x++) {
-                    for (int y = mine.getMinY(); y <= mine.getMaxY(); y++) {
-                        for (int z = mine.getMinZ(); z <= mine.getMaxZ(); z++) {
-                            // Utilise la nouvelle méthode getRandomMaterial
-                            Material material = mine.getRandomMaterial(random);
+            // 1. Définir la région de la mine
+            BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
+            BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
+            CuboidRegion region = new CuboidRegion(faweWorld, min, max);
 
-                            // Placement synchrone du bloc
-                            final int finalX = x, finalY = y, finalZ = z;
-                            final Material finalMaterial = material;
-
-                            Bukkit.getScheduler().runTask(plugin, () -> world.getBlockAt(finalX, finalY, finalZ).setType(finalMaterial));
-
-                            blocksGenerated++;
-                        }
-                    }
-                }
-
-                // Finalisation synchrone
-                int finalBlocksGenerated = blocksGenerated;
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    mineResetTimes.put(mineId, System.currentTimeMillis());
-                    mineGenerating.put(mineId, false);
-
-                    long duration = System.currentTimeMillis() - startTime;
-                    plugin.getPluginLogger().info("§aMine " + mineId + " générée: " + finalBlocksGenerated +
-                            " blocs en " + duration + "ms");
-
-                    // Notification de fin
-                    notifyPlayersInMine(mineId, "§a✅ Mine régénérée avec succès!");
-                });
-
-            } catch (Exception e) {
-                plugin.getPluginLogger().severe("§cErreur lors de la génération de la mine " + mineId + ":");
-                e.printStackTrace();
-                mineGenerating.put(mineId, false);
+            // 2. Créer le "pattern" (modèle) aléatoire
+            RandomPattern randomPattern = new RandomPattern();
+            for (Map.Entry<Material, Double> entry : mine.getBlockComposition().entrySet()) {
+                randomPattern.add(BlockTypes.get(entry.getKey().name().toLowerCase()), entry.getValue());
             }
-        });
+
+            // 3. Exécuter l'opération !
+            // Le cast explicite vers (Region) peut être nécessaire avec certaines versions.
+            // Si votre IDE ne le demande pas, vous pouvez l'enlever.
+            editSession.setBlocks((Region) region, randomPattern);
+
+            // 4. Forcer la soumission de la file d'attente.
+            // Avec les anciennes API et le newEditSession(world), il est plus sûr de le garder.
+            editSession.flushQueue();
+
+            // ... reste du code de finalisation ...
+            mineResetTimes.put(mineId, System.currentTimeMillis());
+            mineGenerating.put(mineId, false);
+            long duration = System.currentTimeMillis() - startTime;
+            plugin.getPluginLogger().info("§a[FAWE] Mine " + mineId + " générée : " + region.getVolume() +
+                    " blocs en " + duration + "ms");
+            notifyPlayersInMine(mineId, "§a✅ Mine régénérée avec succès !");
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("§cErreur lors de la génération FAWE de la mine " + mineId);
+            e.printStackTrace();
+            mineGenerating.put(mineId, false);
+        }
     }
 
     /**
@@ -192,7 +195,7 @@ public class MineManager {
             return false;
         }
 
-        World world = Bukkit.getWorld(mine.getWorldName());
+        org.bukkit.World world = Bukkit.getWorld(mine.getWorldName());
         if (world == null) {
             player.sendMessage("§c❌ Monde de la mine introuvable!");
             return false;
@@ -349,27 +352,29 @@ public class MineManager {
     }
 
     /**
-     * Force le reset d'une mine
-     */
-    public void forceResetMine(String mineId) {
-        if (!mines.containsKey(mineId)) {
-            plugin.getPluginLogger().warning("Tentative de reset d'une mine inexistante: " + mineId);
-            return;
-        }
-
-        plugin.getPluginLogger().info("Reset forcé de la mine: " + mineId);
-        generateMine(mineId);
-    }
-
-    /**
      * Force le reset de toutes les mines
      */
     public void resetAllMines() {
-        plugin.getPluginLogger().info("Reset de toutes les mines...");
+        plugin.getPluginLogger().info("§6Lancement de la régénération échelonnée de toutes les mines...");
+        final Queue<String> minesToReset = new LinkedList<>(mines.keySet());
 
-        for (String mineId : mines.keySet()) {
-            generateMine(mineId);
+        if (minesToReset.isEmpty()) {
+            plugin.getPluginLogger().info("§eAucune mine à régénérer.");
+            return;
         }
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (minesToReset.isEmpty()) {
+                    plugin.getPluginLogger().info("§aRégénération échelonnée terminée !");
+                    this.cancel();
+                    return;
+                }
+                String mineId = minesToReset.poll();
+                generateMine(mineId);
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
     }
 
     /**
@@ -537,13 +542,6 @@ public class MineManager {
      */
     public boolean isMineGenerating(String mineId) {
         return mineGenerating.getOrDefault(mineId, false);
-    }
-
-    /**
-     * Obtient le temps du dernier reset d'une mine
-     */
-    public Long getLastResetTime(String mineId) {
-        return mineResetTimes.get(mineId);
     }
 
     /**

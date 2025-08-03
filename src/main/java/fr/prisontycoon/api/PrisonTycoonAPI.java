@@ -3,17 +3,20 @@ package fr.prisontycoon.api;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
 import fr.prisontycoon.boosts.BoostType;
+import fr.prisontycoon.data.Gang;
+import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
+import fr.prisontycoon.gangs.GangRole;
+import fr.prisontycoon.managers.GangManager;
 import fr.prisontycoon.managers.GlobalBonusManager;
+import fr.prisontycoon.managers.MineManager;
 import fr.prisontycoon.managers.PlayerDataManager;
 import fr.prisontycoon.vouchers.VoucherType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * API Hook pour le système économique de PrisonTycoon
@@ -24,11 +27,15 @@ public class PrisonTycoonAPI {
     private static PrisonTycoonAPI instance;
     private final PrisonTycoon plugin;
     private final PlayerDataManager playerDataManager;
+    private final MineManager mineManager; // Ajout du MineManager
+    private final GangManager gangManager; // Ajout du GangManager
 
 
     private PrisonTycoonAPI(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.playerDataManager = plugin.getPlayerDataManager();
+        this.mineManager = plugin.getMineManager(); // Initialisation du MineManager
+        this.gangManager = plugin.getGangManager(); // Initialisation
     }
 
     /**
@@ -867,6 +874,235 @@ public class PrisonTycoonAPI {
         return true;
     }
 
+    // ===============================
+    // MÉTHODES POUR LES MINES (NOUVEAU)
+    // ===============================
+
+    /**
+     * Récupère les données complètes d'une mine par son ID.
+     *
+     * @param mineId L'ID de la mine (ex: "a", "p1", "vip1")
+     * @return L'objet MineData ou null si la mine n'existe pas.
+     */
+    public MineData getMine(String mineId) {
+        return mineManager.getMine(mineId);
+    }
+
+    /**
+     * Vérifie si une mine existe.
+     *
+     * @param mineId L'ID de la mine.
+     * @return true si la mine existe, false sinon.
+     */
+    public boolean mineExists(String mineId) {
+        return mineManager.mineExists(mineId);
+    }
+
+    /**
+     * Récupère la collection de toutes les mines chargées.
+     *
+     * @return Une collection de tous les objets MineData.
+     */
+    public Collection<MineData> getAllMines() {
+        return mineManager.getAllMines();
+    }
+
+    /**
+     * Récupère la liste de toutes les mines, triées par ordre alphabétique de leur ID.
+     *
+     * @return Une liste triée d'objets MineData.
+     */
+    public List<MineData> getAllMinesSorted() {
+        return mineManager.getAllMinesSorted();
+    }
+
+    /**
+     * Récupère les noms (IDs) de toutes les mines.
+     *
+     * @return Un Set contenant tous les IDs des mines.
+     */
+    public Set<String> getMineNames() {
+        return mineManager.getMineNames();
+    }
+
+    /**
+     * Récupère le nombre total de mines chargées.
+     *
+     * @return Le nombre de mines.
+     */
+    public int getMineCount() {
+        return mineManager.getMineCount();
+    }
+
+    /**
+     * Récupère la liste des mines accessibles pour un joueur spécifique.
+     *
+     * @param player Le joueur concerné.
+     * @return Une liste de MineData pour lesquelles le joueur a l'accès.
+     */
+    public List<MineData> getAccessibleMines(Player player) {
+        return mineManager.getAccessibleMines(player);
+    }
+
+    /**
+     * Récupère les mines d'un certain type (NORMAL, PRESTIGE, VIP).
+     *
+     * @param type Le type de mine à filtrer.
+     * @return Une liste de MineData correspondant au type demandé.
+     */
+    public List<MineData> getMinesByType(MineData.MineType type) {
+        return mineManager.getMinesByType(type);
+    }
+
+    /**
+     * Recherche des mines dont le nom ou le nom d'affichage contient la requête.
+     *
+     * @param query Le texte à rechercher.
+     * @return Une liste de MineData correspondant à la recherche.
+     */
+    public List<MineData> searchMines(String query) {
+        return mineManager.searchMines(query);
+    }
+
+    /**
+     * Vérifie si un joueur a l'autorisation d'accéder à une mine.
+     *
+     * @param player Le joueur.
+     * @param mineId L'ID de la mine.
+     * @return true si le joueur peut y accéder, false sinon.
+     */
+    public boolean canAccessMine(Player player, String mineId) {
+        return mineManager.canAccessMine(player, mineId);
+    }
+
+    /**
+     * Récupère la mine dans laquelle se trouve actuellement un joueur.
+     *
+     * @param player Le joueur.
+     * @return L'objet MineData de la mine actuelle, ou null si le joueur n'est dans aucune mine.
+     */
+    public MineData getPlayerCurrentMine(Player player) {
+        String mineId = mineManager.getPlayerCurrentMine(player);
+        if (mineId != null) {
+            return getMine(mineId);
+        }
+        return null;
+    }
+
+    /**
+     * Téléporte un joueur au point de spawn d'une mine, si il y a accès.
+     *
+     * @param player Le joueur à téléporter.
+     * @param mineId L'ID de la mine de destination.
+     * @return true si la téléportation a réussi, false sinon (accès refusé, mine inexistante, etc.).
+     */
+    public boolean teleportToMine(Player player, String mineId) {
+        return mineManager.teleportToMine(player, mineId);
+    }
+
+
+    // ===============================
+    // MÉTHODES POUR LES GANGS
+    // ===============================
+
+
+    /**
+     * Récupère le gang d'un joueur.
+     *
+     * @param playerId L'UUID du joueur.
+     * @return L'objet Gang du joueur, ou null s'il n'est dans aucun gang.
+     */
+    public Gang getPlayerGang(UUID playerId) {
+        PlayerData playerData = getPlayerData(playerId);
+        if (playerData != null && playerData.getGangId() != null) {
+            return gangManager.getGang(playerData.getGangId());
+        }
+        return null;
+    }
+
+    /**
+     * Récupère un gang par son ID unique.
+     *
+     * @param gangId L'ID du gang.
+     * @return L'objet Gang, ou null s'il n'existe pas.
+     */
+    public Gang getGangById(String gangId) {
+        return gangManager.getGang(gangId);
+    }
+
+    /**
+     * Récupère un gang par son nom (insensible à la casse).
+     *
+     * @param name Le nom du gang.
+     * @return L'objet Gang, ou null s'il n'existe pas.
+     */
+    public Gang getGangByName(String name) {
+        return gangManager.getGangByName(name);
+    }
+
+    /**
+     * Récupère un gang par son tag (insensible à la casse).
+     *
+     * @param tag Le tag du gang.
+     * @return L'objet Gang, ou null s'il n'existe pas.
+     */
+    public Gang getGangByTag(String tag) {
+        return gangManager.getGangByTag(tag);
+    }
+
+    /**
+     * Récupère la liste de tous les gangs existants.
+     *
+     * @return Une liste contenant tous les objets Gang.
+     */
+    public List<Gang> getAllGangs() {
+        return gangManager.getAllGangs();
+    }
+
+    /**
+     * Vérifie si un joueur est le chef de son gang.
+     *
+     * @param playerId L'UUID du joueur.
+     * @return true si le joueur est le chef de son gang.
+     */
+    public boolean isGangLeader(UUID playerId) {
+        Gang gang = getPlayerGang(playerId);
+        return gang != null && gang.getLeader().equals(playerId);
+    }
+
+    /**
+     * Obtient le rôle d'un joueur dans son gang.
+     *
+     * @param playerId L'UUID du joueur.
+     * @return Le GangRole du joueur, ou null s'il n'est pas dans un gang.
+     */
+    public GangRole getPlayerGangRole(UUID playerId) {
+        Gang gang = getPlayerGang(playerId);
+        return gang != null ? gang.getMemberRole(playerId) : null;
+    }
+
+    /**
+     * Récupère la liste des membres d'un gang.
+     *
+     * @param gang Le gang concerné.
+     * @return Une map des membres avec leur UUID et leur rôle.
+     */
+    public Map<UUID, GangRole> getGangMembers(Gang gang) {
+        return gang.getMembers();
+    }
+
+    /**
+     * Dépose de l'argent depuis le solde d'un joueur vers la banque du gang.
+     *
+     * @param gang Le gang cible.
+     * @param player Le joueur qui dépose.
+     * @param amount Le montant à déposer.
+     * @return true si le dépôt a réussi.
+     */
+    public boolean depositToGangBank(Gang gang, Player player, long amount) {
+        return gangManager.depositToBank(gang, player, amount);
+    }
+
     /**
      * Récupère les données complètes d'un joueur
      */
@@ -908,6 +1144,8 @@ public class PrisonTycoonAPI {
     public int getReputation(UUID playerId) {
         return plugin.getReputationManager().getReputation(playerId);
     }
+
+    public void modifyReputation(UUID playerId, int reputation, String reason) {plugin.getReputationManager().modifyReputation(playerId, reputation, reason);}
 
     public String getActiveProfession(UUID playerId) {
         PlayerData playerData = playerDataManager.getPlayerData(playerId);
