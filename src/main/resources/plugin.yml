@@ -203,12 +203,12 @@ commands:
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ randup, rank ]
 
-  mine:
+  adminmine:
     description: "Gérer les mines et obtenir des informations"
-    usage: /mine <list|tp|info|generate|types|accessible> [nom]
-    permission: specialmine.mine
+    usage: /adminmine <list|tp|info|generate|types|accessible> [nom]
+    permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ mines, prisonmine, mina ]
+    aliases: [ adminmine, prisonmine, mina ]
 
   prestige:
     description: "Système de prestige - Reset volontaire avec bonus permanents"
@@ -371,6 +371,24 @@ commands:
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ avantposte, outpost ]
+  warp:
+    description: "Téléportation vers les warps"
+    usage: "/warp [nom|list|info|gui|help] [args...]"
+    permission: specialmine.basic
+    aliases: [warps, tp]
+
+  # Modifier la commande mine existante :
+  mine:
+    description: "Téléportation vers les mines"
+    usage: "/mine [nom_mine]"
+    permission: specialmine.basic
+    aliases: [mines]
+
+  spawn:
+    description: "Téléportation vers le spawn"
+    usage: "/spawn"
+    permission: specialmine.basic
+    aliases: [hub]
 
 # Compatibilité
 depend-bootstrap: false

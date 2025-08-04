@@ -106,6 +106,8 @@ public final class PrisonTycoon extends JavaPlugin {
 
     private OutpostManager outpostManager;
     private OutpostGUI outpostGUI;
+    private WarpManager warpManager;
+    private WarpGUI warpGUI;
 
 
     public static PrisonTycoon getInstance() {
@@ -249,6 +251,7 @@ public final class PrisonTycoon extends JavaPlugin {
         gangManager = new GangManager(this);
         guiManager = new GUIManager(this);
         outpostManager = new OutpostManager(this);
+        warpManager = new WarpManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -282,6 +285,7 @@ public final class PrisonTycoon extends JavaPlugin {
         tankGUI = new TankGUI(this);
         gangGUI = new GangGUI(this);
         outpostGUI = new OutpostGUI(this);
+        warpGUI = new WarpGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -323,8 +327,8 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes joueur
         getCommand("pickaxe").setExecutor(new PickaxeCommand(this));
         getCommand("pickaxe").setTabCompleter(new PickaxeCommand(this));
-        getCommand("mine").setExecutor(new MineCommand(this));
-        getCommand("mine").setTabCompleter(new MineCommand(this));
+        getCommand("adminmine").setExecutor(new MineCommand(this));
+        getCommand("adminmine").setTabCompleter(new MineCommand(this));
         getCommand("sell").setExecutor(new SellCommand(this));
         getCommand("sell").setTabCompleter(new SellCommand(this));
         getCommand("repair").setExecutor(new RepairCommand(this)); // NOUVELLE LIGNE
@@ -381,6 +385,14 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("gang").setExecutor(new GangCommand(this));
         getCommand("g").setExecutor(new GangCommand(this));
         getCommand("ap").setExecutor(new OutpostCommand(this));
+
+        WarpCommand warpCommand = new WarpCommand(this);
+        getCommand("warp").setExecutor(warpCommand);
+        getCommand("warp").setTabCompleter(warpCommand);
+        getCommand("mine").setExecutor(warpCommand);
+        getCommand("mine").setTabCompleter(warpCommand);
+        getCommand("spawn").setExecutor(warpCommand);
+        getCommand("spawn").setTabCompleter(warpCommand);
 
 
         logger.info("§aCommandes enregistrées.");
@@ -795,6 +807,14 @@ public final class PrisonTycoon extends JavaPlugin {
      */
     public OutpostGUI getOutpostGUI() {
         return outpostGUI;
+    }
+
+    public WarpManager getWarpManager() {
+        return warpManager;
+    }
+
+    public WarpGUI getWarpGUI() {
+        return warpGUI;
     }
 }
 

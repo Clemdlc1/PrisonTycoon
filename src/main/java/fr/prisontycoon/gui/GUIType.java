@@ -45,6 +45,8 @@ public enum GUIType {
     TANK_PRICES("tank_prices"),
     OUTPOST_MAIN("outpost_main"),
     OUTPOST_SKINS("outpost_skins"),
+    WARP_MENU("warp_menu"),
+    WARP_MINES_MENU("warp_mines_menu"),
     CRATE_MANAGEMENT("crate_management");
 
     private final String id;

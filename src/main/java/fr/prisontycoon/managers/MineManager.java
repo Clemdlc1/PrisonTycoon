@@ -65,11 +65,6 @@ public class MineManager {
                 continue;
             }
 
-            if (!mineData.isCompositionValid()) {
-                plugin.getPluginLogger().warning("§cMine " + mineId + " a une composition invalide");
-                // On peut quand même la charger avec un avertissement
-            }
-
             mines.put(mineId, mineData);
             plugin.getPluginLogger().info("§aMine chargée: " + mineId + " (Type: " + mineData.getType() +
                     ", Volume: " + mineData.getVolume() + " blocs)");
@@ -241,39 +236,81 @@ public class MineManager {
         }.runTaskAsynchronously(plugin);
     }
 
+
+
     /**
-     * Vérifie l'accès d'un joueur à une mine
+     *
+     * @param player Le joueur à vérifier.
+     * @param mineId L'ID de la mine, ex: "mine-z", "mine-vip1", "mine-prestige41".
+     * @return true si le joueur a le droit d'accéder, false sinon.
      */
     public boolean canAccessMine(Player player, String mineId) {
-        MineData mine = mines.get(mineId);
-        if (mine == null) return false;
-
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Vérification VIP
-        if (mine.isVipOnly() && !player.hasPermission("specialmine.vip")) {
+        if (mineId == null || mineId.isEmpty()) {
             return false;
         }
 
-        // Vérification permission spécifique
-        if (mine.getRequiredPermission() != null && !player.hasPermission(mine.getRequiredPermission())) {
-            return false;
+        String lowerMineId = mineId.toLowerCase();
+
+        // Logique pour les MINES PRESTIGE (contient "prestige")
+        if (lowerMineId.contains("prestige")) {
+            try {
+                // 1. Extraire le niveau de prestige requis depuis le nom de la mine.
+                String numberPart = lowerMineId.replaceAll("[^0-9]", "");
+                if (numberPart.isEmpty()) return false;
+                int requiredPrestige = Integer.parseInt(numberPart);
+
+                // 2. Calculer le niveau de prestige effectif du joueur (logique intégrée).
+                int playerPrestige = 0;
+                for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
+                    String perm = permInfo.getPermission().toLowerCase();
+                    if (perm.startsWith("specialmine.prestige.")) {
+                        try {
+                            String levelStr = perm.substring("specialmine.prestige.".length());
+                            int level = Integer.parseInt(levelStr);
+                            if (level > playerPrestige) {
+                                playerPrestige = level;
+                            }
+                        } catch (NumberFormatException e) {
+                            // Ignore les permissions de prestige mal formées.
+                        }
+                    }
+                }
+
+                // 3. Comparer.
+                return playerPrestige >= requiredPrestige;
+
+            } catch (NumberFormatException e) {
+                return false;
+            }
         }
 
-        // Vérification prestige
-        if (mine.getRequiredPrestige() > playerData.getPrestigeLevel()) {
-            return false;
+        // Logique pour les MINES VIP (contient "vip")
+        else if (lowerMineId.contains("vip")) {
+            // 1. Construire la permission requise à partir du nom de la mine.
+            String identifier = lowerMineId.replace("mine-vip", "").replaceAll("^-", "");
+            if (identifier.isEmpty()) return false;
+            String requiredPermission = "specialmine.vip." + identifier;
+
+            // 2. Vérifier si le joueur a cette permission exacte.
+            return player.hasPermission(requiredPermission);
         }
 
-        // Vérification rang (pour mines normales)
-        if (mine.getType() == MineData.MineType.NORMAL) {
-            String currentRank = getCurrentRank(player);
-            String requiredRank = mine.getRequiredRank();
+        // Logique pour les MINES NORMALES (A-Z)
+        else {
+            // 1. Extraire le rang requis (la dernière lettre du nom de la mine).
+            if (lowerMineId.length() < 1) return false;
+            String requiredRank = lowerMineId.substring(lowerMineId.length() - 1);
 
-            return isRankSufficient(currentRank, requiredRank);
+            if (!requiredRank.matches("[a-z]")) {
+                return false;
+            }
+
+            // 2. Obtenir le rang le plus élevé du joueur.
+            String playerRank = getCurrentRank(player);
+
+            // 3. Vérifier si le rang du joueur est suffisant.
+            return isRankSufficient(playerRank, requiredRank);
         }
-
-        return true;
     }
 
     /**

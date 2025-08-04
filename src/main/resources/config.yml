@@ -35,6 +35,12 @@ mines:
       iron_ore: 0.05
     display-name: "§fMine A"
     description: "Mine de débutant"
+    teleport:
+      x: 7
+      y: 75
+      z: -42
+      yaw: -90
+      pitch: 0
 
   # Mine B
   mine-b:
@@ -1667,3 +1673,101 @@ crate-advanced:
   performance:
     max-particles-per-tick: 50  # Limite de particules par tick
     disable-effects-if-no-players: true  # Désactive effets si aucun joueur proche
+
+
+warps:
+  # Warp Spawn (point de téléportation principal)
+  spawn:
+    display-name: "§e⭐ Spawn"
+    type: "SPAWN"              # Types: SPAWN, MINE, CRATE, CAVE, SHOP, PVP, EVENT, OTHER
+    world: "Spawn"             # Nom du monde
+    x: 0                       # Coordonnée X
+    y: 100                     # Coordonnée Y
+    z: 0                       # Coordonnée Z
+    yaw: 0.0                   # Orientation (optionnel)
+    pitch: 0.0                 # Inclinaison (optionnel)
+    permission: ""             # Permission requise (optionnel)
+    head-material: "PLAYER_HEAD" # Matériau pour le GUI
+    head-texture: ""           # Texture base64 personnalisée (optionnel)
+    enabled: true              # Warp activé
+    description: "Point de spawn principal du serveur"
+
+  # Warp vers la zone des crates
+  crates:
+    display-name: "§d📦 Crates"
+    type: "CRATE"
+    world: "Spawn"
+    x: -10
+    y: 71
+    z: 43
+    yaw: 180.0
+    pitch: 0.0
+    permission: ""
+    head-material: "CHEST"
+    head-texture: ""
+    enabled: true
+    description: "Zone des crates et récompenses"
+
+  # Warp vers les caves
+  caves:
+    display-name: "§8🕳 Caves"
+    type: "CAVE"
+    world: "Cave"
+    x: 0
+    y: 64
+    z: 0
+    yaw: 0.0
+    pitch: 0.0
+    permission: ""
+    head-material: "COBBLESTONE"
+    head-texture: ""
+    enabled: true
+    description: "Explorez les caves mystérieuses"
+
+  # Warp vers la zone PvP
+  pvp:
+    display-name: "§c⚔ Zone PvP"
+    type: "PVP"
+    world: "PvP"
+    x: 0
+    y: 100
+    z: 0
+    yaw: 0.0
+    pitch: 0.0
+    permission: "specialmine.pvp"
+    head-material: "DIAMOND_SWORD"
+    head-texture: ""
+    enabled: true
+    description: "Zone de combat joueur contre joueur"
+
+  # Warp vers les magasins
+  shops:
+    display-name: "§a🏪 Magasins"
+    type: "SHOP"
+    world: "Spawn"
+    x: 50
+    y: 70
+    z: 50
+    yaw: 0.0
+    pitch: 0.0
+    permission: ""
+    head-material: "EMERALD"
+    head-texture: ""
+    enabled: true
+    description: "Zone commerciale du serveur"
+
+  # Exemple de warp d'événement
+  event_zone:
+    display-name: "§5🎉 Zone Événement"
+    type: "EVENT"
+    world: "Event"
+    x: 0
+    y: 80
+    z: 0
+    yaw: 0.0
+    pitch: 0.0
+    permission: "specialmine.event"
+    head-material: "FIREWORK_ROCKET"
+    head-texture: ""
+    enabled: false             # Désactivé par défaut
+    description: "Zone réservée aux événements spéciaux"

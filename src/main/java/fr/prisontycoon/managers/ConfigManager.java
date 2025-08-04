@@ -1,8 +1,10 @@
 package fr.prisontycoon.managers;
 
+import com.sk89q.worldedit.math.BlockVector3;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.MineData;
+import fr.prisontycoon.data.WarpData;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -27,6 +29,8 @@ public class ConfigManager {
     private Map<Material, BlockValueData> blockValues;
     private Map<String, Object> enchantmentSettings;
     private Map<Material, Long> sellPrices;
+    private Map<String, WarpData> warpsData;
+
 
 
     public ConfigManager(PrisonTycoon plugin) {
@@ -57,11 +61,15 @@ public class ConfigManager {
             loadBlockValuesConfiguration();
             loadEnchantmentConfiguration();
             loadSellPricesConfiguration();
+            loadWarpsConfiguration();
+
 
             plugin.getPluginLogger().info("§aConfiguration chargée avec succès!");
             plugin.getPluginLogger().info("§7- " + minesData.size() + " mines configurées");
             plugin.getPluginLogger().info("§7- " + blockValues.size() + " types de blocs valorisés");
-            plugin.getPluginLogger().info("§7- " + sellPrices.size() + " prix de vente configurés"); // NOUVEAU
+            plugin.getPluginLogger().info("§7- " + sellPrices.size() + " prix de vente configurés");
+            plugin.getPluginLogger().info("§7- " + warpsData.size() + " warps configurés");
+
 
 
         } catch (Exception e) {
@@ -120,97 +128,126 @@ public class ConfigManager {
      * Charge une mine individuelle depuis la configuration
      * CORRIGÉ : Validation et gestion des mondes
      */
-    private MineData loadSingleMine(String name, ConfigurationSection section) {
-        if (section == null) {
-            throw new IllegalArgumentException("Section de mine nulle pour: " + name);
-        }
+    private MineData loadSingleMine(String mineName, ConfigurationSection section) {
+        plugin.getPluginLogger().debug("Chargement détaillé de la mine: " + mineName);
 
-        plugin.getPluginLogger().debug("Chargement des coordonnées pour: " + name);
+        try {
+            // Informations de base
+            String displayName = section.getString("display-name", mineName.toUpperCase());
+            String description = section.getString("description", "");
 
-        // Coordonnées
-        ConfigurationSection coordsSection = section.getConfigurationSection("coordinates");
-        if (coordsSection == null) {
-            throw new IllegalArgumentException("Coordonnées manquantes pour la mine: " + name);
-        }
-
-        // Monde (par défaut ou spécifié)
-        String worldName = section.getString("world", "world");
-        World world = plugin.getServer().getWorld(worldName);
-
-        if (world == null) {
-            plugin.getPluginLogger().warning("§cMonde '" + worldName + "' introuvable pour la mine " + name +
-                    ", utilisation du monde principal");
-            world = plugin.getServer().getWorlds().getFirst();
-        }
-
-        // Lecture des coordonnées avec valeurs par défaut
-        int minX = coordsSection.getInt("min-x", 0);
-        int minY = coordsSection.getInt("min-y", 0);
-        int minZ = coordsSection.getInt("min-z", 0);
-        int maxX = coordsSection.getInt("max-x", 0);
-        int maxY = coordsSection.getInt("max-y", 0);
-        int maxZ = coordsSection.getInt("max-z", 0);
-
-        Location minCorner = new Location(world, minX, minY, minZ);
-        Location maxCorner = new Location(world, maxX, maxY, maxZ);
-
-        plugin.getPluginLogger().debug("Mine " + name + " - Coordonnées: " +
-                minX + "," + minY + "," + minZ + " à " + maxX + "," + maxY + "," + maxZ);
-
-        // Validation des coordonnées
-        if (minX == maxX && minY == maxY && minZ == maxZ) {
-            throw new IllegalArgumentException("Coordonnées identiques pour la mine: " + name);
-        }
-
-        // Composition des blocs
-        plugin.getPluginLogger().debug("Chargement de la composition pour: " + name);
-        ConfigurationSection blocksSection = section.getConfigurationSection("blocks");
-        if (blocksSection == null) {
-            throw new IllegalArgumentException("Composition de blocs manquante pour la mine: " + name);
-        }
-
-        Map<Material, Double> composition = new HashMap<>();
-        double totalProbability = 0.0;
-
-        Set<String> blockNames = blocksSection.getKeys(false);
-        plugin.getPluginLogger().debug("Blocs trouvés pour " + name + ": " + blockNames);
-
-        for (String blockName : blockNames) {
+            // Type de mine
+            String typeString = section.getString("type", "NORMAL").toUpperCase();
+            MineData.MineType type;
             try {
-                Material material = Material.valueOf(blockName.toUpperCase());
-                double probability = blocksSection.getDouble(blockName);
-
-                if (probability <= 0.0 || probability > 1.0) {
-                    throw new IllegalArgumentException("Probabilité invalide pour " + blockName +
-                            " dans la mine " + name + ": " + probability + " (doit être entre 0.0 et 1.0)");
-                }
-
-                composition.put(material, probability);
-                totalProbability += probability;
-
-                plugin.getPluginLogger().debug("- " + blockName + ": " + probability);
-
+                type = MineData.MineType.valueOf(typeString);
             } catch (IllegalArgumentException e) {
-                if (e.getMessage().contains("No enum constant")) {
-                    plugin.getPluginLogger().warning("§cMatériau invalide ignoré: " + blockName +
-                            " dans la mine " + name + " (matériau inexistant dans Minecraft 1.21)");
-                } else {
-                    throw e;
+                plugin.getPluginLogger().warning("§cType de mine invalide '" + typeString + "' pour " + mineName + ", utilisation de NORMAL");
+                type = MineData.MineType.NORMAL;
+            }
+
+            // Monde
+            String worldName = section.getString("world");
+            if (worldName == null || worldName.trim().isEmpty()) {
+                throw new IllegalArgumentException("Monde non spécifié pour la mine " + mineName);
+            }
+
+            // Coordonnées de la région
+            ConfigurationSection coordsSection = section.getConfigurationSection("coordinates");
+            if (coordsSection == null) {
+                throw new IllegalArgumentException("Section 'coordinates' manquante pour la mine " + mineName);
+            }
+
+            int minX = coordsSection.getInt("min-x");
+            int minY = coordsSection.getInt("min-y");
+            int minZ = coordsSection.getInt("min-z");
+            int maxX = coordsSection.getInt("max-x");
+            int maxY = coordsSection.getInt("max-y");
+            int maxZ = coordsSection.getInt("max-z");
+
+            BlockVector3 minPos = BlockVector3.at(Math.min(minX, maxX), Math.min(minY, maxY), Math.min(minZ, maxZ));
+            BlockVector3 maxPos = BlockVector3.at(Math.max(minX, maxX), Math.max(minY, maxY), Math.max(minZ, maxZ));
+
+            // Composition des blocs
+            ConfigurationSection blocksSection = section.getConfigurationSection("blocks");
+            if (blocksSection == null) {
+                throw new IllegalArgumentException("Section 'blocks' manquante pour la mine " + mineName);
+            }
+
+            Map<Material, Double> blockComposition = new HashMap<>();
+            Set<String> blockNames = blocksSection.getKeys(false);
+
+            for (String blockName : blockNames) {
+                try {
+                    Material material = Material.valueOf(blockName.toUpperCase());
+                    double percentage = blocksSection.getDouble(blockName);
+
+                    if (percentage < 0 || percentage > 1) {
+                        plugin.getPluginLogger().warning("§cPourcentage invalide pour " + blockName + " dans " + mineName + ": " + percentage);
+                        continue;
+                    }
+
+                    blockComposition.put(material, percentage);
+                    plugin.getPluginLogger().debug("  Bloc ajouté: " + material + " -> " + (percentage * 100) + "%");
+
+                } catch (IllegalArgumentException e) {
+                    plugin.getPluginLogger().warning("§cMatériau invalide ignoré dans " + mineName + ": " + blockName);
                 }
             }
-        }
 
-        if (composition.isEmpty()) {
-            throw new IllegalArgumentException("Aucun bloc valide dans la composition de la mine: " + name);
-        }
+            if (blockComposition.isEmpty()) {
+                throw new IllegalArgumentException("Aucun bloc valide trouvé pour la mine " + mineName);
+            }
 
-        // Validation de la probabilité totale
-        if (Math.abs(totalProbability - 1.0) > 0.01) { // Tolérance de 1%
-            plugin.getPluginLogger().warning("§eAttention: Probabilité totale pour la mine '" + name +
-                    "' = " + String.format("%.3f", totalProbability) + " (devrait être proche de 1.0)");
-        }
+            // Validation de la composition totale
+            double totalPercentage = blockComposition.values().stream().mapToDouble(Double::doubleValue).sum();
+            plugin.getPluginLogger().debug("Pourcentage total pour " + mineName + ": " + totalPercentage);
 
-        return new MineData(name, minCorner, maxCorner, composition);
+            if (Math.abs(totalPercentage - 1.0) > 0.01) {
+                plugin.getPluginLogger().warning("§cLa somme des pourcentages n'est pas égale à 100% pour " + mineName +
+                        " (actuel: " + (totalPercentage * 100) + "%)");
+            }
+
+            // Intervalle de reset
+            int resetInterval = section.getInt("reset-interval-minutes", 30);
+
+            // NOUVEAU: Coordonnées de téléportation
+            double teleportX, teleportY, teleportZ;
+            float teleportYaw = 0f, teleportPitch = 0f;
+
+            ConfigurationSection teleportSection = section.getConfigurationSection("teleport");
+            if (teleportSection != null) {
+                // Coordonnées personnalisées de téléportation
+                teleportX = teleportSection.getDouble("x");
+                teleportY = teleportSection.getDouble("y");
+                teleportZ = teleportSection.getDouble("z");
+                teleportYaw = (float) teleportSection.getDouble("yaw", 0.0);
+                teleportPitch = (float) teleportSection.getDouble("pitch", 0.0);
+
+                plugin.getPluginLogger().debug("Téléportation personnalisée pour " + mineName + ": " +
+                        teleportX + ", " + teleportY + ", " + teleportZ);
+            } else {
+                // Utiliser le centre de la mine comme téléportation par défaut
+                teleportX = (minPos.getX() + maxPos.getX()) / 2.0;
+                teleportY = maxPos.getY() + 1; // Un bloc au-dessus
+                teleportZ = (minPos.getZ() + maxPos.getZ()) / 2.0;
+
+                plugin.getPluginLogger().debug("Téléportation automatique pour " + mineName + ": " +
+                        teleportX + ", " + teleportY + ", " + teleportZ);
+            }
+
+            // Création de l'objet MineData avec les nouvelles coordonnées
+            return new MineData(
+                    mineName, displayName, description, type, worldName,
+                    minPos, maxPos, blockComposition, resetInterval,
+                    teleportX, teleportY, teleportZ, teleportYaw, teleportPitch
+            );
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("Erreur lors du chargement de la mine " + mineName + ":");
+            e.printStackTrace();
+            throw new RuntimeException("Échec du chargement de la mine " + mineName, e);
+        }
     }
 
     /**
@@ -423,6 +460,120 @@ public class ConfigManager {
         sellPrices.put(Material.DIAMOND, 40L);
         sellPrices.put(Material.EMERALD, 60L);
         sellPrices.put(Material.NETHERITE_SCRAP, 150L);
+    }
+
+    /**
+     * Charge la configuration des warps
+     */
+    private void loadWarpsConfiguration() {
+        plugin.getPluginLogger().debug("Chargement des warps...");
+
+        warpsData = new HashMap<>();
+
+        ConfigurationSection warpsSection = config.getConfigurationSection("warps");
+        if (warpsSection == null) {
+            plugin.getPluginLogger().info("§7Aucune section 'warps' trouvée dans la config - génération automatique seulement");
+            return;
+        }
+
+        Set<String> warpNames = warpsSection.getKeys(false);
+        plugin.getPluginLogger().debug("Warps trouvés dans la config: " + warpNames);
+
+        for (String warpName : warpNames) {
+            try {
+                plugin.getPluginLogger().debug("Chargement du warp: " + warpName);
+
+                ConfigurationSection warpSection = warpsSection.getConfigurationSection(warpName);
+                if (warpSection == null) {
+                    plugin.getPluginLogger().warning("§cSection warp invalide pour: " + warpName);
+                    continue;
+                }
+
+                WarpData warpData = loadSingleWarp(warpName, warpSection);
+                warpsData.put(warpName, warpData);
+
+                plugin.getPluginLogger().info("§aWarp '" + warpName + "' chargé: " +
+                        warpData.getType().getDisplayName() + " vers " + warpData.getWorldName());
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().severe("§cErreur lors du chargement du warp '" + warpName + "':");
+                e.printStackTrace();
+            }
+        }
+
+        if (warpsData.isEmpty()) {
+            plugin.getPluginLogger().info("§7Aucun warp configuré manuellement - utilisation de la génération automatique");
+        }
+    }
+
+    /**
+     * Charge un seul warp depuis la configuration
+     */
+    private WarpData loadSingleWarp(String warpId, ConfigurationSection section) {
+        // Informations de base
+        String displayName = section.getString("display-name", warpId);
+
+        // Type de warp
+        String typeString = section.getString("type", "OTHER").toUpperCase();
+        WarpData.WarpType type;
+        try {
+            type = WarpData.WarpType.valueOf(typeString);
+        } catch (IllegalArgumentException e) {
+            plugin.getPluginLogger().warning("§cType de warp invalide '" + typeString + "' pour " + warpId + ", utilisation de OTHER");
+            type = WarpData.WarpType.OTHER;
+        }
+
+        // Position
+        String worldName = section.getString("world");
+        if (worldName == null || worldName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Monde non spécifié pour le warp " + warpId);
+        }
+
+        double x = section.getDouble("x", 0);
+        double y = section.getDouble("y", 100);
+        double z = section.getDouble("z", 0);
+        float yaw = (float) section.getDouble("yaw", 0);
+        float pitch = (float) section.getDouble("pitch", 0);
+
+        // Permission
+        String permission = section.getString("permission", null);
+
+        // Tête personnalisée
+        String headMaterialString = section.getString("head-material", "PLAYER_HEAD");
+        Material headMaterial;
+        try {
+            headMaterial = Material.valueOf(headMaterialString.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            plugin.getPluginLogger().warning("§cMatériau de tête invalide '" + headMaterialString + "' pour " + warpId);
+            headMaterial = Material.PLAYER_HEAD;
+        }
+
+        String headTexture = section.getString("head-texture", null);
+
+        // Autres propriétés
+        boolean enabled = section.getBoolean("enabled", true);
+        String description = section.getString("description", "");
+
+        return new WarpData(
+                warpId, displayName, type, worldName,
+                x, y, z, yaw, pitch,
+                permission, headMaterial, headTexture,
+                enabled, description
+        );
+    }
+
+    /**
+     * Obtient tous les warps configurés
+     */
+    public Map<String, WarpData> getAllWarps() {
+        return new HashMap<>(warpsData);
+    }
+
+    /**
+     * Obtient un warp par son ID
+     */
+    public WarpData getWarp(String warpId) {
+        return warpsData.get(warpId);
     }
 
     /**
