@@ -1,13 +1,16 @@
 package fr.prisontycoon.managers;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.gangs.GangBoostType;
 import fr.prisontycoon.gangs.GangRole;
 import fr.prisontycoon.gangs.GangTalent;
+import fr.prisontycoon.utils.PatternAdapter;
 import org.bukkit.Bukkit;
+import org.bukkit.block.banner.Pattern;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -28,8 +31,9 @@ public class GangManager {
     private final Map<String, String> gangNameToId = new ConcurrentHashMap<>(); // nom -> id
     private final Map<String, String> gangTagToId = new ConcurrentHashMap<>(); // tag -> id
     private final Map<UUID, String> pendingInvitations = new ConcurrentHashMap<>(); // playerId -> gangId
-    private final Gson gson = new Gson();
-    private final Map<String, GangTalent> talents = new ConcurrentHashMap<>();
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Pattern.class, new PatternAdapter())
+            .create();    private final Map<String, GangTalent> talents = new ConcurrentHashMap<>();
 
     // Coûts des niveaux de gang (index 0 = création, index 1 = niveau 2, etc.)
     private final long[] LEVEL_COSTS = {

@@ -25,6 +25,10 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -82,30 +86,171 @@ public class OutpostManager {
                 outpostCenter.getBlockX() + ", " + outpostCenter.getBlockY() + ", " + outpostCenter.getBlockZ());
     }
 
-    /**
-     * Charge les données de l'avant-poste depuis la configuration
-     */
-    private void loadOutpostData() {
-        // Charger depuis les données persistantes ou créer par défaut
-        File dataFolder = new File(plugin.getDataFolder(), "data");
-        File outpostFile = new File(dataFolder, "outpost.yml");
+    private void createOutpostTable() {
+        String query = """
+        CREATE TABLE IF NOT EXISTS outpost_data (
+            id SERIAL PRIMARY KEY,
+            controller VARCHAR(36),
+            controller_name VARCHAR(16),
+            capture_time BIGINT DEFAULT 0,
+            current_skin VARCHAR(255) DEFAULT 'default'
+        );
+    """;
 
-        if (outpostFile.exists()) {
-            // TODO: Charger depuis le fichier
-            // Pour l'instant, créer une instance par défaut
-            this.outpostData = new OutpostData();
-        } else {
-            this.outpostData = new OutpostData();
-            saveOutpostData();
+        try (Connection conn = plugin.getDatabaseManager().getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.execute();
+
+            // Insérer une ligne par défaut si la table est vide
+            String checkQuery = "SELECT COUNT(*) FROM outpost_data";
+            try (PreparedStatement checkPs = conn.prepareStatement(checkQuery);
+                 ResultSet rs = checkPs.executeQuery()) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    String insertQuery = """
+                    INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
+                    VALUES (NULL, NULL, 0, 'default')
+                """;
+                    try (PreparedStatement insertPs = conn.prepareStatement(insertQuery)) {
+                        insertPs.execute();
+                    }
+                }
+            }
+
+            plugin.getPluginLogger().info("§aTable outpost_data créée/vérifiée avec succès.");
+        } catch (SQLException e) {
+            plugin.getPluginLogger().severe("§cErreur lors de la création de la table outpost_data: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     /**
-     * Sauvegarde les données de l'avant-poste
+     * CORRECTION 7: Implémentation complète de loadOutpostData
+     */
+    private void loadOutpostData() {
+        // S'assurer que la table existe
+        createOutpostTable();
+
+        String query = """
+        SELECT controller, controller_name, capture_time, current_skin
+        FROM outpost_data 
+        ORDER BY id 
+        LIMIT 1
+    """;
+
+        try (Connection conn = plugin.getDatabaseManager().getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                // Charger les données existantes
+                String controllerStr = rs.getString("controller");
+                UUID controller = controllerStr != null ? UUID.fromString(controllerStr) : null;
+                String controllerName = rs.getString("controller_name");
+                long captureTime = rs.getLong("capture_time");
+                String currentSkin = rs.getString("current_skin");
+
+                // Créer l'objet OutpostData avec toutes les données
+                this.outpostData = new OutpostData(controller, controllerName, captureTime, currentSkin);
+
+                plugin.getPluginLogger().info("§aOutpostData chargé: Contrôleur=" +
+                        (controllerName != null ? controllerName : "Aucun") +
+                        ", Skin=" + currentSkin);
+            } else {
+                // Aucune données trouvées, créer par défaut
+                this.outpostData = new OutpostData();
+                saveOutpostData(); // Sauvegarder immédiatement les données par défaut
+                plugin.getPluginLogger().info("§eOutpostData créé par défaut et sauvegardé.");
+            }
+
+        } catch (SQLException e) {
+            plugin.getPluginLogger().severe("§cErreur lors du chargement des données d'avant-poste: " + e.getMessage());
+            e.printStackTrace();
+            // Créer des données par défaut en cas d'erreur
+            this.outpostData = new OutpostData();
+        }
+    }
+
+    /**
+     * CORRECTION 8: Implémentation complète de saveOutpostData
      */
     private void saveOutpostData() {
-        // TODO: Implémenter la sauvegarde dans un fichier YAML
-        // Pour l'instant, on stocke en mémoire
+        if (outpostData == null) {
+            plugin.getPluginLogger().warning("§eAttempt to save null outpostData - ignoring");
+            return;
+        }
+
+        String query = """
+        INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (id) DO UPDATE SET
+            controller = EXCLUDED.controller,
+            controller_name = EXCLUDED.controller_name,
+            capture_time = EXCLUDED.capture_time,
+            current_skin = EXCLUDED.current_skin,
+    """;
+
+        // Pour PostgreSQL, nous devons d'abord vérifier s'il y a des données et faire UPDATE ou INSERT
+        String updateQuery = """
+        UPDATE outpost_data SET 
+            controller = ?, 
+            controller_name = ?, 
+            capture_time = ?, 
+            current_skin = ?
+        WHERE id = (SELECT MIN(id) FROM outpost_data)
+    """;
+
+        try (Connection conn = plugin.getDatabaseManager().getConnection()) {
+            // Essayer d'abord un UPDATE
+            try (PreparedStatement ps = conn.prepareStatement(updateQuery)) {
+                ps.setString(1, outpostData.getController() != null ? outpostData.getController().toString() : null);
+                ps.setString(2, outpostData.getControllerName());
+                ps.setLong(3, outpostData.getCaptureTime());
+                ps.setString(4, outpostData.getCurrentSkin());
+
+                int rowsUpdated = ps.executeUpdate();
+
+                // Si aucune ligne n'a été mise à jour, faire un INSERT
+                if (rowsUpdated == 0) {
+                    String insertQuery = """
+                    INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
+                    VALUES (?, ?, ?, ?)
+                """;
+                    try (PreparedStatement insertPs = conn.prepareStatement(insertQuery)) {
+                        insertPs.setString(1, outpostData.getController() != null ? outpostData.getController().toString() : null);
+                        insertPs.setString(2, outpostData.getControllerName());
+                        insertPs.setLong(3, outpostData.getCaptureTime());
+                        insertPs.setString(4, outpostData.getCurrentSkin());
+                        insertPs.executeUpdate();
+                    }
+                }
+            }
+
+            plugin.getPluginLogger().debug("§aOutpostData sauvegardé avec succès.");
+
+        } catch (SQLException e) {
+            plugin.getPluginLogger().severe("§cErreur lors de la sauvegarde des données d'avant-poste: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * CORRECTION 9: Méthodes publiques pour sauvegarder depuis l'extérieur
+     */
+    public void saveOutpostDataAsync() {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, this::saveOutpostData);
+    }
+
+    public void saveOutpostDataSync() {
+        saveOutpostData();
+    }
+
+    /**
+     * CORRECTION 10: Méthode pour forcer le rechargement des données
+     */
+    public void reloadOutpostData() {
+        plugin.getPluginLogger().info("§eRechargement des données d'avant-poste...");
+        loadOutpostData();
+        plugin.getPluginLogger().info("§aDonnées d'avant-poste rechargées.");
     }
 
     /**

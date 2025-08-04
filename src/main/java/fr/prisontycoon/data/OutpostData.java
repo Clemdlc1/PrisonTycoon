@@ -21,9 +21,6 @@ public class OutpostData {
         this.controllerName = null;
         this.captureTime = 0;
         this.currentSkin = "default";
-        this.totalCoinsGenerated = 0;
-        this.totalTokensGenerated = 0;
-        this.totalCapturesCount = 0;
     }
 
     public OutpostData(UUID controller, String controllerName, long captureTime, String currentSkin) {
@@ -31,9 +28,6 @@ public class OutpostData {
         this.controllerName = controllerName;
         this.captureTime = captureTime;
         this.currentSkin = currentSkin;
-        this.totalCoinsGenerated = 0;
-        this.totalTokensGenerated = 0;
-        this.totalCapturesCount = 0;
     }
 
     // Getters et Setters
@@ -123,9 +117,6 @@ public class OutpostData {
                 ", controllerName='" + controllerName + '\'' +
                 ", captureTime=" + captureTime +
                 ", currentSkin='" + currentSkin + '\'' +
-                ", totalCoinsGenerated=" + totalCoinsGenerated +
-                ", totalTokensGenerated=" + totalTokensGenerated +
-                ", totalCapturesCount=" + totalCapturesCount +
                 '}';
     }
 }

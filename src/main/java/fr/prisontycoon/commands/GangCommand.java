@@ -599,6 +599,10 @@ public class GangCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§c❌ Seul le chef peut créer/modifier la bannière du gang.");
             return;
         }
+        if (gang.getLevel() <= 2) {
+            player.sendMessage("§c❌ Votre gang doit être au moins niveau pour créer/modifier la bannière du gang.");
+            return;
+        }
 
         // Ouvrir GUI de création de bannière
         plugin.getGangGUI().openBannerCreator(player, gang);

@@ -13,6 +13,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BannerMeta;
@@ -22,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Interface graphique pour le système de gangs
@@ -30,10 +30,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GangGUI {
 
     private final PrisonTycoon plugin;
-    private final Map<UUID, String> openGuis = new ConcurrentHashMap<>();
+    private final GUIManager guiManager;
+
 
     public GangGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
+        this.guiManager = plugin.getGUIManager();
     }
 
     /**
@@ -41,7 +43,6 @@ public class GangGUI {
      */
     public void openMainMenu(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
 
         if (playerData.getGangId() == null) {
             openNoGangMenu(player);
@@ -60,8 +61,7 @@ public class GangGUI {
      */
     private void openNoGangMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "§6⭐ §lGANG - Menu Principal §6⭐");
-        plugin.getGUIManager().registerOpenGUI(player, GUIType.GANG_MAIN, gui);
-        openGuis.put(player.getUniqueId(), "no_gang_menu");
+        guiManager.registerOpenGUI(player, GUIType.GANG_NO_GANG, gui);
 
         fillWithGlass(gui, DyeColor.GRAY);
 
@@ -150,8 +150,7 @@ public class GangGUI {
      */
     private void openGangMenu(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 54, "§6☠ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6☠");
-        plugin.getGUIManager().registerOpenGUI(player, GUIType.GANG_MAIN, gui);
-        openGuis.put(player.getUniqueId(), "gang_menu");
+        guiManager.registerOpenGUI(player, GUIType.GANG_MAIN, gui);
 
         fillWithGlass(gui, DyeColor.YELLOW);
 
@@ -332,7 +331,7 @@ public class GangGUI {
      */
     public void openGangInfo(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 54, "§6📋 §l" + gang.getName() + " - Informations");
-        openGuis.put(player.getUniqueId(), "gang_info");
+        guiManager.registerOpenGUI(player, GUIType.GANG_INFO, gui);
 
         fillWithGlass(gui, DyeColor.LIGHT_BLUE);
 
@@ -473,7 +472,7 @@ public class GangGUI {
      */
     public void openUpgradeMenu(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 36, "§c⚡ §lAméliorations - " + gang.getName());
-        openGuis.put(player.getUniqueId(), "upgrade_menu");
+        guiManager.registerOpenGUI(player, GUIType.GANG_UPGRADES, gui);
 
         fillWithGlass(gui, DyeColor.RED);
 
@@ -549,7 +548,7 @@ public class GangGUI {
      */
     public void openShop(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 54, "§a🛒 §lBoutique - " + gang.getName());
-        openGuis.put(player.getUniqueId(), "gang_shop");
+        guiManager.registerOpenGUI(player, GUIType.GANG_SHOP, gui);
 
         fillWithGlass(gui, DyeColor.GREEN);
 
@@ -601,7 +600,7 @@ public class GangGUI {
      */
     public void openBannerCreator(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 27, "§6🏳️ §lCréateur de Bannière");
-        openGuis.put(player.getUniqueId(), "banner_creator");
+        guiManager.registerOpenGUI(player, GUIType.BANNER_CREATOR, gui);
 
         fillWithGlass(gui, DyeColor.YELLOW);
 
@@ -620,12 +619,8 @@ public class GangGUI {
         instructions.setItemMeta(instructionsMeta);
         gui.setItem(4, instructions);
 
-        // Slot pour la bannière (sera géré par des événements spéciaux)
-        ItemStack placeholder = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, DyeColor.GRAY.getWoolData());
-        ItemMeta placeholderMeta = placeholder.getItemMeta();
-        placeholderMeta.setDisplayName("§7Placez votre bannière ici");
-        placeholder.setItemMeta(placeholderMeta);
-        gui.setItem(13, placeholder);
+        gui.setItem(13, createBannerSlotItem(gang));
+
 
         // Confirmer
         ItemStack confirm = new ItemStack(Material.EMERALD_BLOCK);
@@ -652,7 +647,7 @@ public class GangGUI {
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.0f);
     }
 
-    private void handleNoGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleNoGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         switch (slot) {
             case 11 -> { // Créer un gang
                 player.closeInventory();
@@ -678,7 +673,7 @@ public class GangGUI {
         }
     }
 
-    private void handleMainGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleMainGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
@@ -819,11 +814,6 @@ public class GangGUI {
         return new java.text.SimpleDateFormat("dd/MM/yyyy").format(new java.util.Date(timestamp));
     }
 
-    public void closeGui(Player player) {
-        openGuis.remove(player.getUniqueId());
-    }
-    // Voici les implémentations des méthodes manquantes pour GangGUI
-
     /**
      * Gère la sélection d'une bannière (appelée depuis GangListener)
      */
@@ -850,11 +840,42 @@ public class GangGUI {
     }
 
     /**
+     * NOUVELLE MÉTHODE
+     * Gère le clic sur une bannière dans l'inventaire du joueur
+     * pour la placer dans le GUI de création.
+     */
+    public void handleBannerPlacementFromInventory(Player player, InventoryClickEvent event) {
+        ItemStack clickedItem = event.getCurrentItem();
+
+        // Vérifie si l'item cliqué est une bannière
+        if (clickedItem != null && clickedItem.getType().name().contains("BANNER")) {
+            event.setCancelled(true); // On prend le contrôle de l'événement
+
+            Inventory gui = event.getInventory(); // L'inventaire du haut (le GUI)
+            ItemStack currentBannerInSlot = gui.getItem(13);
+
+            // Place la nouvelle bannière dans le slot 13
+            gui.setItem(13, clickedItem.clone());
+            // Retire la bannière cliquée de l'inventaire du joueur
+            event.setCurrentItem(null);
+
+            // Si une bannière était déjà présente, on la rend au joueur
+            if (currentBannerInSlot != null && currentBannerInSlot.getType().name().contains("BANNER")) {
+                player.getInventory().addItem(currentBannerInSlot);
+            }
+
+            player.playSound(player.getLocation(), Sound.BLOCK_TRIPWIRE_ATTACH, 1.0f, 1.0f);
+            player.updateInventory();
+        }
+    }
+
+
+    /**
      * Ouvre le menu des membres du gang
      */
     private void openMembersMenu(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 54, "§b👥 §l" + gang.getName() + " - Membres");
-        openGuis.put(player.getUniqueId(), "members_menu");
+        guiManager.registerOpenGUI(player, GUIType.GANG_MEMBERS, gui);
 
         fillWithGlass(gui, DyeColor.BLUE);
 
@@ -926,7 +947,7 @@ public class GangGUI {
      */
     private void openTalentsMenu(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 54, "§5🎯 §l" + gang.getName() + " - Talents");
-        openGuis.put(player.getUniqueId(), "talents_menu");
+        guiManager.registerOpenGUI(player, GUIType.GANG_TALENTS, gui);
 
         fillWithGlass(gui, DyeColor.PURPLE);
 
@@ -1040,7 +1061,7 @@ public class GangGUI {
      */
     private void openSettingsMenu(Player player, Gang gang) {
         Inventory gui = Bukkit.createInventory(null, 45, "§6⚙️ §l" + gang.getName() + " - Paramètres");
-        openGuis.put(player.getUniqueId(), "settings_menu");
+        guiManager.registerOpenGUI(player, GUIType.GANG_SETTINGS, gui);
 
         fillWithGlass(gui, DyeColor.ORANGE);
 
@@ -1088,8 +1109,7 @@ public class GangGUI {
             gui.setItem(12, rename);
         }
 
-        // Créateur de bannière (niveau 10+)
-        if (gang.getLevel() >= 10 && isLeader) {
+        if (gang.getLevel() >= 2 && isLeader) {
             ItemStack bannerCreator = new ItemStack(Material.WHITE_BANNER);
             ItemMeta bannerMeta = bannerCreator.getItemMeta();
             bannerMeta.setDisplayName("§6🏳️ §lCréateur de Bannière");
@@ -1099,6 +1119,19 @@ public class GangGUI {
             bannerLore.add("§7pour représenter votre gang.");
             bannerLore.add("");
             bannerLore.add("§a▶ Cliquez pour ouvrir!");
+            bannerMeta.setLore(bannerLore);
+            bannerCreator.setItemMeta(bannerMeta);
+            gui.setItem(14, bannerCreator);
+        } else {
+            ItemStack bannerCreator = new ItemStack(Material.RED_BANNER);
+            ItemMeta bannerMeta = bannerCreator.getItemMeta();
+            bannerMeta.setDisplayName("§6🏳️ §lCréateur de Bannière");
+            List<String> bannerLore = new ArrayList<>();
+            bannerLore.add("");
+            bannerLore.add("§7Créez une bannière personnalisée");
+            bannerLore.add("§7pour représenter votre gang.");
+            bannerLore.add("");
+            bannerLore.add("§a▶ Déblocable à partir du niveau 2");
             bannerMeta.setLore(bannerLore);
             bannerCreator.setItemMeta(bannerMeta);
             gui.setItem(14, bannerCreator);
@@ -1148,7 +1181,7 @@ public class GangGUI {
     /**
      * Gère les clics dans le menu d'informations du gang
      */
-    private void handleGangInfoClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleGangInfoClick(Player player, int slot, ItemStack item, ClickType clickType) {
         switch (slot) {
             case 45 -> openMainMenu(player); // Retour
             case 49 -> player.closeInventory(); // Fermer
@@ -1159,7 +1192,7 @@ public class GangGUI {
     /**
      * Gère les clics dans le menu d'amélioration
      */
-    private void handleUpgradeMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleUpgradeMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
@@ -1188,7 +1221,7 @@ public class GangGUI {
     /**
      * Gère les clics dans la boutique du gang
      */
-    private void handleShopClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleShopClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
@@ -1253,18 +1286,38 @@ public class GangGUI {
         return -1;
     }
 
-    /**
-     * Gère les clics dans le créateur de bannière
-     */
     public void handleBannerCreatorClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
 
+        // On récupère l'inventaire du GUI
+        Inventory gui = player.getOpenInventory().getTopInventory();
+        if (gui == null) return;
+
         switch (slot) {
-            case 20 -> { // Confirmer
-                // Récupérer la bannière du slot 13
-                ItemStack banner = player.getOpenInventory().getItem(13);
+            case 13: { // Slot de la bannière
+                // On vérifie qu'on clique bien sur une bannière et non sur le placeholder
+                if (item != null && item.getType().name().contains("BANNER")) {
+                    // Vérifie si l'inventaire du joueur a de la place
+                    if (player.getInventory().firstEmpty() == -1) {
+                        player.sendMessage("§c❌ Votre inventaire est plein !");
+                        return;
+                    }
+
+                    // Remettre le placeholder dans le GUI
+                    gui.setItem(13, createBannerSlotItem(gang));
+
+                    // Rendre la bannière au joueur
+                    player.getInventory().addItem(item);
+                    player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.0f);
+                    player.updateInventory();
+                }
+                break;
+            }
+
+            case 20: { // Confirmer
+                ItemStack banner = gui.getItem(13); // On récupère depuis l'inventaire ouvert
                 if (banner != null && banner.getType().name().contains("BANNER")) {
                     BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
                     if (bannerMeta != null) {
@@ -1272,24 +1325,81 @@ public class GangGUI {
                         plugin.getGangManager().saveGang(gang);
 
                         player.closeInventory();
-                        player.sendMessage("§a✅ Bannière du gang enregistrée!");
-                        gang.broadcast("§6🏳️ " + player.getName() + " a mis à jour la bannière du gang!", player);
+                        player.sendMessage("§a✅ Bannière du gang enregistrée !");
+                        gang.broadcast("§6🏳️ " + player.getName() + " a mis à jour la bannière du gang !", player);
                     }
                 } else {
-                    player.sendMessage("§c❌ Aucune bannière valide trouvée!");
+                    player.sendMessage("§c❌ Aucune bannière valide trouvée !");
                 }
+                break;
             }
-            case 24 -> { // Annuler
+            case 24: { // Annuler
+                // Avant d'annuler, on rend la bannière si elle est dans le slot
+                ItemStack banner = gui.getItem(13);
+                if (banner != null && banner.getType().name().contains("BANNER")) {
+                    if (player.getInventory().firstEmpty() != -1) {
+                        player.getInventory().addItem(banner);
+                    } else {
+                        // Si pas de place, on la drop au sol pour éviter la perte
+                        player.getWorld().dropItem(player.getLocation(), banner);
+                        player.sendMessage("§cInventaire plein, la bannière a été déposée au sol.");
+                    }
+                }
                 player.closeInventory();
                 player.sendMessage("§c❌ Création de bannière annulée.");
+                break;
             }
         }
     }
 
     /**
+     * MODIFICATION
+     * La méthode accepte maintenant l'objet Gang pour afficher la bannière actuelle.
+     * Elle ne crée plus seulement un placeholder.
+     */
+    private ItemStack createBannerSlotItem(Gang gang) {
+        // Si le gang a une bannière personnalisée, on l'affiche
+        if (gang.getBannerPatterns() != null && !gang.getBannerPatterns().isEmpty()) {
+            ItemStack banner = new ItemStack(Material.WHITE_BANNER); // La couleur de base importe peu
+            BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
+
+            bannerMeta.setPatterns(gang.getBannerPatterns());
+            bannerMeta.setDisplayName("§6🏳️ §lBannière Actuelle");
+
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add("§7Voici la bannière actuelle de votre gang.");
+            lore.add("§e▶ Clic-gauche pour la retirer et travailler sur une nouvelle.");
+            lore.add("§e▶ Placez une autre bannière pour commencer à la modifier.");
+            bannerMeta.setLore(lore);
+
+            banner.setItemMeta(bannerMeta);
+            return banner;
+        } else {
+            // Sinon, on affiche le placeholder par défaut
+            ItemStack placeholder = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+            ItemMeta placeholderMeta = placeholder.getItemMeta();
+            placeholderMeta.setDisplayName("§7Placez votre bannière ici");
+
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add("§7Cliquez sur une bannière dans votre inventaire");
+            lore.add("§7pour commencer à la personnaliser.");
+            placeholderMeta.setLore(lore);
+
+            placeholder.setItemMeta(placeholderMeta);
+            return placeholder;
+        }
+    }
+
+
+    /**
      * Gère les clics dans la liste des gangs
      */
-    private void handleGangListClick(Player player, int slot, ItemStack item, ClickType clickType, int page) {
+    public void handleGangListClick(Player player, int slot, ItemStack item, ClickType clickType) {
+        String pageStr = guiManager.getGUIData(player, "page");
+        int page = (pageStr != null) ? Integer.parseInt(pageStr) : 0;
+
         if (item != null && item.getType() == Material.WHITE_BANNER) {
             // Récupérer le nom du gang depuis l'item
             if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
@@ -1331,7 +1441,7 @@ public class GangGUI {
         if (page < 0) page = 0;
 
         Inventory gui = Bukkit.createInventory(null, 54, "§6📋 §lListe des Gangs §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
-        openGuis.put(player.getUniqueId(), "gang_list:" + page);
+        guiManager.registerOpenGUI(player, GUIType.GANG_LIST, gui, Map.of("page", String.valueOf(page)));
 
         fillWithGlass(gui, DyeColor.ORANGE);
 
@@ -1379,7 +1489,7 @@ public class GangGUI {
     /**
      * Gère les clics dans le menu des talents
      */
-    private void handleTalentsMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleTalentsMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
@@ -1450,7 +1560,7 @@ public class GangGUI {
     /**
      * Gère les clics dans le menu des membres
      */
-    private void handleMembersMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleMembersMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
@@ -1526,7 +1636,7 @@ public class GangGUI {
     /**
      * Gère les clics dans le menu des paramètres
      */
-    private void handleSettingsMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
+    public void handleSettingsMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         Gang gang = plugin.getGangManager().getGang(playerData.getGangId());
         if (gang == null) return;
@@ -1553,12 +1663,12 @@ public class GangGUI {
                 }
             }
             case 14 -> { // Créateur de bannière
-                if (isLeader && gang.getLevel() >= 10) {
+                if (isLeader && gang.getLevel() >= 2) {
                     openBannerCreator(player, gang);
                 } else if (!isLeader) {
                     player.sendMessage("§c❌ Seul le chef peut modifier la bannière!");
                 } else {
-                    player.sendMessage("§c❌ Niveau 10 requis pour cette fonctionnalité!");
+                    player.sendMessage("§c❌ Niveau 2 requis pour cette fonctionnalité!");
                 }
             }
             case 16 -> { // Transférer leadership
@@ -1592,33 +1702,5 @@ public class GangGUI {
             return player.getUniqueId();
         }
         return null;
-    }
-
-    /**
-     * Mise à jour de la méthode principale handleGangMenuClick pour inclure tous les handlers
-     */
-    public void handleGangMenuClick(Player player, int slot, ItemStack item, ClickType clickType) {
-        String guiType = openGuis.get(player.getUniqueId());
-        if (guiType == null) return;
-
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        switch (guiType) {
-            case "no_gang_menu" -> handleNoGangMenuClick(player, slot, item, clickType);
-            case "gang_menu" -> handleMainGangMenuClick(player, slot, item, clickType);
-            case "gang_info" -> handleGangInfoClick(player, slot, item, clickType);
-            case "upgrade_menu" -> handleUpgradeMenuClick(player, slot, item, clickType);
-            case "gang_shop" -> handleShopClick(player, slot, item, clickType);
-            case "banner_creator" -> handleBannerCreatorClick(player, slot, item, clickType);
-            case "talents_menu" -> handleTalentsMenuClick(player, slot, item, clickType);
-            case "members_menu" -> handleMembersMenuClick(player, slot, item, clickType);
-            case "settings_menu" -> handleSettingsMenuClick(player, slot, item, clickType);
-            default -> {
-                if (guiType.startsWith("gang_list:")) {
-                    int page = Integer.parseInt(guiType.split(":")[1]);
-                    handleGangListClick(player, slot, item, clickType, page);
-                }
-            }
-        }
     }
 }

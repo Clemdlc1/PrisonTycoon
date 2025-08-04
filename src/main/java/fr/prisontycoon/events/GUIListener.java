@@ -63,6 +63,10 @@ public class GUIListener implements Listener {
             if (guiType == GUIType.AUTOMINER_UPGRADE && plugin.getCristalManager().isCristal(clickedItem)) {
                 plugin.getAutominerEnchantGUI().handleCrystalApplication(player, clickedItem);
             }
+
+            if (guiType == GUIType.BANNER_CREATOR) {
+                plugin.getGangGUI().handleBannerPlacementFromInventory(player, event);
+            }
             return;
         }
 
@@ -154,9 +158,16 @@ public class GUIListener implements Listener {
 
             case AUTOMINER_STORAGE -> plugin.getAutominerCondHeadGUI().handleStorageClick(player, slot, item);
 
-            case GANG_MAIN, GANG_MANAGEMENT -> plugin.getGangGUI().handleGangMenuClick(player, slot, item, clickType);
-
-            case GANG_BANNER_CREATOR -> plugin.getGangGUI().handleBannerCreatorClick(player, slot, item, clickType);
+            case GANG_MAIN -> plugin.getGangGUI().handleMainGangMenuClick(player, slot, item, clickType);
+            case GANG_NO_GANG -> plugin.getGangGUI().handleNoGangMenuClick(player, slot, item, clickType);
+            case GANG_LIST -> plugin.getGangGUI().handleGangListClick(player, slot, item, clickType);
+            case GANG_INFO -> plugin.getGangGUI().handleGangInfoClick(player, slot, item, clickType);
+            case GANG_MEMBERS -> plugin.getGangGUI().handleMembersMenuClick(player, slot, item, clickType);
+            case GANG_UPGRADES -> plugin.getGangGUI().handleUpgradeMenuClick(player, slot, item, clickType);
+            case GANG_TALENTS -> plugin.getGangGUI().handleTalentsMenuClick(player, slot, item, clickType);
+            case GANG_SHOP -> plugin.getGangGUI().handleShopClick(player, slot, item, clickType);
+            case GANG_SETTINGS -> plugin.getGangGUI().handleSettingsMenuClick(player, slot, item, clickType);
+            case BANNER_CREATOR -> plugin.getGangGUI().handleBannerCreatorClick(player, slot, item, clickType);
 
             case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
 
@@ -178,8 +189,6 @@ public class GUIListener implements Listener {
                     plugin.getAutominerCondHeadGUI().handleCondensationClose(player, event.getInventory());
 
             case AUTOMINER_FUEL -> plugin.getAutominerCondHeadGUI().handleFuelClose(player, event.getInventory());
-
-            case GANG_MAIN, GANG_MANAGEMENT -> plugin.getGangGUI().closeGui(player);
 
             default -> {
             }
