@@ -1560,42 +1560,42 @@ crates:
   locations:
     # Crate Commune
     crate_commune:
-      world: "world"          # Nom du monde
-      x: 100                  # Coordonnée X
-      y: 64                   # Coordonnée Y
-      z: 100                  # Coordonnée Z
+      world: "Spawn"          # Nom du monde
+      x: -7                  # Coordonnée X
+      y: 71                   # Coordonnée Y
+      z: 43                  # Coordonnée Z
       type: "COMMUNE"         # Type de crate
 
     # Crate Peu Commune
     crate_peu_commune:
-      world: "world"
-      x: 110
-      y: 64
-      z: 100
+      world: "Spawn"
+      x: -9
+      y: 71
+      z: 45
       type: "PEU_COMMUNE"
 
     # Crate Rare
     crate_rare:
-      world: "world"
-      x: 120
-      y: 64
-      z: 100
+      world: "Spawn"
+      x: -12
+      y: 71
+      z: 45
       type: "RARE"
 
     # Crate Légendaire
     crate_legendaire:
-      world: "world"
-      x: 130
-      y: 64
-      z: 100
+      world: "Spawn"
+      x: -14
+      y: 71
+      z: 43
       type: "LEGENDAIRE"
 
     # Crate Cristal
     crate_cristal:
-      world: "world"
-      x: 140
-      y: 64
-      z: 100
+      world: "Spawn"
+      x: -15
+      y: 71
+      z: 40
       type: "CRISTAL"
 
   # Configuration des animations

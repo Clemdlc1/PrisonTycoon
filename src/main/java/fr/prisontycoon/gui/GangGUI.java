@@ -157,28 +157,43 @@ public class GangGUI {
         GangRole playerRole = gang.getMemberRole(player.getUniqueId());
 
         // Informations du gang
-        ItemStack gangInfo = new ItemStack(Material.WHITE_BANNER, 1, DyeColor.YELLOW.getWoolData());
-        ItemMeta infoMeta = gangInfo.getItemMeta();
-        infoMeta.setDisplayName("§e📋 §lInformations du Gang");
-        List<String> infoLore = new ArrayList<>();
-        infoLore.add("");
-        infoLore.add("§7Nom: §e" + gang.getName());
-        infoLore.add("§7Tag: §7[§e" + gang.getTag() + "§7]");
-        infoLore.add("§7Niveau: §6" + gang.getLevel());
-        infoLore.add("§7Membres: §a" + gang.getMembers().size() + "§7/§a" + gang.getMaxMembers());
-        if (gang.getDescription() != null && !gang.getDescription().isEmpty()) {
-            infoLore.add("§7Description: §f" + gang.getDescription());
+        ItemStack gangInfo = new ItemStack(Material.WHITE_BANNER);
+        ItemMeta itemMeta = gangInfo.getItemMeta();
+
+        // S'assurer que nous avons bien des métadonnées de bannière
+        if (itemMeta instanceof BannerMeta bannerMeta) {
+
+            // Définir le nom et la description
+            bannerMeta.setDisplayName("§e📋 §lInformations du Gang");
+            List<String> infoLore = new ArrayList<>();
+            infoLore.add("");
+            infoLore.add("§7Nom: §e" + gang.getName());
+            infoLore.add("§7Tag: §7[§e" + gang.getTag() + "§7]");
+            infoLore.add("§7Niveau: §6" + gang.getLevel());
+            infoLore.add("§7Membres: §a" + gang.getMembers().size() + "§7/§a" + gang.getMaxMembers());
+            if (gang.getDescription() != null && !gang.getDescription().isEmpty()) {
+                infoLore.add("§7Description: §f" + gang.getDescription());
+            }
+            infoLore.add("");
+            infoLore.add("§7Votre rôle: " + playerRole.getDisplayName());
+            infoLore.add("");
+            infoLore.add("§a▶ Cliquez pour plus d'infos!");
+            bannerMeta.setLore(infoLore);
+
+            // Appliquer les motifs de la bannière UNIQUEMENT s'ils existent
+            List<org.bukkit.block.banner.Pattern> patterns = gang.getBannerPatterns();
+            if (patterns != null && !patterns.isEmpty()) {
+                bannerMeta.setPatterns(patterns);
+            }
+
+            // Appliquer toutes les modifications à l'item
+            gangInfo.setItemMeta(bannerMeta);
         }
-        infoLore.add("");
-        infoLore.add("§7Votre rôle: " + playerRole.getDisplayName());
-        infoLore.add("");
-        infoLore.add("§a▶ Cliquez pour plus d'infos!");
-        infoMeta.setLore(infoLore);
-        gangInfo.setItemMeta(infoMeta);
+
         gui.setItem(4, gangInfo);
 
         // Membres
-        ItemStack members = new ItemStack(Material.SKELETON_SKULL, 1, (short) 3);
+        ItemStack members = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta membersMeta = members.getItemMeta();
         membersMeta.setDisplayName("§b👥 §lMembres du Gang");
         List<String> membersLore = new ArrayList<>();
@@ -226,12 +241,12 @@ public class GangGUI {
                 upgradeLore.add("");
                 upgradeLore.add("§aAvantages du niveau " + (gang.getLevel() + 1) + ":");
                 upgradeLore.addAll(plugin.getGangManager().getLevelBenefits(gang.getLevel() + 1));
+                upgradeLore.add(""); // Espace avant le clic
+                upgradeLore.add("§a▶ Cliquez pour améliorer!");
             } else {
                 upgradeLore.add("§a✅ Niveau maximum atteint!");
             }
 
-            upgradeLore.add("");
-            upgradeLore.add("§a▶ Cliquez pour améliorer!");
             upgradeMeta.setLore(upgradeLore);
             upgrade.setItemMeta(upgradeMeta);
             gui.setItem(14, upgrade);
@@ -1198,7 +1213,7 @@ public class GangGUI {
         if (gang == null) return;
 
         switch (slot) {
-            case 13 -> { // Améliorer
+            case 15 -> { // Améliorer <-- CORRIGÉ
                 if (gang.getLevel() < 10) {
                     GangRole playerRole = gang.getMemberRole(player.getUniqueId());
                     if (playerRole == GangRole.CHEF) {
@@ -1206,7 +1221,12 @@ public class GangGUI {
                             player.sendMessage("§a✅ Gang amélioré au niveau " + gang.getLevel() + "!");
                             openUpgradeMenu(player, gang); // Rafraîchir
                         } else {
-                            player.sendMessage("§c❌ Amélioration impossible (fonds insuffisants?)");
+                            long cost = plugin.getGangManager().getUpgradeCost(gang.getLevel() + 1);
+                            if (gang.getBankBalance() < cost) {
+                                player.sendMessage("§c❌ Amélioration impossible (fonds insuffisants dans la banque du gang !)");
+                            } else {
+                                player.sendMessage("§c❌ Amélioration impossible.");
+                            }
                         }
                     } else {
                         player.sendMessage("§c❌ Seul le chef peut améliorer le gang!");

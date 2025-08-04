@@ -695,7 +695,7 @@ public class GangManager {
 
         // Acheter le talent
         gang.setBankBalance(gang.getBankBalance() - talent.getCost());
-        gang.getTalents().put(talentId, talent.getLevel());
+        gang.addTalent(talentId, talent.getLevel());
 
         saveGang(gang);
 

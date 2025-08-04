@@ -309,6 +309,10 @@ public class Gang {
         this.talents.putAll(talents);
     }
 
+    public void addTalent(String talentId, int level) {
+        this.talents.put(talentId, level);
+    }
+
     public List<Pattern> getBannerPatterns() {
         return bannerPatterns != null ? new ArrayList<>(bannerPatterns) : null;
     }

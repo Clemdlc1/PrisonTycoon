@@ -5,6 +5,8 @@ import fr.prisontycoon.crates.CrateType;
 import fr.prisontycoon.data.ContainerData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -30,6 +32,13 @@ public class CrateManager {
     // Cache temporaire des animations en cours
     private final Map<UUID, BukkitRunnable> activeAnimations;
 
+    // NOUVEAU: Cache pour les hologrammes des crates (nametags)
+    private final Map<Location, List<ArmorStand>> crateHolograms;
+
+    // NOUVEAU: Tâche pour les effets de particules permanents
+    private BukkitRunnable permanentEffectTask;
+
+
     public CrateManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.keyTypeKey = new NamespacedKey(plugin, "key_type");
@@ -37,8 +46,10 @@ public class CrateManager {
         this.crateLocations = new ConcurrentHashMap<>();
         this.playersOpening = ConcurrentHashMap.newKeySet();
         this.activeAnimations = new ConcurrentHashMap<>();
+        this.crateHolograms = new ConcurrentHashMap<>(); // Initialisation
 
         loadCrateLocations();
+        startPermanentEffects(); // Démarrage des animations permanentes
         plugin.getPluginLogger().info("§aCrateManager initialisé avec " + crateLocations.size() + " crates.");
     }
 
@@ -46,6 +57,10 @@ public class CrateManager {
      * Charge les positions des crates depuis la configuration
      */
     private void loadCrateLocations() {
+        // Nettoie les anciens hologrammes avant de recharger
+        crateHolograms.values().forEach(list -> list.forEach(ArmorStand::remove));
+        crateHolograms.clear();
+
         if (!plugin.getConfig().contains("crates.locations")) {
             plugin.getPluginLogger().warning("Aucune configuration de crates trouvée. Création d'exemples...");
             createDefaultCrateConfig();
@@ -73,10 +88,11 @@ public class CrateManager {
                 CrateType crateType = CrateType.valueOf(crateTypeStr.toUpperCase().replace(" ", "_"));
 
                 crateLocations.put(loc, crateType);
+                createCrateHolograms(loc, crateType); // Crée le nametag au-dessus de la crate
 
                 // Place un bloc physique si nécessaire
                 Block block = loc.getBlock();
-                if (block.getType() != Material.BEACON && block.getType() != Material.BEACON) {
+                if (block.getType() != Material.BEACON) {
                     block.setType(Material.BEACON);
                 }
 
@@ -108,6 +124,7 @@ public class CrateManager {
         plugin.getPluginLogger().info("Configuration des crates créée. Rechargez le plugin pour l'appliquer.");
     }
 
+    // ... (Les méthodes isKey, getKeyType, countKeys, consumeKey, etc. restent inchangées)
     /**
      * Vérifie si un item est une clé
      */
@@ -347,7 +364,7 @@ public class CrateManager {
                     player.sendActionBar("§6➤ " + getRewardDisplayText(displayReward));
 
                     // Particules colorées
-                    spawnParticles(location, crateType);
+                    spawnOpeningParticles(location, crateType);
 
                     // Sons rythmés
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f + (ticks * 0.01f));
@@ -361,32 +378,26 @@ public class CrateManager {
         animation.runTaskTimer(plugin, 0L, 1L);
     }
 
+    // ... (Les méthodes getRewardDisplayText et giveRewardToPlayer restent inchangées)
     /**
      * Génère du texte d'affichage pour une récompense
      */
     private String getRewardDisplayText(CrateType.CrateReward reward) {
         switch (reward.getType()) {
-            case CONTAINER -> {
+            case CONTAINER:
                 return "§eConteneur Tier " + reward.getContainerTier();
-            }
-            case KEY -> {
+            case KEY:
                 return "§bClé " + reward.getKeyType();
-            }
-            case CRISTAL_VIERGE -> {
+            case CRISTAL_VIERGE:
                 return "§dCristal Niveau " + reward.getRandomAmount();
-            }
-            case LIVRE_UNIQUE -> {
+            case LIVRE_UNIQUE:
                 return "§5Livre " + reward.getBookType();
-            }
-            case AUTOMINER -> {
+            case AUTOMINER:
                 return "§7Autominer " + reward.getAutominerType();
-            }
-            case VOUCHER -> {
+            case VOUCHER:
                 return "§eVoucher " + reward.getVoucherType();
-            }
-            case BOOST -> {
+            case BOOST:
                 return "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
-            }
         }
         return "§fRécompense inconnue";
     }
@@ -407,10 +418,11 @@ public class CrateManager {
         }
     }
 
+
     /**
-     * Génère des particules colorées selon le type de crate
+     * Génère des particules colorées pour l'animation d'ouverture
      */
-    private void spawnParticles(Location location, CrateType crateType) {
+    private void spawnOpeningParticles(Location location, CrateType crateType) {
         World world = location.getWorld();
         if (world == null) return;
 
@@ -418,7 +430,7 @@ public class CrateManager {
             case COMMUNE -> Particle.HAPPY_VILLAGER;
             case PEU_COMMUNE -> Particle.ENCHANT;
             case RARE -> Particle.PORTAL;
-            case LEGENDAIRE -> Particle.FIREWORK;
+            case LEGENDAIRE -> Particle.TOTEM_OF_UNDYING;
             case CRISTAL -> Particle.END_ROD;
         };
 
@@ -446,6 +458,103 @@ public class CrateManager {
         }
     }
 
+    // ==============================================================================
+    // NOUVELLES MÉTHODES POUR LES EFFETS PERMANENTS ET LES HOLOGRAMMES
+    // ==============================================================================
+
+    /**
+     * Crée les hologrammes (nametags) au-dessus d'une crate.
+     */
+    private void createCrateHolograms(Location location, CrateType crateType) {
+        removeCrateHolograms(location); // Nettoie d'abord au cas où
+
+        List<ArmorStand> holograms = new ArrayList<>();
+        World world = location.getWorld();
+        if (world == null) return;
+
+        // Ligne 1: Nom de la crate
+        Location line1Loc = location.clone().add(0.5, 0.8, 0.5);
+        ArmorStand line1 = spawnHologramLine(line1Loc, crateType.getColor() + "§lCrate " + crateType.getDisplayName());
+        if (line1 != null) holograms.add(line1);
+
+        // Ligne 2: Instruction
+        Location line2Loc = line1Loc.clone().subtract(0, 0.3, 0);
+        ArmorStand line2 = spawnHologramLine(line2Loc, "§eClic-droit pour ouvrir");
+        if (line2 != null) holograms.add(line2);
+
+        crateHolograms.put(location, holograms);
+    }
+
+    /**
+     * Fait apparaître une seule ligne de texte flottant (ArmorStand).
+     */
+    private ArmorStand spawnHologramLine(Location location, String text) {
+        World world = location.getWorld();
+        if (world == null) return null;
+
+        ArmorStand hologram = (ArmorStand) world.spawnEntity(location, EntityType.ARMOR_STAND);
+        hologram.setGravity(false);
+        hologram.setCanPickupItems(false);
+        hologram.setCustomName(ChatColor.translateAlternateColorCodes('&', text));
+        hologram.setCustomNameVisible(true);
+        hologram.setVisible(false);
+        hologram.setInvulnerable(true);
+        hologram.setMarker(true); // Empêche l'interaction et la hitbox (version 1.8+)
+
+        return hologram;
+    }
+
+    /**
+     * Supprime les hologrammes associés à une location de crate.
+     */
+    private void removeCrateHolograms(Location location) {
+        if (crateHolograms.containsKey(location)) {
+            crateHolograms.get(location).forEach(ArmorStand::remove);
+            crateHolograms.remove(location);
+        }
+    }
+
+    /**
+     * Démarre une tâche qui affiche des particules en continu sur toutes les crates.
+     */
+    public void startPermanentEffects() {
+        if (permanentEffectTask != null) {
+            permanentEffectTask.cancel();
+        }
+
+        permanentEffectTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Map.Entry<Location, CrateType> entry : crateLocations.entrySet()) {
+                    spawnPermanentParticles(entry.getKey(), entry.getValue());
+                }
+            }
+        };
+        // Exécute toutes les 20 ticks (1 seconde) avec un délai initial de 2 secondes
+        permanentEffectTask.runTaskTimer(plugin, 40L, 20L);
+    }
+
+    /**
+     * Génère des particules pour l'effet d'ambiance permanent.
+     */
+    private void spawnPermanentParticles(Location location, CrateType crateType) {
+        World world = location.getWorld();
+        if (world == null) return;
+
+        Particle particle = switch (crateType) {
+            case COMMUNE -> Particle.HAPPY_VILLAGER;
+            case PEU_COMMUNE -> Particle.ENCHANT;
+            case RARE -> Particle.PORTAL;
+            case LEGENDAIRE -> Particle.REVERSE_PORTAL;
+            case CRISTAL -> Particle.END_ROD;
+        };
+
+        // Particules qui montent doucement de la crate
+        world.spawnParticle(particle, location.clone().add(0.5, 0.7, 0.5), 5, 0.3, 0.3, 0.3, 0.02);
+    }
+
+    // ==============================================================================
+
     /**
      * Récupère le type de crate à une position donnée
      */
@@ -461,35 +570,28 @@ public class CrateManager {
     }
 
     /**
-     * Ajoute une nouvelle crate à une position
+     * Arrête toutes les animations et nettoie les entités (hologrammes).
+     * Doit être appelée lors du onDisable du plugin.
      */
-    public void addCrateLocation(Location location, CrateType crateType) {
-        crateLocations.put(location, crateType);
-
-        // Place un coffre physique
-        location.getBlock().setType(Material.CHEST);
-
-        plugin.getPluginLogger().info("Nouvelle crate ajoutée: " + crateType + " à " + location);
-    }
-
-    /**
-     * Supprime une crate d'une position
-     */
-    public void removeCrateLocation(Location location) {
-        if (crateLocations.remove(location) != null) {
-            plugin.getPluginLogger().info("Crate supprimée à " + location);
-        }
-    }
-
-    /**
-     * Arrête toutes les animations en cours (pour le disable du plugin)
-     */
-    public void stopAllAnimations() {
+    public void shutdown() {
+        // Arrête les animations d'ouverture en cours
         for (BukkitRunnable animation : activeAnimations.values()) {
             animation.cancel();
         }
         activeAnimations.clear();
         playersOpening.clear();
+
+        // Arrête la tâche des effets permanents
+        if (permanentEffectTask != null) {
+            permanentEffectTask.cancel();
+        }
+
+        // Supprime tous les hologrammes du monde
+        for (List<ArmorStand> hologramList : crateHolograms.values()) {
+            hologramList.forEach(ArmorStand::remove);
+        }
+        crateHolograms.clear();
+        plugin.getPluginLogger().info("CrateManager nettoyé (animations et hologrammes arrêtés).");
     }
 
     // Getters
