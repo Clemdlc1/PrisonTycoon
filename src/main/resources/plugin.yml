@@ -365,6 +365,12 @@ commands:
     description: "Chat du gang"
     usage: "/g <message>"
     aliases: [ ]
+  ap:
+    description: "Gestion de l'avant-poste - skins, capture, informations"
+    usage: /ap [info|skins|capture|tp|admin|help]
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+    aliases: [ avantposte, outpost ]
 
 # Compatibilité
 depend-bootstrap: false

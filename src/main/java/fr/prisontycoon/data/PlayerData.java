@@ -113,6 +113,10 @@ public class PlayerData {
     private String gangId;
     private String gangInvitation; // ID du gang qui a invité ce joueur
 
+    private String selectedOutpostSkin = "default";
+    private Set<String> unlockedOutpostSkins = new HashSet<>();
+
+
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
         this.playerName = playerName;
@@ -169,6 +173,10 @@ public class PlayerData {
 
         this.gangId = null;
         this.gangInvitation = null;
+
+        this.selectedOutpostSkin = "default";
+        this.unlockedOutpostSkins = new HashSet<>();
+
 
         // Reset stats dernière minute
         resetLastMinuteStats();
@@ -1958,5 +1966,47 @@ public class PlayerData {
     }
 
     public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
+    }
+
+    /**
+     * Récupère le skin d'avant-poste sélectionné
+     */
+    public String getSelectedOutpostSkin() {
+        return selectedOutpostSkin;
+    }
+
+    /**
+     * Définit le skin d'avant-poste sélectionné
+     */
+    public void setSelectedOutpostSkin(String selectedOutpostSkin) {
+        this.selectedOutpostSkin = selectedOutpostSkin;
+    }
+
+    /**
+     * Récupère les skins d'avant-poste débloqués
+     */
+    public Set<String> getUnlockedOutpostSkins() {
+        return new HashSet<>(unlockedOutpostSkins);
+    }
+
+    /**
+     * Vérifie si un skin d'avant-poste est débloqué
+     */
+    public boolean hasUnlockedOutpostSkin(String skinName) {
+        return unlockedOutpostSkins.contains(skinName);
+    }
+
+    /**
+     * Débloque un skin d'avant-poste
+     */
+    public void unlockOutpostSkin(String skinName) {
+        unlockedOutpostSkins.add(skinName);
+    }
+
+    /**
+     * Définit tous les skins d'avant-poste débloqués
+     */
+    public void setUnlockedOutpostSkins(Set<String> unlockedOutpostSkins) {
+        this.unlockedOutpostSkins = new HashSet<>(unlockedOutpostSkins);
     }
 }

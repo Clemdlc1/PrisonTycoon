@@ -131,7 +131,9 @@ public class PlayerDataManager {
                     statistics_total_greed_triggers BIGINT DEFAULT 0,
                     statistics_total_keys_obtained BIGINT DEFAULT 0,
                     gang_id VARCHAR(36),
-                    gang_invitation VARCHAR(36)
+                    gang_invitation VARCHAR(36),
+                    selected_outpost_skin VARCHAR(255) DEFAULT 'default',
+                    unlocked_outpost_skins TEXT DEFAULT '["default"]'
                 );
                 """;
 
@@ -334,6 +336,18 @@ public class PlayerDataManager {
                 data.setGangId(rs.getString("gang_id"));
                 data.setGangInvitation(rs.getString("gang_invitation"));
 
+                data.setSelectedOutpostSkin(rs.getString("selected_outpost_skin"));
+
+                Set<String> unlockedSkins = loadJsonValue(rs, "unlocked_outpost_skins", stringSetType);
+                if (unlockedSkins != null) {
+                    data.setUnlockedOutpostSkins(unlockedSkins);
+                } else {
+                    // Valeurs par défaut si null
+                    Set<String> defaultSkins = new HashSet<>();
+                    defaultSkins.add("default");
+                    data.setUnlockedOutpostSkins(defaultSkins);
+                }
+
                 plugin.getPluginLogger().debug("§aDonnées chargées avec succès pour " + playerName + " (" + playerId + ")");
                 return data;
             }
@@ -425,8 +439,8 @@ public class PlayerDataManager {
                         autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, 
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
-                        gang_id, gang_invitation
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
                         coins = EXCLUDED.coins,
@@ -476,7 +490,9 @@ public class PlayerDataManager {
                         statistics_total_greed_triggers = EXCLUDED.statistics_total_greed_triggers,
                         statistics_total_keys_obtained = EXCLUDED.statistics_total_keys_obtained,
                         gang_id = EXCLUDED.gang_id,
-                        gang_invitation = EXCLUDED.gang_invitation
+                        gang_invitation = EXCLUDED.gang_invitation,
+                        selected_outpost_skin =  EXCLUDED.selected_outpost_skin,
+                        unlocked_outpost_skins =  EXCLUDED.unlocked_outpost_skins
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -536,6 +552,8 @@ public class PlayerDataManager {
                     ps.setLong(48, data.getTotalKeysObtained());
                     ps.setString(49, data.getGangId());
                     ps.setString(50, data.getGangInvitation());
+                    ps.setString(51, data.getSelectedOutpostSkin());
+                    ps.setString(52, gson.toJson(data.getUnlockedOutpostSkins()));
 
                     ps.executeUpdate();
                     conn.commit();

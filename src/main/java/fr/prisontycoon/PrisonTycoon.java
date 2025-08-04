@@ -104,6 +104,9 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutominerEnchantUpgradeGUI autominerEnchantUpgradeGUI;
     private DatabaseManager databaseManager;
 
+    private OutpostManager outpostManager;
+    private OutpostGUI outpostGUI;
+
 
     public static PrisonTycoon getInstance() {
         return instance;
@@ -245,6 +248,7 @@ public final class PrisonTycoon extends JavaPlugin {
         sellHandManager = new SellHandManager(this);
         gangManager = new GangManager(this);
         guiManager = new GUIManager(this);
+        outpostManager = new OutpostManager(this);
 
 
         logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
@@ -277,6 +281,7 @@ public final class PrisonTycoon extends JavaPlugin {
         crateGUI = new CrateGUI(this);
         tankGUI = new TankGUI(this);
         gangGUI = new GangGUI(this);
+        outpostGUI = new OutpostGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -303,6 +308,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new VoucherBoostListener(this), this);
         pluginManager.registerEvents(new CrateListener(this), this);
         pluginManager.registerEvents(new TankListener(this), this);
+        pluginManager.registerEvents(new OutpostListener(this), this);
+
 
         logger.info("§aÉvénements enregistrés.");
     }
@@ -373,6 +380,7 @@ public final class PrisonTycoon extends JavaPlugin {
         getCommand("tankadmin").setTabCompleter(new TankAdminCommand(this));
         getCommand("gang").setExecutor(new GangCommand(this));
         getCommand("g").setExecutor(new GangCommand(this));
+        getCommand("ap").setExecutor(new OutpostCommand(this));
 
 
         logger.info("§aCommandes enregistrées.");
@@ -773,6 +781,20 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public GUIManager getGUIManager() {
         return guiManager;
+    }
+
+    /**
+     * Récupère le gestionnaire d'avant-poste
+     */
+    public OutpostManager getOutpostManager() {
+        return outpostManager;
+    }
+
+    /**
+     * Récupère l'interface d'avant-poste
+     */
+    public OutpostGUI getOutpostGUI() {
+        return outpostGUI;
     }
 }
 

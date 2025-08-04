@@ -36,6 +36,8 @@ public enum GUIType {
     CONTAINER_FILTER("container_filter"),
     TANK_CONFIG("tank_config"),
     TANK_PRICES("tank_prices"),
+    OUTPOST_MAIN("outpost_main"),
+    OUTPOST_SKINS("outpost_skins"),
     CRATE_MANAGEMENT("crate_management");
 
     private final String id;
