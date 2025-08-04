@@ -132,29 +132,6 @@ public class OutpostListener implements Listener {
     }
 
     /**
-     * Gère les interactions spéciales avec l'avant-poste
-     * (ex: casser des blocs, placer des blocs, etc.)
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockBreak(org.bukkit.event.block.BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        OutpostManager outpostManager = plugin.getOutpostManager();
-
-        if (outpostManager == null) {
-            return;
-        }
-
-        // Vérifier si le joueur casse des blocs dans la zone de l'avant-poste
-        if (outpostManager.isPlayerInOutpost(event.getBlock().getLocation())) {
-            // Empêcher la destruction de l'avant-poste par les joueurs normaux
-            if (!player.hasPermission("specialmine.admin")) {
-                event.setCancelled(true);
-                player.sendMessage("§c❌ Vous ne pouvez pas casser de blocs dans l'avant-poste!");
-            }
-        }
-    }
-
-    /**
      * Empêche le placement de blocs dans l'avant-poste
      */
     @EventHandler(priority = EventPriority.HIGH)

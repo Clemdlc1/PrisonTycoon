@@ -53,6 +53,13 @@ public class MiningListener implements Listener {
         ItemStack playerPickaxe = player.getInventory().getItemInMainHand();
         String mineName = plugin.getConfigManager().getPlayerMine(location);
 
+        String worldName = location.getWorld().getName();
+        if (mineName == null && !worldName.startsWith("Market") && !worldName.startsWith("id") && !player.hasPermission("specialmine.admin")) {
+            event.setCancelled(true);
+            player.sendMessage("§cVous ne pouvez pas casser de blocs ici.");
+            return;
+        }
+
         if (mineName != null) {
             // Dans une mine - pioche légendaire obligatoire
             if (!plugin.getPickaxeManager().isLegendaryPickaxe(playerPickaxe)) {
@@ -338,11 +345,12 @@ public class MiningListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        // Empêche de placer des blocs dans les mines
-        String mineName = plugin.getConfigManager().getPlayerMine(event.getBlock().getLocation());
-        if (mineName != null) {
+        Player player = event.getPlayer();
+        Location location = event.getBlock().getLocation();
+        String worldName = location.getWorld().getName();
+        if (!worldName.startsWith("Market") && !worldName.startsWith("id") && !player.hasPermission("specialmine.admin")) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§c❌ Impossible de placer des blocs dans une mine!");
+            player.sendMessage("§cVous ne pouvez pas casser de blocs ici.");
         }
     }
 
