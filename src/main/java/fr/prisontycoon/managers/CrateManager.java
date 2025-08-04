@@ -473,7 +473,7 @@ public class CrateManager {
         if (world == null) return;
 
         // Ligne 1: Nom de la crate
-        Location line1Loc = location.clone().add(0.5, 0.8, 0.5);
+        Location line1Loc = location.clone().add(0.5, 1.5, 0.5);
         ArmorStand line1 = spawnHologramLine(line1Loc, crateType.getColor() + "§lCrate " + crateType.getDisplayName());
         if (line1 != null) holograms.add(line1);
 
@@ -541,16 +541,19 @@ public class CrateManager {
         World world = location.getWorld();
         if (world == null) return;
 
-        Particle particle = switch (crateType) {
-            case COMMUNE -> Particle.HAPPY_VILLAGER;
-            case PEU_COMMUNE -> Particle.ENCHANT;
-            case RARE -> Particle.PORTAL;
-            case LEGENDAIRE -> Particle.REVERSE_PORTAL;
-            case CRISTAL -> Particle.END_ROD;
-        };
+        Color particleColor = getParticleColor(crateType);
+        Particle.DustOptions dustOptions = new Particle.DustOptions(particleColor, 1.0f);
+        world.spawnParticle(Particle.DUST, location.clone().add(0.5, 0.7, 0.5), 3, 0.3, 0.2, 0.3, dustOptions);
+    }
 
-        // Particules qui montent doucement de la crate
-        world.spawnParticle(particle, location.clone().add(0.5, 0.7, 0.5), 5, 0.3, 0.3, 0.3, 0.02);
+    private Color getParticleColor(CrateType crateType) {
+        return switch (crateType) {
+            case COMMUNE -> Color.LIME; // Vert
+            case PEU_COMMUNE -> Color.AQUA; // Bleu clair
+            case RARE -> Color.ORANGE; // Orange
+            case LEGENDAIRE -> Color.PURPLE; // Violet
+            case CRISTAL -> Color.FUCHSIA; // Rose/Magenta
+        };
     }
 
     // ==============================================================================
