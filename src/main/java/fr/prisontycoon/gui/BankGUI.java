@@ -252,7 +252,7 @@ public class BankGUI {
 
         lore.add("");
         lore.add("§7Avantages actuels:");
-        lore.add("§7• Intérêts épargne: §a+" + (currentLevel * 1) + "%");
+        lore.add("§7• Intérêts épargne: §a+" + (currentLevel) + "%");
         lore.add("§7• Plafond épargne: §a+" + (currentLevel * 20) + "%");
 
         if (currentLevel < 10) {
@@ -358,7 +358,7 @@ public class BankGUI {
             // Évolution en temps réel
             List<BankManager.InvestmentHistory> history = bankManager.getInvestmentHistory(material);
             if (history.size() >= 2) {
-                BankManager.InvestmentHistory current = history.get(history.size() - 1);
+                BankManager.InvestmentHistory current = history.getLast();
                 BankManager.InvestmentHistory previous = history.get(history.size() - 2);
 
                 double change = ((current.value - previous.value) / previous.value) * 100;
@@ -456,7 +456,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§7← Retour");
-        meta.setLore(Arrays.asList("§7Retour au menu principal"));
+        meta.setLore(List.of("§7Retour au menu principal"));
         item.setItemMeta(meta);
         return item;
     }
@@ -468,7 +468,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§c✖ Fermer");
-        meta.setLore(Arrays.asList("§7Ferme ce menu"));
+        meta.setLore(List.of("§7Ferme ce menu"));
         item.setItemMeta(meta);
         return item;
     }

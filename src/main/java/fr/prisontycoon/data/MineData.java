@@ -139,8 +139,8 @@ public class MineData {
                     float teleportYaw, float teleportPitch) {
 
         this(id, worldName,
-                minPos.getBlockX(), minPos.getBlockY(), minPos.getBlockZ(),
-                maxPos.getBlockX(), maxPos.getBlockY(), maxPos.getBlockZ(),
+                minPos.x(), minPos.y(), minPos.z(),
+                maxPos.x(), maxPos.y(), maxPos.z(),
                 blockComposition, displayName, description, 0,
                 type, 0, "a", null, 0.0, false,
                 resetIntervalMinutes, null,

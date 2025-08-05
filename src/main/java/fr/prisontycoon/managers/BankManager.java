@@ -282,7 +282,7 @@ public class BankManager {
         investmentHistory.computeIfAbsent(material, k -> new ArrayList<>()).add(history);
         List<InvestmentHistory> hist = investmentHistory.get(material);
         if (hist.size() > 100) {
-            hist.remove(0);
+            hist.removeFirst();
         }
     }
 

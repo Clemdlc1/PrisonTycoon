@@ -190,7 +190,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             // Évolution en temps réel sur les dernières valeurs
             List<BankManager.InvestmentHistory> history = bankManager.getInvestmentHistory(material);
             if (history.size() >= 2) {
-                BankManager.InvestmentHistory current = history.get(history.size() - 1);
+                BankManager.InvestmentHistory current = history.getLast();
                 BankManager.InvestmentHistory previous = history.get(history.size() - 2);
 
                 double change = ((current.value - previous.value) / previous.value) * 100;
@@ -246,8 +246,8 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     private double calculateTrend(List<BankManager.InvestmentHistory> history) {
         if (history.size() < 2) return 0;
 
-        double firstValue = history.get(0).value;
-        double lastValue = history.get(history.size() - 1).value;
+        double firstValue = history.getFirst().value;
+        double lastValue = history.getLast().value;
 
         return (lastValue - firstValue) / firstValue;
     }
@@ -359,7 +359,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                         List<BankManager.InvestmentHistory> history = bankManager.getInvestmentHistory(material);
                         String evolutionText = "";
                         if (history.size() >= 2) {
-                            BankManager.InvestmentHistory current = history.get(history.size() - 1);
+                            BankManager.InvestmentHistory current = history.getLast();
                             BankManager.InvestmentHistory previous = history.get(history.size() - 2);
                             double change = ((current.value - previous.value) / previous.value) * 100;
                             String changeColor = change > 0 ? "§a+" : "§c";
@@ -616,7 +616,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             }
         } else if (args.length == 5) {
             if ("invest".equals(args[0].toLowerCase()) && "buy".equals(args[1].toLowerCase())) {
-                List<String> leverOptions = Arrays.asList("levier");
+                List<String> leverOptions = List.of("levier");
                 StringUtil.copyPartialMatches(args[4], leverOptions, completions);
             }
         }

@@ -64,7 +64,7 @@ public class ContainerGUI {
 
         // Séparateurs (slots 9-17)
         for (int i = 9; i < 18; i++) {
-            inv.setItem(i, createGlassPane("", Material.GRAY_STAINED_GLASS_PANE));
+            inv.setItem(i, createGlassPane(Material.GRAY_STAINED_GLASS_PANE));
         }
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.CONTAINER_CONFIG, inv);
@@ -317,7 +317,7 @@ public class ContainerGUI {
         // Séparateurs avec UUID
         for (int i = 18; i < 27; i++) {
             if (inv.getItem(i) == null) {
-                ItemStack pane = createGlassPane("", Material.BLACK_STAINED_GLASS_PANE);
+                ItemStack pane = createGlassPane(Material.BLACK_STAINED_GLASS_PANE);
                 ItemMeta paneMeta = pane.getItemMeta();
                 paneMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
                 pane.setItemMeta(paneMeta);
@@ -429,10 +429,10 @@ public class ContainerGUI {
     /**
      * Crée un panneau de verre décoratif
      */
-    private ItemStack createGlassPane(String name, Material material) {
+    private ItemStack createGlassPane(Material material) {
         ItemStack pane = new ItemStack(material);
         ItemMeta meta = pane.getItemMeta();
-        meta.setDisplayName(name);
+        meta.setDisplayName("");
         pane.setItemMeta(meta);
         return pane;
     }

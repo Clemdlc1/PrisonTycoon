@@ -510,7 +510,7 @@ public class TankGUI implements Listener {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§7← Retour");
-        meta.setLore(Arrays.asList("§7Retour au menu principal"));
+        meta.setLore(List.of("§7Retour au menu principal"));
         item.setItemMeta(meta);
         return item;
     }
@@ -522,7 +522,7 @@ public class TankGUI implements Listener {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§c✗ Fermer");
-        meta.setLore(Arrays.asList("§7Fermer cette interface"));
+        meta.setLore(List.of("§7Fermer cette interface"));
         item.setItemMeta(meta);
         return item;
     }

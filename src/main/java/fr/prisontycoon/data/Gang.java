@@ -170,7 +170,7 @@ public class Gang {
         GangBoostData boostData = activeBoosts.get(boostType);
         if (boostData == null) return false;
 
-        if (System.currentTimeMillis() > boostData.getExpirationTime()) {
+        if (System.currentTimeMillis() > boostData.expirationTime()) {
             activeBoosts.remove(boostType);
             return false;
         }
@@ -183,7 +183,7 @@ public class Gang {
      */
     public double getBoostMultiplier(GangBoostType boostType) {
         if (!hasActiveBoost(boostType)) return 1.0;
-        return activeBoosts.get(boostType).getMultiplier();
+        return activeBoosts.get(boostType).multiplier();
     }
 
     /**
@@ -322,43 +322,16 @@ public class Gang {
     }
 
     /**
-     * Classe interne pour représenter les données d'un boost actif
-     */
-    public static class GangBoostData {
-        private final GangBoostType type;
-        private final double multiplier;
-        private final long expirationTime;
-        private final UUID activatorId;
-
-        public GangBoostData(GangBoostType type, double multiplier, long expirationTime, UUID activatorId) {
-            this.type = type;
-            this.multiplier = multiplier;
-            this.expirationTime = expirationTime;
-            this.activatorId = activatorId;
-        }
-
-        public GangBoostType getType() {
-            return type;
-        }
-
-        public double getMultiplier() {
-            return multiplier;
-        }
-
-        public long getExpirationTime() {
-            return expirationTime;
-        }
-
-        public UUID getActivatorId() {
-            return activatorId;
-        }
+         * Classe interne pour représenter les données d'un boost actif
+         */
+        public record GangBoostData(GangBoostType type, double multiplier, long expirationTime, UUID activatorId) {
 
         public long getRemainingTime() {
-            return Math.max(0, expirationTime - System.currentTimeMillis());
-        }
+                return Math.max(0, expirationTime - System.currentTimeMillis());
+            }
 
-        public boolean isExpired() {
-            return System.currentTimeMillis() > expirationTime;
+            public boolean isExpired() {
+                return System.currentTimeMillis() > expirationTime;
+            }
         }
-    }
 }

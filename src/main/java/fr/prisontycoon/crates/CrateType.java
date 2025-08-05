@@ -63,35 +63,27 @@ public enum CrateType {
     }
 
     public ItemStack convertRewardToItem(CrateReward reward, PrisonTycoon plugin) {
-        switch (reward.getType()) {
-            case CONTAINER: {
-                return plugin.getContainerManager().createContainer(reward.getContainerTier());
-            }
-            case KEY: {
-                return createKey(reward.getKeyType(), reward.getRandomAmount());
-            }
-            case CRISTAL_VIERGE: {
-                return plugin.getCristalManager().createCristalViergeApi(reward.getCristaltLevel());
-            }
-            case LIVRE_UNIQUE: {
+        return switch (reward.getType()) {
+            case CONTAINER -> plugin.getContainerManager().createContainer(reward.getContainerTier());
+            case KEY -> createKey(reward.getKeyType(), reward.getRandomAmount());
+            case CRISTAL_VIERGE -> plugin.getCristalManager().createCristalViergeApi(reward.getCristaltLevel());
+            case LIVRE_UNIQUE -> {
                 EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(reward.getBookType());
-                return plugin.getEnchantmentBookManager().createPhysicalEnchantmentBook(book);
+                yield plugin.getEnchantmentBookManager().createPhysicalEnchantmentBook(book);
             }
-            case AUTOMINER: {
+            case AUTOMINER -> {
                 var autominerType = AutominerType.valueOf(reward.getAutominerType().toUpperCase());
-                return plugin.getAutominerManager().createAutominer(autominerType);
+                yield plugin.getAutominerManager().createAutominer(autominerType);
             }
-            case VOUCHER: {
+            case VOUCHER -> {
                 var voucherType = VoucherType.valueOf(reward.getVoucherType().toUpperCase());
-                return plugin.getVoucherManager().createVoucher(voucherType, reward.getRandomAmount());
+                yield plugin.getVoucherManager().createVoucher(voucherType, reward.getRandomAmount());
             }
-            case BOOST: {
+            case BOOST -> {
                 var boostType = BoostType.valueOf(reward.getBoostType().toUpperCase());
-                return plugin.getBoostManager().createBoostItem(boostType, reward.getBoostMultiplier(), reward.getBoostDuration());
-
+                yield plugin.getBoostManager().createBoostItem(boostType, reward.getBoostMultiplier(), reward.getBoostDuration());
             }
-        }
-        return null;
+        };
     }
 
     private ItemStack createKey(String keyType, int amount) {

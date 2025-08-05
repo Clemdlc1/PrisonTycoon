@@ -239,8 +239,8 @@ public class CrateListener implements Listener {
                 }
 
                 for (int i = 0; i < 3; i++) {
-                    double x = location.getX() + 0.5 + Math.cos(angle + i * Math.PI * 2 / 3) * 1.0;
-                    double z = location.getZ() + 0.5 + Math.sin(angle + i * Math.PI * 2 / 3) * 1.0;
+                    double x = location.getX() + 0.5 + Math.cos(angle + i * Math.PI * 2 / 3);
+                    double z = location.getZ() + 0.5 + Math.sin(angle + i * Math.PI * 2 / 3);
                     double y = location.getY() + 1.0 + (ticks * 0.05);
 
                     location.getWorld().spawnParticle(particle, x, y, z, 1, 0, 0, 0, 0);

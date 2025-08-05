@@ -195,7 +195,7 @@ public class WarpGUI {
 
         if (warps.size() == 1) {
             lore.add("§e» Cliquez pour vous téléporter");
-            meta.getPersistentDataContainer().set(warpIdKey, PersistentDataType.STRING, warps.get(0).getId());
+            meta.getPersistentDataContainer().set(warpIdKey, PersistentDataType.STRING, warps.getFirst().getId());
         } else {
             lore.add("§e» Cliquez pour voir la liste");
             // Note : Pour l'instant, cliquer ne fait rien si > 1, ce qui est le comportement attendu.

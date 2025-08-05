@@ -457,7 +457,7 @@ public class BoostManager {
         Map<GangBoostType, GangBoost> gangBoosts = activeGangBoosts.get(gangId);
         GangBoost boostData = gangBoosts.get(boostType);
 
-        return boostData != null ? boostData.getMultiplier() : 1.0;
+        return boostData != null ? boostData.multiplier() : 1.0;
     }
 
     /**
