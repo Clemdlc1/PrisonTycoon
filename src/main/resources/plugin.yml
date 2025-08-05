@@ -377,7 +377,7 @@ commands:
     description: "Téléportation vers les warps"
     usage: "/warp [nom|list|info|gui|help] [args...]"
     permission: specialmine.basic
-    aliases: [warps, tp]
+    aliases: [warps]
 
   # Modifier la commande mine existante :
   mine:

@@ -1348,77 +1348,38 @@ black-market:
 
   # Emplacements possibles du marché noir
   locations:
-    # Ruines abandonnées - Emplacement dangereux
     ruins:
-      world: "world"
-      x: -1500
-      y: 70
-      z: 2300
+      world: "Spawn"
+      x: 100
+      y: 75
+      z: 100
       name: "§8Ruines Abandonées"
       danger-level: 0.4    # Niveau de danger (0.0 = sûr, 1.0 = très dangereux)
 
-    # Grotte cachée - Emplacement relativement sûr
     cave:
-      world: "world"
-      x: 1200
-      y: 45
-      z: -800
+      world: "Spawn"
+      x: 100
+      y: 75
+      z: 100
       name: "§2Grotte Cachée"
       danger-level: 0.2
 
-    # Entrepôt désaffecté - Emplacement très dangereux
     warehouse:
-      world: "world"
-      x: 800
-      y: 65
-      z: 1500
+      world: "Spawn"
+      x: 100
+      y: 75
+      z: 100
       name: "§6Entrepôt Désaffecté"
       danger-level: 0.6
 
-    # Sous-sols de la ville - Emplacement modéré
     sewers:
-      world: "world"
-      x: -200
-      y: 35
-      z: -450
+      world: "Spawn"
+      x: 100
+      y: 75
+      z: 100
       name: "§7Égouts de la Ville"
       danger-level: 0.3
 
-    # Forêt maudite - Emplacement très dangereux
-    cursed_forest:
-      world: "world"
-      x: 2000
-      y: 75
-      z: 1800
-      name: "§5Forêt Maudite"
-      danger-level: 0.8
-
-    # Ancienne mine - Emplacement modéré
-    old_mine:
-      world: "world"
-      x: -800
-      y: 25
-      z: 1200
-      name: "§6Ancienne Mine"
-      danger-level: 0.35
-
-    # Île isolée - Emplacement sûr mais isolé
-    island:
-      world: "world"
-      x: 3000
-      y: 65
-      z: -2500
-      name: "§bÎle Isolée"
-      danger-level: 0.1
-
-    # Cratère de météorite - Emplacement très dangereux
-    crater:
-      world: "world"
-      x: -2200
-      y: 60
-      z: -1800
-      name: "§cCratère de Météorite"
-      danger-level: 0.9
 
 # ========================================
 #           SYSTÈME BANCAIRE

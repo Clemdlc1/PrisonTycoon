@@ -463,8 +463,8 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§7- Tâche de nettoyage automatique démarrée");
 
         pickaxeContainerTask = new PickaxeContainerUpdateTask(this);
-        pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 40L);
-        logger.info("§7- PickaxeContainerUpdateTask démarrée (mise à jour pickaxes et conteneurs toutes les 1 seconde)");
+        pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 50L);
+        logger.info("§7- PickaxeContainerUpdateTask démarrée (mise à jour pickaxes et conteneurs toutes les 2,5 seconde)");
 
 
         // NOUVELLE TÂCHE: Nettoyage des anciens logs (optionnel)

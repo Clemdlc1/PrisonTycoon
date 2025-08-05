@@ -6,6 +6,7 @@ import fr.prisontycoon.data.ContainerData;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -21,7 +22,6 @@ public class CrateManager {
 
     private final PrisonTycoon plugin;
     private final NamespacedKey keyTypeKey;
-    private final NamespacedKey crateLocationKey;
 
     // Cache des positions des crates configurées
     private final Map<Location, CrateType> crateLocations;
@@ -42,7 +42,6 @@ public class CrateManager {
     public CrateManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.keyTypeKey = new NamespacedKey(plugin, "key_type");
-        this.crateLocationKey = new NamespacedKey(plugin, "crate_location");
         this.crateLocations = new ConcurrentHashMap<>();
         this.playersOpening = ConcurrentHashMap.newKeySet();
         this.activeAnimations = new ConcurrentHashMap<>();
@@ -160,6 +159,7 @@ public class CrateManager {
         // Compte dans l'inventaire
         for (ItemStack item : player.getInventory().getContents()) {
             if (isKey(item) && keyType.equals(getKeyType(item))) {
+                assert item != null;
                 count += item.getAmount();
             }
         }
@@ -174,6 +174,7 @@ public class CrateManager {
         for (int i = 0; i < player.getInventory().getSize(); i++) {
             ItemStack item = player.getInventory().getItem(i);
             if (isKey(item) && keyType.equals(getKeyType(item))) {
+                assert item != null;
                 if (item.getAmount() > 1) {
                     item.setAmount(item.getAmount() - 1);
                 } else {
@@ -383,23 +384,15 @@ public class CrateManager {
      * Génère du texte d'affichage pour une récompense
      */
     private String getRewardDisplayText(CrateType.CrateReward reward) {
-        switch (reward.getType()) {
-            case CONTAINER:
-                return "§eConteneur Tier " + reward.getContainerTier();
-            case KEY:
-                return "§bClé " + reward.getKeyType();
-            case CRISTAL_VIERGE:
-                return "§dCristal Niveau " + reward.getRandomAmount();
-            case LIVRE_UNIQUE:
-                return "§5Livre " + reward.getBookType();
-            case AUTOMINER:
-                return "§7Autominer " + reward.getAutominerType();
-            case VOUCHER:
-                return "§eVoucher " + reward.getVoucherType();
-            case BOOST:
-                return "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
-        }
-        return "§fRécompense inconnue";
+        return switch (reward.getType()) {
+            case CONTAINER -> "§eConteneur Tier " + reward.getContainerTier();
+            case KEY -> "§bClé " + reward.getKeyType();
+            case CRISTAL_VIERGE -> "§dCristal Niveau " + reward.getRandomAmount();
+            case LIVRE_UNIQUE -> "§5Livre " + reward.getBookType();
+            case AUTOMINER -> "§7Autominer " + reward.getAutominerType();
+            case VOUCHER -> "§eVoucher " + reward.getVoucherType();
+            case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
+        };
     }
 
     /**
@@ -466,14 +459,24 @@ public class CrateManager {
      * Crée les hologrammes (nametags) au-dessus d'une crate.
      */
     private void createCrateHolograms(Location location, CrateType crateType) {
-        removeCrateHolograms(location); // Nettoie d'abord au cas où
-
-        List<ArmorStand> holograms = new ArrayList<>();
         World world = location.getWorld();
         if (world == null) return;
+        Location hologramCenter = location.clone().add(0.5, 1.65, 0.5);
+
+        // Vérifie si des ArmorStands caractéristiques d'un hologramme existent déjà dans une petite zone
+        Collection<Entity> nearbyEntities = world.getNearbyEntities(hologramCenter, 0.5, 0.5, 0.5);
+        for (Entity entity : nearbyEntities) {
+            if (entity instanceof ArmorStand as) {
+                if (as.isMarker() && as.isCustomNameVisible()) {
+                    return;
+                }
+            }
+        }
+        removeCrateHolograms(location);
+        List<ArmorStand> holograms = new ArrayList<>();
 
         // Ligne 1: Nom de la crate
-        Location line1Loc = location.clone().add(0.5, 1.5, 0.5);
+        Location line1Loc = location.clone().add(0.5, 1.8, 0.5);
         ArmorStand line1 = spawnHologramLine(line1Loc, crateType.getColor() + "§lCrate " + crateType.getDisplayName());
         if (line1 != null) holograms.add(line1);
 
@@ -549,9 +552,9 @@ public class CrateManager {
     private Color getParticleColor(CrateType crateType) {
         return switch (crateType) {
             case COMMUNE -> Color.LIME; // Vert
-            case PEU_COMMUNE -> Color.AQUA; // Bleu clair
-            case RARE -> Color.ORANGE; // Orange
-            case LEGENDAIRE -> Color.PURPLE; // Violet
+            case PEU_COMMUNE -> Color.BLUE; // Bleu
+            case RARE -> Color.PURPLE; // Violet
+            case LEGENDAIRE -> Color.ORANGE; // Orange
             case CRISTAL -> Color.FUCHSIA; // Rose/Magenta
         };
     }

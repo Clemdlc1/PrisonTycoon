@@ -22,11 +22,11 @@ import static fr.prisontycoon.crates.CrateType.RewardType.*;
  */
 public enum CrateType {
 
-    COMMUNE("Commune", "§f", 1),
-    PEU_COMMUNE("Peu Commune", "§9", 2),
-    RARE("Rare", "§5", 3),
-    LEGENDAIRE("Légendaire", "§6", 4),
-    CRISTAL("Cristal", "§d", 5);
+    COMMUNE("Commune", "§a", 1),          // Vert (LIME)
+    PEU_COMMUNE("Peu Commune", "§9", 2),  // Bleu (BLUE)
+    RARE("Rare", "§5", 3),                // Violet (PURPLE)
+    LEGENDAIRE("Légendaire", "§6", 4),    // Orange (ORANGE)
+    CRISTAL("Cristal", "§d", 5);          // Magenta/Rose (FUCHSIA)
 
     private final String displayName;
     private final String color;
@@ -55,7 +55,7 @@ public enum CrateType {
                 return reward;
             }
         }
-        return rewards.get(0);
+        return rewards.getFirst();
     }
 
     public List<CrateReward> getAllRewards() {
