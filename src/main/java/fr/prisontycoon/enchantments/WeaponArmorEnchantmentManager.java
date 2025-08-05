@@ -2,6 +2,7 @@ package fr.prisontycoon.enchantments;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.managers.PlayerDataManager;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -9,6 +10,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -360,99 +362,120 @@ public class WeaponArmorEnchantmentManager {
     }
 
     /**
-     * Gère la mort d'un joueur (pour Répercussion et Chasseur)
+     * Gère la mort d'un joueur pour les enchantements Répercussion et Chasseur.
+     * @param dead Le joueur qui est mort.
+     * @param killer Le joueur qui a tué.
+     * @param event L'événement de mort pour pouvoir le modifier (ex: garder l'inventaire).
      */
-    public void handlePlayerDeath(Player dead, Player killer) {
-        if (killer == null) return;
-
+    public void handlePlayerDeath(Player dead, Player killer, PlayerDeathEvent event) {
         ItemStack weapon = killer.getInventory().getItemInMainHand();
-        if (weapon == null) return;
+        if (weapon == null || weapon.getType() == Material.AIR) return;
 
         Map<String, Integer> enchants = getUniqueEnchantments(weapon);
+        if (enchants.isEmpty()) return;
 
         for (Map.Entry<String, Integer> entry : enchants.entrySet()) {
-            UniqueEnchantment enchant = enchantments.get(entry.getKey());
-            if (enchant != null) {
-                if (entry.getKey().equals("repercussion")) {
-                    handleRepercussion(dead, killer, entry.getValue());
-                } else if (entry.getKey().equals("chasseur")) {
-                    handleChasseur(dead, killer, entry.getValue());
-                }
+            String enchantKey = entry.getKey();
+            Integer enchantLevel = entry.getValue();
+
+            if ("repercussion".equals(enchantKey)) {
+                handleRepercussion(dead, killer, enchantLevel, event);
+            } else if ("chasseur".equals(enchantKey)) {
+                handleChasseur(dead, killer, enchantLevel);
             }
         }
     }
 
     /**
-     * Gère l'effet Répercussion
+     * Gère l'effet de Répercussion (5 niveaux).
+     * - Si la victime a une REP POSITIVE : Chance de garder son inventaire.
+     * - Si la victime a une REP NÉGATIVE : Le tueur vole un % de ses coins.
      */
-    private void handleRepercussion(Player dead, Player killer, int level) {
-        PlayerData deadData = plugin.getPlayerDataManager().getPlayerData(dead.getUniqueId());
-        PlayerData killerData = plugin.getPlayerDataManager().getPlayerData(killer.getUniqueId());
+    private void handleRepercussion(Player dead, Player killer, int level, PlayerDeathEvent event) {
+        PlayerDataManager dataManager = plugin.getPlayerDataManager();
+        PlayerData deadData = dataManager.getPlayerData(dead.getUniqueId());
+        PlayerData killerData = dataManager.getPlayerData(killer.getUniqueId());
+        if (deadData == null || killerData == null) return;
 
         int deadRep = deadData.getReputation();
 
-        if (deadRep < 0) { // Répercussion positive
-            int chanceKeepInv = Math.abs(deadRep) / 100;
-            if (ThreadLocalRandom.current().nextInt(100) < chanceKeepInv) {
-                // Empêche la perte d'inventaire (à implémenter selon votre système)
-                dead.sendMessage("§a✅ Répercussion positive: Inventaire conservé!");
-                killer.sendMessage("§a⚖ Répercussion: Votre victime garde son inventaire!");
+        if (deadRep > 0) {
+            // -- CAS 1: Victime avec une réputation POSITIVE --
+            // Donne une chance de CONSERVER son inventaire, même dans le monde "Cave".
+            // La chance dépend du niveau de l'enchant et de la réputation de la victime.
+            double chance = ((double) level / 5.0) * ((double) deadRep / 1000.0) * 80.0;
+
+            if (ThreadLocalRandom.current().nextDouble(100) < chance) {
+                event.setKeepInventory(true);
+                event.getDrops().clear();
+                event.setKeepLevel(true);
+                event.setDroppedExp(0);
+
+                dead.sendMessage("§a§lRÉPERCUSSION §a| Votre bonne réputation vous a permis de conserver votre inventaire !");
+                killer.sendMessage("§c§lRÉPERCUSSION §c| La bonne réputation de votre victime l'a sauvée de la perte de son stuff !");
             }
-        } else if (deadRep > 0) { // Répercussion négative
-            long coinsToSteal = (long) (deadData.getCoins() * (deadRep / 100.0));
+
+        } else if (deadRep < 0) {
+            // -- CAS 2: Victime avec une réputation NÉGATIVE --
+            // Le tueur VOLE un pourcentage des coins de la victime.
+            double maxStealRatio = 0.0001; // 0,01%
+            double stealMultiplier = ((double) level / 5.0) * ((double) Math.abs(deadRep) / 1000.0) * maxStealRatio;
+
+            long coinsToSteal = (long) (deadData.getCoins() * stealMultiplier);
+
             if (coinsToSteal > 0) {
                 deadData.removeCoins(coinsToSteal);
                 killerData.addCoins(coinsToSteal);
 
-                killer.sendMessage("§6💰 Répercussion: +" + NumberFormatter.format(coinsToSteal) + " coins volés!");
-                dead.sendMessage("§c💸 Répercussion: -" + NumberFormatter.format(coinsToSteal) + " coins perdus!");
+                killer.sendMessage("§6§lRÉPERCUSSION §e| Vous avez volé §6" + NumberFormatter.format(coinsToSteal) + " coins§e à votre victime mal réputée !");
+                dead.sendMessage("§c§lRÉPERCUSSION §c| Votre mauvaise réputation a permis à votre tueur de vous voler §4" + NumberFormatter.format(coinsToSteal) + " coins§c.");
             }
         }
     }
 
     /**
-     * Gère l'effet Chasseur
+     * Gère l'effet de Chasseur (3 niveaux).
+     * Si le tueur et la victime ont des réputations opposées, le tueur gagne des coins.
      */
     private void handleChasseur(Player dead, Player killer, int level) {
-        PlayerData killerData = plugin.getPlayerDataManager().getPlayerData(killer.getUniqueId());
-        PlayerData victimData = plugin.getPlayerDataManager().getPlayerData(dead.getUniqueId());
+        PlayerDataManager dataManager = plugin.getPlayerDataManager();
+        PlayerData killerData = dataManager.getPlayerData(killer.getUniqueId());
+        PlayerData victimData = dataManager.getPlayerData(dead.getUniqueId());
+        if (killerData == null || victimData == null) return;
 
         int killerRep = killerData.getReputation();
         int victimRep = victimData.getReputation();
 
-        // Vérifier si les réputations sont opposées
-        if ((killerRep > 0 && victimRep < 0) || (killerRep < 0 && victimRep > 0)) {
-            long coinsGain = Math.abs(killerRep - victimRep) * level * 100L;
+        // On vérifie si les réputations sont de signes opposés (ex: 100 et -50) et non nulles.
+        if (Integer.signum(killerRep) == -Integer.signum(victimRep) && killerRep != 0 && victimRep != 0) {
+
+            // Le gain est proportionnel à l'écart de réputation et au niveau de l'enchantement.
+            // Cela récompense les affrontements entre joueurs de réputations très éloignées.
+            long baseGain = 50L; // Gain de base par niveau
+            long repGap = Math.abs(killerRep - victimRep); // L'écart entre les réputations
+            long coinsGain = (baseGain * level) + (repGap * level);
+
             killerData.addCoins(coinsGain);
-            killer.sendMessage("§6🏹 Chasseur: +" + NumberFormatter.format(coinsGain) + " coins!");
+            killer.sendMessage("§b§lCHASSEUR §3| Votre chasse à la réputation opposée vous rapporte §b" + NumberFormatter.format(coinsGain) + " coins§3 !");
         }
     }
 
     // Méthodes utilitaires
-    private boolean isValidWeapon(ItemStack item) {
-        return item.getType() == Material.NETHERITE_SWORD ||
-                item.getType() == Material.DIAMOND_SWORD ||
-                item.getType() == Material.IRON_SWORD ||
-                item.getType() == Material.GOLDEN_SWORD ||
-                item.getType() == Material.STONE_SWORD ||
-                item.getType() == Material.WOODEN_SWORD;
+    public boolean isValidWeapon(ItemStack item) {
+        return item != null && Tag.ITEMS_SWORDS.isTagged(item.getType());
     }
 
-    private boolean isValidArmor(ItemStack item) {
-        Material type = item.getType();
-        return type.name().endsWith("_HELMET") ||
-                type.name().endsWith("_CHESTPLATE") ||
-                type.name().endsWith("_LEGGINGS") ||
-                type.name().endsWith("_BOOTS");
+    public boolean isValidArmor(ItemStack item) {
+        if (item == null) {
+            return false;
+        }
+        final String typeName = item.getType().name();
+        return typeName.endsWith("_HELMET") || typeName.endsWith("_CHESTPLATE") ||
+                typeName.endsWith("_LEGGINGS") || typeName.endsWith("_BOOTS");
     }
 
-    private boolean isValidPickaxe(ItemStack item) {
-        return item.getType() == Material.NETHERITE_PICKAXE ||
-                item.getType() == Material.DIAMOND_PICKAXE ||
-                item.getType() == Material.IRON_PICKAXE ||
-                item.getType() == Material.GOLDEN_PICKAXE ||
-                item.getType() == Material.STONE_PICKAXE ||
-                item.getType() == Material.WOODEN_PICKAXE;
+    public boolean isValidPickaxe(ItemStack item) {
+        return item != null && Tag.ITEMS_PICKAXES.isTagged(item.getType());
     }
 
     public UniqueEnchantment getEnchantment(String id) {

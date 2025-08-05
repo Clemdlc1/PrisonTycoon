@@ -1,8 +1,8 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.WarpData;
 import fr.prisontycoon.data.MineData;
+import fr.prisontycoon.data.WarpData;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;

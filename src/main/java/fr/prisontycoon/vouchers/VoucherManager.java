@@ -146,7 +146,7 @@ public class VoucherManager {
                     return false;
                 }
 
-                playerData.setProfessionXP(activeProfession, (int) value);
+                plugin.getProfessionManager().addProfessionXP(player, activeProfession, (int) value);
                 player.sendMessage("§a✅ §lVoucher utilisé!");
                 player.sendMessage("§7Vous avez reçu: §d" + type.getValueDescription(tier).substring(9));
                 player.sendMessage("§7Métier: §e" + activeProfession);

@@ -18,8 +18,8 @@ import fr.prisontycoon.data.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.Banner;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 import java.io.File;

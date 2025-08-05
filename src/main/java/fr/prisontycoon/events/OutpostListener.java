@@ -1,7 +1,6 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.OutpostData;
 import fr.prisontycoon.managers.OutpostManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

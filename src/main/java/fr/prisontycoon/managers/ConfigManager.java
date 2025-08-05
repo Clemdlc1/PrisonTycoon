@@ -7,7 +7,6 @@ import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.WarpData;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -227,10 +226,9 @@ public class ConfigManager {
                 plugin.getPluginLogger().debug("Téléportation personnalisée pour " + mineName + ": " +
                         teleportX + ", " + teleportY + ", " + teleportZ);
             } else {
-                // Utiliser le centre de la mine comme téléportation par défaut
-                teleportX = (minPos.getX() + maxPos.getX()) / 2.0;
-                teleportY = maxPos.getY() + 1; // Un bloc au-dessus
-                teleportZ = (minPos.getZ() + maxPos.getZ()) / 2.0;
+                teleportX = (minPos.x() + maxPos.x()) / 2.0;
+                teleportY = maxPos.y() + 1;
+                teleportZ = (minPos.z() + maxPos.z()) / 2.0;
 
                 plugin.getPluginLogger().debug("Téléportation automatique pour " + mineName + ": " +
                         teleportX + ", " + teleportY + ", " + teleportZ);

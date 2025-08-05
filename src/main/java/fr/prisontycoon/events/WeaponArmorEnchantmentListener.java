@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -192,9 +193,29 @@ public class WeaponArmorEnchantmentListener implements Listener {
         Player dead = event.getEntity();
         Player killer = dead.getKiller();
 
+        if (!dead.getWorld().getName().equalsIgnoreCase("Cave")) {
+            event.setKeepInventory(true);
+            event.getDrops().clear();
+            event.setKeepLevel(true);
+            event.setDroppedExp(0);
+            return;
+        }
+
         if (killer != null) {
-            // Gère les effets de Répercussion et Chasseur
-            plugin.getWeaponArmorEnchantmentManager().handlePlayerDeath(dead, killer);
+            plugin.getWeaponArmorEnchantmentManager().handlePlayerDeath(dead, killer, event);
+        }
+    }
+
+    /**
+     * Annule les dégâts de chute sauf dans le monde spécifié.
+     * @param event L'événement de dégâts.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player && event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+            if (!player.getWorld().getName().equalsIgnoreCase("Cave")) {
+                event.setCancelled(true);
+            }
         }
     }
 

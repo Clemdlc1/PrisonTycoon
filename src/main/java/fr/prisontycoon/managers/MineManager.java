@@ -1,21 +1,23 @@
 package fr.prisontycoon.managers;
 
-import com.sk89q.worldedit.regions.Region;
-import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.MineData;
-import fr.prisontycoon.data.PlayerData;
-import org.bukkit.*;
-import org.bukkit.entity.Player;
-import org.bukkit.permissions.PermissionAttachmentInfo;
-
 import com.fastasyncworldedit.core.FaweAPI;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.function.pattern.RandomPattern;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.MineData;
+import fr.prisontycoon.data.PlayerData;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;

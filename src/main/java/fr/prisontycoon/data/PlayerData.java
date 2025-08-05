@@ -39,9 +39,6 @@ public class PlayerData {
     private final Map<Material, Long> autominerStorageContents;
     private final Map<String, Integer> autominerStoredKeys;
     private final Map<PrestigeTalent, Integer> prestigeTalents = new HashMap<>();
-    //prestige
-    private final int prestigeLevel = 0;
-    // NOUVEAUX ajouts pour le système amélioré
     private final Map<String, Boolean> unlockedPrestigeRewards = new HashMap<>(); // rewardId -> unlocked
     private final Map<Integer, String> chosenPrestigeTalents = new HashMap<>(); // prestigeLevel -> talentName
     // Investissements - Map<Material, Quantité> avec support grandes valeurs
@@ -1345,19 +1342,6 @@ public class PlayerData {
     public Set<String> getUnlockedPrestigeMines() {
         synchronized (dataLock) {
             return new HashSet<>(unlockedPrestigeMines);
-        }
-    }
-
-    /**
-     * Débloque automatiquement les mines selon le niveau de prestige
-     */
-    public void updateUnlockedPrestigeMines() {
-        synchronized (dataLock) {
-            if (prestigeLevel >= 1) unlockPrestigeMine("prestige1");
-            if (prestigeLevel >= 11) unlockPrestigeMine("prestige11");
-            if (prestigeLevel >= 21) unlockPrestigeMine("prestige21");
-            if (prestigeLevel >= 31) unlockPrestigeMine("prestige31");
-            if (prestigeLevel >= 41) unlockPrestigeMine("prestige41");
         }
     }
 

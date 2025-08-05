@@ -7,6 +7,8 @@ description: Plugin de prison avec système de prestige, mines spéciales et mé
 depend:
   - Multiverse-Core
   - FastAsyncWorldEdit
+softdepend:
+  - CustomMobs
 
 # Permissions principales
 permissions:

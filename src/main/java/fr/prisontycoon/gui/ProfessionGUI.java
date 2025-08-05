@@ -65,6 +65,7 @@ public class ProfessionGUI {
      */
     public void openProfessionMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "§e⚒ §lMétiers §e⚒");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
         fillWithGlass(gui);
         setupProfessionMenu(gui, player);
@@ -106,11 +107,11 @@ public class ProfessionGUI {
 
         String pageInfo = page == 0 ? " (Niv. 1-5)" : " (Niv. 6-10)";
         Inventory gui = Bukkit.createInventory(null, 54, "§5⭐ " + profession.displayName() + pageInfo);
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_TALENTS, gui);
 
         fillWithGlass(gui);
         setupTalentsKitsMenu(gui, player, profession, page);
 
-        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_TALENTS, gui);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
     }
@@ -636,6 +637,7 @@ public class ProfessionGUI {
 
     public void openChooseProfessionMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "§e⚒ §lChoisir un Métier §e⚒");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
         fillWithGlass(gui);
 
@@ -656,6 +658,7 @@ public class ProfessionGUI {
         String currentProfession = playerData.getActiveProfession();
 
         Inventory gui = Bukkit.createInventory(null, 27, "§c🔄 §lChanger de Métier §c🔄");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
         fillWithGlass(gui);
 

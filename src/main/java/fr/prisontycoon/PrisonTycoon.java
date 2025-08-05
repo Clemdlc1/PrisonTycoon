@@ -1,5 +1,6 @@
 package fr.prisontycoon;
 
+import fr.custommobs.CustomMobsPlugin;
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
@@ -15,7 +16,10 @@ import fr.prisontycoon.managers.*;
 import fr.prisontycoon.tasks.*;
 import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
+import fr.prisontycoon.utils.StartupBedrockReplacer;
 import fr.prisontycoon.vouchers.VoucherManager;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -108,7 +112,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private OutpostGUI outpostGUI;
     private WarpManager warpManager;
     private WarpGUI warpGUI;
-
+    private CustomMobsPlugin customMobsPlugin = null;
 
     public static PrisonTycoon getInstance() {
         return instance;
@@ -140,6 +144,7 @@ public final class PrisonTycoon extends JavaPlugin {
             registerCommands();
 
             PrisonTycoonAPI.initialize(this);
+            setupCustomMobsHook();
 
             chatLogger = new ChatLogger(this);
 
@@ -314,7 +319,6 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new TankListener(this), this);
         pluginManager.registerEvents(new OutpostListener(this), this);
 
-
         logger.info("§aÉvénements enregistrés.");
     }
 
@@ -403,6 +407,8 @@ public final class PrisonTycoon extends JavaPlugin {
      */
     private void startTasks() {
         logger.info("§7Démarrage des tâches asynchrones...");
+
+        new StartupBedrockReplacer(this).executeReplacement();
 
         // Récupère les intervalles depuis la config
         int actionBarInterval = getConfig().getInt("performance.task-intervals.action-bar-ticks", 5);
@@ -509,6 +515,25 @@ public final class PrisonTycoon extends JavaPlugin {
         if (gangManager != null) {
             gangManager.shutdown();
         }
+    }
+
+    private void setupCustomMobsHook() {
+        Plugin customMobs = Bukkit.getPluginManager().getPlugin("CustomMobs");
+        // On vérifie si le plugin est chargé ET activé
+        if (customMobs != null && customMobs.isEnabled()) {
+            // On vérifie que c'est bien la bonne classe (sécurité)
+            if (customMobs instanceof CustomMobsPlugin) {
+                this.customMobsPlugin = (CustomMobsPlugin) customMobs;
+                getLogger().info("Successfully hooked into CustomMobs!");
+            }
+        } else {
+            getLogger().warning("CustomMobs plugin not found. Some features might be disabled.");
+        }
+    }
+
+    // AJOUTEZ CET ACCESSEUR PUBLIC
+    public CustomMobsPlugin getCustomMobsPlugin() {
+        return this.customMobsPlugin;
     }
 
     public ConfigManager getConfigManager() {

@@ -105,5 +105,13 @@
             <version>2.13.1</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>fr.custommobs</groupId> <!-- Doit correspondre au groupId de PrisonTycoon -->
+            <artifactId>CustomMobs</artifactId> <!-- Doit correspondre à l'artifactId de PrisonTycoon -->
+            <version>1.0.0</version> <!-- La version de votre PrisonTycoon -->
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 </project>
