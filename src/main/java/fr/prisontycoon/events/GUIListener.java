@@ -136,8 +136,11 @@ public class GUIListener implements Listener {
 
             case PICKAXE_REPAIR -> plugin.getPickaxeRepairMenu().handleRepairMenuClick(player, slot, item);
 
-            case PROFESSION_MAIN, PROFESSION_TALENTS, PROFESSION_REWARDS ->
+            case PROFESSION_MAIN, PROFESSION_TALENTS ->
                     plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
+
+            case PROFESSION_REWARDS ->
+                    plugin.getProfessionRewardsGUI().handleRewardsClick(player, item);
 
             case PRESTIGE_MENU -> plugin.getPrestigeGUI().handleClick(player, item, clickType);
 

@@ -19,6 +19,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface graphique pour le système de métiers (AMÉLIORÉE)
@@ -107,7 +108,9 @@ public class ProfessionGUI {
 
         String pageInfo = page == 0 ? " (Niv. 1-5)" : " (Niv. 6-10)";
         Inventory gui = Bukkit.createInventory(null, 54, "§5⭐ " + profession.displayName() + pageInfo);
-        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_TALENTS, gui);
+
+        // CORRIGÉ : Enregistre le GUI avec le numéro de page actuel
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_TALENTS, gui, Map.of("page", String.valueOf(page)));
 
         fillWithGlass(gui);
         setupTalentsKitsMenu(gui, player, profession, page);
@@ -368,7 +371,7 @@ public class ProfessionGUI {
             case "view_talents_kits" -> {
                 String professionId = meta.getPersistentDataContainer().get(professionKey, PersistentDataType.STRING);
                 if (professionId != null) {
-                    openTalentsKitsMenu(player, professionId, 0); // Commence à la page 1
+                    openTalentsKitsMenu(player, professionId, 0);
                 }
             }
             case "upgrade_talent_level" -> {
@@ -378,9 +381,8 @@ public class ProfessionGUI {
 
                 if (professionId != null && talentId != null && targetLevel != null) {
                     if (plugin.getProfessionManager().activateTalent(player, talentId, targetLevel)) {
-                        // Rafraîchit la page actuelle
-                        String title = player.getOpenInventory().getTitle();
-                        int page = title.contains("1-5") ? 0 : 1;
+                        String pageStr = plugin.getGUIManager().getGUIData(player, "page");
+                        int page = pageStr != null ? Integer.parseInt(pageStr) : 0;
                         openTalentsKitsMenu(player, professionId, page);
                     }
                 }
@@ -391,9 +393,8 @@ public class ProfessionGUI {
 
                 if (professionId != null && targetLevel != null) {
                     if (plugin.getProfessionManager().activateKit(player, targetLevel)) {
-                        // Rafraîchit la page actuelle
-                        String title = player.getOpenInventory().getTitle();
-                        int page = title.contains("1-5") ? 0 : 1;
+                        String pageStr = plugin.getGUIManager().getGUIData(player, "page");
+                        int page = pageStr != null ? Integer.parseInt(pageStr) : 0;
                         openTalentsKitsMenu(player, professionId, page);
                     }
                 }

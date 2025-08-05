@@ -90,7 +90,7 @@ public class MiningListener implements Listener {
             handleCaveBeaconBreak(player, location, finalBeaconGain);
 
             // Cas 3 : Le joueur a la permission de miner dans des mondes spéciaux (hors mines)
-        } else if (worldName.startsWith("Market") || worldName.startsWith("id") || player.hasPermission("specialmine.admin")) {
+        } else if (worldName.startsWith("Market") || worldName.startsWith("island") || player.hasPermission("specialmine.admin")) {
             processMiningOutsideMine(player);
 
             // Cas 4 : Tentative de cassage illégale
