@@ -325,14 +325,6 @@ public class ContainerManager {
         return item.getItemMeta().getPersistentDataContainer().get(containerUUIDKey, PersistentDataType.STRING);
     }
 
-    public ItemStack findContainerByUUID(Player player, String uuid) {
-        if (uuid == null || player == null) return null;
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (isContainer(item) && uuid.equals(getContainerUUID(item))) return item;
-        }
-        return null;
-    }
-
     private String getTierName(int tier) {
         return switch (tier) {
             case 1 -> "§7Basique";
@@ -555,4 +547,140 @@ public class ContainerManager {
         }
     }
 
+    /**
+     * NOUVEAU : Met à jour tous les conteneurs dans l'inventaire d'un joueur
+     * Optimisé pour les tâches récurrentes
+     *
+     * @param player Le joueur dont les conteneurs doivent être mis à jour
+     * @return Le nombre de conteneurs mis à jour avec succès
+     */
+    public int updateAllPlayerContainers(Player player) {
+        if (player == null || !player.isOnline()) {
+            return 0;
+        }
+
+        int updatedCount = 0;
+        int processedCount = 0;
+
+        try {
+            // Parcourt tout l'inventaire du joueur
+            ItemStack[] contents = player.getInventory().getContents();
+
+            for (int i = 0; i < contents.length; i++) {
+                ItemStack item = contents[i];
+
+                if (!isContainer(item)) {
+                    continue;
+                }
+
+                processedCount++;
+
+                // Récupère l'UUID du conteneur
+                String uuid = getContainerUUID(item);
+                if (uuid == null) {
+                    plugin.getPluginLogger().debug("§cConteneur sans UUID trouvé dans l'inventaire de " + player.getName());
+                    continue;
+                }
+
+                // Récupère les données depuis le cache ou l'item
+                ContainerData data = containerCache.get(uuid);
+                if (data == null) {
+                    // Charge les données depuis l'item si pas en cache
+                    data = loadDataFromItem(item);
+                    if (data == null) {
+                        plugin.getPluginLogger().debug("§cImpossible de charger les données du conteneur UUID: " + uuid.substring(0, 8));
+                        continue;
+                    }
+                }
+
+                // Met à jour le lore et les métadonnées du conteneur
+                if (saveDataToItem(item, data)) {
+                    updatedCount++;
+
+                    // Met à jour l'item dans l'inventaire si nécessaire
+                    player.getInventory().setItem(i, item);
+                } else {
+                    plugin.getPluginLogger().debug("§cÉchec de la mise à jour du conteneur UUID: " + uuid.substring(0, 8));
+                }
+            }
+
+            if (processedCount > 0) {
+                plugin.getPluginLogger().debug("§7Conteneurs mis à jour pour " + player.getName() +
+                        ": " + updatedCount + "/" + processedCount);
+            }
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("§cErreur lors de la mise à jour des conteneurs de " +
+                    player.getName() + ": " + e.getMessage());
+        }
+
+        return updatedCount;
+    }
+
+    /**
+     * NOUVEAU : Met à jour de manière optimisée tous les conteneurs d'un joueur depuis le cache
+     * Version plus rapide qui utilise uniquement les conteneurs en cache
+     *
+     * @param player Le joueur dont les conteneurs doivent être mis à jour
+     * @return Le nombre de conteneurs mis à jour avec succès
+     */
+    public int updateCachedPlayerContainers(Player player) {
+        if (player == null || !player.isOnline()) {
+            return 0;
+        }
+
+        Set<String> playerUUIDs = playerContainers.get(player.getUniqueId());
+        if (playerUUIDs == null || playerUUIDs.isEmpty()) {
+            return 0;
+        }
+
+        int updatedCount = 0;
+
+        try {
+            for (String uuid : playerUUIDs) {
+                ContainerData data = containerCache.get(uuid);
+                if (data == null) {
+                    continue;
+                }
+
+                // Trouve le conteneur dans l'inventaire du joueur
+                ItemStack containerItem = findContainerByUUID(player, uuid);
+                if (containerItem == null) {
+                    continue;
+                }
+
+                // Met à jour le conteneur
+                if (saveDataToItem(containerItem, data)) {
+                    updatedCount++;
+                }
+            }
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("§cErreur lors de la mise à jour des conteneurs en cache de " +
+                    player.getName() + ": " + e.getMessage());
+        }
+
+        return updatedCount;
+    }
+
+    /**
+     * UTILITAIRE : Trouve un conteneur par UUID dans l'inventaire du joueur
+     *
+     * @param player Le joueur
+     * @param uuid L'UUID du conteneur à trouver
+     * @return L'ItemStack du conteneur ou null si non trouvé
+     */
+    public ItemStack findContainerByUUID(Player player, String uuid) {
+        if (player == null || uuid == null) {
+            return null;
+        }
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isContainer(item) && uuid.equals(getContainerUUID(item))) {
+                return item;
+            }
+        }
+
+        return null;
+    }
 }

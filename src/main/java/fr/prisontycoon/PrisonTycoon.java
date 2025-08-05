@@ -99,6 +99,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutoSaveTask autoSaveTask;
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
+    private PickaxeContainerUpdateTask pickaxeContainerTask;
+
 
     private AutominerManager autominerManager;
     private AutominerGUI autominerGUI;
@@ -460,6 +462,11 @@ public final class PrisonTycoon extends JavaPlugin {
         }, 12000L, 12000L); // Toutes les 10 minutes
         logger.info("§7- Tâche de nettoyage automatique démarrée");
 
+        pickaxeContainerTask = new PickaxeContainerUpdateTask(this);
+        pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 40L);
+        logger.info("§7- PickaxeContainerUpdateTask démarrée (mise à jour pickaxes et conteneurs toutes les 1 seconde)");
+
+
         // NOUVELLE TÂCHE: Nettoyage des anciens logs (optionnel)
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
             if (chatLogger != null) {
@@ -514,6 +521,9 @@ public final class PrisonTycoon extends JavaPlugin {
         }
         if (gangManager != null) {
             gangManager.shutdown();
+        }
+        if (pickaxeContainerTask != null) {
+            pickaxeContainerTask.cancel();
         }
     }
 
@@ -841,5 +851,6 @@ public final class PrisonTycoon extends JavaPlugin {
     public WarpGUI getWarpGUI() {
         return warpGUI;
     }
+
 }
 

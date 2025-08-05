@@ -114,7 +114,6 @@ public class MiningListener implements Listener {
         Location blockLocation = event.getBlock().getLocation();
         Material material = event.getBlock().getType();
 
-        // Gère uniquement le cassage instantané des balises avec l'enchantement "beaconbreaker"
         boolean hasBeaconBreaker = plugin.getEnchantmentBookManager() != null && plugin.getEnchantmentBookManager().isEnchantmentActive(player, "beaconbreaker");
         if (material != Material.BEACON || !hasBeaconBreaker || PickaxeManager.isPickaxeBroken(player)) {
             return;
