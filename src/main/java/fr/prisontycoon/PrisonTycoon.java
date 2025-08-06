@@ -180,6 +180,10 @@ public final class PrisonTycoon extends JavaPlugin {
                 databaseManager.close();
                 logger.info("§7Connexion à la base de données fermée.");
             }
+            if (blackMarketManager != null) {
+                blackMarketManager.shutdown();
+                logger.info("§7BlackMarketManager fermé.");
+            }
         } catch (Exception e) {
             logger.severe("§cErreur lors de la désactivation du plugin:");
             e.printStackTrace();
@@ -285,7 +289,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new ContainerListener(this), this);
         pluginManager.registerEvents(new CristalListener(this), this);
         pluginManager.registerEvents(new ChatListener(this), this);
-        pluginManager.registerEvents(new PNJInteract(this), this);
+        pluginManager.registerEvents(new NPCInteract(this), this);
         pluginManager.registerEvents(new WeaponArmorEnchantmentListener(this), this);
         pluginManager.registerEvents(new VoucherBoostListener(this), this);
         pluginManager.registerEvents(new CrateListener(this), this);

@@ -1347,37 +1347,56 @@ black-market:
   # Emplacements possibles du marché noir
   locations:
     sous-crane:
-      world: "Spawn"
-      x: -160.5
-      y: 72
-      z: -12.5
       name: "§8Grotte Cachée"
-      danger-level: 0.4    # Niveau de danger (0.0 = sûr, 1.0 = très dangereux)
+      world: "Spawn"
+      x: -159.5
+      y: 72.5
+      z: -11.5
+      yaw: 135.0
+      pitch: 0.0
+      is_sitting: true
+      turn_to_player: true
+      turn_to_player_distance: 8
+      danger-level: 0.4
 
     cave:
+      name: "§2Grotte Cachée"
       world: "Spawn"
       x: -41.5
       y: 68
-      z: 105
-      name: "§2Grotte Cachée"
+      z: 105.5
+      yaw: -45.0
+      pitch: 5.0
+      is_sitting: true
+      turn_to_player: true
+      turn_to_player_distance: 10
       danger-level: 0.2
 
     chateau:
+      name: "§6Château"
       world: "Spawn"
-      x: -118
+      x: -118.5
       y: 95
-      z: -187
-      name: "§6Entrepôt Désaffecté"
+      z: -187.5
+      yaw: 0.0
+      pitch: 0.0
+      is_sitting: false
+      turn_to_player: true
+      turn_to_player_distance: 12
       danger-level: 0.6
 
     sewers:
-      world: "Spawn"
-      x: 41
-      y: 64
-      z: -49
       name: "§7Égouts de la Ville"
+      world: "Spawn"
+      x: 41.5
+      y: 64
+      z: -49.5
+      yaw: 90.0
+      pitch: 0.0
+      is_sitting: false
+      turn_to_player: true
+      turn_to_player_distance: 10
       danger-level: 0.3
-
 
 # ========================================
 #           SYSTÈME BANCAIRE

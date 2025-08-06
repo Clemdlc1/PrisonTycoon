@@ -1,10 +1,15 @@
 package fr.prisontycoon.managers;
 
 import com.google.gson.Gson;
+import de.oliver.fancynpcs.api.FancyNpcsPlugin;
+import de.oliver.fancynpcs.api.Npc;
+import de.oliver.fancynpcs.api.NpcAttribute;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
+import fr.prisontycoon.gui.GUIType;
 import fr.prisontycoon.reputation.ReputationTier;
+import fr.prisontycoon.utils.FancyNPCUtils;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
@@ -41,15 +46,18 @@ public class BlackMarketManager {
 
     private final Map<ItemStack, BlackMarketItem> currentStock = new HashMap<>();
     private final List<BlackMarketLocation> possibleLocations = new ArrayList<>();
-    private Villager blackMarketNPC;
+    private Npc blackMarketNPC;
     private Location currentLocation;
     private boolean isAvailable = true;
     private MarketState currentState = MarketState.AVAILABLE;
+    private FancyNPCUtils npcUtils;
+
 
     public BlackMarketManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.reputationManager = plugin.getReputationManager();
         this.databaseManager = plugin.getDatabaseManager();
+        this.npcUtils = new FancyNPCUtils(plugin);
         createPurchasesTable();
         loadConfigurationLocations();
         relocateMarket();
@@ -73,10 +81,12 @@ public class BlackMarketManager {
     }
 
     private void loadConfigurationLocations() {
+        possibleLocations.clear();
         ConfigurationSection blackMarketSection = plugin.getConfig().getConfigurationSection("black-market");
         if (blackMarketSection == null) {
             createDefaultConfiguration();
-            return;
+            blackMarketSection = plugin.getConfig().getConfigurationSection("black-market");
+            if(blackMarketSection == null) return;
         }
         ConfigurationSection locationsSection = blackMarketSection.getConfigurationSection("locations");
         if (locationsSection == null) return;
@@ -85,29 +95,57 @@ public class BlackMarketManager {
             ConfigurationSection locationSection = locationsSection.getConfigurationSection(locationKey);
             if (locationSection == null) continue;
             try {
-                String worldName = locationSection.getString("world");
+                // ... (chargement de x, y, z, yaw, pitch, isSitting inchangé) ...
+                boolean isSitting = locationSection.getBoolean("is_sitting", false);
+
+                // AJOUTÉ : Lecture des nouvelles options
+                boolean turnToPlayer = locationSection.getBoolean("turn_to_player", false);
+                int turnToPlayerDistance = locationSection.getInt("turn_to_player_distance", -1); // -1 = Défaut du plugin
+
+                String name = locationSection.getString("name", locationKey);
+                double dangerLevel = locationSection.getDouble("danger-level", 0.3);
+
+                World world = Bukkit.getWorld(locationSection.getString("world"));
+                if (world == null) {
+                    // ...
+                    continue;
+                }
+
                 double x = locationSection.getDouble("x");
                 double y = locationSection.getDouble("y");
                 double z = locationSection.getDouble("z");
-                String name = locationSection.getString("name", locationKey);
-                double dangerLevel = locationSection.getDouble("danger-level", 0.3);
-                World world = Bukkit.getWorld(worldName);
-                if (world == null) continue;
-                Location location = new Location(world, x, y, z);
-                possibleLocations.add(new BlackMarketLocation(location, name, dangerLevel));
+                float yaw = (float) locationSection.getDouble("yaw", 0.0);
+                float pitch = (float) locationSection.getDouble("pitch", 0.0);
+
+                Location location = new Location(world, x, y, z, yaw, pitch);
+
+                // MODIFIÉ : On passe les nouvelles informations au constructeur du record
+                possibleLocations.add(new BlackMarketLocation(location, name, dangerLevel, isSitting, turnToPlayer, turnToPlayerDistance));
+
             } catch (Exception e) {
-                // ignore
+                plugin.getLogger().severe("Erreur lors du chargement de l'emplacement du marché noir: " + locationKey);
+                e.printStackTrace();
             }
         }
     }
 
     private void createDefaultConfiguration() {
         plugin.getConfig().set("black-market.relocation-hours", RELOCATION_HOURS);
-        plugin.getConfig().set("black-market.raid-chance", RAID_CHANCE);
-        plugin.getConfig().set("black-market.ambush-chance", AMBUSH_CHANCE);
-        plugin.getConfig().set("black-market.scam-chance", SCAM_CHANCE);
-        plugin.getConfig().set("black-market.raid-duration-hours", RAID_DURATION_HOURS);
+        String path = "black-market.locations.egout_principal.";
+        plugin.getConfig().set(path + "name", "Égout Principal");
+        plugin.getConfig().set(path + "world", "world");
+        plugin.getConfig().set(path + "x", 100.0);
+        plugin.getConfig().set(path + "y", 64.0);
+        plugin.getConfig().set(path + "z", -250.0);
+        plugin.getConfig().set(path + "yaw", 90.0); // Regarde vers l'Est
+        plugin.getConfig().set(path + "pitch", 0.0); // Regarde droit devant
+        plugin.getConfig().set(path + "is_sitting", true);
+        plugin.getConfig().set(path + "turn_to_player", true);
+        plugin.getConfig().set(path + "turn_to_player_distance", 10);// Le PNJ sera assis
+        plugin.getConfig().set(path + "danger-level", 0.4);
+
         plugin.saveConfig();
+        plugin.reloadConfig(); // S'assurer que les valeurs sont chargées
     }
 
     private void startRelocationTask() {
@@ -120,24 +158,24 @@ public class BlackMarketManager {
         }.runTaskTimer(plugin, 0L, relocHours * 3600L * 20L);
     }
 
-    private void relocateMarket() {
-        if (possibleLocations.isEmpty()) return;
+    public void relocateMarket() {
+        if (currentState == MarketState.RELOCATING) {
+            return;
+        }
+        if (possibleLocations.isEmpty()) {
+            return;
+        }
         currentState = MarketState.RELOCATING;
         isAvailable = false;
-        if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
+        if (blackMarketNPC != null) {
             playNPCAnimation(blackMarketNPC, "disappear");
-            final Villager oldNPC = blackMarketNPC;
-            blackMarketNPC = null;
+            final Npc oldNPC = blackMarketNPC;
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    oldNPC.remove();
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            createNewMarketLocation();
-                        }
-                    }.runTaskLater(plugin, 1L);
+                    npcUtils.removeNPC(oldNPC);
+                    blackMarketNPC = null;
+                    createNewMarketLocation();
                 }
             }.runTaskLater(plugin, 40L);
         } else {
@@ -155,70 +193,120 @@ public class BlackMarketManager {
         currentLocation = chosenLocation.location();
         isAvailable = true;
         currentState = MarketState.AVAILABLE;
-        spawnBlackMarketNPC(chosenLocation);
+        spawnBlackMarketNPC(chosenLocation); // On passe l'objet complet
         refreshStock();
         notifyPlayersNearby("§8§l[MARKET] §7Un marchand mystérieux s'est installé près de " + chosenLocation.name() + "...");
     }
 
-    private void spawnBlackMarketNPC(BlackMarketLocation location) {
-        if (currentLocation == null || currentLocation.getWorld() == null) return;
-        blackMarketNPC = (Villager) currentLocation.getWorld().spawnEntity(currentLocation, EntityType.VILLAGER);
-        blackMarketNPC.setCustomName("§8§l⚫ Marchand Noir ⚫");
-        blackMarketNPC.setCustomNameVisible(true);
-        blackMarketNPC.setAI(false);
-        blackMarketNPC.setInvulnerable(true);
-        blackMarketNPC.setSilent(false);
-        blackMarketNPC.setProfession(Villager.Profession.NITWIT);
-        playNPCAnimation(blackMarketNPC, "appear");
+
+    // Dans BlackMarketManager.java
+
+    private void spawnBlackMarketNPC(BlackMarketLocation chosenLocation) {
+        if (chosenLocation == null || chosenLocation.location() == null || chosenLocation.location().getWorld() == null) return;
+
+        final Location spawnLocation = chosenLocation.location(); // 'final' est nécessaire pour l'utiliser dans le Runnable
+
+        if (blackMarketNPC != null) {
+            npcUtils.removeNPC(blackMarketNPC);
+            blackMarketNPC = null;
+        }
+
+        String npcId = "blackmarket";
+        String displayName = "§8§l⚫ Marchand Noir ⚫";
+
+        // ÉTAPE 1 : Créez le PNJ. Il peut apparaître brièvement au mauvais endroit.
+        blackMarketNPC = npcUtils.createNPC(npcId, displayName, spawnLocation);
+
+        if (blackMarketNPC != null) {
+            // ÉTAPE 2 : Planifiez une tâche pour 1 tick plus tard afin de corriger la position et d'appliquer les attributs.
+            // C'est le cœur de la solution.
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // Vérifiez si le PNJ existe toujours (sécurité)
+                    if (blackMarketNPC == null) {
+                        return;
+                    }
+
+                    // **LA CORRECTION** : Forcez à nouveau la position du PNJ.
+                    blackMarketNPC.getData().setLocation(spawnLocation);
+
+                    // Appliquez la logique pour s'asseoir
+                    if (chosenLocation.isSitting()) {
+                        NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager().getAttributeByName(EntityType.PLAYER, "pose");
+                        if (poseAttribute != null) {
+                            blackMarketNPC.getData().addAttribute(poseAttribute, "sitting");
+                        }
+                    }
+
+                    // Appliquez la logique pour regarder le joueur
+                    if (chosenLocation.turnToPlayer()) {
+                        blackMarketNPC.getData().setTurnToPlayer(true);
+                        if (chosenLocation.turnToPlayerDistance() > 0) {
+                            blackMarketNPC.getData().setTurnToPlayerDistance(chosenLocation.turnToPlayerDistance());
+                        }
+                    }
+
+                    // Mettez à jour le PNJ pour tous les joueurs, ce qui appliquera la position corrigée et les attributs.
+                    blackMarketNPC.updateForAll();
+
+                    // Jouez l'animation de spawn APRÈS que le PNJ soit correctement positionné.
+                    playNPCAnimation(blackMarketNPC, "appear");
+
+                }
+            }.runTaskLater(plugin, 1L); // Le délai de 1 tick est crucial.
+        }
     }
 
-    private void playNPCAnimation(Villager npc, String animationType) {
-        if (npc == null || npc.isDead()) return;
+    private void playNPCAnimation(Npc npc, String animationType) {
+        if (npc == null || currentLocation == null) return;
+
+        Location npcLocation = npc.getData().getLocation().clone();
+
+        World world = npcLocation.getWorld();
+        if (world == null) return;
+
         switch (animationType) {
             case "appear":
-                npc.getWorld().spawnParticle(Particle.SMOKE, npc.getLocation().add(0, 1, 0), 10, 0.3, 0.3, 0.3, 0.1);
-                npc.getWorld().playSound(npc.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 0.8f);
+                world.spawnParticle(Particle.SMOKE, npcLocation.clone().add(0, 1, 0), 10, 0.3, 0.3, 0.3, 0.1);
+                world.playSound(npcLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 0.8f);
+
                 new BukkitRunnable() {
                     private int ticks = 0;
 
                     @Override
                     public void run() {
-                        if (npc.isDead() || ticks >= 40) {
+                        if (blackMarketNPC == null || ticks >= 40) {
                             cancel();
                             return;
                         }
-                        npc.getLocation().setYaw(npc.getLocation().getYaw() + 9f);
-                        npc.teleport(npc.getLocation());
+                        // Effet de rotation visuel (pas de rotation réelle du NPC)
+                        world.spawnParticle(Particle.HAPPY_VILLAGER, npcLocation.add(0, 1, 0), 1);
                         ticks++;
                     }
                 }.runTaskTimer(plugin, 5L, 1L);
                 break;
+
             case "disappear":
-                npc.getWorld().spawnParticle(Particle.SMOKE, npc.getLocation().add(0, 1, 0), 15, 0.5, 0.5, 0.5, 0.1);
-                npc.getWorld().playSound(npc.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.2f);
+                world.spawnParticle(Particle.SMOKE, npcLocation.clone().add(0, 1, 0), 15, 0.5, 0.5, 0.5, 0.1);
+                world.playSound(npcLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.2f);
                 break;
+
             case "raid":
-                npc.getWorld().spawnParticle(Particle.LAVA, npc.getLocation().add(0, 1, 0), 20, 1, 1, 1, 0.1);
-                npc.getWorld().playSound(npc.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.0f, 0.6f);
-                npc.setCustomName("§c§l🚨 RAID EN COURS 🚨");
+                world.spawnParticle(Particle.LAVA, npcLocation.add(0, 1, 0), 20, 1, 1, 1, 0.1);
+                world.playSound(npcLocation, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.0f, 0.6f);
+
                 break;
+
             case "trade":
-                npc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, npc.getLocation().add(0, 2, 0), 5, 0.3, 0.3, 0.3, 0.1);
-                npc.getWorld().playSound(npc.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.8f, 1.0f);
+                world.spawnParticle(Particle.HAPPY_VILLAGER, npcLocation.add(0, 2, 0), 5, 0.3, 0.3, 0.3, 0.1);
+                world.playSound(npcLocation, Sound.ENTITY_VILLAGER_YES, 0.8f, 1.0f);
                 break;
+
             case "scam":
-                npc.getWorld().spawnParticle(Particle.SMOKE, npc.getLocation().add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
-                npc.getWorld().playSound(npc.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
-                npc.setCustomName("§c§l💸 Marchand Louche 💸");
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (!npc.isDead()) {
-                            npc.setCustomName("§8§l⚫ Marchand Noir ⚫");
-                        }
-                    }
-                }.runTaskLater(plugin, 100L);
-                break;
+                world.spawnParticle(Particle.SMOKE, npcLocation.add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
+                world.playSound(npcLocation, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
+
         }
     }
 
@@ -227,13 +315,14 @@ public class BlackMarketManager {
         currentState = MarketState.RAIDED;
         currentLocation = null;
         currentStock.clear();
-        if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
+        if (blackMarketNPC != null) {
             playNPCAnimation(blackMarketNPC, "raid");
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (!blackMarketNPC.isDead()) {
-                        blackMarketNPC.remove();
+                    if (blackMarketNPC != null) {
+                        npcUtils.removeNPC(blackMarketNPC); // Remplace blackMarketNPC.remove()
+                        blackMarketNPC = null;
                     }
                 }
             }.runTaskLater(plugin, 60L);
@@ -338,6 +427,7 @@ public class BlackMarketManager {
         }
         checkRandomEvents(player);
         Inventory gui = Bukkit.createInventory(null, 54, "§8§l⚫ MARCHÉ NOIR ⚫");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.BLACK_MARKET, gui);
         ItemStack blackPane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta paneMeta = blackPane.getItemMeta();
         paneMeta.setDisplayName(" ");
@@ -349,7 +439,7 @@ public class BlackMarketManager {
         setupBlackMarketButtons(gui, player);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 1.0f, 0.7f);
-        if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
+        if (blackMarketNPC != null) {
             playNPCAnimation(blackMarketNPC, "trade");
         }
     }
@@ -429,7 +519,7 @@ public class BlackMarketManager {
         } else if (rand < scamChance) {
             player.sendMessage("§c§l💸 ARNAQUE! §7Le marchand semble louche aujourd'hui...");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
-            if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
+            if (blackMarketNPC != null) {
                 playNPCAnimation(blackMarketNPC, "scam");
             }
         }
@@ -528,7 +618,7 @@ public class BlackMarketManager {
                 player.sendMessage("§c§l💸 ARNAQUÉ! §7Vous avez reçu un article défectueux!");
             }
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
-            if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
+            if (blackMarketNPC != null) {
                 playNPCAnimation(blackMarketNPC, "scam");
             }
             return true;
@@ -552,7 +642,7 @@ public class BlackMarketManager {
         }
         reputationManager.handleBlackMarketTransaction(playerId, finalPrice);
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.8f);
-        if (blackMarketNPC != null && !blackMarketNPC.isDead()) {
+        if (blackMarketNPC != null) {
             playNPCAnimation(blackMarketNPC, "trade");
         }
         return true;
@@ -651,7 +741,7 @@ public class BlackMarketManager {
         }
     }
 
-    private record BlackMarketLocation(Location location, String name, double dangerLevel) {
+    private record BlackMarketLocation(Location location, String name, double dangerLevel, boolean isSitting, boolean turnToPlayer, int turnToPlayerDistance) {
         @Override
         public Location location() {
             return location.clone();
@@ -678,6 +768,28 @@ public class BlackMarketManager {
         @Override
         public int hashCode() {
             return Objects.hash(itemId);
+        }
+    }
+
+    public void shutdown() {
+        plugin.getPluginLogger().info("§7Fermeture du BlackMarketManager...");
+
+        try {
+            // Supprimer le NPC actuel
+            if (blackMarketNPC != null) {
+                npcUtils.removeNPC(blackMarketNPC);
+                blackMarketNPC = null;
+                plugin.getPluginLogger().debug("§7NPC du marché noir supprimé");
+            }
+
+            // Nettoyer le stock en mémoire
+            currentStock.clear();
+
+            plugin.getPluginLogger().info("§aBlackMarketManager fermé proprement");
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("§cErreur lors de la fermeture du BlackMarketManager:");
+            e.printStackTrace();
         }
     }
 }

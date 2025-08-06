@@ -302,6 +302,7 @@ public class BankGUI {
      */
     public void openInvestmentMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 54, "§b📈 Investissements");
+        plugin.getGUIManager().registerOpenGUI(player,GUIType.INVESTMENT_MENU,gui);
         fillWithGlass(gui);
         setupInvestmentMenu(gui, player);
 
