@@ -386,6 +386,11 @@ commands:
     permission: specialmine.basic
     aliases: [hub]
 
+  collection:
+    description: "Collection de têtes"
+    usage: /collection
+    permission: specialmine.basic
+
 # Compatibilité
 depend-bootstrap: false
 

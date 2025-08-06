@@ -47,6 +47,7 @@ public enum GUIType {
     OUTPOST_SKINS("outpost_skins"),
     WARP_MENU("warp_menu"),
     WARP_MINES_MENU("warp_mines_menu"),
+    HEAD_COLLECTION("head_collection"),
     CRATE_MANAGEMENT("crate_management");
 
     private final String id;

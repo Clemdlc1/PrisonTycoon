@@ -1372,9 +1372,9 @@ black-market:
 
     sewers:
       world: "Spawn"
-      x: -133
-      y: 70
-      z: 56
+      x: 41
+      y: 64
+      z: -49
       name: "§7Égouts de la Ville"
       danger-level: 0.3
 

@@ -113,6 +113,9 @@ public class PlayerData {
     private String selectedOutpostSkin = "default";
     private Set<String> unlockedOutpostSkins = new HashSet<>();
 
+    private Set<String> collectedHeads = new HashSet<>();
+    private Set<Integer> claimedHeadRewards = new HashSet<>();
+
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -1992,5 +1995,33 @@ public class PlayerData {
      */
     public void setUnlockedOutpostSkins(Set<String> unlockedOutpostSkins) {
         this.unlockedOutpostSkins = new HashSet<>(unlockedOutpostSkins);
+    }
+
+    /**
+     * Récupère les IDs des têtes collectées par le joueur
+     */
+    public Set<String> getCollectedHeads() {
+        return collectedHeads != null ? collectedHeads : new HashSet<>();
+    }
+
+    /**
+     * Définit les IDs des têtes collectées par le joueur
+     */
+    public void setCollectedHeads(Set<String> collectedHeads) {
+        this.collectedHeads = collectedHeads != null ? collectedHeads : new HashSet<>();
+    }
+
+    /**
+     * Récupère les niveaux de récompenses réclamées
+     */
+    public Set<Integer> getClaimedHeadRewards() {
+        return claimedHeadRewards != null ? claimedHeadRewards : new HashSet<>();
+    }
+
+    /**
+     * Définit les niveaux de récompenses réclamées
+     */
+    public void setClaimedHeadRewards(Set<Integer> claimedHeadRewards) {
+        this.claimedHeadRewards = claimedHeadRewards != null ? claimedHeadRewards : new HashSet<>();
     }
 }

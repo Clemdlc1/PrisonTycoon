@@ -68,6 +68,8 @@ public class PlayerDataManager {
     }.getType();
     private final Type stringSetIntegerMapType = new TypeToken<Map<String, Set<Integer>>>() {
     }.getType();
+    private final Type integerSetType = new TypeToken<Set<Integer>>(){}.getType();
+
 
     public PlayerDataManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -133,7 +135,9 @@ public class PlayerDataManager {
                     gang_id VARCHAR(36),
                     gang_invitation VARCHAR(36),
                     selected_outpost_skin VARCHAR(255) DEFAULT 'default',
-                    unlocked_outpost_skins TEXT DEFAULT '["default"]'
+                    unlocked_outpost_skins TEXT DEFAULT '["default"]',
+                    collected_heads TEXT DEFAULT '[]',
+                    claimed_head_rewards TEXT DEFAULT '[]'
                 );
                 """;
 
@@ -348,6 +352,32 @@ public class PlayerDataManager {
                     data.setUnlockedOutpostSkins(defaultSkins);
                 }
 
+                String collectedHeadsJson = rs.getString("collected_heads");
+                if (collectedHeadsJson != null && !collectedHeadsJson.isEmpty()) {
+                    try {
+                        Set<String> collectedHeads = gson.fromJson(collectedHeadsJson, stringSetType);
+                        data.setCollectedHeads(collectedHeads);
+                    } catch (Exception e) {
+                        plugin.getPluginLogger().debug("Erreur lors du parsing des têtes collectées pour " + playerId + ": " + e.getMessage());
+                        data.setCollectedHeads(new HashSet<>());
+                    }
+                } else {
+                    data.setCollectedHeads(new HashSet<>());
+                }
+
+                String claimedHeadRewardsJson = rs.getString("claimed_head_rewards");
+                if (claimedHeadRewardsJson != null && !claimedHeadRewardsJson.isEmpty()) {
+                    try {
+                        Set<Integer> claimedRewards = gson.fromJson(claimedHeadRewardsJson, integerSetType);
+                        data.setClaimedHeadRewards(claimedRewards);
+                    } catch (Exception e) {
+                        plugin.getPluginLogger().debug("Erreur lors du parsing des récompenses réclamées pour " + playerId + ": " + e.getMessage());
+                        data.setClaimedHeadRewards(new HashSet<>());
+                    }
+                } else {
+                    data.setClaimedHeadRewards(new HashSet<>());
+                }
+
                 plugin.getPluginLogger().debug("§aDonnées chargées avec succès pour " + playerName + " (" + playerId + ")");
                 return data;
             }
@@ -439,8 +469,8 @@ public class PlayerDataManager {
                         autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, 
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
-                        gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
+                        gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
                         coins = EXCLUDED.coins,
@@ -492,7 +522,9 @@ public class PlayerDataManager {
                         gang_id = EXCLUDED.gang_id,
                         gang_invitation = EXCLUDED.gang_invitation,
                         selected_outpost_skin =  EXCLUDED.selected_outpost_skin,
-                        unlocked_outpost_skins =  EXCLUDED.unlocked_outpost_skins
+                        unlocked_outpost_skins =  EXCLUDED.unlocked_outpost_skins,
+                        collected_heads = EXCLUDED.collected_heads,
+                        claimed_head_rewards = EXCLUDED.claimed_head_rewards
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -554,6 +586,8 @@ public class PlayerDataManager {
                     ps.setString(50, data.getGangInvitation());
                     ps.setString(51, data.getSelectedOutpostSkin());
                     ps.setString(52, gson.toJson(data.getUnlockedOutpostSkins()));
+                    ps.setString(53, gson.toJson(data.getCollectedHeads()));
+                    ps.setString(54, gson.toJson(data.getClaimedHeadRewards()));
 
                     ps.executeUpdate();
                     conn.commit();

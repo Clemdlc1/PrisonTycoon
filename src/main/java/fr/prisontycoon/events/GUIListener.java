@@ -178,6 +178,8 @@ public class GUIListener implements Listener {
 
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
 
+            case HEAD_COLLECTION -> plugin.getHeadCollectionGUI().handleCollectionMenuClick(player, slot, item);
+
             case OUTPOST_MAIN, OUTPOST_SKINS -> plugin.getOutpostGUI().handleClick(player, item, guiType.name());
             default -> {
                 plugin.getPluginLogger().warning("GUI non géré: " + guiType);

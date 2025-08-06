@@ -27,8 +27,6 @@ import fr.prisontycoon.vouchers.VoucherManager;
 
 /**
  * Plugin principal PrisonTycoon
- * CORRIGÉ : Suppression de ScoreboardManager, utilisation du nouveau système
- * OPTIMISÉ : Organisation des champs et méthodes, ajout d'une gestion sécurisée des commandes.
  */
 public final class PrisonTycoon extends JavaPlugin {
 
@@ -75,7 +73,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private WarpManager warpManager;
     private CristalManager cristalManager;
     private CristalBonusHelper cristalBonusHelper;
-
+    private HeadCollectionManager headCollectionManager;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -102,6 +100,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private TankGUI tankGUI;
     private WarpGUI warpGUI;
     private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
+    private HeadCollectionGUI headCollectionGUI;
 
     // --- Tâches ---
     private ActionBarTask actionBarTask;
@@ -112,6 +111,10 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutoUpgradeTask autoUpgradeTask;
     private AutominerTask autominerTask;
     private PickaxeContainerUpdateTask pickaxeContainerTask;
+
+    //listeners
+    private HeadCollectionListener headCollectionListener;
+
 
     // --- Commandes avec état ---
     private RankupCommand rankupCommand;
@@ -232,7 +235,8 @@ public final class PrisonTycoon extends JavaPlugin {
         gangManager = new GangManager(this);
         outpostManager = new OutpostManager(this);
         warpManager = new WarpManager(this);
-        guiManager = new GUIManager(this); // Initialisé en dernier car il peut dépendre d'autres managers
+        headCollectionManager = new HeadCollectionManager(this);
+        guiManager = new GUIManager(this);
 
         logger.info("§aTous les managers ont été initialisés.");
     }
@@ -264,6 +268,7 @@ public final class PrisonTycoon extends JavaPlugin {
         outpostGUI = new OutpostGUI(this);
         warpGUI = new WarpGUI(this);
         weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
+        headCollectionGUI = new HeadCollectionGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -287,7 +292,8 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new TankListener(this), this);
         pluginManager.registerEvents(new OutpostListener(this), this);
         pluginManager.registerEvents(new PluginLoadListener(this), this);
-
+        this.headCollectionListener = new HeadCollectionListener(this);
+        pluginManager.registerEvents(this.headCollectionListener, this);
         logger.info("§aÉvénements enregistrés.");
     }
 
@@ -333,7 +339,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new MineCommand(this), "adminmine");
         registerCommand(new SellCommand(this), "sell");
         registerCommand(new RepairCommand(this), "repair");
-
+        registerCommand(new HeadCollectionCommand(this), "collection");
         registerCommand(new RankupCommand(this), "rankup");
 
         registerCommand(new GiveTokensCommand(this), "givetokens");
@@ -433,22 +439,6 @@ public final class PrisonTycoon extends JavaPlugin {
     }
 
     // ===============================================================================================
-    // MÉTHODES UTILITAIRES
-    // ===============================================================================================
-
-    private void registerCommand(String name, CommandExecutor executor, TabCompleter completer) {
-        PluginCommand command = getCommand(name);
-        if (command != null) {
-            command.setExecutor(executor);
-            if (completer != null) {
-                command.setTabCompleter(completer);
-            }
-        } else {
-            logger.warning("§cLa commande '" + name + "' n'a pas pu être trouvée. Assurez-vous qu'elle est déclarée dans votre fichier plugin.yml !");
-        }
-    }
-
-    // ===============================================================================================
     // GETTERS & SETTERS
     // ===============================================================================================
 
@@ -495,7 +485,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public WarpManager getWarpManager() { return warpManager; }
     public CristalManager getCristalManager() { return cristalManager; }
     public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
-
+    public HeadCollectionManager getHeadCollectionManager() { return headCollectionManager; }
     // --- Tâches ---
     public AutoUpgradeTask getAutoUpgradeTask() { return autoUpgradeTask; }
     public ActionBarTask getActionBarTask() { return actionBarTask; }
@@ -526,7 +516,11 @@ public final class PrisonTycoon extends JavaPlugin {
     public OutpostGUI getOutpostGUI() { return outpostGUI; }
     public WarpGUI getWarpGUI() { return warpGUI; }
     public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
+    public HeadCollectionGUI getHeadCollectionGUI() { return headCollectionGUI; }
 
     // --- Commandes ---
     public RankupCommand getRankupCommand() { return rankupCommand; }
+
+    // --- Listeners ---
+    public HeadCollectionListener getHeadCollectionListener() { return headCollectionListener; }
 }
