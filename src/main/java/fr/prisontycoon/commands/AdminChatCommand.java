@@ -30,7 +30,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("specialmine.admin.chat")) {
+        if (!sender.hasPermission("specialmine.admin")) {
             sender.sendMessage("§c❌ Vous n'avez pas la permission d'utiliser cette commande!");
             return true;
         }

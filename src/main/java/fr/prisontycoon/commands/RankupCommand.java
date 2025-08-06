@@ -33,11 +33,6 @@ public class RankupCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (!player.hasPermission("specialmine.rankup")) {
-            player.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");
-            return true;
-        }
-
         if (args.length == 0) {
             performSingleRankup(player);
             return true;

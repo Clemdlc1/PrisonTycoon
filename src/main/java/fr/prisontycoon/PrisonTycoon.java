@@ -409,7 +409,7 @@ public final class PrisonTycoon extends JavaPlugin {
         autominerTask.runTaskTimerAsynchronously(this, 20L, 20L);
 
         pickaxeContainerTask = new PickaxeContainerUpdateTask(this);
-        pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 50L);
+        pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 60L);
 
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
             if (moderationManager != null) moderationManager.cleanupExpiredSanctions();

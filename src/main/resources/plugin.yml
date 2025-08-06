@@ -41,8 +41,6 @@ permissions:
     description: "Permissions de base"
     default: true
     children:
-      specialmine.rankup: true
-      specialmine.sell: true
       specialmine.mine.a: true
 
   # Permissions de mines (A-Z)
@@ -196,28 +194,25 @@ commands:
   prisontycoon:
     description: "Commande principale du plugin"
     usage: /prisontycoon [reload|stats|economy|top] [args...]
-    aliases: [ pt, ptycoon, prison ]
+    permission: specialmine.admin
 
   rankup:
     description: "Système de montée en rang pour les mines (A-Z + FREE)"
     usage: /rankup [all|auto|info|max]
-    permission: specialmine.rankup
+    permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ randup, rank ]
 
   adminmine:
     description: "Gérer les mines et obtenir des informations"
     usage: /adminmine <list|tp|info|generate|types|accessible> [nom]
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ adminmine, prisonmine, mina ]
 
   prestige:
     description: "Système de prestige - Reset volontaire avec bonus permanents"
     usage: /prestige [info|récompenses|talents|effectuer|confirmer]
-    permission: specialmine.prestige
+    permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ престиж, prest ]
 
   metier:
     description: "Ouvre le menu des métiers"
@@ -238,7 +233,6 @@ commands:
     usage: /metierxp <nombre>
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ professionxp, jobxp ]
 
   # Commandes existantes conservées
   pickaxe:
@@ -253,12 +247,12 @@ commands:
     usage: /repair
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-    aliases: [ fix, reparer ]
+    aliases: [ fix ]
 
   sell:
     description: "Vendre des items"
     usage: /sell <all|hand>
-    permission: specialmine.sell
+    permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ vendre ]
 
@@ -356,7 +350,7 @@ commands:
   tankadmin:
     description: "Commandes d'administration pour les Tanks et Sell Hands"
     usage: "/tankadmin <give|reload> [args...]"
-    permission: prisontycoon.tankadmin
+    permission: specialmine.basic
     aliases: [ "ta", "tanks" ]
 
   gang:

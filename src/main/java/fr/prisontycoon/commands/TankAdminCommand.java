@@ -33,7 +33,7 @@ public class TankAdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         // Vérifier les permissions
-        if (!sender.hasPermission("prisontycoon.tankadmin")) {
+        if (!sender.hasPermission("specialmine.admin")) {
             sender.sendMessage("§c❌ Vous n'avez pas la permission d'utiliser cette commande!");
             return true;
         }
@@ -175,7 +175,7 @@ public class TankAdminCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
-        if (!sender.hasPermission("prisontycoon.tankadmin")) {
+        if (!sender.hasPermission("specialmine.admin")) {
             return Collections.emptyList();
         }
 

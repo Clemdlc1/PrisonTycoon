@@ -817,8 +817,6 @@ permissions:
       prefix: "§7[Joueur]"
       permissions:
         - "specialmine.basic"
-        - "specialmine.rankup"
-        - "specialmine.sell"
 
     vip:
       prefix: "§6[VIP]"
@@ -1336,7 +1334,7 @@ config-version: 2
 
 black-market:
   # Fréquence de relocalisation en heures
-  relocation-hours: 6
+  relocation-hours: 4
 
   # Probabilités des événements (0.0 à 1.0)
   raid-chance: 0.15        # 15% de chance de raid lors d'une relocalisation
@@ -1348,35 +1346,35 @@ black-market:
 
   # Emplacements possibles du marché noir
   locations:
-    ruins:
+    sous-crane:
       world: "Spawn"
-      x: 100
-      y: 75
-      z: 100
-      name: "§8Ruines Abandonées"
+      x: -160.5
+      y: 72
+      z: -12.5
+      name: "§8Grotte Cachée"
       danger-level: 0.4    # Niveau de danger (0.0 = sûr, 1.0 = très dangereux)
 
     cave:
       world: "Spawn"
-      x: 100
-      y: 75
-      z: 100
+      x: -41.5
+      y: 68
+      z: 105
       name: "§2Grotte Cachée"
       danger-level: 0.2
 
-    warehouse:
+    chateau:
       world: "Spawn"
-      x: 100
-      y: 75
-      z: 100
+      x: -118
+      y: 95
+      z: -187
       name: "§6Entrepôt Désaffecté"
       danger-level: 0.6
 
     sewers:
       world: "Spawn"
-      x: 100
-      y: 75
-      z: 100
+      x: -133
+      y: 70
+      z: 56
       name: "§7Égouts de la Ville"
       danger-level: 0.3
 

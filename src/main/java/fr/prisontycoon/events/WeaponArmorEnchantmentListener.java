@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -162,6 +163,15 @@ public class WeaponArmorEnchantmentListener implements Listener {
                 int maxCount = manager.getMaxEnchantments(item); // On utilise notre nouvelle méthode fiable
                 player.sendMessage("§cNombre maximum d'enchantements uniques atteint ! (" + maxCount + ")");
                 player.sendMessage("§7Votre item a déjà " + currentCount + " enchantement(s) unique(s).");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onFoodLevelChange(FoodLevelChangeEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (event.getFoodLevel() < player.getFoodLevel()) {
+                event.setCancelled(true);
             }
         }
     }
