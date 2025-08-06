@@ -1,6 +1,12 @@
 package fr.prisontycoon;
 
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import fr.custommobs.CustomMobsPlugin;
+
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
@@ -18,107 +24,105 @@ import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
 import fr.prisontycoon.utils.StartupBedrockReplacer;
 import fr.prisontycoon.vouchers.VoucherManager;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Plugin principal PrisonTycoon
  * CORRIGÉ : Suppression de ScoreboardManager, utilisation du nouveau système
+ * OPTIMISÉ : Organisation des champs et méthodes, ajout d'une gestion sécurisée des commandes.
  */
 public final class PrisonTycoon extends JavaPlugin {
 
-    // Instance singleton du plugin
+    // --- Champs Statiques & Instances ---
     private static PrisonTycoon instance;
+    private CustomMobsPlugin customMobsPlugin = null;
+
+    // --- Utilitaires Core ---
+    private Logger logger;
     private ChatLogger chatLogger;
 
-    // Managers principaux
+    // --- Managers ---
     private ConfigManager configManager;
+    private DatabaseManager databaseManager;
     private PlayerDataManager playerDataManager;
-    private MineManager mineManager;
-    private EnchantmentManager enchantmentManager;
-    private PickaxeManager pickaxeManager;
     private EconomyManager economyManager;
-    private NotificationManager notificationManager;
+    private MineManager mineManager;
+    private PickaxeManager pickaxeManager;
+    private EnchantmentManager enchantmentManager;
+    private EnchantmentBookManager enchantmentBookManager;
+    private WeaponArmorEnchantmentManager weaponArmorEnchantmentManager;
+    private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
     private ContainerManager containerManager;
+    private NotificationManager notificationManager;
     private GlobalBonusManager globalBonusManager;
     private TabManager tabManager;
     private ModerationManager moderationManager;
-    private VipManager vipManager;
     private PermissionManager permissionManager;
-    private EnchantmentBookManager enchantmentBookManager;
+    private VipManager vipManager;
     private ProfessionManager professionManager;
-    private PrestigeManager prestigeManager; // NOUVEAU
+    private PrestigeManager prestigeManager;
     private ReputationManager reputationManager;
     private BlackMarketManager blackMarketManager;
-    private WeaponArmorEnchantmentManager weaponArmorEnchantmentManager;
-    private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
-    private UniqueEnchantmentBookFactory uniqueEnchantmentBookFactory;
     private VoucherManager voucherManager;
     private BoostManager boostManager;
+    private AutominerManager autominerManager;
     private BankManager bankManager;
     private CrateManager crateManager;
     private TankManager tankManager;
     private SellHandManager sellHandManager;
     private GangManager gangManager;
     private GUIManager guiManager;
-
-    private Logger logger;
-
-    // GUIs séparés
-    private EnchantmentMenu mainMenuGUI;
-    private CategoryMenuGUI categoryMenuGUI;
-    private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
-    private EnchantmentBookGUI enchantmentBookGUI;
-    private PetsMenuGUI petsMenuGUI;
-    private PickaxeRepairGUI pickaxeRepairGUI;
-    private ContainerGUI containerGUI;
-    private ContainerFilterGUI containerFilterGUI;
-    private ProfessionRewardsGUI professionRewardsGUI;
-    private PrestigeGUI prestigeGUI;
-    private RankupCommand rankupCommand;
-    private BoostGUI boostGUI;
-    private BankGUI bankGUI;
-    private CrateGUI crateGUI;
-    private TankGUI tankGUI;
-    private GangGUI gangGUI;
-
-    //cristaux
+    private OutpostManager outpostManager;
+    private WarpManager warpManager;
     private CristalManager cristalManager;
     private CristalBonusHelper cristalBonusHelper;
+
+
+    // --- GUIs ---
+    private AutominerCondHeadGUI autominerCondHeadGUI;
+    private AutominerEnchantGUI autominerEnchantGUI;
+    private AutominerEnchantUpgradeGUI autominerEnchantUpgradeGUI;
+    private AutominerGUI autominerGUI;
+    private BankGUI bankGUI;
+    private BoostGUI boostGUI;
+    private CategoryMenuGUI categoryMenuGUI;
+    private ContainerFilterGUI containerFilterGUI;
+    private ContainerGUI containerGUI;
+    private CrateGUI crateGUI;
     private CristalGUI cristalGUI;
+    private EnchantmentBookGUI enchantmentBookGUI;
+    private EnchantmentMenu mainMenuGUI;
+    private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
+    private GangGUI gangGUI;
+    private OutpostGUI outpostGUI;
+    private PetsMenuGUI petsMenuGUI;
+    private PickaxeRepairGUI pickaxeRepairGUI;
+    private PrestigeGUI prestigeGUI;
     private ProfessionGUI professionGUI;
+    private ProfessionRewardsGUI professionRewardsGUI;
+    private TankGUI tankGUI;
+    private WarpGUI warpGUI;
+    private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
 
-
-    // 3 tâches séparées
+    // --- Tâches ---
     private ActionBarTask actionBarTask;
     private ScoreboardTask scoreboardTask;
     private ChatTask chatTask;
-
-    // Autres tâches
     private AutoSaveTask autoSaveTask;
     private CombustionDecayTask combustionDecayTask;
     private AutoUpgradeTask autoUpgradeTask;
+    private AutominerTask autominerTask;
     private PickaxeContainerUpdateTask pickaxeContainerTask;
 
-
-    private AutominerManager autominerManager;
-    private AutominerGUI autominerGUI;
-    private AutominerEnchantGUI autominerEnchantGUI;
-    private AutominerCondHeadGUI autominerCondHeadGUI;
-    private AutominerTask autominerTask;
-    private AutominerEnchantUpgradeGUI autominerEnchantUpgradeGUI;
-    private DatabaseManager databaseManager;
-
-    private OutpostManager outpostManager;
-    private OutpostGUI outpostGUI;
-    private WarpManager warpManager;
-    private WarpGUI warpGUI;
-    private CustomMobsPlugin customMobsPlugin = null;
+    // --- Commandes avec état ---
+    private RankupCommand rankupCommand;
 
     public static PrisonTycoon getInstance() {
         return instance;
     }
+
+    // ===============================================================================================
+    // MÉTHODES DU CYCLE DE VIE DU PLUGIN (ENABLE/DISABLE)
+    // ===============================================================================================
 
     @Override
     public void onEnable() {
@@ -130,44 +134,25 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§a========================================");
 
         try {
-            // Initialisation de la configuration
+            // Initialisations dans l'ordre de dépendance
             initializeConfig();
-
-            // Initialisation des managers
             initializeManagers();
-
-            // Initialisation des GUIs
             initializeGUIs();
-
-            // Enregistrement des événements
             registerEvents();
-
-            // Enregistrement des commandes
             registerCommands();
 
             PrisonTycoonAPI.initialize(this);
-            setupCustomMobsHook();
-
             chatLogger = new ChatLogger(this);
 
-            // Démarrage des tâches asynchrones
+            // Démarrage des tâches
             startTasks();
             tabManager.startTabUpdater();
 
             logger.info("§aPlugin PrisonTycoon activé avec succès!");
-            logger.info("§7Fonctionnalités chargées:");
-            logger.info("§7- Système de mines protégées");
-            logger.info("§7- 18 enchantements custom");
-            logger.info("§7- Distinction blocs minés/cassés");
-            logger.info("§7- Restrictions hors mine");
-            logger.info("§7- Économie (coins/tokens/xp/beacons)");
-            logger.info("§7- Interface graphique avancée");
-            logger.info("§7- Auto-amélioration des enchantements");
-            logger.info("§7- Système de notifications intelligent multi-types");
-            logger.info("§7- ScoreboardTask intégré");
+            logger.info("§7Fonctionnalités chargées: Système de mines, enchantements, économie, GUI, etc.");
 
         } catch (Exception e) {
-            logger.severe("§cErreur lors de l'activation du plugin:");
+            logger.severe("§cErreur critique lors de l'activation du plugin:");
             e.printStackTrace();
             getServer().getPluginManager().disablePlugin(this);
         }
@@ -178,60 +163,50 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§cArrêt du plugin PrisonTycoon...");
 
         try {
-            // Arrêt des tâches
             stopTasks();
 
-            // Sauvegarde de toutes les données joueurs
             if (playerDataManager != null) {
                 playerDataManager.saveAllPlayersSync();
                 logger.info("§aDonnées joueurs sauvegardées.");
             }
-
             if (chatLogger != null) {
                 chatLogger.shutdown();
-                logger.info("§7ChatLogger arrêté");
+                logger.info("§7ChatLogger arrêté.");
             }
-
             if (databaseManager != null) {
                 databaseManager.close();
-                logger.info("§7Database connection closed");
+                logger.info("§7Connexion à la base de données fermée.");
             }
-
         } catch (Exception e) {
-            logger.severe("§cErreur lors de la désactivation:");
+            logger.severe("§cErreur lors de la désactivation du plugin:");
             e.printStackTrace();
         }
 
         logger.info("§aPlugin PrisonTycoon désactivé correctement.");
     }
 
-    /**
-     * Initialise le système de configuration
-     */
+    // ===============================================================================================
+    // MÉTHODES D'INITIALISATION
+    // ===============================================================================================
+
     private void initializeConfig() {
         logger.info("§7Initialisation de la configuration...");
         configManager = new ConfigManager(this);
-
-        // Sauvegarde du fichier de config par défaut si inexistant
         saveDefaultConfig();
-
         logger.info("§aConfiguration chargée.");
     }
 
-    /**
-     * CORRIGÉ : Initialise tous les managers du plugin sans ScoreboardManager
-     */
     private void initializeManagers() {
         logger.info("§7Initialisation des managers...");
 
-        // Ordre d'initialisation important pour les dépendances
+        // L'ordre est important pour les dépendances
         databaseManager = new DatabaseManager(this);
         playerDataManager = new PlayerDataManager(this);
         economyManager = new EconomyManager(this);
         enchantmentManager = new EnchantmentManager(this);
         pickaxeManager = new PickaxeManager(this);
         mineManager = new MineManager(this);
-        notificationManager = new NotificationManager(this); // NOUVEAU : Système amélioré
+        notificationManager = new NotificationManager(this);
         containerManager = new ContainerManager(this);
         cristalManager = new CristalManager(this);
         cristalBonusHelper = new CristalBonusHelper(this);
@@ -239,14 +214,13 @@ public final class PrisonTycoon extends JavaPlugin {
         tabManager = new TabManager(this);
         moderationManager = new ModerationManager(this);
         vipManager = new VipManager(this);
-        permissionManager = new PermissionManager(this); // NOUVEAU !
+        permissionManager = new PermissionManager(this);
         enchantmentBookManager = new EnchantmentBookManager(this);
         professionManager = new ProfessionManager(this);
         prestigeManager = new PrestigeManager(this);
         reputationManager = new ReputationManager(this);
         blackMarketManager = new BlackMarketManager(this);
         weaponArmorEnchantmentManager = new WeaponArmorEnchantmentManager(this);
-        weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
         uniqueEnchantmentBookFactory = new UniqueEnchantmentBookFactory(this);
         voucherManager = new VoucherManager(this);
         boostManager = new BoostManager(this);
@@ -256,17 +230,13 @@ public final class PrisonTycoon extends JavaPlugin {
         tankManager = new TankManager(this);
         sellHandManager = new SellHandManager(this);
         gangManager = new GangManager(this);
-        guiManager = new GUIManager(this);
         outpostManager = new OutpostManager(this);
         warpManager = new WarpManager(this);
+        guiManager = new GUIManager(this); // Initialisé en dernier car il peut dépendre d'autres managers
 
-
-        logger.info("§aTous les managers initialisés (sans ScoreboardManager).");
+        logger.info("§aTous les managers ont été initialisés.");
     }
 
-    /**
-     * Initialise tous les GUIs
-     */
     private void initializeGUIs() {
         logger.info("§7Initialisation des interfaces graphiques...");
 
@@ -293,19 +263,15 @@ public final class PrisonTycoon extends JavaPlugin {
         gangGUI = new GangGUI(this);
         outpostGUI = new OutpostGUI(this);
         warpGUI = new WarpGUI(this);
+        weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
 
-    /**
-     * Enregistre tous les listeners d'événements
-     */
     private void registerEvents() {
         logger.info("§7Enregistrement des événements...");
 
         var pluginManager = getServer().getPluginManager();
-
-        // Événements de base
         pluginManager.registerEvents(new PlayerJoinQuitListener(this), this);
         pluginManager.registerEvents(new MiningListener(this), this);
         pluginManager.registerEvents(new PickaxeProtectionListener(this), this);
@@ -320,99 +286,94 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new CrateListener(this), this);
         pluginManager.registerEvents(new TankListener(this), this);
         pluginManager.registerEvents(new OutpostListener(this), this);
+        pluginManager.registerEvents(new PluginLoadListener(this), this);
 
         logger.info("§aÉvénements enregistrés.");
     }
 
     /**
-     * Enregistre toutes les commandes
+     * Enregistre une commande et ses alias en utilisant un seul objet handler.
+     * Cette méthode vérifie automatiquement si le handler implémente CommandExecutor et/ou TabCompleter.
+     *
+     * @param handler L'objet qui gère la commande (doit implémenter au moins CommandExecutor).
+     * @param commandNames Le nom principal de la commande, suivi de tous ses alias.
+     */
+    private void registerCommand(Object handler, String... commandNames) {
+        // S'assurer que le handler est au moins un CommandExecutor
+        if (!(handler instanceof CommandExecutor executor)) {
+            if (commandNames.length > 0) {
+                logger.warning("§cTentative d'enregistrer '" + commandNames[0] + "' avec un handler qui n'est pas un CommandExecutor.");
+            }
+            return;
+        }
+
+        TabCompleter completer = (handler instanceof TabCompleter) ? (TabCompleter) handler : null;
+
+        for (String commandName : commandNames) {
+            PluginCommand command = getCommand(commandName);
+            if (command != null) {
+                command.setExecutor(executor);
+                if (completer != null) {
+                    command.setTabCompleter(completer);
+                }
+            } else {
+                logger.warning("§cLa commande '" + commandName + "' n'a pas pu être trouvée. Assurez-vous qu'elle est déclarée dans votre fichier plugin.yml !");
+            }
+        }
+    }
+
+    /**
+     * Enregistre toutes les commandes du plugin de manière optimisée.
      */
     private void registerCommands() {
         logger.info("§7Enregistrement des commandes...");
 
-        // Commandes joueur
-        getCommand("pickaxe").setExecutor(new PickaxeCommand(this));
-        getCommand("pickaxe").setTabCompleter(new PickaxeCommand(this));
-        getCommand("adminmine").setExecutor(new MineCommand(this));
-        getCommand("adminmine").setTabCompleter(new MineCommand(this));
-        getCommand("sell").setExecutor(new SellCommand(this));
-        getCommand("sell").setTabCompleter(new SellCommand(this));
-        getCommand("repair").setExecutor(new RepairCommand(this)); // NOUVELLE LIGNE
-        getCommand("repair").setTabCompleter(new RepairCommand(this));
+        // Commandes où la même classe gère l'exécution et la complétion
+        registerCommand(new PickaxeCommand(this), "pickaxe");
+        registerCommand(new MineCommand(this), "adminmine");
+        registerCommand(new SellCommand(this), "sell");
+        registerCommand(new RepairCommand(this), "repair");
 
-        this.rankupCommand = new RankupCommand(this);
-        getCommand("rankup").setExecutor(this.rankupCommand);
-        getCommand("rankup").setTabCompleter(this.rankupCommand);
+        registerCommand(new RankupCommand(this), "rankup");
 
-        // Commandes admin
-        getCommand("givetokens").setExecutor(new GiveTokensCommand(this));
-        getCommand("givetokens").setTabCompleter(new GiveTokensCommand(this));
-        getCommand("prisontycoon").setExecutor(new PrisonTycoonCommand(this));
-        getCommand("prisontycoon").setTabCompleter(new PrisonTycoonCommand(this));
-        getCommand("conteneur").setExecutor(new ContainerCommand(this));
-        getCommand("conteneur").setTabCompleter(new ContainerCommand(this));
+        registerCommand(new GiveTokensCommand(this), "givetokens");
+        registerCommand(new PrisonTycoonCommand(this), "prisontycoon");
+        registerCommand(new ContainerCommand(this), "conteneur");
+        registerCommand(new CristalCommand(this), "cristal");
+        registerCommand(new AdminChatCommand(this), "adminchat");
+        registerCommand(new VipCommand(this), "vip");
+        registerCommand(new InvseeCommand(this), "invsee");
+        registerCommand(new MetierCommand(this), "metier");
+        registerCommand(new PrestigeCommand(this), "prestige");
+        registerCommand(new BoostCommand(this), "boost");
+        registerCommand(new GiveBoostCommand(this), "giveboost");
+        registerCommand(new BankCommand(this), "bank");
+        registerCommand(new TankAdminCommand(this), "tankadmin");
 
-        getCommand("cristal").setExecutor(new CristalCommand(this));
-        getCommand("cristal").setTabCompleter(new CristalCommand(this));
+        // Commandes avec alias
+        registerCommand(new GangCommand(this), "gang", "g");
+        registerCommand(new WarpCommand(this), "warp", "mine", "spawn");
 
-        getCommand("adminchat").setExecutor(new AdminChatCommand(this));
-        getCommand("adminchat").setTabCompleter(new AdminChatCommand(this));
-
-        getCommand("vip").setExecutor(new VipCommand(this));
-        getCommand("vip").setTabCompleter(new VipCommand(this));
-
-        getCommand("invsee").setExecutor(new InvseeCommand(this));
-        getCommand("invsee").setTabCompleter(new InvseeCommand(this));
-
-        getCommand("metier").setExecutor(new MetierCommand(this));
-        getCommand("metier").setTabCompleter(new MetierCommand(this));
-
-        getCommand("enchantbook").setExecutor(new EnchantmentBookCommand(this));
-
-        getCommand("prestige").setExecutor(new PrestigeCommand(this));
-        getCommand("prestige").setTabCompleter(new PrestigeCommand(this));
-
-        getCommand("rep").setExecutor(new ReputationCommand(this));
-        getCommand("fbm").setExecutor(new BlackMarketCommand(this));
-
-        getCommand("boost").setExecutor(new BoostCommand(this));
-        getCommand("boost").setTabCompleter(new BoostCommand(this));
-        getCommand("voucher").setExecutor(new VoucherCommand(this));
-        getCommand("giveboost").setExecutor(new GiveBoostCommand(this));
-        getCommand("giveboost").setTabCompleter(new GiveBoostCommand(this));
-
-        getCommand("autominer").setExecutor(new AutominerCommand(this));
-
-        getCommand("bank").setExecutor(new BankCommand(this));
-        getCommand("bank").setTabCompleter(new BankCommand(this));
-
-        getCommand("tankadmin").setExecutor(new TankAdminCommand(this));
-        getCommand("tankadmin").setTabCompleter(new TankAdminCommand(this));
-        getCommand("gang").setExecutor(new GangCommand(this));
-        getCommand("g").setExecutor(new GangCommand(this));
-        getCommand("ap").setExecutor(new OutpostCommand(this));
-
-        WarpCommand warpCommand = new WarpCommand(this);
-        getCommand("warp").setExecutor(warpCommand);
-        getCommand("warp").setTabCompleter(warpCommand);
-        getCommand("mine").setExecutor(warpCommand);
-        getCommand("mine").setTabCompleter(warpCommand);
-        getCommand("spawn").setExecutor(warpCommand);
-        getCommand("spawn").setTabCompleter(warpCommand);
-
+        // Commandes n'ayant pas de TabCompleter (la méthode gère cela automatiquement)
+        registerCommand(new EnchantmentBookCommand(this), "enchantbook");
+        registerCommand(new ReputationCommand(this), "rep");
+        registerCommand(new BlackMarketCommand(this), "fbm");
+        registerCommand(new VoucherCommand(this), "voucher");
+        registerCommand(new AutominerCommand(this), "autominer");
+        registerCommand(new OutpostCommand(this), "ap");
 
         logger.info("§aCommandes enregistrées.");
     }
 
-    /**
-     * CORRIGÉ : Démarre toutes les tâches avec le nouveau système
-     */
+    // ===============================================================================================
+    // GESTION DES TÂCHES
+    // ===============================================================================================
+
     private void startTasks() {
         logger.info("§7Démarrage des tâches asynchrones...");
 
         new StartupBedrockReplacer(this).executeReplacement();
 
-        // Récupère les intervalles depuis la config
         int actionBarInterval = getConfig().getInt("performance.task-intervals.action-bar-ticks", 5);
         int scoreboardInterval = getConfig().getInt("performance.task-intervals.scoreboard-ticks", 50);
         int chatInterval = getConfig().getInt("performance.task-intervals.chat-ticks", 1200);
@@ -420,437 +381,152 @@ public final class PrisonTycoon extends JavaPlugin {
         int combustionInterval = getConfig().getInt("performance.task-intervals.combustion-ticks", 200);
         int autoUpgradeInterval = getConfig().getInt("performance.task-intervals.auto-upgrade-ticks", 200);
 
-        // 3 tâches séparées avec nouveau système de notifications
         if (getConfig().getBoolean("notifications.action-bar.enabled", true)) {
             actionBarTask = new ActionBarTask(this);
             actionBarTask.runTaskTimerAsynchronously(this, 0L, actionBarInterval);
-            logger.info("§7- ActionBarTask démarrée (nouveau système multi-notifications toutes les " + actionBarInterval + " ticks)");
         }
 
         if (getConfig().getBoolean("notifications.scoreboard.enabled", true)) {
             scoreboardTask = new ScoreboardTask(this);
             scoreboardTask.runTaskTimer(this, 0L, scoreboardInterval);
-            logger.info("§7- ScoreboardTask démarrée (gestion intégrée toutes les " + scoreboardInterval + " ticks)");
         }
 
         if (getConfig().getBoolean("notifications.chat.enabled", true)) {
             chatTask = new ChatTask(this);
             chatTask.runTaskTimerAsynchronously(this, chatInterval, chatInterval);
-            logger.info("§7- ChatTask démarrée (récapitulatif toutes les " + chatInterval + " ticks)");
         }
 
-        // Autres tâches existantes
         autoSaveTask = new AutoSaveTask(this);
         autoSaveTask.runTaskTimerAsynchronously(this, autoSaveInterval, autoSaveInterval);
-        logger.info("§7- AutoSaveTask démarrée (sauvegarde toutes les " + autoSaveInterval + " ticks)");
 
         combustionDecayTask = new CombustionDecayTask(this);
         combustionDecayTask.runTaskTimer(this, 0L, combustionInterval);
-        logger.info("§7- CombustionDecayTask démarrée (décroissance toutes les " + combustionInterval + " ticks)");
 
         autoUpgradeTask = new AutoUpgradeTask(this);
         autoUpgradeTask.runTaskTimerAsynchronously(this, autoUpgradeInterval, autoUpgradeInterval);
-        logger.info("§7- AutoUpgradeTask démarrée (toutes les " + autoUpgradeInterval + " ticks)");
 
         autominerTask = new AutominerTask(this);
         autominerTask.runTaskTimerAsynchronously(this, 20L, 20L);
 
-        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
-            if (moderationManager != null) {
-                moderationManager.cleanupExpiredSanctions();
-            }
-        }, 12000L, 12000L); // Toutes les 10 minutes
-        logger.info("§7- Tâche de nettoyage automatique démarrée");
-
         pickaxeContainerTask = new PickaxeContainerUpdateTask(this);
         pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 50L);
-        logger.info("§7- PickaxeContainerUpdateTask démarrée (mise à jour pickaxes et conteneurs toutes les 2,5 seconde)");
 
-
-        // NOUVELLE TÂCHE: Nettoyage des anciens logs (optionnel)
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
-            if (chatLogger != null) {
-                chatLogger.cleanOldLogs(30); // Garde 30 jours de logs
-            }
-        }, 86400L, 86400L); // Tous les jours
-        logger.info("§7- Tâche de nettoyage des logs démarrée");
+            if (moderationManager != null) moderationManager.cleanupExpiredSanctions();
+        }, 12000L, 12000L); // Chaque 10 minutes
 
-        logger.info("§aTâches asynchrones démarrées avec succès (nouveau système).");
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            if (chatLogger != null) chatLogger.cleanOldLogs(30); // Garde 30 jours
+        }, 86400L, 86400L); // Chaque jour
+
+        logger.info("§aTâches asynchrones démarrées.");
     }
 
-    // Getters pour accès aux managers
-
-    /**
-     * Arrête toutes les tâches
-     */
     private void stopTasks() {
-        if (actionBarTask != null) {
-            actionBarTask.cancel();
-            logger.debug("ActionBarTask arrêtée");
-        }
-        if (scoreboardTask != null) {
-            scoreboardTask.cancel();
-            logger.debug("ScoreboardTask arrêtée");
-        }
-        if (chatTask != null) {
-            chatTask.cancel();
-            logger.debug("ChatTask arrêtée");
-        }
-        if (autoSaveTask != null) {
-            autoSaveTask.cancel();
-            logger.debug("AutoSaveTask arrêtée");
-        }
-        if (combustionDecayTask != null) {
-            combustionDecayTask.cancel();
-            logger.debug("CombustionDecayTask arrêtée");
-        }
-        if (autoUpgradeTask != null) {
-            autoUpgradeTask.cancel();
-            logger.debug("AutoUpgradeTask arrêtée");
-        }
-        if (moderationManager != null) {
-            moderationManager.cleanupExpiredSanctions();
-            logger.info("§7ModerationManager nettoyé");
-        }
-        if (permissionManager != null) {
-            permissionManager.cleanup();
-        }
-        if (autominerTask != null) {
-            autominerTask.cancel();
-            getPluginLogger().info("§7Tâche d'automineur arrêtée.");
-        }
-        if (gangManager != null) {
-            gangManager.shutdown();
-        }
-        if (pickaxeContainerTask != null) {
-            pickaxeContainerTask.cancel();
-        }
+        logger.info("§7Arrêt des tâches...");
+        getServer().getScheduler().cancelTasks(this);
+
+        // Actions de nettoyage supplémentaires si nécessaire
+        if (gangManager != null) gangManager.shutdown();
+        if (permissionManager != null) permissionManager.cleanup();
+        logger.info("§aToutes les tâches ont été arrêtées.");
     }
 
-    private void setupCustomMobsHook() {
-        Plugin customMobs = Bukkit.getPluginManager().getPlugin("CustomMobs");
-        // On vérifie si le plugin est chargé ET activé
-        if (customMobs != null && customMobs.isEnabled()) {
-            // On vérifie que c'est bien la bonne classe (sécurité)
-            if (customMobs instanceof CustomMobsPlugin) {
-                this.customMobsPlugin = (CustomMobsPlugin) customMobs;
-                getLogger().info("Successfully hooked into CustomMobs!");
+    // ===============================================================================================
+    // MÉTHODES UTILITAIRES
+    // ===============================================================================================
+
+    private void registerCommand(String name, CommandExecutor executor, TabCompleter completer) {
+        PluginCommand command = getCommand(name);
+        if (command != null) {
+            command.setExecutor(executor);
+            if (completer != null) {
+                command.setTabCompleter(completer);
             }
         } else {
-            getLogger().warning("CustomMobs plugin not found. Some features might be disabled.");
+            logger.warning("§cLa commande '" + name + "' n'a pas pu être trouvée. Assurez-vous qu'elle est déclarée dans votre fichier plugin.yml !");
         }
     }
 
-    // AJOUTEZ CET ACCESSEUR PUBLIC
-    public CustomMobsPlugin getCustomMobsPlugin() {
-        return this.customMobsPlugin;
-    }
-
-    public ConfigManager getConfigManager() {
-        return configManager;
-    }
-
-    public PlayerDataManager getPlayerDataManager() {
-        return playerDataManager;
-    }
-
-    public MineManager getMineManager() {
-        return mineManager;
-    }
-
-    public EnchantmentManager getEnchantmentManager() {
-        return enchantmentManager;
-    }
-
-    public PickaxeManager getPickaxeManager() {
-        return pickaxeManager;
-    }
-
-    public EconomyManager getEconomyManager() {
-        return economyManager;
-    }
-
-    public NotificationManager getNotificationManager() {
-        return notificationManager;
-    }
-
-    public Logger getPluginLogger() {
-        return logger;
-    }
-
-    public AutoUpgradeTask getAutoUpgradeTask() {
-        return autoUpgradeTask;
-    }
-
-    // Getters pour les tâches séparées
-
-    public ActionBarTask getActionBarTask() {
-        return actionBarTask;
-    }
-
-    public ScoreboardTask getScoreboardTask() {
-        return scoreboardTask;
-    }
-
-    public ChatTask getChatTask() {
-        return chatTask;
-    }
-
-    // Getters pour les GUIs
-
-    public EnchantmentMenu getMainMenuGUI() {
-        return mainMenuGUI;
-    }
-
-    public CategoryMenuGUI getCategoryMenuGUI() {
-        return categoryMenuGUI;
-    }
-
-    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() {
-        return enchantmentUpgradeGUI;
-    }
-
-    public EnchantmentBookManager getEnchantmentBookManager() {
-        return enchantmentBookManager;
-    }
-
-    public EnchantmentBookGUI getEnchantmentBookGUI() {
-        return enchantmentBookGUI;
-    }
-
-    public PetsMenuGUI getPetsMenuGUI() {
-        return petsMenuGUI;
-    }
-
-    public PickaxeRepairGUI getPickaxeRepairMenu() {
-        return pickaxeRepairGUI;
-    }
-
-    /**
-     * Getter pour le manager des conteneurs
-     */
-    public ContainerManager getContainerManager() {
-        return containerManager;
-    }
-
-    /**
-     * Getter pour le GUI des conteneurs
-     */
-    public ContainerGUI getContainerGUI() {
-        return containerGUI;
-    }
-
-    public ContainerFilterGUI getContainerFilterGUI() {
-        return containerFilterGUI;
-    }
-
-    public RankupCommand getRankupCommand() {
-        return rankupCommand;
-    }
-
-    public CristalManager getCristalManager() {
-        return cristalManager;
-    }
-
-    public CristalBonusHelper getCristalBonusHelper() {
-        return cristalBonusHelper;
-    }
-
-    public CristalGUI getCristalGUI() {
-        return cristalGUI;
-    }
-
-    public GlobalBonusManager getGlobalBonusManager() {
-        return globalBonusManager;
-    }
-
-    public TabManager getTabManager() {
-        return tabManager;
-    }
-
-    /**
-     * Obtient le gestionnaire de modération
-     */
-    public ModerationManager getModerationManager() {
-        return moderationManager;
-    }
-
-    /**
-     * Obtient le gestionnaire de logs du chat
-     */
-    public ChatLogger getChatLogger() {
-        return chatLogger;
-    }
-
-    /**
-     * Obtient le gestionnaire des VIP
-     */
-    public VipManager getVipManager() {
-        return vipManager;
-    }
-
-    public PermissionManager getPermissionManager() {
-        return permissionManager;
-    }
-
-    /**
-     * Obtient le gestionnaire des métiers
-     */
-    public ProfessionManager getProfessionManager() {
-        return professionManager;
-    }
-
-    /**
-     * Obtient l'interface graphique des métiers
-     */
-    public ProfessionGUI getProfessionGUI() {
-        return professionGUI;
-    }
-
-    /**
-     * Obtient l'interface graphique des métiers
-     */
-    public ProfessionRewardsGUI getProfessionRewardsGUI() {
-        return professionRewardsGUI;
-    }
-
-    public PrestigeManager getPrestigeManager() {
-        return prestigeManager;
-    }
-
-    public PrestigeGUI getPrestigeGUI() {
-        return prestigeGUI;
-    }
-
-    public ReputationManager getReputationManager() {
-        return reputationManager;
-    }
-
-    public BlackMarketManager getBlackMarketManager() {
-        return blackMarketManager;
-    }
-
-    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() {
-        return weaponArmorEnchantmentManager;
-    }
-
-    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() {
-        return weaponArmorEnchantGUI;
-    }
-
-    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() {
-        return uniqueEnchantmentBookFactory;
-    }
-
-    public VoucherManager getVoucherManager() {
-        return voucherManager;
-    }
-
-    public BoostManager getBoostManager() {
-        return boostManager;
-    }
-
-    public BoostGUI getBoostGUI() {
-        return boostGUI;
-    }
-
-    public AutominerManager getAutominerManager() {
-        return autominerManager;
-    }
-
-    public AutominerGUI getAutominerGUI() {
-        return autominerGUI;
-    }
-
-    public AutominerEnchantGUI getAutominerEnchantGUI() {
-        return autominerEnchantGUI;
-    }
-
-    public AutominerCondHeadGUI getAutominerCondHeadGUI() {
-        return autominerCondHeadGUI;
-    }
-
-    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
-        return autominerEnchantUpgradeGUI;
-    }
-
-    public BankManager getBankManager() {
-        return bankManager;
-    }
-
-    public BankGUI getBankGUI() {
-        return bankGUI;
-    }
-
-    /**
-     * Obtient le gestionnaire des crates
-     */
-    public CrateManager getCrateManager() {
-        return crateManager;
-    }
-
-    /**
-     * Obtient l'interface graphique des crates
-     */
-    public CrateGUI getCrateGUI() {
-        return crateGUI;
-    }
-
-    public TankManager getTankManager() {
-        return tankManager;
-    }
-
-    public TankGUI getTankGUI() {
-        return tankGUI;
-    }
-
-    public SellHandManager getSellHandManager() {
-        return sellHandManager;
-    }
-
-    public DatabaseManager getDatabaseManager() {
-        return databaseManager;
-    }
-
-    /**
-     * Obtient le gestionnaire des gangs
-     */
-    public GangManager getGangManager() {
-        return gangManager;
-    }
-
-    /**
-     * Obtient l'interface graphique des gangs
-     */
-    public GangGUI getGangGUI() {
-        return gangGUI;
-    }
-
-    public GUIManager getGUIManager() {
-        return guiManager;
-    }
-
-    /**
-     * Récupère le gestionnaire d'avant-poste
-     */
-    public OutpostManager getOutpostManager() {
-        return outpostManager;
-    }
-
-    /**
-     * Récupère l'interface d'avant-poste
-     */
-    public OutpostGUI getOutpostGUI() {
-        return outpostGUI;
-    }
-
-    public WarpManager getWarpManager() {
-        return warpManager;
-    }
-
-    public WarpGUI getWarpGUI() {
-        return warpGUI;
-    }
-
+    // ===============================================================================================
+    // GETTERS & SETTERS
+    // ===============================================================================================
+
+    // --- Core & Utils ---
+    public Logger getPluginLogger() { return logger; }
+    public ChatLogger getChatLogger() { return chatLogger; }
+    public ConfigManager getConfigManager() { return configManager; }
+    public DatabaseManager getDatabaseManager() { return databaseManager; }
+
+    // --- Plugin Intégration ---
+    public CustomMobsPlugin getCustomMobsPlugin() { return this.customMobsPlugin; }
+    public void setCustomMobsPlugin(CustomMobsPlugin customMobsPlugin) { this.customMobsPlugin = customMobsPlugin; }
+
+    // --- Managers ---
+    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
+    public MineManager getMineManager() { return mineManager; }
+    public EnchantmentManager getEnchantmentManager() { return enchantmentManager; }
+    public PickaxeManager getPickaxeManager() { return pickaxeManager; }
+    public EconomyManager getEconomyManager() { return economyManager; }
+    public NotificationManager getNotificationManager() { return notificationManager; }
+    public ContainerManager getContainerManager() { return containerManager; }
+    public GlobalBonusManager getGlobalBonusManager() { return globalBonusManager; }
+    public TabManager getTabManager() { return tabManager; }
+    public ModerationManager getModerationManager() { return moderationManager; }
+    public VipManager getVipManager() { return vipManager; }
+    public PermissionManager getPermissionManager() { return permissionManager; }
+    public EnchantmentBookManager getEnchantmentBookManager() { return enchantmentBookManager; }
+    public ProfessionManager getProfessionManager() { return professionManager; }
+    public PrestigeManager getPrestigeManager() { return prestigeManager; }
+    public ReputationManager getReputationManager() { return reputationManager; }
+    public BlackMarketManager getBlackMarketManager() { return blackMarketManager; }
+    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() { return weaponArmorEnchantmentManager; }
+    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() { return uniqueEnchantmentBookFactory; }
+    public VoucherManager getVoucherManager() { return voucherManager; }
+    public BoostManager getBoostManager() { return boostManager; }
+    public AutominerManager getAutominerManager() { return autominerManager; }
+    public BankManager getBankManager() { return bankManager; }
+    public CrateManager getCrateManager() { return crateManager; }
+    public TankManager getTankManager() { return tankManager; }
+    public SellHandManager getSellHandManager() { return sellHandManager; }
+    public GangManager getGangManager() { return gangManager; }
+    public GUIManager getGUIManager() { return guiManager; }
+    public OutpostManager getOutpostManager() { return outpostManager; }
+    public WarpManager getWarpManager() { return warpManager; }
+    public CristalManager getCristalManager() { return cristalManager; }
+    public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
+
+    // --- Tâches ---
+    public AutoUpgradeTask getAutoUpgradeTask() { return autoUpgradeTask; }
+    public ActionBarTask getActionBarTask() { return actionBarTask; }
+    public ScoreboardTask getScoreboardTask() { return scoreboardTask; }
+
+    // --- GUIs ---
+    public EnchantmentMenu getMainMenuGUI() { return mainMenuGUI; }
+    public CategoryMenuGUI getCategoryMenuGUI() { return categoryMenuGUI; }
+    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
+    public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
+    public PetsMenuGUI getPetsMenuGUI() { return petsMenuGUI; }
+    public PickaxeRepairGUI getPickaxeRepairMenu() { return pickaxeRepairGUI; }
+    public ContainerGUI getContainerGUI() { return containerGUI; }
+    public ContainerFilterGUI getContainerFilterGUI() { return containerFilterGUI; }
+    public CristalGUI getCristalGUI() { return cristalGUI; }
+    public ProfessionGUI getProfessionGUI() { return professionGUI; }
+    public ProfessionRewardsGUI getProfessionRewardsGUI() { return professionRewardsGUI; }
+    public PrestigeGUI getPrestigeGUI() { return prestigeGUI; }
+    public BoostGUI getBoostGUI() { return boostGUI; }
+    public AutominerGUI getAutominerGUI() { return autominerGUI; }
+    public AutominerEnchantGUI getAutominerEnchantGUI() { return autominerEnchantGUI; }
+    public AutominerCondHeadGUI getAutominerCondHeadGUI() { return autominerCondHeadGUI; }
+    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() { return autominerEnchantUpgradeGUI; }
+    public BankGUI getBankGUI() { return bankGUI; }
+    public CrateGUI getCrateGUI() { return crateGUI; }
+    public TankGUI getTankGUI() { return tankGUI; }
+    public GangGUI getGangGUI() { return gangGUI; }
+    public OutpostGUI getOutpostGUI() { return outpostGUI; }
+    public WarpGUI getWarpGUI() { return warpGUI; }
+    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
+
+    // --- Commandes ---
+    public RankupCommand getRankupCommand() { return rankupCommand; }
 }
-

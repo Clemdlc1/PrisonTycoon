@@ -214,6 +214,7 @@ public class CrateListener implements Listener {
 
         // Particules selon le type de crate
         Particle particle = switch (crateType) {
+            case VOTE -> Particle.EGG_CRACK;
             case COMMUNE -> Particle.HAPPY_VILLAGER;
             case PEU_COMMUNE -> Particle.ENCHANT;
             case RARE -> Particle.PORTAL;
@@ -284,6 +285,7 @@ public class CrateListener implements Listener {
 
                 // Particules continues
                 Particle particle = switch (crateType) {
+                    case VOTE -> Particle.EGG_CRACK;
                     case COMMUNE -> Particle.HAPPY_VILLAGER;
                     case PEU_COMMUNE -> Particle.ENCHANT;
                     case RARE -> Particle.PORTAL;
@@ -329,6 +331,7 @@ public class CrateListener implements Listener {
 
                     // Particules ambiantes subtiles
                     Particle ambientParticle = switch (crateType) {
+                        case VOTE -> Particle.EGG_CRACK;
                         case COMMUNE -> Particle.HAPPY_VILLAGER;
                         case PEU_COMMUNE -> Particle.ENCHANT;
                         case RARE -> Particle.PORTAL;

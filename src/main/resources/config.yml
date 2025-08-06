@@ -1565,6 +1565,13 @@ crates:
       z: 40
       type: "CRISTAL"
 
+    crate_vote:
+      world: "Spawn"
+      x: -6
+      y: 71
+      z: 40
+      type: "VOTE"
+
   # Configuration des animations
   animations:
     duration: 4000              # Durée en millisecondes (4 secondes)

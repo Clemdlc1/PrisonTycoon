@@ -420,6 +420,7 @@ public class CrateManager {
         if (world == null) return;
 
         Particle particle = switch (crateType) {
+            case VOTE ->   Particle.EGG_CRACK;
             case COMMUNE -> Particle.HAPPY_VILLAGER;
             case PEU_COMMUNE -> Particle.ENCHANT;
             case RARE -> Particle.PORTAL;
@@ -551,6 +552,7 @@ public class CrateManager {
 
     private Color getParticleColor(CrateType crateType) {
         return switch (crateType) {
+            case VOTE -> Color.WHITE; // Blanc
             case COMMUNE -> Color.LIME; // Vert
             case PEU_COMMUNE -> Color.BLUE; // Bleu
             case RARE -> Color.PURPLE; // Violet

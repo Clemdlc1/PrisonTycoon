@@ -36,6 +36,13 @@ public class GangCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        String commandName = command.getName().toLowerCase();
+
+        if (commandName.equals("g")) {
+            handleChat(player, args);
+            return true;
+        }
+
         if (args.length == 0) {
             plugin.getGangGUI().openMainMenu(player);
             return true;
@@ -62,7 +69,6 @@ public class GangCommand implements CommandExecutor, TabCompleter {
             case "rename" -> handleRename(player, args);
             case "description", "desc" -> handleDescription(player, args);
             case "banner" -> handleBanner(player);
-            case "chat", "g" -> handleChat(player, args);
             case "help" -> sendHelpMessage(player);
             default -> {
                 player.sendMessage("§cCommande inconnue. Utilisez §e/gang help §cpour voir les commandes disponibles.");
@@ -609,11 +615,6 @@ public class GangCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleChat(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage("§cUsage: /gang chat <message> ou /g <message>");
-            return;
-        }
-
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (playerData.getGangId() == null) {
@@ -627,7 +628,7 @@ public class GangCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        String message = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        String message = String.join(" ", Arrays.copyOfRange(args, 0, args.length));
         gang.sendChatMessage(player, message);
     }
 
@@ -652,7 +653,7 @@ public class GangCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/gang rename <nom> §7- Renommer le gang (5k beacons)");
         player.sendMessage("§e/gang desc <description> §7- Changer la description");
         player.sendMessage("§e/gang banner §7- Créer/modifier la bannière");
-        player.sendMessage("§e/gang chat <message> §7ou §e/g <message> §7- Chat du gang");
+        player.sendMessage("§e/g <message> §7- Chat du gang");
         player.sendMessage("§6▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
     }
 
@@ -660,11 +661,13 @@ public class GangCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
-        if (args.length == 1) {
+        String commandName = command.getName().toLowerCase();
+
+        if (args.length == 1 && !commandName.equals("g")) {
             List<String> subCommands = Arrays.asList(
                     "create", "invite", "kick", "leave", "promote", "demote", "transfer",
                     "disband", "accept", "deny", "info", "list", "deposit", "upgrade",
-                    "shop", "rename", "description", "banner", "chat", "help"
+                    "shop", "rename", "description", "banner", "help"
             );
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("invite") ||

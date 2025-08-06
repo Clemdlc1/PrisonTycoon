@@ -22,6 +22,7 @@ import static fr.prisontycoon.crates.CrateType.RewardType.*;
  */
 public enum CrateType {
 
+    VOTE("Vote","§f", 0),
     COMMUNE("Commune", "§a", 1),          // Vert (LIME)
     PEU_COMMUNE("Peu Commune", "§9", 2),  // Bleu (BLUE)
     RARE("Rare", "§5", 3),                // Violet (PURPLE)
@@ -276,12 +277,23 @@ public enum CrateType {
 
         public static List<CrateReward> getRewardsFor(CrateType crateType) {
             return switch (crateType) {
+                case VOTE -> getVoteRewards();
                 case COMMUNE -> getCommuneRewards();
                 case PEU_COMMUNE -> getPeuCommuneRewards();
                 case RARE -> getRareRewards();
                 case LEGENDAIRE -> getLegendaireRewards();
                 case CRISTAL -> getCristalRewards();
             };
+        }
+
+        private static List<CrateReward> getVoteRewards() {
+            return List.of(
+                    CrateReward.builder(CONTAINER, 1, 1, 15.0).containerTier(1).build(),
+                    CrateReward.builder(KEY, 1, 1, 10.0).keyType("Commune").build(),
+                    CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(4).build(), // <-- CHANGEMENT ICI
+                    CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
+                    CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 1800).build()
+            );
         }
 
         private static List<CrateReward> getCommuneRewards() {
