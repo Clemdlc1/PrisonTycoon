@@ -21,35 +21,148 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * Gestionnaire des mines complet - CORRIGÉ pour utiliser MineData externe
- * Support des mines normales, prestige et VIP avec génération optimisée
+ * Gestionnaire des mines optimisé avec adaptation TPS et génération progressive
+ * Version anti-lag avec support asynchrone maximal
  */
 public class MineManager {
 
     private final PrisonTycoon plugin;
     private final Map<String, MineData> mines = new ConcurrentHashMap<>();
     private final Map<String, Long> mineResetTimes = new ConcurrentHashMap<>();
-    private final Map<String, Boolean> mineGenerating = new ConcurrentHashMap<>();
-    private final Map<String, Boolean> mineBeingChecked = new ConcurrentHashMap<>();
+    private final Map<String, AtomicBoolean> mineGenerating = new ConcurrentHashMap<>();
+    private final Map<String, AtomicBoolean> mineBeingChecked = new ConcurrentHashMap<>();
     private final Random random = new Random();
+
+    // Système de queue pour éviter les générations simultanées
+    private final PriorityBlockingQueue<MineResetTask> resetQueue = new PriorityBlockingQueue<>();
+    private final ExecutorService asyncExecutor = Executors.newFixedThreadPool(2);
+
+    // Monitoring TPS
+    private double currentTPS = 20.0;
+    private final LinkedList<Long> tickTimes = new LinkedList<>();
+    private static final int TPS_SAMPLE_SIZE = 100;
+
+    // Paramètres adaptatifs
+    private int currentChunkSize = 50000; // Nombre de blocs par batch
+    private long currentDelay = 1L; // Délai entre les batches en ticks
 
     public MineManager(PrisonTycoon plugin) {
         this.plugin = plugin;
+        configureFAWE(); // Configuration critique pour éviter les freezes
         loadMinesFromConfigManager();
         startMineResetScheduler();
+        startTPSMonitor();
+        startResetQueueProcessor();
     }
 
     /**
-     * CORRIGÉ: Charge les mines depuis le ConfigManager au lieu de la config directe
+     * Configure FAWE pour éviter les blocages du serveur
+     */
+    private void configureFAWE() {
+        try {
+            // Forcer FAWE à utiliser le mode asynchrone
+            com.fastasyncworldedit.core.configuration.Settings.settings().QUEUE.PARALLEL_THREADS =
+                    Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+
+            // Optimiser les chunks
+            com.fastasyncworldedit.core.configuration.Settings.settings().QUEUE.TARGET_SIZE = 64;
+
+            plugin.getPluginLogger().info("§aFAWE configuré pour éviter les freezes");
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("§eImpossible de configurer FAWE: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Moniteur de TPS pour adapter la vitesse de génération
+     */
+    private void startTPSMonitor() {
+        new BukkitRunnable() {
+            long lastTick = System.nanoTime();
+
+            @Override
+            public void run() {
+                long currentTick = System.nanoTime();
+                long delta = currentTick - lastTick;
+                lastTick = currentTick;
+
+                tickTimes.add(delta);
+                if (tickTimes.size() > TPS_SAMPLE_SIZE) {
+                    tickTimes.removeFirst();
+                }
+
+                // Calculer le TPS moyen
+                if (tickTimes.size() >= 10) {
+                    double avgTickTime = tickTimes.stream()
+                            .mapToLong(Long::longValue)
+                            .average()
+                            .orElse(50_000_000L); // 50ms par défaut
+
+                    currentTPS = Math.min(20.0, 1_000_000_000.0 / avgTickTime);
+
+                    // Adapter les paramètres selon le TPS
+                    adaptGenerationParameters();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    /**
+     * Adapte les paramètres de génération selon le TPS actuel
+     */
+    private void adaptGenerationParameters() {
+        if (currentTPS >= 19.5) {
+            // TPS excellent : génération rapide
+            currentChunkSize = 100000;
+            currentDelay = 1L;
+        } else if (currentTPS >= 18.0) {
+            // TPS bon : génération normale
+            currentChunkSize = 50000;
+            currentDelay = 2L;
+        } else if (currentTPS >= 16.0) {
+            // TPS moyen : génération prudente
+            currentChunkSize = 25000;
+            currentDelay = 3L;
+        } else if (currentTPS >= 14.0) {
+            // TPS faible : génération lente
+            currentChunkSize = 10000;
+            currentDelay = 5L;
+        } else {
+            // TPS critique : génération minimale
+            currentChunkSize = 5000;
+            currentDelay = 10L;
+        }
+    }
+
+    /**
+     * Processeur de queue pour les resets de mines
+     */
+    private void startResetQueueProcessor() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!resetQueue.isEmpty() && currentTPS > 15.0) {
+                    MineResetTask task = resetQueue.poll();
+                    if (task != null && !isMineGenerating(task.mineId)) {
+                        executeProgressiveGeneration(task.mineId, task.priority);
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Vérifie toutes les secondes
+    }
+
+    /**
+     * Charge les mines depuis le ConfigManager
      */
     private void loadMinesFromConfigManager() {
         plugin.getPluginLogger().info("§7Chargement des mines depuis ConfigManager...");
 
-        // Récupère toutes les mines du ConfigManager corrigé
         Map<String, MineData> configMines = plugin.getConfigManager().getAllMines();
 
         if (configMines.isEmpty()) {
@@ -61,13 +174,15 @@ public class MineManager {
             String mineId = entry.getKey();
             MineData mineData = entry.getValue();
 
-            // Validation supplémentaire
             if (mineData.getVolume() <= 0) {
                 plugin.getPluginLogger().warning("§cMine " + mineId + " a un volume invalide: " + mineData.getVolume());
                 continue;
             }
 
             mines.put(mineId, mineData);
+            mineGenerating.put(mineId, new AtomicBoolean(false));
+            mineBeingChecked.put(mineId, new AtomicBoolean(false));
+
             plugin.getPluginLogger().info("§aMine chargée: " + mineId + " (Type: " + mineData.getType() +
                     ", Volume: " + mineData.getVolume() + " blocs)");
         }
@@ -76,175 +191,474 @@ public class MineManager {
     }
 
     /**
-     * Génération de mine via l'API FastAsyncWorldEdit avec téléportation des joueurs
-     * et notification globale.
-     *
-     * @param mineId L'ID de la mine à générer.
+     * Ajoute une mine à la queue de régénération avec priorité
      */
     public void generateMine(String mineId) {
+        generateMine(mineId, MineResetPriority.NORMAL);
+    }
+
+    public void generateMine(String mineId, MineResetPriority priority) {
         MineData mine = mines.get(mineId);
-        if (mine == null) { /* ... */ return; }
-        if (mineGenerating.getOrDefault(mineId, false)) { /* ... */ return; }
-
-        // 1. Trouver les joueurs présents dans la mine AVANT de la modifier.
-        List<Player> playersInMine = new ArrayList<>();
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (mineId.equals(getPlayerCurrentMine(onlinePlayer))) {
-                playersInMine.add(onlinePlayer);
-            }
-        }
-
-        World faweWorld = FaweAPI.getWorld(mine.getWorldName());
-        if (faweWorld == null) {
-            plugin.getPluginLogger().severe("§cMonde FAWE introuvable pour la mine " + mineId);
+        if (mine == null) {
+            plugin.getPluginLogger().warning("§cMine introuvable: " + mineId);
             return;
         }
 
-        mineGenerating.put(mineId, true);
-        plugin.getPluginLogger().info("§b[FAWE] Démarrage de la génération de la mine " + mineId + "...");
-
-        // 2. Téléporter en lieu sûr les joueurs qui étaient dans la mine.
-        if (!playersInMine.isEmpty()) {
-            plugin.getPluginLogger().info("Téléportation de " + playersInMine.size() + " joueur(s) hors de la mine " + mineId + " pour régénération.");
-            for (Player playerToMove : playersInMine) {
-                // On utilise la téléportation forcée pour les déplacer au point de spawn de la mine.
-                teleportToMine(playerToMove, mineId, true);
-            }
-        }
-
-        // 3. Notifier tous les joueurs dans le MONDE de la mine.
-        String broadcastMessage = "§e§l[!] §eLa mine '" + mine.getDisplayName() + "§e' se régénère !";
-        broadcastToWorld(mine.getWorldName(), broadcastMessage);
-
-        // --- FIN DES AJOUTS ---
-
-        long startTime = System.currentTimeMillis();
-
-        try (EditSession editSession = WorldEdit.getInstance().newEditSession(faweWorld)) {
-            BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
-            BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
-            CuboidRegion region = new CuboidRegion(faweWorld, min, max);
-
-            RandomPattern randomPattern = new RandomPattern();
-            for (Map.Entry<Material, Double> entry : mine.getBlockComposition().entrySet()) {
-                randomPattern.add(BlockTypes.get(entry.getKey().name().toLowerCase()), entry.getValue());
-            }
-
-            editSession.setBlocks((Region) region, randomPattern);
-            editSession.flushQueue();
-
-            mineResetTimes.put(mineId, System.currentTimeMillis());
-            long duration = System.currentTimeMillis() - startTime;
-            plugin.getPluginLogger().info("§a[FAWE] Mine " + mineId + " générée : " + region.getVolume() +
-                    " blocs en " + duration + "ms");
-
-            // 4. Le message de succès est envoyé aux joueurs concernés qui sont maintenant au point de spawn.
-            notifyPlayersInMine(mineId, "§a✅ Mine régénérée avec succès !");
-
-        } catch (Exception e) {
-            plugin.getPluginLogger().severe("§cErreur lors de la génération FAWE de la mine " + mineId);
-            e.printStackTrace();
-        } finally {
-            // Important: Toujours remettre à false, même en cas d'erreur.
-            mineGenerating.put(mineId, false);
-        }
-    }
-
-    /**
-     * NOUVEAU: Envoie un message à tous les joueurs dans un monde spécifique.
-     * @param worldName Le nom du monde.
-     * @param message Le message à envoyer.
-     */
-    private void broadcastToWorld(String worldName, String message) {
-        org.bukkit.World world = Bukkit.getWorld(worldName);
-        if (world == null) return;
-
-        for (Player player : world.getPlayers()) {
-            player.sendMessage(message);
-        }
-    }
-
-    /**
-     * NOUVEAU & CORRIGÉ: Vérifie si une mine doit être régénérée en se basant sur le pourcentage de blocs restants.
-     * La vérification est asynchrone et utilise les méthodes API non dépréciées.
-     *
-     * @param mineId L'ID de la mine à vérifier.
-     */
-    public void checkAndRegenerateMineIfNeeded(String mineId) {
-        // Condition 1: Ne rien faire si la mine est déjà en cours de génération.
-        // Condition 2: Ne rien faire si une vérification est déjà en cours pour cette mine (évite le spam de calculs).
-        // `putIfAbsent` est une méthode atomique parfaite pour ce "verrouillage".
-        if (isMineGenerating(mineId) || mineBeingChecked.putIfAbsent(mineId, true) != null) {
-            plugin.getPluginLogger().debug("La vérification pour la mine " + mineId + " est déjà en cours ou la mine se régénère.");
+        if (isMineGenerating(mineId)) {
+            plugin.getPluginLogger().debug("§eMine déjà en génération: " + mineId);
             return;
         }
 
+        // Ajouter à la queue avec priorité
+        resetQueue.offer(new MineResetTask(mineId, priority, System.currentTimeMillis()));
+        plugin.getPluginLogger().info("§bMine ajoutée à la queue de régénération: " + mineId + " (Priorité: " + priority + ")");
+    }
+
+    /**
+     * Exécute la génération progressive d'une mine avec détection d'erreurs FAWE
+     */
+    private void executeProgressiveGeneration(String mineId, MineResetPriority priority) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) return;
+
+        AtomicBoolean generating = mineGenerating.get(mineId);
+        if (generating == null || !generating.compareAndSet(false, true)) {
+            return;
+        }
+
+        plugin.getPluginLogger().info("§b[FAWE] Démarrage génération adaptative de " + mineId +
+                " (TPS: " + String.format("%.1f", currentTPS) + ", Chunk: " + currentChunkSize + " blocs)");
+
+        // Phase 1: Préparation (ASYNC)
+        asyncExecutor.submit(() -> {
+            try {
+                long startTime = System.currentTimeMillis();
+
+                // Calculer les joueurs à téléporter
+                List<Player> playersToMove = new ArrayList<>();
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (mineId.equals(getPlayerCurrentMine(p))) {
+                        playersToMove.add(p);
+                    }
+                }
+
+                // Vérifier si FAWE est disponible
+                World faweWorld = null;
+                try {
+                    faweWorld = FaweAPI.getWorld(mine.getWorldName());
+                } catch (Exception e) {
+                    plugin.getPluginLogger().warning("§eFAWE indisponible, bascule sur Bukkit API");
+                }
+
+                if (faweWorld == null) {
+                    // Fallback sur l'API Bukkit
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            generateWithBukkitAPI(mineId);
+                        }
+                    }.runTask(plugin);
+                    return;
+                }
+
+                BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
+                BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
+                CuboidRegion region = new CuboidRegion(faweWorld, min, max);
+
+                RandomPattern pattern = new RandomPattern();
+                for (Map.Entry<Material, Double> entry : mine.getBlockComposition().entrySet()) {
+                    pattern.add(BlockTypes.get(entry.getKey().name().toLowerCase()), entry.getValue());
+                }
+
+                // Phase 2: Actions synchrones (téléportations)
+                if (!playersToMove.isEmpty()) {
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            for (Player p : playersToMove) {
+                                teleportToMineSafely(p, mineId);
+                            }
+                            String msg = "§e§l[!] §eLa mine '" + mine.getDisplayName() + "§e' se régénère !";
+                            broadcastToWorld(mine.getWorldName(), msg);
+                        }
+                    }.runTask(plugin);
+                }
+
+                // Phase 3: Génération asynchrone optimisée avec timeout
+                World finalFaweWorld = faweWorld;
+                CompletableFuture<Void> generationFuture = CompletableFuture.runAsync(() -> {
+                    if (region.getVolume() <= 50000) {
+                        executeBatchedGeneration(finalFaweWorld, region, pattern, mineId, priority, startTime);
+                    } else {
+                        generateInChunksAsync(finalFaweWorld, region, pattern, mineId, priority, startTime);
+                    }
+                }, asyncExecutor);
+
+                // Timeout de 30 secondes
+                generationFuture.orTimeout(30, TimeUnit.SECONDS).exceptionally(ex -> {
+                    plugin.getPluginLogger().severe("§cTimeout génération FAWE pour " + mineId + ", bascule sur Bukkit API");
+                    generating.set(false);
+
+                    // Fallback sur Bukkit API
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            generateWithBukkitAPI(mineId);
+                        }
+                    }.runTask(plugin);
+                    return null;
+                });
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().severe("§cErreur génération de " + mineId);
+                e.printStackTrace();
+                generating.set(false);
+
+                // Fallback sur Bukkit API en cas d'erreur
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        generateWithBukkitAPI(mineId);
+                    }
+                }.runTask(plugin);
+            }
+        });
+    }
+
+    /**
+     * Exécute la génération par batches adaptatifs
+     * UTILISE L'API ASYNCHRONE DE FAWE CORRECTEMENT
+     */
+    private void executeBatchedGeneration(World world, CuboidRegion region, RandomPattern pattern,
+                                          String mineId, MineResetPriority priority, long startTime) {
+        // IMPORTANT: Tout le travail FAWE doit être fait en ASYNCHRONE
+        asyncExecutor.submit(() -> {
+            try {
+                // Créer l'EditSession en mode async
+                EditSession editSession = WorldEdit.getInstance().newEditSession(world);
+                editSession.setFastMode(true); // Mode rapide pour les grandes opérations
+
+                // Configurer les limites
+                int blockLimit = calculateBlockLimit(priority);
+                editSession.setBlockChangeLimit(blockLimit);
+
+                // Exécuter la génération complète en ASYNC
+                editSession.setBlocks((Region) region, pattern);
+
+                // Commit les changements de manière asynchrone
+                editSession.flushQueue();
+
+                // Attendre que FAWE finisse son travail
+                editSession.close();
+
+                // Finaliser sur le thread principal
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        finalizeMineGeneration(mineId, startTime, region.getVolume());
+                    }
+                }.runTask(plugin);
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().severe("§cErreur génération FAWE async de " + mineId);
+                e.printStackTrace();
+                mineGenerating.get(mineId).set(false);
+            }
+        });
+    }
+
+    /**
+     * Alternative: Génération par chunks vraiment asynchrone si nécessaire
+     */
+    private void generateInChunksAsync(World world, CuboidRegion region, RandomPattern pattern,
+                                       String mineId, MineResetPriority priority, long startTime) {
+        // Calculer les sous-régions
+        List<CuboidRegion> subRegions = divideRegion(region, currentChunkSize);
+        AtomicInteger currentIndex = new AtomicInteger(0);
+        AtomicInteger blocksProcessed = new AtomicInteger(0);
+        long totalVolume = region.getVolume();
+
+        // Créer une tâche récursive asynchrone
+        Runnable processNextChunk = new Runnable() {
+            @Override
+            public void run() {
+                // Vérifier TPS
+                if (currentTPS < 12.0) {
+                    // Reporter de 5 secondes si TPS trop bas
+                    plugin.getPluginLogger().warning("§eTPS trop bas (" + String.format("%.1f", currentTPS) +
+                            "), pause génération de " + mineId);
+                    Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, this, 100L);
+                    return;
+                }
+
+                int index = currentIndex.getAndIncrement();
+                if (index >= subRegions.size()) {
+                    // Terminé - finaliser sur le thread principal
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            finalizeMineGeneration(mineId, startTime, totalVolume);
+                        }
+                    }.runTask(plugin);
+                    return;
+                }
+
+                // Traiter le chunk actuel en ASYNC
+                CuboidRegion subRegion = subRegions.get(index);
+
+                try {
+                    // Créer un nouvel EditSession pour ce batch
+                    EditSession editSession = WorldEdit.getInstance().newEditSession(world);
+                    editSession.setFastMode(true);
+                    editSession.setBlockChangeLimit((int)subRegion.getVolume());
+
+                    // Appliquer les blocs
+                    editSession.setBlocks((Region) subRegion, pattern);
+                    editSession.flushQueue();
+                    editSession.close();
+
+                    // Mettre à jour le progrès
+                    int processed = blocksProcessed.addAndGet((int) Math.min(subRegion.getVolume(), Integer.MAX_VALUE));
+                    int percentage = (int) ((processed * 100L) / totalVolume);
+
+                    if (percentage % 25 == 0) {
+                        plugin.getPluginLogger().debug("§7Génération async " + mineId + ": " + percentage + "%");
+                    }
+
+                    // Planifier le prochain chunk avec délai adaptatif
+                    long delay = Math.max(1L, currentDelay * 50L); // Convertir ticks en ms
+                    Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, this, currentDelay);
+
+                } catch (Exception e) {
+                    plugin.getPluginLogger().severe("§cErreur batch async " + mineId);
+                    e.printStackTrace();
+                    mineGenerating.get(mineId).set(false);
+                }
+            }
+        };
+
+        // Démarrer le traitement asynchrone
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, processNextChunk);
+    }
+
+    /**
+     * Divise une région en sous-régions de taille maximale
+     */
+    private List<CuboidRegion> divideRegion(CuboidRegion region, int maxBlocksPerChunk) {
+        List<CuboidRegion> subRegions = new ArrayList<>();
+        BlockVector3 min = region.getMinimumPoint();
+        BlockVector3 max = region.getMaximumPoint();
+
+        int width = max.x() - min.x() + 1;
+        int height = max.y() - min.y() + 1;
+        int length = max.z() - min.z() + 1;
+
+        // Calculer la taille optimale des chunks
+        int chunkSize = (int) Math.ceil(Math.cbrt(maxBlocksPerChunk));
+
+        for (int x = min.x(); x <= max.x(); x += chunkSize) {
+            for (int y = min.y(); y <= max.y(); y += chunkSize) {
+                for (int z = min.z(); z <= max.z(); z += chunkSize) {
+                    int maxX = Math.min(x + chunkSize - 1, max.x());
+                    int maxY = Math.min(y + chunkSize - 1, max.y());
+                    int maxZ = Math.min(z + chunkSize - 1, max.z());
+
+                    BlockVector3 subMin = BlockVector3.at(x, y, z);
+                    BlockVector3 subMax = BlockVector3.at(maxX, maxY, maxZ);
+                    subRegions.add(new CuboidRegion(region.getWorld(), subMin, subMax));
+                }
+            }
+        }
+
+        return subRegions;
+    }
+
+    /**
+     * Calcule la limite de blocs selon la priorité et le TPS
+     */
+    private int calculateBlockLimit(MineResetPriority priority) {
+        int baseLimit = currentChunkSize;
+
+        // Ajuster selon la priorité
+        switch (priority) {
+            case URGENT:
+                baseLimit *= 2;
+                break;
+            case HIGH:
+                baseLimit = (int) (baseLimit * 1.5);
+                break;
+            case LOW:
+                baseLimit /= 2;
+                break;
+        }
+
+        // Ajuster selon le TPS
+        if (currentTPS < 15) {
+            baseLimit /= 2;
+        }
+
+        return Math.max(1000, baseLimit); // Minimum 1000 blocs
+    }
+
+    /**
+     * Finalise la génération d'une mine
+     */
+    private void finalizeMineGeneration(String mineId, long startTime, long volume) {
+        mineResetTimes.put(mineId, System.currentTimeMillis());
+        AtomicBoolean generating = mineGenerating.get(mineId);
+        if (generating != null) {
+            generating.set(false);
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
+        plugin.getPluginLogger().info("§a[FAWE] Mine " + mineId + " générée: " + volume +
+                " blocs en " + duration + "ms (TPS: " + String.format("%.1f", currentTPS) + ")");
+
+        // Notification finale
         new BukkitRunnable() {
             @Override
             public void run() {
-                try {
-                    MineData mine = getMine(mineId);
-                    if (mine == null) return;
-
-                    World faweWorld = FaweAPI.getWorld(mine.getWorldName());
-                    if (faweWorld == null) {
-                        plugin.getPluginLogger().warning("Monde introuvable pour le calcul des blocs de la mine " + mineId);
-                        return;
-                    }
-
-                    int totalVolume = mine.getVolume();
-                    if (totalVolume == 0) return; // Sécurité pour éviter la division par zéro
-
-                    int remainingBlocks = 0;
-                    BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
-                    BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
-
-                    // --- CORRECTION AVEC LES MÉTHODES MODERNES ---
-                    // Itération efficace sur la région de la mine en utilisant x(), y(), z()
-                    for (int x = min.x(); x <= max.x(); x++) {
-                        for (int y = min.y(); y <= max.y(); y++) {
-                            for (int z = min.z(); z <= max.z(); z++) {
-                                // On utilise l'API FAWE pour lire le bloc, car c'est plus cohérent avec la génération
-                                if (faweWorld.getBlock(BlockVector3.at(x, y, z)).getBlockType() != BlockTypes.AIR) {
-                                    remainingBlocks++;
-                                }
-                            }
-                        }
-                    }
-
-                    double percentageLeft = (double) remainingBlocks / totalVolume;
-
-                    // Si le pourcentage de blocs restants est inférieur ou égal à 30%
-                    if (percentageLeft <= 0.30) {
-                        plugin.getPluginLogger().info("Régénération auto de la mine " + mineId + " (restant: " + String.format("%.1f%%", percentageLeft * 100) + ")");
-
-                        // La génération de la mine doit se faire sur le thread principal de Bukkit
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                generateMine(mineId);
-                            }
-                        }.runTask(plugin);
-                    }
-
-                } catch (Exception e) {
-                    plugin.getPluginLogger().severe("Une erreur est survenue lors du calcul des blocs pour la mine " + mineId);
-                    e.printStackTrace();
-                } finally {
-
-                    mineBeingChecked.remove(mineId);
-                }
+                notifyPlayersInMine(mineId);
             }
-        }.runTaskAsynchronously(plugin);
+        }.runTask(plugin);
     }
 
+    /**
+     * Téléportation sécurisée optimisée
+     */
+    private void teleportToMineSafely(Player player, String mineId) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) return;
 
+        org.bukkit.World world = Bukkit.getWorld(mine.getWorldName());
+        if (world == null) return;
+
+        Location safeLoc = mine.getCenterLocation(world);
+        safeLoc.setY(safeLoc.getY() + 2);
+
+        // S'assurer que la zone est safe
+        safeLoc.getBlock().setType(Material.AIR);
+        safeLoc.clone().add(0, 1, 0).getBlock().setType(Material.AIR);
+
+        player.teleport(safeLoc);
+    }
 
     /**
-     *
-     * @param player Le joueur à vérifier.
-     * @param mineId L'ID de la mine, ex: "mine-z", "mine-vip1", "mine-prestige41".
-     * @return true si le joueur a le droit d'accéder, false sinon.
+     * Vérification asynchrone optimisée du pourcentage de blocs
+     */
+    public void checkAndRegenerateMineIfNeeded(String mineId) {
+        AtomicBoolean checking = mineBeingChecked.get(mineId);
+        if (checking == null || !checking.compareAndSet(false, true)) {
+            return;
+        }
+
+        if (isMineGenerating(mineId)) {
+            checking.set(false);
+            return;
+        }
+
+        // Calcul async optimisé
+        asyncExecutor.submit(() -> {
+            try {
+                MineData mine = getMine(mineId);
+                if (mine == null) {
+                    checking.set(false);
+                    return;
+                }
+
+                // Utiliser FAWE pour un calcul plus rapide
+                World faweWorld = FaweAPI.getWorld(mine.getWorldName());
+                if (faweWorld == null) {
+                    checking.set(false);
+                    return;
+                }
+
+                int totalVolume = mine.getVolume();
+                if (totalVolume == 0) {
+                    checking.set(false);
+                    return;
+                }
+
+                // Échantillonnage pour les grandes mines
+                double percentageLeft;
+                if (totalVolume > 100000) {
+                    percentageLeft = calculatePercentageBySampling(faweWorld, mine);
+                } else {
+                    percentageLeft = calculatePercentageFull(faweWorld, mine);
+                }
+
+                // Décider si régénération nécessaire
+                if (percentageLeft <= 0.30) {
+                    plugin.getPluginLogger().info("§eRégénération auto de " + mineId +
+                            " (" + String.format("%.1f%%", percentageLeft * 100) + " restant)");
+
+                    // Priorité selon le pourcentage restant
+                    MineResetPriority priority = percentageLeft <= 0.10 ?
+                            MineResetPriority.HIGH : MineResetPriority.NORMAL;
+
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            generateMine(mineId, priority);
+                        }
+                    }.runTask(plugin);
+                }
+
+            } catch (Exception e) {
+                plugin.getPluginLogger().severe("§cErreur calcul blocs mine " + mineId);
+                e.printStackTrace();
+            } finally {
+                checking.set(false);
+            }
+        });
+    }
+
+    /**
+     * Calcul par échantillonnage pour les grandes mines
+     */
+    private double calculatePercentageBySampling(World world, MineData mine) {
+        int sampleSize = 1000; // Nombre de points à échantillonner
+        int nonAirBlocks = 0;
+
+        BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
+        BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
+
+        for (int i = 0; i < sampleSize; i++) {
+            int x = random.nextInt(max.x() - min.x() + 1) + min.x();
+            int y = random.nextInt(max.y() - min.y() + 1) + min.y();
+            int z = random.nextInt(max.z() - min.z() + 1) + min.z();
+
+            if (world.getBlock(BlockVector3.at(x, y, z)).getBlockType() != BlockTypes.AIR) {
+                nonAirBlocks++;
+            }
+        }
+
+        return (double) nonAirBlocks / sampleSize;
+    }
+
+    /**
+     * Calcul complet pour les petites mines
+     */
+    private double calculatePercentageFull(World world, MineData mine) {
+        int remainingBlocks = 0;
+        BlockVector3 min = BlockVector3.at(mine.getMinX(), mine.getMinY(), mine.getMinZ());
+        BlockVector3 max = BlockVector3.at(mine.getMaxX(), mine.getMaxY(), mine.getMaxZ());
+
+        for (int x = min.x(); x <= max.x(); x++) {
+            for (int y = min.y(); y <= max.y(); y++) {
+                for (int z = min.z(); z <= max.z(); z++) {
+                    if (world.getBlock(BlockVector3.at(x, y, z)).getBlockType() != BlockTypes.AIR) {
+                        remainingBlocks++;
+                    }
+                }
+            }
+        }
+
+        return (double) remainingBlocks / mine.getVolume();
+    }
+
+    /**
+     * Vérification d'accès à une mine
      */
     public boolean canAccessMine(Player player, String mineId) {
         if (mineId == null || mineId.isEmpty()) {
@@ -253,84 +667,62 @@ public class MineManager {
 
         String lowerMineId = mineId.toLowerCase();
 
-        // Logique pour les MINES PRESTIGE (contient "prestige")
         if (lowerMineId.contains("prestige")) {
             try {
-                // 1. Extraire le niveau de prestige requis depuis le nom de la mine.
                 String numberPart = lowerMineId.replaceAll("[^0-9]", "");
                 if (numberPart.isEmpty()) return false;
                 int requiredPrestige = Integer.parseInt(numberPart);
 
-                // 2. Calculer le niveau de prestige effectif du joueur (logique intégrée).
-                int playerPrestige = 0;
-                for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
-                    String perm = permInfo.getPermission().toLowerCase();
-                    if (perm.startsWith("specialmine.prestige.")) {
-                        try {
-                            String levelStr = perm.substring("specialmine.prestige.".length());
-                            int level = Integer.parseInt(levelStr);
-                            if (level > playerPrestige) {
-                                playerPrestige = level;
-                            }
-                        } catch (NumberFormatException e) {
-                            // Ignore les permissions de prestige mal formées.
-                        }
-                    }
-                }
+                int playerPrestige = getPlayerPrestige(player);
 
-                // 3. Comparer.
                 return playerPrestige >= requiredPrestige;
 
             } catch (NumberFormatException e) {
                 return false;
             }
-        }
-
-        // Logique pour les MINES VIP (contient "vip")
-        else if (lowerMineId.contains("vip")) {
-            // 1. Construire la permission requise à partir du nom de la mine.
+        } else if (lowerMineId.contains("vip")) {
             String identifier = lowerMineId.replace("mine-vip", "").replaceAll("^-", "");
             if (identifier.isEmpty()) return false;
             String requiredPermission = "specialmine.vip." + identifier;
-
-            // 2. Vérifier si le joueur a cette permission exacte.
             return player.hasPermission(requiredPermission);
-        }
-
-        // Logique pour les MINES NORMALES (A-Z)
-        else {
-            // 1. Extraire le rang requis (la dernière lettre du nom de la mine).
-            if (lowerMineId.length() < 1) return false;
+        } else {
+            if (lowerMineId.isEmpty()) return false;
             String requiredRank = lowerMineId.substring(lowerMineId.length() - 1);
 
             if (!requiredRank.matches("[a-z]")) {
                 return false;
             }
 
-            // 2. Obtenir le rang le plus élevé du joueur.
             String playerRank = getCurrentRank(player);
-
-            // 3. Vérifier si le rang du joueur est suffisant.
             return isRankSufficient(playerRank, requiredRank);
         }
     }
 
-    /**
-     * Téléporte un joueur à une mine (appel public avec vérification d'accès).
-     */
-    public boolean teleportToMine(Player player, String mineId) {
-        // Appelle la méthode privée en spécifiant que ce n'est PAS une téléportation forcée
-        return teleportToMine(player, mineId, false);
+    private int getPlayerPrestige(Player player) {
+        int playerPrestige = 0;
+        for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
+            String perm = permInfo.getPermission().toLowerCase();
+            if (perm.startsWith("specialmine.prestige.")) {
+                try {
+                    String levelStr = perm.substring("specialmine.prestige.".length());
+                    int level = Integer.parseInt(levelStr);
+                    if (level > playerPrestige) {
+                        playerPrestige = level;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return playerPrestige;
     }
 
     /**
-     * Logique de téléportation interne, avec une option pour forcer le déplacement.
-     * @param player Le joueur à téléporter.
-     * @param mineId L'ID de la mine.
-     * @param isForced Si true, la vérification d'accès est ignorée (pour la régénération).
+     * Téléporte un joueur à une mine
      */
+    public boolean teleportToMine(Player player, String mineId) {
+        return teleportToMine(player, mineId, false);
+    }
+
     private boolean teleportToMine(Player player, String mineId, boolean isForced) {
-        // Si la téléportation n'est pas forcée, on vérifie si le joueur a le droit
         if (!isForced && !canAccessMine(player, mineId)) {
             player.sendMessage("§c❌ Vous n'avez pas accès à cette mine!");
             return false;
@@ -349,14 +741,11 @@ public class MineManager {
         }
 
         Location teleportLocation = mine.getCenterLocation(world);
-
-        // On s'assure que la zone de spawn est dégagée
         teleportLocation.getBlock().setType(Material.AIR);
         teleportLocation.clone().add(0, 1, 0).getBlock().setType(Material.AIR);
 
         player.teleport(teleportLocation);
 
-        // On envoie le message de succès et le son uniquement lors d'une téléportation normale
         if (!isForced) {
             player.sendMessage("§a✅ Téléporté à la mine " + mine.getDisplayName());
             player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
@@ -379,14 +768,11 @@ public class MineManager {
         info.append("§6         📍 ").append(mine.getDisplayName()).append("\n");
         info.append("§6═══════════════════════════════════\n");
 
-        // Utilise la nouvelle méthode getDetailedInfo
         info.append(mine.getDetailedInfo()).append("\n");
 
-        // Informations d'accès
         boolean canAccess = canAccessMine(player, mineId);
         info.append("§7Accès: ").append(canAccess ? "§a✅ Autorisé" : "§c❌ Interdit").append("\n");
 
-        // Conditions d'accès si bloqué
         if (!canAccess) {
             if (mine.getRequiredPrestige() > 0) {
                 PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -401,14 +787,27 @@ public class MineManager {
             }
         }
 
-        // Temps depuis le dernier reset
         Long lastReset = mineResetTimes.get(mineId);
         if (lastReset != null) {
-            long timeSince = (System.currentTimeMillis() - lastReset) / 1000 / 60; // minutes
-            info.append("§7Dernier reset: il y a ").append(timeSince).append(" minute(s)");
+            long timeSince = (System.currentTimeMillis() - lastReset) / 1000 / 60;
+            info.append("§7Dernier reset: il y a ").append(timeSince).append(" minute(s)\n");
         }
 
+        // Info TPS
+        info.append("§7TPS serveur: ").append(getTpsColor(currentTPS))
+                .append(String.format("%.1f", currentTPS)).append("\n");
+
         return info.toString();
+    }
+
+    /**
+     * Obtient la couleur selon le TPS
+     */
+    private String getTpsColor(double tps) {
+        if (tps >= 19) return "§a";
+        if (tps >= 17) return "§e";
+        if (tps >= 15) return "§6";
+        return "§c";
     }
 
     /**
@@ -423,7 +822,6 @@ public class MineManager {
             }
         }
 
-        // Trier par type puis par nom
         accessible.sort((a, b) -> {
             if (a.getType() != b.getType()) {
                 return a.getType().ordinal() - b.getType().ordinal();
@@ -462,15 +860,27 @@ public class MineManager {
     /**
      * Notifie tous les joueurs présents dans une mine
      */
-    private void notifyPlayersInMine(String mineId, String message) {
+    private void notifyPlayersInMine(String mineId) {
         MineData mine = mines.get(mineId);
         if (mine == null) return;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             String playerMine = getPlayerCurrentMine(player);
             if (mineId.equals(playerMine)) {
-                player.sendMessage(message);
+                player.sendMessage("§a✅ Mine régénérée avec succès !");
             }
+        }
+    }
+
+    /**
+     * Envoie un message à tous les joueurs dans un monde
+     */
+    private void broadcastToWorld(String worldName, String message) {
+        org.bukkit.World world = Bukkit.getWorld(worldName);
+        if (world == null) return;
+
+        for (Player player : world.getPlayers()) {
+            player.sendMessage(message);
         }
     }
 
@@ -478,46 +888,57 @@ public class MineManager {
      * Lance le scheduler de reset automatique des mines
      */
     private void startMineResetScheduler() {
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            long currentTime = System.currentTimeMillis();
-            long resetInterval = 1800000; // 30 minutes par défaut
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Ne pas lancer de resets si le TPS est trop bas
+                if (currentTPS < 14.0) {
+                    plugin.getPluginLogger().debug("§eTPS trop bas pour les resets auto: " + String.format("%.1f", currentTPS));
+                    return;
+                }
 
-            for (Map.Entry<String, Long> entry : mineResetTimes.entrySet()) {
-                String mineId = entry.getKey();
-                long lastReset = entry.getValue();
+                long currentTime = System.currentTimeMillis();
+                long resetInterval = 1800000; // 30 minutes
 
-                if (currentTime - lastReset > resetInterval) {
-                    plugin.getPluginLogger().debug("Reset automatique de la mine: " + mineId);
-                    generateMine(mineId);
+                for (Map.Entry<String, Long> entry : mineResetTimes.entrySet()) {
+                    String mineId = entry.getKey();
+                    long lastReset = entry.getValue();
+
+                    if (currentTime - lastReset > resetInterval && !isMineGenerating(mineId)) {
+                        plugin.getPluginLogger().debug("Reset automatique de: " + mineId);
+                        generateMine(mineId, MineResetPriority.LOW);
+                    }
                 }
             }
-        }, 0L, 6000L); // Vérifie toutes les 5 minutes (6000 ticks)
+        }.runTaskTimer(plugin, 0L, 6000L); // Toutes les 5 minutes
     }
 
     /**
      * Force le reset de toutes les mines
      */
     public void resetAllMines() {
-        plugin.getPluginLogger().info("§6Lancement de la régénération échelonnée de toutes les mines...");
-        final Queue<String> minesToReset = new LinkedList<>(mines.keySet());
+        plugin.getPluginLogger().info("§6Reset échelonné de toutes les mines...");
 
-        if (minesToReset.isEmpty()) {
-            plugin.getPluginLogger().info("§eAucune mine à régénérer.");
-            return;
-        }
+        List<String> mineIds = new ArrayList<>(mines.keySet());
+        AtomicInteger index = new AtomicInteger(0);
 
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (minesToReset.isEmpty()) {
-                    plugin.getPluginLogger().info("§aRégénération échelonnée terminée !");
-                    this.cancel();
+                if (index.get() >= mineIds.size()) {
+                    plugin.getPluginLogger().info("§aToutes les mines ajoutées à la queue!");
+                    cancel();
                     return;
                 }
-                String mineId = minesToReset.poll();
-                generateMine(mineId);
+
+                // Ajouter 2-3 mines à la queue par tick selon le TPS
+                int minesToAdd = currentTPS >= 18 ? 3 : (currentTPS >= 15 ? 2 : 1);
+
+                for (int i = 0; i < minesToAdd && index.get() < mineIds.size(); i++) {
+                    generateMine(mineIds.get(index.getAndIncrement()), MineResetPriority.LOW);
+                }
             }
-        }.runTaskTimer(plugin, 0L, 10L);
+        }.runTaskTimer(plugin, 0L, 20L);
     }
 
     /**
@@ -526,9 +947,23 @@ public class MineManager {
     public void reloadMines() {
         plugin.getPluginLogger().info("§7Rechargement des mines...");
 
+        // Attendre que toutes les générations soient terminées
+        for (AtomicBoolean generating : mineGenerating.values()) {
+            if (generating.get()) {
+                plugin.getPluginLogger().warning("§eAttente fin des générations en cours...");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+
         mines.clear();
         mineResetTimes.clear();
         mineGenerating.clear();
+        mineBeingChecked.clear();
+        resetQueue.clear();
 
         loadMinesFromConfigManager();
         plugin.getPluginLogger().info("§aMines rechargées!");
@@ -553,51 +988,66 @@ public class MineManager {
         stats.append("§6📍 Mines VIP: §7").append(vipCount).append("\n");
         stats.append("§e📊 Total: §7").append(mines.size()).append(" mines\n");
 
-        // Mines en cours de génération
-        long generating = mineGenerating.values().stream().mapToLong(b -> b ? 1 : 0).sum();
+        long generating = mineGenerating.values().stream()
+                .filter(AtomicBoolean::get)
+                .count();
         if (generating > 0) {
             stats.append("§c⚡ En génération: §7").append(generating).append("\n");
         }
 
+        stats.append("§7TPS: ").append(getTpsColor(currentTPS))
+                .append(String.format("%.1f", currentTPS)).append("\n");
+        stats.append("§7Queue: §e").append(resetQueue.size()).append(" mines en attente\n");
+        stats.append("§7Chunk size: §b").append(currentChunkSize).append(" blocs\n");
+
         return stats.toString();
+    }
+
+    /**
+     * Arrêt propre du manager
+     */
+    public void shutdown() {
+        plugin.getPluginLogger().info("§7Arrêt du MineManager...");
+
+        // Arrêter l'executor
+        asyncExecutor.shutdown();
+        try {
+            if (!asyncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                asyncExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            asyncExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        plugin.getPluginLogger().info("§aMineManager arrêté proprement");
     }
 
     // ==================== MÉTHODES UTILITAIRES ====================
 
-    /**
-     * Obtient le rang actuel d'un joueur
-     */
     public String getCurrentRank(Player player) {
-        String highestRank = "a"; // Rang par défaut
+        String highestRank = "a";
 
-        // Cherche toutes les permissions de mine que le joueur possède
         Set<String> minePermissions = player.getEffectivePermissions().stream()
                 .map(PermissionAttachmentInfo::getPermission)
                 .filter(perm -> perm.startsWith("specialmine.mine."))
                 .collect(Collectors.toSet());
 
-        // Recherche du rang le plus élevé en itérant de z vers a
         for (char c = 'z'; c >= 'a'; c--) {
             String minePermission = "specialmine.mine." + c;
             if (minePermissions.contains(minePermission)) {
                 highestRank = String.valueOf(c);
-                break; // Premier trouvé = le plus élevé
+                break;
             }
         }
         return highestRank;
     }
 
-    /**
-     * Vérifie si un rang est suffisant pour accéder à une mine
-     */
     public boolean isRankSufficient(String currentRank, String requiredRank) {
         if (currentRank == null || requiredRank == null) return false;
         return currentRank.compareToIgnoreCase(requiredRank) >= 0;
     }
 
-    /**
-     * Obtient la couleur d'un rang
-     */
     public String getRankColor(String rank) {
         if (rank == null) return "§7";
 
@@ -611,9 +1061,6 @@ public class MineManager {
         };
     }
 
-    /**
-     * Convertit un nom de rang en numéro (a=1, b=2, etc.)
-     */
     public int rankToNumber(String rank) {
         if (rank == null || rank.length() != 1) return 0;
         char c = rank.toLowerCase().charAt(0);
@@ -623,20 +1070,11 @@ public class MineManager {
         return 0;
     }
 
-    /**
-     * Convertit un numéro en nom de rang (1=a, 2=b, etc.)
-     */
     public String numberToRank(int number) {
         if (number < 1 || number > 26) return "a";
         return String.valueOf((char) ('a' + number - 1));
     }
 
-    /**
-     * NOUVEAU: Obtient le rang et sa couleur d'un joueur
-     *
-     * @param player Le joueur
-     * @return String[] avec [0] = rang, [1] = couleur
-     */
     public String[] getRankAndColor(Player player) {
         String currentRank = getCurrentRank(player);
         String rankColor = getRankColor(currentRank);
@@ -645,60 +1083,37 @@ public class MineManager {
 
     // ==================== GETTERS ====================
 
-    /**
-     * Obtient une mine par son ID
-     */
     public MineData getMine(String mineId) {
         return mines.get(mineId);
     }
 
-    /**
-     * Obtient toutes les mines
-     */
     public Collection<MineData> getAllMines() {
         return mines.values();
     }
 
-    /**
-     * Vérifie si une mine existe
-     */
     public boolean mineExists(String mineId) {
         return mines.containsKey(mineId);
     }
 
-    /**
-     * Obtient le nombre total de mines
-     */
     public int getMineCount() {
         return mines.size();
     }
 
-    /**
-     * Obtient les noms de toutes les mines
-     */
     public Set<String> getMineNames() {
         return new HashSet<>(mines.keySet());
     }
 
-    /**
-     * Vérifie si une mine est en cours de génération
-     */
     public boolean isMineGenerating(String mineId) {
-        return mineGenerating.getOrDefault(mineId, false);
+        AtomicBoolean generating = mineGenerating.get(mineId);
+        return generating != null && generating.get();
     }
 
-    /**
-     * Obtient toutes les mines triées par nom
-     */
     public List<MineData> getAllMinesSorted() {
         return mines.values().stream()
                 .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Recherche des mines par nom partiel
-     */
     public List<MineData> searchMines(String query) {
         String lowerQuery = query.toLowerCase();
         return mines.values().stream()
@@ -707,4 +1122,140 @@ public class MineManager {
                 .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
                 .collect(Collectors.toList());
     }
+
+    public double getCurrentTPS() {
+        return currentTPS;
+    }
+
+    public int getQueueSize() {
+        return resetQueue.size();
+    }
+
+    // ==================== CLASSES INTERNES ====================
+
+    /**
+     * Énumération des priorités de reset
+     */
+    public enum MineResetPriority {
+        URGENT(0),
+        HIGH(1),
+        NORMAL(2),
+        LOW(3);
+
+        private final int priority;
+
+        MineResetPriority(int priority) {
+            this.priority = priority;
+        }
+
+        public int getPriority() {
+            return priority;
+        }
+    }
+
+    /**
+         * Tâche de reset de mine avec priorité
+         */
+        private record MineResetTask(String mineId, MineResetPriority priority,
+                                     long timestamp) implements Comparable<MineResetTask> {
+
+        @Override
+            public int compareTo(MineResetTask other) {
+                int priorityCompare = Integer.compare(this.priority.getPriority(), other.priority.getPriority());
+                if (priorityCompare != 0) {
+                    return priorityCompare;
+                }
+                return Long.compare(this.timestamp, other.timestamp);
+            }
+        }
+    /**
+     * Fallback mine generation using the Bukkit API.
+     * This is slower and more resource-intensive than FAWE but provides a failsafe.
+     *
+     * @param mineId The ID of the mine to regenerate.
+     */
+    private void generateWithBukkitAPI(String mineId) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) {
+            plugin.getPluginLogger().warning("§c[Bukkit Fallback] Mine not found: " + mineId);
+            return;
+        }
+
+        AtomicBoolean generating = mineGenerating.get(mineId);
+        if (generating != null && !generating.get()) {
+            // If FAWE failed, the flag might be false. Set it to true for this process.
+            if (!generating.compareAndSet(false, true)) {
+                plugin.getPluginLogger().warning("§e[Bukkit Fallback] Mine is already being generated by another process: " + mineId);
+                return;
+            }
+        } else if (generating == null) {
+            // Should not happen, but as a safeguard.
+            mineGenerating.put(mineId, new AtomicBoolean(true));
+        }
+
+
+        plugin.getPluginLogger().info("§e[Bukkit Fallback] Starting generation for mine: " + mineId);
+
+        long startTime = System.currentTimeMillis();
+        org.bukkit.World world = Bukkit.getWorld(mine.getWorldName());
+        if (world == null) {
+            plugin.getPluginLogger().severe("§c[Bukkit Fallback] World not found: " + mine.getWorldName());
+            mineGenerating.get(mineId).set(false);
+            return;
+        }
+
+        // Create the block pattern list
+        List<Material> blockPattern = new ArrayList<>();
+        for (Map.Entry<Material, Double> entry : mine.getBlockComposition().entrySet()) {
+            int amount = (int) (mine.getVolume() * entry.getValue());
+            for (int i = 0; i < amount; i++) {
+                blockPattern.add(entry.getKey());
+            }
+        }
+        // Fill any remaining space with the first block type if calculation is imperfect
+        while (blockPattern.size() < mine.getVolume() && !mine.getBlockComposition().isEmpty()) {
+            blockPattern.add(mine.getBlockComposition().keySet().iterator().next());
+        }
+        Collections.shuffle(blockPattern, random);
+
+        Iterator<Material> patternIterator = blockPattern.iterator();
+
+        new BukkitRunnable() {
+            private int x = mine.getMinX();
+            private int y = mine.getMinY();
+            private int z = mine.getMinZ();
+            private int processed = 0;
+
+            @Override
+            public void run() {
+                // Adjust this value to balance speed and performance
+                int blocksPerTick = 2048;
+                for (int i = 0; i < blocksPerTick; i++) {
+                    if (!patternIterator.hasNext() || y > mine.getMaxY()) {
+                        // Finalize and stop
+                        long duration = System.currentTimeMillis() - startTime;
+                        plugin.getPluginLogger().info("§a[Bukkit Fallback] Mine " + mineId + " generated in " + duration + "ms.");
+                        finalizeMineGeneration(mineId, startTime, mine.getVolume());
+                        cancel();
+                        return;
+                    }
+
+                    Material materialToPlace = patternIterator.next();
+                    world.getBlockAt(x, y, z).setType(materialToPlace, false); // 'false' to prevent physics updates during generation
+
+                    processed++;
+                    z++;
+                    if (z > mine.getMaxZ()) {
+                        z = mine.getMinZ();
+                        x++;
+                        if (x > mine.getMaxX()) {
+                            x = mine.getMinX();
+                            y++;
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L); // Runs every tick
+    }
+
 }

@@ -112,16 +112,16 @@
         </dependency>
 
         <dependency>
-            <groupId>fr.custommobs</groupId> <!-- Doit correspondre au groupId de PrisonTycoon -->
-            <artifactId>CustomMobs</artifactId> <!-- Doit correspondre à l'artifactId de PrisonTycoon -->
-            <version>1.0.0</version> <!-- La version de votre PrisonTycoon -->
+            <groupId>fr.custommobs</groupId>
+            <artifactId>CustomMobs</artifactId>
+            <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>de.oliver</groupId>
             <artifactId>FancyNpcs</artifactId>
-            <version>2.7.0</version> <!-- Remplacez par la dernière version -->
+            <version>2.7.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

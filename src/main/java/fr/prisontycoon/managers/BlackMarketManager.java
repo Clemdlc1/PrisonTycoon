@@ -775,7 +775,6 @@ public class BlackMarketManager {
         plugin.getPluginLogger().info("§7Fermeture du BlackMarketManager...");
 
         try {
-            // Supprimer le NPC actuel
             if (blackMarketNPC != null) {
                 npcUtils.removeNPC(blackMarketNPC);
                 blackMarketNPC = null;

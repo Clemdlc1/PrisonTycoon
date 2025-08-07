@@ -344,7 +344,8 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new SellCommand(this), "sell");
         registerCommand(new RepairCommand(this), "repair");
         registerCommand(new HeadCollectionCommand(this), "collection");
-        registerCommand(new RankupCommand(this), "rankup");
+        this.rankupCommand = new RankupCommand(this);
+        registerCommand(rankupCommand, "rankup");
 
         registerCommand(new GiveTokensCommand(this), "givetokens");
         registerCommand(new PrisonTycoonCommand(this), "prisontycoon");
