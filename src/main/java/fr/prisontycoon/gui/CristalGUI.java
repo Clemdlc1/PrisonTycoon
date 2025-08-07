@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.cristaux.Cristal;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -44,7 +43,7 @@ public class CristalGUI {
             return;
         }
 
-        Inventory inv = Bukkit.createInventory(null, 27, "§d✨ Gestion des Cristaux ✨");
+        Inventory inv = plugin.getGUIManager().createInventory(27, "§d✨ Gestion des Cristaux ✨");
 
         // Informations de la pioche (slot 4)
         fillPickaxeInfo(inv, player);
@@ -70,7 +69,7 @@ public class CristalGUI {
      * Ouvre le menu de fusion des cristaux
      */
     public void openFusionMenu(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 9, "§6⚡ Fusion de Cristaux ⚡");
+        Inventory inv = plugin.getGUIManager().createInventory(9, "§6⚡ Fusion de Cristaux ⚡");
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
     }
@@ -81,7 +80,7 @@ public class CristalGUI {
     private void fillPickaxeInfo(Inventory inv, Player player) {
         ItemStack info = new ItemStack(Material.NETHERITE_PICKAXE);
         ItemMeta meta = info.getItemMeta();
-        meta.setDisplayName("§6✨ Votre Pioche Légendaire ✨");
+        plugin.getGUIManager().applyName(meta, "§6✨ Votre Pioche Légendaire ✨");
 
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -109,7 +108,7 @@ public class CristalGUI {
             lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         info.setItemMeta(meta);
         inv.setItem(4, info);
     }
@@ -140,7 +139,8 @@ public class CristalGUI {
                 );
 
                 ItemMeta meta = cristalItem.getItemMeta();
-                List<String> lore = meta.getLore();
+        List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
+                assert lore != null;
                 lore.add("");
                 lore.add("§c▸ Clic-gauche pour retirer (50% destruction)");
 
@@ -162,7 +162,7 @@ public class CristalGUI {
 
                 ItemStack emptySlot = new ItemStack(slotMaterial);
                 ItemMeta meta = emptySlot.getItemMeta();
-                meta.setDisplayName(slotColor + "⬜ Emplacement libre §8(" + (i + 1) + "/4)");
+                plugin.getGUIManager().applyName(meta, slotColor + "⬜ Emplacement libre §8(" + (i + 1) + "/4)");
 
                 // NOUVEAU: Lore dynamique avec prix spécifique pour chaque emplacement
                 List<String> lore = new ArrayList<>();
@@ -190,7 +190,7 @@ public class CristalGUI {
                     lore.add("§7pour débloquer cet emplacement");
                 }
 
-                meta.setLore(lore);
+                plugin.getGUIManager().applyLore(meta, lore);
                 meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "slot");
                 emptySlot.setItemMeta(meta);
                 inv.setItem(slots[i], emptySlot);
@@ -204,8 +204,8 @@ public class CristalGUI {
     private void fillExplanationBook(Inventory inv) {
         ItemStack book = new ItemStack(Material.BOOK);
         ItemMeta meta = book.getItemMeta();
-        meta.setDisplayName("§6📚 Guide des Cristaux");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(meta, "§6📚 Guide des Cristaux");
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                 "§7Les cristaux améliorent votre pioche",
                 "§7avec des bonus permanents.",
@@ -239,8 +239,8 @@ public class CristalGUI {
         // Bouton fusion
         ItemStack fusion = new ItemStack(Material.BLAZE_POWDER);
         ItemMeta fusionMeta = fusion.getItemMeta();
-        fusionMeta.setDisplayName("§6⚡ Fusion de Cristaux");
-        fusionMeta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(fusionMeta, "§6⚡ Fusion de Cristaux");
+        plugin.getGUIManager().applyLore(fusionMeta, Arrays.asList(
                 "§7Fusionnez 9 cristaux du même niveau",
                 "§7pour obtenir 1 cristal de niveau supérieur",
                 "",
@@ -253,8 +253,8 @@ public class CristalGUI {
         // Bouton retour
         ItemStack back = new ItemStack(Material.ARROW);
         ItemMeta backMeta = back.getItemMeta();
-        backMeta.setDisplayName("§e↩ Retour");
-        backMeta.setLore(List.of("§7Retour au menu des enchantements"));
+        plugin.getGUIManager().applyName(backMeta, "§e↩ Retour");
+        plugin.getGUIManager().applyLore(backMeta, List.of("§7Retour au menu des enchantements"));
         backMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back");
         back.setItemMeta(backMeta);
         inv.setItem(18, back);
@@ -262,8 +262,8 @@ public class CristalGUI {
         // Bouton fermer
         ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = close.getItemMeta();
-        closeMeta.setDisplayName("§c❌ Fermer");
-        closeMeta.setLore(List.of("§7Ferme ce menu"));
+        plugin.getGUIManager().applyName(closeMeta, "§c❌ Fermer");
+        plugin.getGUIManager().applyLore(closeMeta, List.of("§7Ferme ce menu"));
         closeMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         close.setItemMeta(closeMeta);
         inv.setItem(26, close);
@@ -277,7 +277,7 @@ public class CristalGUI {
         ItemMeta meta = filler.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§7");
+            plugin.getGUIManager().applyName(meta, "§7");
             filler.setItemMeta(meta);
         }
 
@@ -415,8 +415,9 @@ public class CristalGUI {
      * NOUVEAU: Actualise le GUI des cristaux si un joueur l'a ouvert
      */
     public void refreshCristalGUI(Player player) {
-        if (player.getOpenInventory() != null &&
-                player.getOpenInventory().getTitle().equals("§d✨ Gestion des Cristaux ✨")) {
+        player.getOpenInventory();
+        if (net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(player.getOpenInventory().title())
+                .equals("§d✨ Gestion des Cristaux ✨")) {
 
             // Actualiser seulement les parties dynamiques du GUI
             Inventory inv = player.getOpenInventory().getTopInventory();

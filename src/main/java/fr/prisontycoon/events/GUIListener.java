@@ -118,6 +118,7 @@ public class GUIListener implements Listener {
      */
     private void handleGUIClick(Player player, GUIType guiType, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
         switch (guiType) {
+            case MAIN_MENU -> plugin.getMainNavigationGUI().handleClick(player, item);
             case ENCHANTMENT_MENU -> plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
 
             case CATEGORY_ENCHANT -> plugin.getCategoryMenuGUI().handleCategoryMenuClick(player, slot, item, clickType);
@@ -181,9 +182,7 @@ public class GUIListener implements Listener {
             case HEAD_COLLECTION -> plugin.getHeadCollectionGUI().handleCollectionMenuClick(player, slot, item);
 
             case OUTPOST_MAIN, OUTPOST_SKINS -> plugin.getOutpostGUI().handleClick(player, item, guiType.name());
-            default -> {
-                plugin.getPluginLogger().warning("GUI non géré: " + guiType);
-            }
+            default -> plugin.getPluginLogger().warning("GUI non géré: " + guiType);
         }
     }
 

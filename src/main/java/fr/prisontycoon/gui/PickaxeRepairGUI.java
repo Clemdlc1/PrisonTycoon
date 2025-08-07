@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.CustomEnchantment;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -66,7 +65,7 @@ public class PickaxeRepairGUI {
      * Ouvre le menu de réparation de la pioche
      */
     public void openRepairGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§c🔨 §lRéparation de Pioche §c🔨");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§c🔨 §lRéparation de Pioche §c🔨");
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -202,7 +201,7 @@ public class PickaxeRepairGUI {
         ItemStack item = new ItemStack(Material.EMERALD);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§a⚡ §lRÉPARATION MAXIMALE");
+        plugin.getGUIManager().applyName(meta,"§a⚡ §lRÉPARATION MAXIMALE");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -230,14 +229,14 @@ public class PickaxeRepairGUI {
                 lore.add("§7└");
                 lore.add("");
                 lore.add("§c❌ §lTOKENS INSUFFISANTS");
-                item.setType(Material.BARRIER);
+                item.withType(Material.BARRIER);
             }
         } else {
             lore.add("§c❌ §lAUCUNE RÉPARATION POSSIBLE");
             lore.add("§7│ §cTokens insuffisants pour réparer");
             lore.add("§7│ §emême un seul point de durabilité.");
             lore.add("§7└");
-            item.setType(Material.BARRIER);
+            item.withType(Material.BARRIER);
         }
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -313,7 +312,7 @@ public class PickaxeRepairGUI {
 
         // Mise à jour du menu
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (player.getOpenInventory().getTitle().equals("§c🔨 §lRéparation de Pioche §c🔨")) {
+            if (plugin.getGUIManager().getLegacyTitle(player.getOpenInventory()).equals("§c🔨 §lRéparation de Pioche §c🔨")) {
                 createRepairButtons(player.getOpenInventory().getTopInventory(), player);
                 player.getOpenInventory().getTopInventory().setItem(PICKAXE_INFO_SLOT, createPickaxeInfoItem(player));
             }
@@ -327,7 +326,7 @@ public class PickaxeRepairGUI {
     private void fillBorders(Inventory gui) {
         ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = borderItem.getItemMeta();
-        meta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(meta," ");
         borderItem.setItemMeta(meta);
 
         // Remplir les bordures
@@ -345,7 +344,7 @@ public class PickaxeRepairGUI {
     private ItemStack createBackButton() {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c⬅ §lRetour au menu principal");
+        plugin.getGUIManager().applyName(meta, "§c⬅ §lRetour au menu principal");
         item.setItemMeta(meta);
         return item;
     }
@@ -353,7 +352,7 @@ public class PickaxeRepairGUI {
     private ItemStack createDisabledButton() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c❌ §lRÉPARATION INDISPONIBLE");
+        plugin.getGUIManager().applyName(meta, "§c❌ §lRÉPARATION INDISPONIBLE");
         List<String> lore = new ArrayList<>();
         lore.add("§cPioche légendaire introuvable!");
         lore.add("§7Assurez-vous qu'elle est dans votre inventaire.");
@@ -366,7 +365,7 @@ public class PickaxeRepairGUI {
         ItemStack item = new ItemStack(Material.DIAMOND);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§a✅ §lPIOCHE ENTIÈREMENT RÉPARÉE");
+        plugin.getGUIManager().applyName(meta, "§a✅ §lPIOCHE ENTIÈREMENT RÉPARÉE");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -418,7 +417,7 @@ public class PickaxeRepairGUI {
         ItemStack item = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6⛏️ §lINFORMATIONS DE LA PIOCHE");
+        plugin.getGUIManager().applyName(meta, "§6⛏️ §lINFORMATIONS DE LA PIOCHE");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");

@@ -87,7 +87,7 @@ public class EnchantmentBookGUI {
 
         // Titre avec état - UNIFORMISÉ
         String statusIcon = owned ? (isActive ? "§a✅" : "§c⭕") : "§8❌";
-        meta.setDisplayName(statusIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
+        plugin.getGUIManager().applyName(meta,statusIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -187,7 +187,7 @@ public class EnchantmentBookGUI {
         // Bouton boutique
         ItemStack shopButton = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shopButton.getItemMeta();
-        shopMeta.setDisplayName("§a💰 §lBoutique de Livres");
+        plugin.getGUIManager().applyName(shopMeta,"§a💰 §lBoutique de Livres");
         shopMeta.setLore(List.of(
                 "§7Achetez des livres d'enchantement",
                 "§7avec vos beacons!"
@@ -199,7 +199,7 @@ public class EnchantmentBookGUI {
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§5⚡ §lRÉSUMÉ DES ENCHANTS ACTIFS");
+        plugin.getGUIManager().applyName(meta,"§5⚡ §lRÉSUMÉ DES ENCHANTS ACTIFS");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -221,7 +221,7 @@ public class EnchantmentBookGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack glass = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(glassMeta," ");
         glass.setItemMeta(glassMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -242,7 +242,7 @@ public class EnchantmentBookGUI {
         // Information du joueur (existant)
         ItemStack playerInfo = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta infoMeta = playerInfo.getItemMeta();
-        infoMeta.setDisplayName("§6💰 Vos Beacons");
+        plugin.getGUIManager().applyName(infoMeta,"§6💰 Vos Beacons");
         infoMeta.setLore(List.of(
                 "§7Beacons disponibles:",
                 "§e" + NumberFormatter.format(playerData.getBeacons()) + " beacons"
@@ -274,14 +274,14 @@ public class EnchantmentBookGUI {
         // Bouton retour (existant)
         ItemStack backButton = new ItemStack(Material.ARROW);
         ItemMeta backMeta = backButton.getItemMeta();
-        backMeta.setDisplayName("§c⬅ §lRetour");
+        plugin.getGUIManager().applyName(backMeta,"§c⬅ §lRetour");
         backButton.setItemMeta(backMeta);
         gui.setItem(36, backButton);
 
         // Remplissage décoratif (existant)
         ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(glassMeta," ");
         glass.setItemMeta(glassMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -309,7 +309,7 @@ public class EnchantmentBookGUI {
 
         // Titre avec indicateur de disponibilité
         String affordIcon = canAfford ? "§a💰" : "§c💸";
-        meta.setDisplayName(affordIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
+        plugin.getGUIManager().applyName(meta,affordIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         // ID du livre pour identification
         meta.getPersistentDataContainer().set(
@@ -477,8 +477,7 @@ public class EnchantmentBookGUI {
     public void handleEnchantmentBookMenuClick(Player player, int slot, ItemStack clickedItem, ClickType clickType) {
         // NOUVEAU : Vérification si le joueur clique avec un livre physique dans la main
         ItemStack cursor = player.getItemOnCursor();
-        if (cursor != null && cursor.getType() == Material.ENCHANTED_BOOK &&
-                cursor.hasItemMeta() && cursor.getItemMeta().getPersistentDataContainer().has(
+        if (cursor.getType() == Material.ENCHANTED_BOOK && cursor.hasItemMeta() && cursor.getItemMeta().getPersistentDataContainer().has(
                 new NamespacedKey(plugin, "enchant_book_id"), PersistentDataType.STRING)) {
 
             handlePhysicalBookApplication(player, cursor);
@@ -599,7 +598,7 @@ public class EnchantmentBookGUI {
         // Créer l'item d'erreur rouge
         ItemStack errorItem = new ItemStack(Material.RED_CONCRETE);
         ItemMeta meta = errorItem.getItemMeta();
-        meta.setDisplayName("§c⚠️ §lERREUR");
+        plugin.getGUIManager().applyName(meta,"§c⚠️ §lERREUR");
 
         List<String> errorLore = new ArrayList<>();
         errorLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");

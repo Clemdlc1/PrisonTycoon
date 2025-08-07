@@ -84,6 +84,7 @@ public class CrateManager {
                 }
 
                 Location loc = new Location(world, x, y, z);
+                assert crateTypeStr != null;
                 CrateType crateType = CrateType.valueOf(crateTypeStr.toUpperCase().replace(" ", "_"));
 
                 crateLocations.put(loc, crateType);
@@ -180,12 +181,12 @@ public class CrateManager {
                 } else {
                     player.getInventory().setItem(i, null);
                 }
-                return true;
+                return false;
             }
         }
 
         // Sinon, consomme dans les conteneurs
-        return consumeKeyFromContainers(player, keyType);
+        return !consumeKeyFromContainers(player, keyType);
     }
 
     /**
@@ -258,7 +259,7 @@ public class CrateManager {
         String requiredKeyType = crateType.getDisplayName();
 
         // Consomme la clé
-        if (!consumeKey(player, requiredKeyType)) {
+        if (consumeKey(player, requiredKeyType)) {
             player.sendMessage("§cErreur lors de la consommation de la clé!");
             return;
         }
@@ -290,7 +291,7 @@ public class CrateManager {
         List<ItemStack> rewards = new ArrayList<>();
 
         while (opened < availableKeys && player.getInventory().firstEmpty() != -1) {
-            if (!consumeKey(player, requiredKeyType)) break;
+            if (consumeKey(player, requiredKeyType)) break;
 
             CrateType.CrateReward reward = crateType.selectRandomReward();
             ItemStack rewardItem = crateType.convertRewardToItem(reward, plugin);

@@ -62,7 +62,7 @@ public class AutominerEnchantUpgradeGUI {
         String title = "§6🔧 " + getEnchantmentDisplayName(enchantmentName) + " §6🔧";
         Inventory gui = Bukkit.createInventory(null, 27, title);
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_UPGRADE, gui, Map.of("enchantment", enchantmentName, "slot", String.valueOf(autominerSlot)));
-//TODO vérifier ci dessus
+
         // Remplissage décoratif
         fillBorders(gui);
 
@@ -249,7 +249,7 @@ public class AutominerEnchantUpgradeGUI {
 
             meta.setLore(lore);
         } else {
-            meta.setDisplayName("§c❌ §lAUCUNE AMÉLIORATION POSSIBLE");
+            plugin.getGUIManager().applyName(meta,"§c❌ §lAUCUNE AMÉLIORATION POSSIBLE");
             meta.setLore(Arrays.asList(
                     "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                     "§c❌ §lPAS D'AMÉLIORATION POSSIBLE",

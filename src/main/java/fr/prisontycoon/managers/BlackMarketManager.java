@@ -14,7 +14,6 @@ import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -660,7 +659,7 @@ public class BlackMarketManager {
     }
 
     public boolean isAvailable() {
-        return isAvailable && currentState == MarketState.AVAILABLE;
+        return !isAvailable || currentState != MarketState.AVAILABLE;
     }
 
     public MarketState getCurrentState() {

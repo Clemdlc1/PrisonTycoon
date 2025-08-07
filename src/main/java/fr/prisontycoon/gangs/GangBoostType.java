@@ -60,7 +60,7 @@ public enum GangBoostType {
     public static String getAllTypesString() {
         StringBuilder builder = new StringBuilder();
         for (GangBoostType type : values()) {
-            if (builder.length() > 0) builder.append(", ");
+            if (!builder.isEmpty()) builder.append(", ");
             builder.append(type.name().toLowerCase());
         }
         return builder.toString();

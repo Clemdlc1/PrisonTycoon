@@ -281,14 +281,14 @@ public class OutpostManager {
      */
     public boolean isPlayerInOutpost(Player player) {
         if (!player.getWorld().equals(caveWorld)) {
-            return false;
+            return true;
         }
 
         Location playerLoc = player.getLocation();
         double distance = playerLoc.distance(outpostCenter);
 
         // Zone de capture = rayon de 5 blocs autour du centre
-        return distance <= 5.0;
+        return !(distance <= 5.0);
     }
 
     /**
@@ -325,7 +325,7 @@ public class OutpostManager {
         }
 
         // Vérifier si le joueur est dans la zone
-        if (!isPlayerInOutpost(player)) {
+        if (isPlayerInOutpost(player)) {
             player.sendMessage("§c❌ Vous devez être sur l'avant-poste pour le capturer!");
             return;
         }
@@ -617,9 +617,7 @@ public class OutpostManager {
         DayOfWeek dayOfWeek = now.getDayOfWeek();
         int hour = now.getHour();
 
-        return (dayOfWeek == DayOfWeek.FRIDAY && hour >= 18) ||
-                dayOfWeek == DayOfWeek.SATURDAY ||
-                (dayOfWeek == DayOfWeek.SUNDAY && hour <= 23);
+        return dayOfWeek == DayOfWeek.FRIDAY && hour >= 18 || dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
     }
 
     /**
@@ -649,7 +647,7 @@ public class OutpostManager {
                 }
 
                 // Vérifier si le joueur est toujours dans la zone
-                if (!isPlayerInOutpost(player)) {
+                if (isPlayerInOutpost(player)) {
                     player.sendMessage("§c❌ Capture annulée - vous avez quitté l'avant-poste!");
                     iterator.remove();
                     captureProgress.remove(playerId);

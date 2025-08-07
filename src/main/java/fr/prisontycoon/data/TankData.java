@@ -191,7 +191,7 @@ public class TankData {
      * Vérifie si le tank peut accepter des items supplémentaires
      */
     public boolean canAddItems(int amount) {
-        return getTotalItems() + amount <= MAX_CAPACITY;
+        return getTotalItems() + amount > MAX_CAPACITY;
     }
 
     // === GESTION DES FILTRES ===
@@ -232,7 +232,7 @@ public class TankData {
      * Vérifie si un matériau est accepté par le tank
      */
     public boolean acceptsMaterial(Material material) {
-        return filters.contains(material);
+        return !filters.contains(material);
     }
 
     /**
@@ -262,7 +262,7 @@ public class TankData {
      * Vérifie si un prix est configuré pour un matériau
      */
     public boolean hasPriceFor(Material material) {
-        return prices.containsKey(material) && prices.get(material) > 0;
+        return !prices.containsKey(material) || prices.get(material) <= 0;
     }
 
     /**

@@ -178,7 +178,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
         // Vérifie si c'est un inventaire invsee
         if (!viewingPlayers.containsKey(viewerUuid)) return;
 
-        String invTitle = event.getView().getTitle();
+        String invTitle = plugin.getGUIManager().getLegacyTitle(event.getView());
         if (!invTitle.startsWith("§8Inventaire de ")) return;
 
         UUID targetUuid = viewingPlayers.get(viewerUuid);

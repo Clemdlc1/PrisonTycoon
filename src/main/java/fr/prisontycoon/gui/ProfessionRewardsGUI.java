@@ -3,7 +3,6 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.ProfessionManager;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -48,7 +47,7 @@ public class ProfessionRewardsGUI {
         ProfessionManager.Profession profession = plugin.getProfessionManager().getProfession(professionId);
         if (profession == null) return;
 
-        Inventory gui = Bukkit.createInventory(null, 36, "§6🎁 " + profession.displayName() + " - Récompenses");
+        Inventory gui = plugin.getGUIManager().createInventory(36, "§6🎁 " + profession.displayName() + " - Récompenses");
         // Enregistre le GUI avec des données contextuelles pour le retour
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_REWARDS, gui, java.util.Map.of("professionId", professionId));
 
@@ -87,7 +86,7 @@ public class ProfessionRewardsGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(glassMeta, " ");
         glass.setItemMeta(glassMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -125,7 +124,7 @@ public class ProfessionRewardsGUI {
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6📋 §lRécompenses " + profession.displayName());
+        plugin.getGUIManager().applyName(meta, "§6📋 §lRécompenses " + profession.displayName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Réclamez vos récompenses de niveau !");
@@ -136,7 +135,7 @@ public class ProfessionRewardsGUI {
         lore.add("§7Les récompenses ne peuvent être");
         lore.add("§7réclamées qu'une seule fois.");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -157,7 +156,7 @@ public class ProfessionRewardsGUI {
 
         String color = isClaimed ? "§c" : (hasLevel ? "§a" : "§7");
         String status = isClaimed ? "✗" : (hasLevel ? "✓" : "⏳");
-        meta.setDisplayName(color + status + " §fNiveau " + level + " - §6Récompense");
+        plugin.getGUIManager().applyName(meta, color + status + " §fNiveau " + level + " - §6Récompense");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Récompense pour l'atteinte du niveau " + level + ".");
@@ -182,7 +181,7 @@ public class ProfessionRewardsGUI {
             lore.add("§7⏳ Atteignez le niveau " + level + " d'abord");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -213,8 +212,8 @@ public class ProfessionRewardsGUI {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§7← §lRetour");
-        meta.setLore(List.of("§7Retour au menu des métiers"));
+        plugin.getGUIManager().applyName(meta, "§7← §lRetour");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retour au menu des métiers"));
 
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_to_professions");
         item.setItemMeta(meta);

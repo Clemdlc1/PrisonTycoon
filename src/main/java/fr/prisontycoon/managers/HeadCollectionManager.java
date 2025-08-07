@@ -2,15 +2,11 @@ package fr.prisontycoon.managers;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
-import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.PlayerData;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.World;
+import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.PlayerData;
+import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -22,7 +18,9 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

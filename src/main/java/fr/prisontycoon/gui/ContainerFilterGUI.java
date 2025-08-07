@@ -2,7 +2,6 @@ package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.ContainerData;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -45,7 +44,7 @@ public class ContainerFilterGUI {
 
         // Titre simple et lisible
         String title = "§e🎯 Filtres - Conteneur Tier " + data.getTier();
-        Inventory filterInv = Bukkit.createInventory(null, 9, title);
+        Inventory filterInv = plugin.getGUIManager().createInventory(9, title);
 
         // Place les items de référence en utilisant le slot sauvegardé (la clé de la Map).
         Map<Integer, ItemStack> referenceItems = data.getReferenceItems();

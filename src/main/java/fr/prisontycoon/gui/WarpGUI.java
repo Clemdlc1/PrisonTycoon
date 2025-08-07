@@ -2,7 +2,6 @@ package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.WarpData;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -17,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+// Adventure handled via GUIManager utilities
+
 /**
  * Interface graphique pour les warps
  * Affiche tous les warps avec des têtes personnalisées et des sous-menus
@@ -29,6 +30,7 @@ public class WarpGUI {
     // Clés pour stocker les données de manière sécurisée dans les items
     private final NamespacedKey warpIdKey;
     private final NamespacedKey pageNumberKey;
+    private final NamespacedKey actionKey;
 
     private static final Map<WarpData.WarpType, Material> WARP_TYPE_ICONS = Map.of(
             WarpData.WarpType.SPAWN, Material.NETHER_STAR,
@@ -46,13 +48,15 @@ public class WarpGUI {
         // Initialisation des clés avec le namespace du plugin pour éviter les conflits
         this.warpIdKey = new NamespacedKey(plugin, "warp_id");
         this.pageNumberKey = new NamespacedKey(plugin, "page_number");
+        this.actionKey = new NamespacedKey(plugin, "warp_gui_action");
     }
 
     /**
      * Ouvre le menu principal des warps
      */
     public void openWarpMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§8• §6Menu des Warps §8•");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§8• §6Menu des Warps §8•");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.WARP_MENU, gui);
         fillWithGlass(gui);
 
         Map<WarpData.WarpType, List<WarpData>> warpsByType = plugin.getWarpManager()
@@ -73,8 +77,12 @@ public class WarpGUI {
             }
         }
 
+        // Ajout de 3 accès rapides si présents dans la config
+        addQuickAccessIfPresent(gui, "crates", 38, "§d📦 §fCrates");
+        addQuickAccessIfPresent(gui, "banque", 40, "§6💰 §fBanque");
+        addQuickAccessIfPresent(gui, "recherche", 42, "§b🔬 §fRecherche");
+
         gui.setItem(49, createCloseItem());
-        plugin.getGUIManager().registerOpenGUI(player, GUIType.WARP_MENU, gui);
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.7f, 1.0f);
     }
@@ -89,7 +97,7 @@ public class WarpGUI {
         page = Math.max(1, Math.min(page, totalPages));
 
         String title = "§8• §6Mines §8(§e" + page + "§8/§e" + totalPages + "§8) •";
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = plugin.getGUIManager().createInventory(54, title);
         fillWithGlass(gui);
 
         int startIndex = (page - 1) * ITEMS_PER_PAGE;
@@ -121,10 +129,13 @@ public class WarpGUI {
     public void handleWarpMenuClick(Player player, ItemStack item) {
         if (item == null || !item.hasItemMeta()) return;
 
-        // Le bouton fermer est commun à tous les menus
-        if (item.getItemMeta().getDisplayName().contains("§c✖ Fermer")) {
-            player.closeInventory();
-            return;
+        // Actions via PDC
+        String action = item.getItemMeta().getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
+        if (action != null) {
+            switch (action) {
+                case "close" -> { player.closeInventory(); return; }
+                case "back" -> { openWarpMenu(player); return; }
+            }
         }
 
         // AMÉLIORATION : On récupère le type du GUI ouvert pour savoir comment réagir.
@@ -142,11 +153,9 @@ public class WarpGUI {
     }
 
     private void handleMainMenuClick(Player player, ItemStack item) {
-        // Clic pour ouvrir le sous-menu des mines
-        if (item.getItemMeta().getDisplayName().contains("Mines §8(§7Ouvrir§8)")) {
-            openMineWarpsMenu(player, 1);
-            return;
-        }
+        // Clic pour ouvrir le sous-menu des mines via PDC action
+        String action = item.getItemMeta().getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
+        if ("open_mines".equals(action)) { openMineWarpsMenu(player, 1); return; }
 
         // Clic sur un warp direct (Spawn, etc.)
         String warpId = getWarpIdFromItem(item);
@@ -154,17 +163,16 @@ public class WarpGUI {
             if (plugin.getWarpManager().teleportToWarp(player, warpId)) {
                 player.closeInventory();
             }
+            return;
         }
+
+        // Les accès rapides utilisent aussi warpId PDC, géré plus haut
     }
 
     private void handleMinesMenuClick(Player player, ItemStack item) {
         ItemMeta meta = item.getItemMeta();
 
-        // Clic sur "Retour"
-        if (meta.getDisplayName().contains("§e◀ Retour")) {
-            openWarpMenu(player);
-            return;
-        }
+        // Clic sur "Retour" via action PDC géré plus haut
 
         // AMÉLIORATION : On lit le numéro de page depuis les données de l'item
         Integer page = meta.getPersistentDataContainer().get(pageNumberKey, PersistentDataType.INTEGER);
@@ -185,7 +193,7 @@ public class WarpGUI {
     private ItemStack createWarpTypeItem(WarpData.WarpType type, List<WarpData> warps) {
         ItemStack item = new ItemStack(WARP_TYPE_ICONS.getOrDefault(type, Material.STONE));
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(type.getIcon() + " §f" + type.getDisplayName());
+        plugin.getGUIManager().applyName(meta, type.getIcon() + " §f" + type.getDisplayName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + type.getDescription());
@@ -201,7 +209,7 @@ public class WarpGUI {
             // Note : Pour l'instant, cliquer ne fait rien si > 1, ce qui est le comportement attendu.
             // Si vous voulez un autre sous-menu, la logique devra être ajoutée ici.
         }
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -212,7 +220,7 @@ public class WarpGUI {
         ItemMeta meta = item.getItemMeta();
 
         String accessColor = canAccess ? "§a" : "§c";
-        meta.setDisplayName(accessColor + "§l" + warp.getType().getIcon() + " " + warp.getDisplayName());
+        plugin.getGUIManager().applyName(meta, accessColor + "§l" + warp.getType().getIcon() + " " + warp.getDisplayName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + warp.getFormattedDescription());
@@ -234,10 +242,10 @@ public class WarpGUI {
     private ItemStack createPageItem(String name, int page) {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
+        plugin.getGUIManager().applyName(meta, name);
         // AMÉLIORATION : Stockage du numéro de page de manière sécurisée
         meta.getPersistentDataContainer().set(pageNumberKey, PersistentDataType.INTEGER, page);
-        meta.setLore(List.of("§7Cliquez pour changer de page."));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Cliquez pour changer de page."));
         item.setItemMeta(meta);
         return item;
     }
@@ -248,7 +256,8 @@ public class WarpGUI {
     private ItemStack createMineSubmenuItem(Player player) {
         ItemStack item = new ItemStack(WARP_TYPE_ICONS.get(WarpData.WarpType.MINE));
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§6⛏ §fMines §8(§7Ouvrir§8)");
+        plugin.getGUIManager().applyName(meta, "§6⛏ §fMines §8(§7Ouvrir§8)");
+        meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_mines");
 
         List<WarpData> allMines = plugin.getWarpManager().getWarpsByType(WarpData.WarpType.MINE);
         long accessibleCount = allMines.stream().filter(w -> plugin.getWarpManager().canAccessWarp(player, w)).count();
@@ -262,7 +271,7 @@ public class WarpGUI {
         lore.add(" ");
         lore.add("§e» Cliquez pour ouvrir le sous-menu");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -274,7 +283,7 @@ public class WarpGUI {
         ItemStack item = new ItemStack(canAccess ? Material.LIME_DYE : Material.GRAY_DYE);
         ItemMeta meta = item.getItemMeta();
         String accessColor = canAccess ? "§a" : "§c";
-        meta.setDisplayName(accessColor + "§l" + warp.getType().getIcon() + " " + warp.getDisplayName());
+        plugin.getGUIManager().applyName(meta, accessColor + "§l" + warp.getType().getIcon() + " " + warp.getDisplayName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + warp.getFormattedDescription());
@@ -288,7 +297,7 @@ public class WarpGUI {
         }
         lore.add("§8ID: §7" + warp.getId());
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -297,8 +306,9 @@ public class WarpGUI {
     private ItemStack createBackItem() {
         ItemStack item = new ItemStack(Material.OAK_SIGN);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§e◀ Retour");
-        meta.setLore(List.of("§7Retourner au menu principal des warps."));
+        plugin.getGUIManager().applyName(meta, "§e◀ Retour");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu principal des warps."));
+        meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back");
         item.setItemMeta(meta);
         return item;
     }
@@ -306,8 +316,9 @@ public class WarpGUI {
     private ItemStack createCloseItem() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c✖ Fermer");
-        meta.setLore(List.of("§7Fermer ce menu."));
+        plugin.getGUIManager().applyName(meta, "§c✖ Fermer");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Fermer ce menu."));
+        meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         item.setItemMeta(meta);
         return item;
     }
@@ -320,12 +331,12 @@ public class WarpGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack blackGlass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta blackMeta = blackGlass.getItemMeta();
-        blackMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(blackMeta,"");
         blackGlass.setItemMeta(blackMeta);
 
         ItemStack grayGlass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta grayMeta = grayGlass.getItemMeta();
-        grayMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(grayMeta,"");
         grayGlass.setItemMeta(grayMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -334,4 +345,18 @@ public class WarpGUI {
             }
         }
     }
+
+    private void addQuickAccessIfPresent(Inventory gui, String warpId, int slot, String display) {
+        WarpData data = plugin.getConfigManager().getWarp(warpId);
+        if (data == null) return;
+        ItemStack item = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta meta = item.getItemMeta();
+        plugin.getGUIManager().applyName(meta, display);
+        plugin.getGUIManager().applyLore(meta, List.of("§7Accès rapide au warp §e" + data.getDisplayName(), "§e» Cliquez pour vous téléporter"));
+        meta.getPersistentDataContainer().set(warpIdKey, PersistentDataType.STRING, warpId);
+        item.setItemMeta(meta);
+        gui.setItem(slot, item);
+    }
+
+    // Titles and lore handled by GUIManager (Adventure)
 }

@@ -109,8 +109,7 @@ public class EnchantmentManager {
 
         String activeProfession = playerData.getActiveProfession();
         if (activeProfession != null && activeProfession.equals("mineur")) {
-            Random rand = new Random();
-            if (rand.nextInt(100) == 0) {
+            if (java.util.concurrent.ThreadLocalRandom.current().nextInt(100) == 0) {
                 plugin.getProfessionManager().addProfessionXP(player, "mineur", 1);
             }
         }
@@ -552,8 +551,7 @@ public class EnchantmentManager {
             plugin.getEnchantmentBookManager().processAutoSell(player, material, quantity);
             String activeProfession = playerData.getActiveProfession();
             if (activeProfession.equals("commercant")) {
-                Random rand = new Random();
-                if (rand.nextInt(1000) == 0) {
+                if (java.util.concurrent.ThreadLocalRandom.current().nextInt(1000) == 0) {
                     plugin.getProfessionManager().addProfessionXP(player, "commercant", 1);
                 }
             }

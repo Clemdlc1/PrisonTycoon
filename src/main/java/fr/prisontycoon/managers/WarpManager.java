@@ -137,7 +137,7 @@ public class WarpManager {
         }
 
         // Vérification de l'accessibilité du warp
-        if (!warp.isAccessible()) {
+        if (warp.isAccessible()) {
             player.sendMessage("§c❌ Ce warp n'est pas disponible actuellement!");
             return false;
         }

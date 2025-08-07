@@ -35,7 +35,7 @@ public class AutominerCondHeadGUI {
      * Ouvre le menu de condensation
      */
     public void openCondensationMenu(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 9, "§d🔧 Condensation d'Automineurs");
+        Inventory inv = plugin.getGUIManager().createInventory(9, "§d🔧 Condensation d'Automineurs");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_CONDENSATION, inv);
         player.openInventory(inv);
     }
@@ -89,6 +89,7 @@ public class AutominerCondHeadGUI {
 
         // Effectuer la condensation
         AutominerType nextType = firstType.getNextTier();
+        assert nextType != null;
         ItemStack newAutominer = plugin.getAutominerManager().createAutominer(nextType);
 
         // Donner le nouvel automineur
@@ -116,7 +117,7 @@ public class AutominerCondHeadGUI {
      * Ouvre le menu de carburant
      */
     public void openFuelMenu(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 9, "§c⛽ Ajout de Carburant");
+        Inventory inv = plugin.getGUIManager().createInventory(9, "§c⛽ Ajout de Carburant");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_FUEL, inv);
         player.openInventory(inv);
     }
@@ -167,7 +168,7 @@ public class AutominerCondHeadGUI {
         Map<Material, Long> storage = playerData.getAutominerStorageContents();
 
         int size = Math.min(54, Math.max(27, ((storage.size() + 8) / 9) * 9 + 9));
-        Inventory inv = Bukkit.createInventory(null, size, "§6📦 Stockage Automineur");
+        Inventory inv = plugin.getGUIManager().createInventory(size, "§6📦 Stockage Automineur");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_STORAGE, inv);
 
         // Afficher les items stockés
@@ -221,13 +222,13 @@ public class AutominerCondHeadGUI {
         // Bouton améliorer stockage
         ItemStack upgrade = new ItemStack(Material.ENDER_CHEST);
         ItemMeta upgradeMeta = upgrade.getItemMeta();
-        upgradeMeta.setDisplayName("§bAméliorer le Stockage");
+        plugin.getGUIManager().applyName(upgradeMeta, "§bAméliorer le Stockage");
 
         long currentCapacity = 1000L + (playerData.getAutominerStorageLevel() * 500L);
         long nextCapacity = currentCapacity + 500L;
         int upgradeCost = (playerData.getAutominerStorageLevel() + 1) * 2; // 2, 4, 6, 8... beacons
 
-        upgradeMeta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(upgradeMeta, Arrays.asList(
                 "§7Niveau actuel: §f" + playerData.getAutominerStorageLevel(),
                 "§7Capacité actuelle: §f" + NumberFormatter.format(currentCapacity),
                 "§7Prochaine capacité: §f" + NumberFormatter.format(nextCapacity),
@@ -242,7 +243,7 @@ public class AutominerCondHeadGUI {
         // Bouton récupérer gains (clés + greed + beacons)
         ItemStack gains = new ItemStack(Material.CHEST_MINECART);
         ItemMeta gainsMeta = gains.getItemMeta();
-        gainsMeta.setDisplayName("§a💰 Récupérer les Gains");
+        plugin.getGUIManager().applyName(gainsMeta, "§a💰 Récupérer les Gains");
 
         Map<String, Integer> storedKeys = playerData.getAutominerStoredKeys();
         List<String> gainsLore = new ArrayList<>();
@@ -275,20 +276,20 @@ public class AutominerCondHeadGUI {
 
         gainsLore.add("");
         gainsLore.add("§eClic: §7Récupérer tous les gains");
-        gainsMeta.setLore(gainsLore);
+        plugin.getGUIManager().applyLore(gainsMeta, gainsLore);
         gains.setItemMeta(gainsMeta);
         inv.setItem(lastRow + 4, gains);
 
         // Bouton vendre tout
         ItemStack sellAll = new ItemStack(Material.EMERALD);
         ItemMeta sellAllMeta = sellAll.getItemMeta();
-        sellAllMeta.setDisplayName("§aVendre Tout");
+        plugin.getGUIManager().applyName(sellAllMeta, "§aVendre Tout");
 
         long totalSellValue = calculateTotalSellValue(storage);
         String valueDisplay = totalSellValue > 0 ?
                 "§a" + NumberFormatter.format(totalSellValue) : "§c0";
 
-        sellAllMeta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(sellAllMeta, Arrays.asList(
                 "§7Vendre tous les minerais stockés",
                 "§7Valeur totale: " + valueDisplay + "§7$ (+ tokens)",
                 "",
@@ -300,8 +301,8 @@ public class AutominerCondHeadGUI {
         // Bouton retour
         ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta backMeta = back.getItemMeta();
-        backMeta.setDisplayName("§cRetour");
-        backMeta.setLore(List.of("§7Retourner au menu principal"));
+        plugin.getGUIManager().applyName(backMeta, "§cRetour");
+        plugin.getGUIManager().applyLore(backMeta, List.of("§7Retourner au menu principal"));
         back.setItemMeta(backMeta);
         inv.setItem(lastRow + 8, back);
 
@@ -314,7 +315,8 @@ public class AutominerCondHeadGUI {
     public void handleStorageClick(Player player, int slot, ItemStack clickedItem) {
         if (clickedItem == null) return;
 
-        String displayName = clickedItem.getItemMeta().getDisplayName();
+        String displayName = clickedItem.getItemMeta().displayName() != null ?
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(clickedItem.getItemMeta().displayName()) : "";
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (displayName.contains("Améliorer le Stockage")) {

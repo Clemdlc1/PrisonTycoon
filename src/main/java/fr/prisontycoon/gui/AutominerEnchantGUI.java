@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -48,7 +47,7 @@ public class AutominerEnchantGUI {
         Map<String, Integer> enchantments = plugin.getAutominerManager().getAutominerEnchantments(autominer);
         Map<String, String> crystals = plugin.getAutominerManager().getAutominerCrystals(autominer);
 
-        Inventory inv = Bukkit.createInventory(null, 54, "§6⚡ Amélioration Automineur §6⚡");
+        Inventory inv = plugin.getGUIManager().createInventory(54, "§6⚡ Amélioration Automineur §6⚡");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_ENCHANT, inv, Map.of("slot", String.valueOf(slotNumber)));
 
         // Automineur au centre-haut
@@ -57,8 +56,8 @@ public class AutominerEnchantGUI {
         // === SECTION ENCHANTEMENTS (LIGNE 2-3) ===
         ItemStack enchantTitle = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta enchantTitleMeta = enchantTitle.getItemMeta();
-        enchantTitleMeta.setDisplayName("§b✨ Enchantements");
-        enchantTitleMeta.setLore(Arrays.asList("§7Cliquez sur un enchantement", "§7pour l'améliorer"));
+        plugin.getGUIManager().applyName(enchantTitleMeta, "§b✨ Enchantements");
+        plugin.getGUIManager().applyLore(enchantTitleMeta, Arrays.asList("§7Cliquez sur un enchantement", "§7pour l'améliorer"));
         enchantTitle.setItemMeta(enchantTitleMeta);
         inv.setItem(9, enchantTitle);
 
@@ -81,8 +80,8 @@ public class AutominerEnchantGUI {
         // === SECTION CRISTAUX (LIGNE 4) ===
         ItemStack crystalTitle = new ItemStack(Material.AMETHYST_SHARD);
         ItemMeta crystalTitleMeta = crystalTitle.getItemMeta();
-        crystalTitleMeta.setDisplayName("§d💎 Cristaux");
-        crystalTitleMeta.setLore(Arrays.asList("§7Cliquez avec un cristal 'Greed'", "§7pour l'appliquer"));
+        plugin.getGUIManager().applyName(crystalTitleMeta, "§d💎 Cristaux");
+        plugin.getGUIManager().applyLore(crystalTitleMeta, Arrays.asList("§7Cliquez avec un cristal 'Greed'", "§7pour l'appliquer"));
         crystalTitle.setItemMeta(crystalTitleMeta);
         inv.setItem(27, crystalTitle);
 
@@ -126,7 +125,8 @@ public class AutominerEnchantGUI {
         }
 
         // Clic sur un slot de cristal - retirer cristal avec shift+clic
-        if (meta.getDisplayName().contains("Slot Cristal") && clickType == ClickType.SHIFT_LEFT) {
+        String legacyName = meta.displayName() != null ? net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(meta.displayName()) : "";
+        if (legacyName.contains("Slot Cristal") && clickType == ClickType.SHIFT_LEFT) {
             int slotNumber = meta.getPersistentDataContainer().get(slotKey, PersistentDataType.INTEGER);
             handleCrystalRemoval(player, slot, slotNumber);
         }
@@ -193,7 +193,8 @@ public class AutominerEnchantGUI {
             return;
         }
 
-        String inventoryTitle = player.getOpenInventory().getTitle();
+        String inventoryTitle = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                .serialize(player.getOpenInventory().title());
         if (!inventoryTitle.contains("Amélioration Automineur")) {
             return;
         }
@@ -290,7 +291,7 @@ public class AutominerEnchantGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§b" + enchantName);
+        plugin.getGUIManager().applyName(meta, "§b" + enchantName);
         List<String> lore = new ArrayList<>();
 
         if (maxLevel == Integer.MAX_VALUE) {
@@ -312,7 +313,7 @@ public class AutominerEnchantGUI {
             lore.add("§cNiveau maximum atteint!");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(enchantKey, PersistentDataType.STRING, enchantName);
         meta.getPersistentDataContainer().set(slotKey, PersistentDataType.INTEGER, slotNumber);
         item.setItemMeta(meta);
@@ -328,7 +329,7 @@ public class AutominerEnchantGUI {
         ItemMeta meta = item.getItemMeta();
 
         String slotNum = slotName.charAt(slotName.length() - 1) + "";
-        meta.setDisplayName("§d💎 Slot Cristal " + slotNum);
+        plugin.getGUIManager().applyName(meta, "§d💎 Slot Cristal " + slotNum);
         List<String> lore = new ArrayList<>();
 
         if (currentCrystal != null && !currentCrystal.equals("null")) {
@@ -351,7 +352,7 @@ public class AutominerEnchantGUI {
             lore.add("§8• XPBoost, MineralGreed");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(slotKey, PersistentDataType.INTEGER, slotNumber);
         item.setItemMeta(meta);
 
@@ -362,7 +363,7 @@ public class AutominerEnchantGUI {
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6📊 Informations");
+        plugin.getGUIManager().applyName(meta, "§6📊 Informations");
         List<String> lore = new ArrayList<>();
 
         lore.add("§7Type: §f" + type.getDisplayName());
@@ -390,7 +391,7 @@ public class AutominerEnchantGUI {
         }
         lore.add("§dCristaux actifs: §f" + activeCrystals + "/2");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -398,8 +399,8 @@ public class AutominerEnchantGUI {
     private ItemStack createBackButton() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§cRetour");
-        meta.setLore(List.of("§7Retourner au menu principal"));
+        plugin.getGUIManager().applyName(meta, "§cRetour");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu principal"));
         item.setItemMeta(meta);
         return item;
     }
@@ -407,7 +408,7 @@ public class AutominerEnchantGUI {
     private void fillEmptySlots(Inventory inv) {
         ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta fillerMeta = filler.getItemMeta();
-        fillerMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(fillerMeta, " ");
         filler.setItemMeta(fillerMeta);
 
         for (int i = 0; i < inv.getSize(); i++) {
@@ -466,7 +467,7 @@ public class AutominerEnchantGUI {
     }
 
     private String extractCrystalName(ItemStack crystal) {
-        if (crystal.hasItemMeta() && crystal.getItemMeta().getDisplayName() != null) {
+        if (crystal.hasItemMeta() && crystal.getItemMeta().displayName() != null) {
             return crystal.getItemMeta().getDisplayName();
         }
         return "Cristal Inconnu";

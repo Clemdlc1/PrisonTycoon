@@ -5,10 +5,12 @@ import fr.prisontycoon.cristaux.Cristal;
 import fr.prisontycoon.cristaux.CristalType;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -164,30 +166,55 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
 
         // MODIFIÉ: Demander confirmation avec des boutons cliquables au lieu de texte
         if (args.length < 2 || !args[1].equalsIgnoreCase("confirm")) {
-            player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-            player.sendMessage("§d✨ §lRégénération de Cristal §d✨");
-            player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-            player.sendMessage("§7Cristal actuel: §d" + cristal.getType().getDisplayName() + " §7(Niveau " + cristal.getNiveau() + ")");
-            player.sendMessage("§7Après régénération: §dCristal Vierge §7(Niveau " + cristal.getNiveau() + ")");
-            player.sendMessage("");
-            player.sendMessage("§6💰 Coût: §e" + NumberFormatter.format(regenerationCost) + " coins");
-            player.sendMessage("§7Vos coins: §e" + NumberFormatter.format(playerData.getCoins()) + " coins");
-            player.sendMessage("");
+            final Component separatorLine = Component.text("▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", NamedTextColor.DARK_GRAY);
 
-            // NOUVEAU: Boutons cliquables au lieu de texte
-            TextComponent confirmButton = new TextComponent("§a[✓ CONFIRMER]");
-            confirmButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/cristal reg confirm"));
-            confirmButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aCliquez pour confirmer la régénération")));
+            // Titre du menu
+            player.sendMessage(separatorLine);
+            player.sendMessage(Component.text()
+                    .append(Component.text("✨ ", NamedTextColor.LIGHT_PURPLE))
+                    .append(Component.text("Régénération de Cristal", Style.style(NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD)))
+                    .append(Component.text(" ✨", NamedTextColor.LIGHT_PURPLE))
+                    .build());
+            player.sendMessage(separatorLine);
 
-            TextComponent separator = new TextComponent("    ");
+            // Informations sur le cristal
+            player.sendMessage(Component.text("Cristal actuel: ", NamedTextColor.GRAY)
+                    .append(Component.text(cristal.getType().getDisplayName(), NamedTextColor.LIGHT_PURPLE))
+                    .append(Component.text(" (Niveau " + cristal.getNiveau() + ")", NamedTextColor.GRAY)));
 
-            TextComponent cancelButton = new TextComponent("§c[✗ ANNULER]");
-            cancelButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/menu"));
-            cancelButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§cCliquez pour annuler l'opération")));
+            player.sendMessage(Component.text("Après régénération: ", NamedTextColor.GRAY)
+                    .append(Component.text("Cristal Vierge ", NamedTextColor.LIGHT_PURPLE))
+                    .append(Component.text("(Niveau " + cristal.getNiveau() + ")", NamedTextColor.GRAY)));
 
-            player.sendMessage("§eChoisissez une option:");
-            player.spigot().sendMessage(confirmButton, separator, cancelButton);
-            player.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            player.sendMessage(Component.empty()); // Ligne vide
+
+            // Informations sur le coût
+            player.sendMessage(Component.text("💰 Coût: ", NamedTextColor.GOLD)
+                    .append(Component.text(NumberFormatter.format(regenerationCost) + " coins", NamedTextColor.YELLOW)));
+
+            player.sendMessage(Component.text("Vos coins: ", NamedTextColor.GRAY)
+                    .append(Component.text(NumberFormatter.format(playerData.getCoins()) + " coins", NamedTextColor.YELLOW)));
+
+            player.sendMessage(Component.empty()); // Ligne vide
+
+            // Création des boutons cliquables
+            final Component confirmButton = Component.text("[✓ CONFIRMER]", NamedTextColor.GREEN)
+                    .clickEvent(ClickEvent.runCommand("/cristal reg confirm"))
+                    .hoverEvent(HoverEvent.showText(Component.text("Cliquez pour confirmer la régénération", NamedTextColor.GREEN)));
+
+            final Component cancelButton = Component.text("[✗ ANNULER]", NamedTextColor.RED)
+                    .clickEvent(ClickEvent.runCommand("/menu"))
+                    .hoverEvent(HoverEvent.showText(Component.text("Cliquez pour annuler l'opération", NamedTextColor.RED)));
+
+            // Assemblage et envoi des boutons
+            player.sendMessage(Component.text("Choisissez une option:", NamedTextColor.YELLOW));
+            player.sendMessage(Component.text()
+                    .append(confirmButton)
+                    .append(Component.space().append(Component.space())) // Ajoute des espaces entre les boutons
+                    .append(cancelButton)
+                    .build());
+
+            player.sendMessage(separatorLine);
             return true;
         }
 

@@ -5,7 +5,6 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.CustomEnchantment;
 import fr.prisontycoon.enchantments.EnchantmentCategory;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -35,7 +34,7 @@ public class CategoryMenuGUI {
      */
     public void openCategoryMenu(Player player, EnchantmentCategory category) {
         String title = "§6✨ §l" + category.getDisplayName() + " §6✨";
-        Inventory gui = Bukkit.createInventory(null, 27, title);
+        Inventory gui = plugin.getGUIManager().createInventory(27, title);
         plugin.getGUIManager().registerOpenGUI(player, GUIType.CATEGORY_ENCHANT, gui);
 
         // Remplissage décoratif
@@ -77,7 +76,8 @@ public class CategoryMenuGUI {
 
         // Vérifie si c'est un enchantement
         if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            String displayName = item.getItemMeta().getDisplayName();
+            String displayName = item.getItemMeta().displayName() != null ?
+                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName()) : "";
 
             // Cherche l'enchantement par son nom d'affichage
             CustomEnchantment targetEnchantment = plugin.getEnchantmentManager().getAllEnchantments().stream().filter(enchantment -> displayName.contains(enchantment.getDisplayName())).findFirst().orElse(null);
@@ -155,7 +155,7 @@ public class CategoryMenuGUI {
                         "§a[Niveau " + NumberFormatter.format(currentLevel) + "]" :
                         "§a[Niveau " + currentLevel + "§7/§e" + enchantment.getMaxLevel() + "§a]");
 
-        meta.setDisplayName("§6✦ §l" + enchantment.getDisplayName() + " " + levelDisplay);
+        plugin.getGUIManager().applyName(meta, "§6✦ §l" + enchantment.getDisplayName() + " " + levelDisplay);
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -190,12 +190,10 @@ public class CategoryMenuGUI {
             if (maxAffordable > 0) {
                 lore.add("§7▸ Niveaux améliorables: §a+" + maxAffordable);
 
-                if (maxAffordable >= 1) {
-                    lore.add("§7▸ +1 niveau: §6" + NumberFormatter.format(enchantment.getUpgradeCost(currentLevel + 1)));
-                }
+                lore.add("§7▸ +1 niveau: §6" + NumberFormatter.format(enchantment.getUpgradeCost(currentLevel + 1)));
                 if (maxAffordable >= 5) {
                     long cost5 = 0;
-                    for (int i = 1; i <= Math.min(5, maxAffordable); i++) {
+                    for (int i = 1; i <= 5; i++) {
                         cost5 += enchantment.getUpgradeCost(currentLevel + i);
                     }
                     lore.add("§7▸ +5 niveaux: §6" + NumberFormatter.format(cost5));
@@ -251,7 +249,7 @@ public class CategoryMenuGUI {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -373,7 +371,7 @@ public class CategoryMenuGUI {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        meta.setDisplayName("§6📊 §l" + player.getName());
+        plugin.getGUIManager().applyName(meta, "§6📊 §l" + player.getName());
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -385,7 +383,7 @@ public class CategoryMenuGUI {
         lore.add("§7│ §bNiveau vanilla: §3" + player.getLevel());
         lore.add("§7└ §7Enchantements actifs: §b" + playerData.getEnchantmentLevels().size());
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         head.setItemMeta(meta);
 
         return head;
@@ -398,8 +396,8 @@ public class CategoryMenuGUI {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
 
-        meta.setDisplayName("§7← §lRetour");
-        meta.setLore(List.of("§7Retourner au menu principal"));
+        plugin.getGUIManager().applyName(meta, "§7← §lRetour");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu principal"));
 
         arrow.setItemMeta(meta);
         return arrow;
@@ -414,7 +412,7 @@ public class CategoryMenuGUI {
 
         ItemStack redBlock = new ItemStack(Material.RED_CONCRETE);
         ItemMeta meta = redBlock.getItemMeta();
-        meta.setDisplayName("§c❌ Niveau maximum atteint");
+        plugin.getGUIManager().applyName(meta, "§c❌ Niveau maximum atteint");
         redBlock.setItemMeta(meta);
 
         gui.setItem(slot, redBlock);
@@ -433,7 +431,7 @@ public class CategoryMenuGUI {
     private void fillBorders(Inventory gui) {
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = filler.getItemMeta();
-        meta.setDisplayName("§7");
+        plugin.getGUIManager().applyName(meta, "§7");
         filler.setItemMeta(meta);
 
         // CORRIGÉ: Bordures pour 27 slots

@@ -250,7 +250,7 @@ public class WarpData {
      * Vérifie si ce warp est accessible (monde existant et activé)
      */
     public boolean isAccessible() {
-        return enabled && Bukkit.getWorld(worldName) != null;
+        return !enabled || Bukkit.getWorld(worldName) == null;
     }
 
     /**
@@ -450,7 +450,7 @@ public class WarpData {
         if (headMaterial == null) {
             errors.add("Matériau de tête manquant");
         }
-        if (!isAccessible()) {
+        if (isAccessible()) {
             errors.add("Warp non accessible (désactivé ou monde inexistant)");
         }
 

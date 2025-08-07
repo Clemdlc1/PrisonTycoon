@@ -67,7 +67,7 @@ public class WeaponArmorEnchantmentListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        String title = event.getView().getTitle();
+        String title = plugin.getGUIManager().getLegacyTitle(event.getView());
 
         if (!title.contains("§c⚔ §lEnchantement d'Épée") &&
                 !title.contains("§9🛡 §lEnchantement d'Armure")) {
@@ -131,7 +131,7 @@ public class WeaponArmorEnchantmentListener implements Listener {
         ItemStack item = player.getInventory().getItemInMainHand();
 
         // --- Étape 3: Logique d'application et messages ---
-        if (!manager.isCompatible(enchantId, item)) {
+        if (manager.isCompatible(enchantId, item)) {
             player.sendMessage("§cCet enchantement n'est pas compatible avec cet item !");
             return;
         }

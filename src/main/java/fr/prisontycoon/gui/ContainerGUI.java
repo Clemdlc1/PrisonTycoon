@@ -3,7 +3,6 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.ContainerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -54,7 +53,7 @@ public class ContainerGUI {
             title = "§6📦 Configuration Conteneur Tier " + data.getTier();
         }
 
-        Inventory inv = Bukkit.createInventory(null, 27, title);
+        Inventory inv = plugin.getGUIManager().createInventory(27, title);
 
         // Informations du conteneur (slots 0-8)
         fillContainerInfo(inv, data, containerUUID);
@@ -83,7 +82,7 @@ public class ContainerGUI {
         // Information générale
         ItemStack info = new ItemStack(data.isBroken() ? Material.BARRIER : Material.CHEST);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName(data.isBroken() ?
+        plugin.getGUIManager().applyName(infoMeta, data.isBroken() ?
                 "§c💥 Conteneur Cassé" :
                 "§6📦 Conteneur Tier " + data.getTier());
 
@@ -106,7 +105,7 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         infoMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        infoMeta.setLore(infoLore);
+        plugin.getGUIManager().applyLore(infoMeta, infoLore);
         info.setItemMeta(infoMeta);
         inv.setItem(4, info);
 
@@ -114,7 +113,7 @@ public class ContainerGUI {
         if (data.getTotalItems() > 0) {
             ItemStack contents = new ItemStack(Material.SHULKER_BOX);
             ItemMeta contentsMeta = contents.getItemMeta();
-            contentsMeta.setDisplayName("§e📦 Contenu actuel");
+            plugin.getGUIManager().applyName(contentsMeta, "§e📦 Contenu actuel");
 
             List<String> contentsLore = new ArrayList<>();
             contentsLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -141,7 +140,7 @@ public class ContainerGUI {
 
             // NOUVEAU : Stocke l'UUID dans les métadonnées
             contentsMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-            contentsMeta.setLore(contentsLore);
+            plugin.getGUIManager().applyLore(contentsMeta, contentsLore);
             contents.setItemMeta(contentsMeta);
             inv.setItem(6, contents);
         }
@@ -149,7 +148,7 @@ public class ContainerGUI {
         // Filtres actuels
         ItemStack filters = new ItemStack(Material.HOPPER);
         ItemMeta filtersMeta = filters.getItemMeta();
-        filtersMeta.setDisplayName("§e🎯 Filtres actuels");
+        plugin.getGUIManager().applyName(filtersMeta, "§e🎯 Filtres actuels");
 
         List<String> filtersLore = new ArrayList<>();
         filtersLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -176,7 +175,7 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         filtersMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        filtersMeta.setLore(filtersLore);
+        plugin.getGUIManager().applyLore(filtersMeta, filtersLore);
         filters.setItemMeta(filtersMeta);
         inv.setItem(2, filters);
     }
@@ -189,7 +188,7 @@ public class ContainerGUI {
         // Bouton configuration des filtres
         ItemStack configFilters = new ItemStack(Material.ITEM_FRAME);
         ItemMeta configMeta = configFilters.getItemMeta();
-        configMeta.setDisplayName("§e🎯 Configurer les filtres");
+        plugin.getGUIManager().applyName(configMeta, "§e🎯 Configurer les filtres");
 
         List<String> configLore = new ArrayList<>();
         configLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -208,7 +207,7 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         configMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        configMeta.setLore(configLore);
+        plugin.getGUIManager().applyLore(configMeta, configLore);
         configFilters.setItemMeta(configMeta);
         inv.setItem(19, configFilters);
 
@@ -220,7 +219,7 @@ public class ContainerGUI {
 
         ItemStack sellButton = new ItemStack(sellMaterial);
         ItemMeta sellMeta = sellButton.getItemMeta();
-        sellMeta.setDisplayName("§e💰 Vente automatique");
+        plugin.getGUIManager().applyName(sellMeta, "§e💰 Vente automatique");
 
         List<String> sellLore = new ArrayList<>();
         sellLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -238,14 +237,14 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         sellMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        sellMeta.setLore(sellLore);
+        plugin.getGUIManager().applyLore(sellMeta, sellLore);
         sellButton.setItemMeta(sellMeta);
         inv.setItem(21, sellButton);
 
         // Bouton récupérer contenu
         ItemStack collectButton = new ItemStack(Material.HOPPER_MINECART);
         ItemMeta collectMeta = collectButton.getItemMeta();
-        collectMeta.setDisplayName("§a📤 Récupérer le contenu");
+        plugin.getGUIManager().applyName(collectMeta, "§a📤 Récupérer le contenu");
 
         List<String> collectLore = new ArrayList<>();
         collectLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -263,7 +262,7 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         collectMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        collectMeta.setLore(collectLore);
+        plugin.getGUIManager().applyLore(collectMeta, collectLore);
         collectButton.setItemMeta(collectMeta);
         inv.setItem(23, collectButton);
 
@@ -271,7 +270,7 @@ public class ContainerGUI {
         ItemStack clearFiltersButton = new ItemStack(data.isBroken() ?
                 Material.GRAY_DYE : Material.BARRIER);
         ItemMeta clearFiltersMeta = clearFiltersButton.getItemMeta();
-        clearFiltersMeta.setDisplayName("§c🚫 Effacer tous les filtres");
+        plugin.getGUIManager().applyName(clearFiltersMeta, "§c🚫 Effacer tous les filtres");
 
         List<String> clearFiltersLore = new ArrayList<>();
         clearFiltersLore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -295,14 +294,14 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         clearFiltersMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        clearFiltersMeta.setLore(clearFiltersLore);
+        plugin.getGUIManager().applyLore(clearFiltersMeta, clearFiltersLore);
         clearFiltersButton.setItemMeta(clearFiltersMeta);
         inv.setItem(25, clearFiltersButton);
 
         // Bouton fermer
         ItemStack closeButton = new ItemStack(Material.DARK_OAK_DOOR);
         ItemMeta closeMeta = closeButton.getItemMeta();
-        closeMeta.setDisplayName("§c❌ Fermer");
+        plugin.getGUIManager().applyName(closeMeta, "§c❌ Fermer");
 
         List<String> closeLore = new ArrayList<>();
         closeLore.add("§7Ferme ce menu");
@@ -310,7 +309,7 @@ public class ContainerGUI {
 
         // NOUVEAU : Stocke l'UUID dans les métadonnées
         closeMeta.getPersistentDataContainer().set(containerUUIDKey, PersistentDataType.STRING, containerUUID);
-        closeMeta.setLore(closeLore);
+        plugin.getGUIManager().applyLore(closeMeta, closeLore);
         closeButton.setItemMeta(closeMeta);
         inv.setItem(26, closeButton);
 
@@ -432,7 +431,7 @@ public class ContainerGUI {
     private ItemStack createGlassPane(Material material) {
         ItemStack pane = new ItemStack(material);
         ItemMeta meta = pane.getItemMeta();
-        meta.setDisplayName("");
+        plugin.getGUIManager().applyName(meta,"");
         pane.setItemMeta(meta);
         return pane;
     }

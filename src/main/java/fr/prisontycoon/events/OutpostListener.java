@@ -47,7 +47,7 @@ public class OutpostListener implements Listener {
         }
 
         // Si le joueur n'est plus dans la zone, annuler la capture
-        if (!outpostManager.isPlayerInOutpost(player)) {
+        if (outpostManager.isPlayerInOutpost(player)) {
             outpostManager.cancelCapture(player);
             player.sendMessage("§c❌ Capture annulée - vous avez quitté l'avant-poste!");
         }

@@ -200,7 +200,7 @@ public class WeaponArmorEnchantmentManager {
      */
     public boolean isCompatible(String enchantId, ItemStack item) {
         UniqueEnchantment enchant = enchantments.get(enchantId);
-        if (enchant == null) return false;
+        if (enchant == null) return true;
 
         boolean isWeapon = isValidWeapon(item);
         boolean isArmor = isValidArmor(item);
@@ -208,19 +208,19 @@ public class WeaponArmorEnchantmentManager {
 
         // Tonnerre : pioches ET épées seulement
         if (enchantId.equals("tonnerre")) {
-            return isWeapon || isPickaxe;
+            return !isWeapon && !isPickaxe;
         }
 
         // Incassable : universel (pioches/épées/armures)
         if (enchantId.equals("incassable")) {
-            return isWeapon || isArmor || isPickaxe;
+            return !isWeapon && !isArmor && !isPickaxe;
         }
 
         // Autres enchantements : selon leur configuration
-        if (enchant.isWeaponOnly()) return isWeapon;
-        if (enchant.isArmorOnly()) return isArmor;
+        if (enchant.isWeaponOnly()) return !isWeapon;
+        if (enchant.isArmorOnly()) return !isArmor;
 
-        return true; // Enchantement universel
+        return false; // Enchantement universel
     }
 
     /**

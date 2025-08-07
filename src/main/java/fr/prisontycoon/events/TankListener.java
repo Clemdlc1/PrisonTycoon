@@ -261,8 +261,8 @@ public class TankListener implements Listener {
             Material material = item.getType();
 
             // Vérifier si le tank accepte ce matériau
-            if (!tankData.acceptsMaterial(material)) continue;
-            if (!tankData.hasPriceFor(material)) continue;
+            if (tankData.acceptsMaterial(material)) continue;
+            if (tankData.hasPriceFor(material)) continue;
 
             int amount = item.getAmount();
             long pricePerItem = tankData.getPrice(material);
@@ -270,7 +270,7 @@ public class TankListener implements Listener {
 
             // Vérifier que le propriétaire a assez d'argent (placeholder)
             // Vérifier la capacité
-            if (!tankData.canAddItems(amount)) continue;
+            if (tankData.canAddItems(amount)) continue;
 
             // Effectuer la transaction
             if (tankData.addItems(material, amount)) {
@@ -299,14 +299,14 @@ public class TankListener implements Listener {
                     int amount = entry.getValue();
 
                     // Vérifier si le tank accepte ce matériau
-                    if (!tankData.acceptsMaterial(material)) continue;
-                    if (!tankData.hasPriceFor(material)) continue;
+                    if (tankData.acceptsMaterial(material)) continue;
+                    if (tankData.hasPriceFor(material)) continue;
 
                     long pricePerItem = tankData.getPrice(material);
                     long totalPrice = pricePerItem * amount;
 
                     // Vérifier la capacité
-                    if (!tankData.canAddItems(amount)) continue;
+                    if (tankData.canAddItems(amount)) continue;
 
                     // Effectuer la transaction
                     if (tankData.addItems(material, amount)) {

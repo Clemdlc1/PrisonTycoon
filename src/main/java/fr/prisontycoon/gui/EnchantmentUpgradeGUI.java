@@ -161,7 +161,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
+        plugin.getGUIManager().applyName(meta,color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -381,7 +381,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(canUpgrade ? Material.DIAMOND : Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName((canUpgrade ? "§6" : "§c") + "MAX Possible");
+        plugin.getGUIManager().applyName(meta,(canUpgrade ? "§6" : "§c") + "MAX Possible");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -464,7 +464,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(color + icon + " §lAuto-amélioration");
+        plugin.getGUIManager().applyName(meta,color + icon + " §lAuto-amélioration");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -511,7 +511,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(Material.GRAY_DYE);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§7🔒 §lAuto-amélioration");
+        plugin.getGUIManager().applyName(meta,"§7🔒 §lAuto-amélioration");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -664,7 +664,7 @@ public class EnchantmentUpgradeGUI {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        meta.setDisplayName("§6📊 §l" + player.getName());
+        plugin.getGUIManager().applyName(meta,"§6📊 §l" + player.getName());
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -685,7 +685,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
 
-        meta.setDisplayName("§7← §lRetour");
+        plugin.getGUIManager().applyName(meta,"§7← §lRetour");
         meta.setLore(List.of("§7Retourner au menu précédent"));
 
         arrow.setItemMeta(meta);
@@ -726,7 +726,7 @@ public class EnchantmentUpgradeGUI {
     private void fillBorders(Inventory gui) {
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = filler.getItemMeta();
-        meta.setDisplayName("§7");
+        plugin.getGUIManager().applyName(meta,"§7");
         filler.setItemMeta(meta);
 
         // Slots à remplir pour décorer (en évitant les emplacements des items)

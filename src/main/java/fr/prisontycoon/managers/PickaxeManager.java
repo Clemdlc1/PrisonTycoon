@@ -134,7 +134,7 @@ public class PickaxeManager {
      */
     public void enforcePickaxeSlot(Player player) {
         if (isPickaxeInCorrectSlot(player)) {
-            return; // Déjà au bon endroit
+            return;
         }
 
         // Cherche la pioche dans l'inventaire
@@ -416,6 +416,12 @@ public class PickaxeManager {
      * Trouve la pioche légendaire d'un joueur dans son inventaire
      */
     public ItemStack findPlayerPickaxe(Player player) {
+        // D'abord, vérifie le slot dédié pour éviter de parcourir tout l'inventaire
+        ItemStack slotItem = player.getInventory().getItem(PICKAXE_SLOT);
+        if (slotItem != null && isLegendaryPickaxe(slotItem) && isOwner(slotItem, player)) {
+            return slotItem;
+        }
+
         for (ItemStack item : player.getInventory().getContents()) {
             if (isLegendaryPickaxe(item) && isOwner(item, player)) {
                 return item;
@@ -663,13 +669,19 @@ public class PickaxeManager {
     }
 
     public ItemStack getPlayerPickaxe(Player player) {
+        // Vérifie d'abord le slot réservé (0)
+        ItemStack slotItem = player.getInventory().getItem(PICKAXE_SLOT);
+        if (slotItem != null && isLegendaryPickaxe(slotItem) && isOwner(slotItem, player)) {
+            return slotItem;
+        }
+        // Puis la main principale (utile pendant certains mouvements d'inventaire)
         ItemStack mainHand = player.getInventory().getItemInMainHand();
-        if (isLegendaryPickaxe(mainHand)) {
+        if (isLegendaryPickaxe(mainHand) && isOwner(mainHand, player)) {
             return mainHand;
         }
-        // Chercher dans tout l'inventaire
+        // Fallback: parcourt l'inventaire
         for (ItemStack item : player.getInventory().getContents()) {
-            if (isLegendaryPickaxe(item)) {
+            if (isLegendaryPickaxe(item) && isOwner(item, player)) {
                 return item;
             }
         }

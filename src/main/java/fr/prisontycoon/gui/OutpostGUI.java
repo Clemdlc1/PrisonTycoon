@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.OutpostData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.OutpostManager;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -40,7 +39,7 @@ public class OutpostGUI {
      * Ouvre le menu principal de l'avant-poste
      */
     public void openOutpostMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6🏰 §lAvant-Poste");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏰 §lAvant-Poste");
 
         fillWithGlass(gui);
         setupOutpostMenu(gui, player);
@@ -90,7 +89,7 @@ public class OutpostGUI {
         int totalPages = (int) Math.ceil(skinList.size() / 28.0); // 28 slots pour les skins
         page = Math.max(0, Math.min(page, totalPages - 1));
 
-        Inventory gui = Bukkit.createInventory(null, 54, "§6🎨 Skins d'Avant-Poste §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6🎨 Skins d'Avant-Poste §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
 
         fillWithGlass(gui);
         setupSkinsMenu(gui, player, skinList, page);
@@ -140,7 +139,7 @@ public class OutpostGUI {
         ItemStack item = new ItemStack(Material.BEACON);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6🏰 §lAvant-Poste Central");
+        plugin.getGUIManager().applyName(meta, "§6🏰 §lAvant-Poste Central");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -172,7 +171,7 @@ public class OutpostGUI {
         lore.add("");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -184,7 +183,7 @@ public class OutpostGUI {
         ItemStack item = new ItemStack(Material.ARMOR_STAND);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§b🎨 §lSkins d'Avant-Poste");
+        plugin.getGUIManager().applyName(meta, "§b🎨 §lSkins d'Avant-Poste");
         meta.setLore(Arrays.asList(
                 "",
                 "§7Personnalisez l'apparence de l'avant-poste",
@@ -207,7 +206,7 @@ public class OutpostGUI {
         ItemStack item = new ItemStack(Material.BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§e📊 §lStatistiques");
+        plugin.getGUIManager().applyName(meta, "§e📊 §lStatistiques");
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -225,7 +224,7 @@ public class OutpostGUI {
             lore.add("§7Vous ne contrôlez pas l'avant-poste");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -237,7 +236,7 @@ public class OutpostGUI {
         ItemStack item = new ItemStack(Material.CLOCK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§e⏳ §lCapture en cours...");
+        plugin.getGUIManager().applyName(meta, "§e⏳ §lCapture en cours...");
 
         int progress = outpostManager.getCaptureProgress(player);
         List<String> lore = new ArrayList<>();
@@ -247,7 +246,7 @@ public class OutpostGUI {
         lore.add("");
         lore.add("§c❌ Quittez pour annuler");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -259,7 +258,7 @@ public class OutpostGUI {
         ItemStack item = new ItemStack(Material.GOLDEN_HELMET);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6👑 §lVous contrôlez l'avant-poste!");
+        plugin.getGUIManager().applyName(meta, "§6👑 §lVous contrôlez l'avant-poste!");
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -269,7 +268,7 @@ public class OutpostGUI {
         long timeSince = outpostData.getTimeSinceCapture();
         lore.add("§7Temps de contrôle: §6" + formatTime(timeSince));
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -281,8 +280,8 @@ public class OutpostGUI {
         ItemStack item = new ItemStack(Material.IRON_SWORD);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§c⚔ §lCapturer l'Avant-Poste");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(meta, "§c⚔ §lCapturer l'Avant-Poste");
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "",
                 "§7Allez sur l'avant-poste et maintenez",
                 "§7votre position pendant 30 secondes!",
@@ -311,7 +310,7 @@ public class OutpostGUI {
         ItemMeta meta = item.getItemMeta();
 
         String prefix = isSelected ? "§a✅ " : owns ? "§b🔓 " : "§c🔒 ";
-        meta.setDisplayName(prefix + "§l" + formatSkinName(skinName));
+        plugin.getGUIManager().applyName(meta, prefix + "§l" + formatSkinName(skinName));
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -334,7 +333,7 @@ public class OutpostGUI {
         lore.add("");
         lore.add("§8ID: " + skinName);
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         if (owns && !isSelected) {
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "select_skin");
             meta.getPersistentDataContainer().set(skinKey, PersistentDataType.STRING, skinName);
@@ -419,7 +418,7 @@ public class OutpostGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(glassMeta, " ");
         glass.setItemMeta(glassMeta);
 
         // Remplir les bordures
@@ -434,7 +433,7 @@ public class OutpostGUI {
     private ItemStack createCloseButton() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c✖ Fermer");
+        plugin.getGUIManager().applyName(meta, "§c✖ Fermer");
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         item.setItemMeta(meta);
         return item;
@@ -443,7 +442,7 @@ public class OutpostGUI {
     private ItemStack createBackButton() {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§e← Retour");
+        plugin.getGUIManager().applyName(meta, "§e← Retour");
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back");
         item.setItemMeta(meta);
         return item;
@@ -452,7 +451,7 @@ public class OutpostGUI {
     private ItemStack createPreviousPageButton(int currentPage) {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§e← Page Précédente");
+        plugin.getGUIManager().applyName(meta, "§e← Page Précédente");
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "prev_page");
         item.setItemMeta(meta);
         return item;
@@ -461,7 +460,7 @@ public class OutpostGUI {
     private ItemStack createNextPageButton(int currentPage) {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§ePage Suivante →");
+        plugin.getGUIManager().applyName(meta, "§ePage Suivante →");
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "next_page");
         item.setItemMeta(meta);
         return item;

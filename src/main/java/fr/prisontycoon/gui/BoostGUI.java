@@ -3,10 +3,10 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.boosts.PlayerBoost;
 import fr.prisontycoon.managers.GlobalBonusManager;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Bukkit;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -42,7 +42,7 @@ public class BoostGUI {
         // Calcule la taille de l'inventaire (minimum 27, maximum 54)
         int size = Math.max(27, Math.min(54, ((activeBoosts.size() + 8) / 9) * 9));
 
-        Inventory gui = Bukkit.createInventory(null, size, "§6⚡ Vos Boosts Actifs");
+        Inventory gui = plugin.getGUIManager().createInventory(size, "§6⚡ Vos Boosts Actifs");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.BOOST_MENU, gui);
 
         // Ajoute les boosts actifs
@@ -82,7 +82,7 @@ public class BoostGUI {
         ItemStack item = new ItemStack(boost.getType().getMaterial());
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(boost.getType().getFormattedName());
+        plugin.getGUIManager().applyName(meta, boost.getType().getFormattedName());
 
         // Calcule la barre de progression
         double progress = boost.getProgress();
@@ -115,7 +115,7 @@ public class BoostGUI {
                 "",
                 "§8Les boosts s'appliquent automatiquement"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         if (boost.isAdminBoost()) {
             meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
@@ -133,8 +133,8 @@ public class BoostGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§c❌ Aucun boost actif");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(meta, "§c❌ Aucun boost actif");
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "",
                 "§7Vous n'avez actuellement aucun boost actif.",
                 "",
@@ -157,7 +157,7 @@ public class BoostGUI {
         ItemStack item = new ItemStack(Material.BEACON);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6📊 Bonus Totaux Actifs");
+        plugin.getGUIManager().applyName(meta, "§6📊 Bonus Totaux Actifs");
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -194,7 +194,7 @@ public class BoostGUI {
         lore.add("§e▶ Cliquez pour les détails dans le chat");
         lore.add("§8Les bonus se cumulent automatiquement");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "total_bonus");
         item.setItemMeta(meta);
         return item;
@@ -207,8 +207,8 @@ public class BoostGUI {
         ItemStack item = new ItemStack(Material.CLOCK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§a🔄 Actualiser");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(meta, "§a🔄 Actualiser");
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "",
                 "§7Actualise l'affichage des boosts",
                 "",
@@ -232,8 +232,8 @@ public class BoostGUI {
         ItemStack item = new ItemStack(Material.BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§e📖 Aide - Système de Boosts");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(meta, "§e📖 Aide - Système de Boosts");
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "",
                 "§7§lComment fonctionnent les boosts:",
                 "",
@@ -265,7 +265,7 @@ public class BoostGUI {
     private ItemStack createSeparatorItem() {
         ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§8");
+        plugin.getGUIManager().applyName(meta, "§8");
         item.setItemMeta(meta);
         return item;
     }
@@ -277,8 +277,8 @@ public class BoostGUI {
         ItemStack item = new ItemStack(Material.RED_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§c✖ Fermer");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyName(meta, "§c✖ Fermer");
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "",
                 "§7Ferme ce menu",
                 "",
@@ -363,123 +363,96 @@ public class BoostGUI {
 
                 String arrow = details.getTotalBonus() > 0 ? "§a↗" : "§7→";
 
-                // Crée le composant principal
-                TextComponent mainComponent = new TextComponent(
-                        category.getColor() + "▶ " + category.getDisplayName());
+                Component hover = createBonusHoverComponent(category, details);
 
-                // Crée le composant du multiplicateur
-                TextComponent multiplierComponent = new TextComponent(
-                        "  §7Multiplicateur: §f×" + String.format("%.3f", details.getTotalMultiplier()) +
-                                " " + arrow + " §f+" + String.format("%.1f", details.getTotalBonus()) + "%");
+                Component mainLine = Component.text(category.getColor() + "▶ " + category.getDisplayName())
+                        .hoverEvent(HoverEvent.showText(hover))
+                        .decoration(TextDecoration.ITALIC, false);
 
-                // Crée le texte de survol avec les sources détaillées (simplifié!)
-                ComponentBuilder hoverText = createBonusHoverText(category, details);
+                Component multLine = Component.text("  §7Multiplicateur: §f×" + String.format("%.3f", details.getTotalMultiplier()) +
+                                " " + arrow + " §f+" + String.format("%.1f", details.getTotalBonus()) + "%")
+                        .hoverEvent(HoverEvent.showText(hover))
+                        .decoration(TextDecoration.ITALIC, false);
 
-                // Ajoute le hover event
-                HoverEvent hoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText.create());
-                mainComponent.setHoverEvent(hoverEvent);
-                multiplierComponent.setHoverEvent(hoverEvent);
-
-                // Envoie les composants
-                player.spigot().sendMessage(mainComponent);
-                player.spigot().sendMessage(multiplierComponent);
+                player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(mainLine));
+                player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(multLine));
             }
 
             player.sendMessage("");
 
-            // Message d'information avec hover
-            TextComponent infoComponent = new TextComponent(
-                    "§7§lSources disponibles: §eCristaux §7| §dMétiers §7| §5Prestige §7| §bBoosts");
-            ComponentBuilder infoHover = createGeneralInfoHover();
-            infoComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, infoHover.create()));
-            player.spigot().sendMessage(infoComponent);
+            Component infoHover = createGeneralInfoHoverComponent();
+            Component infoLine = Component.text("§7§lSources disponibles: §eCristaux §7| §dMétiers §7| §5Prestige §7| §bBoosts")
+                    .hoverEvent(HoverEvent.showText(infoHover))
+                    .decoration(TextDecoration.ITALIC, false);
+            player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(infoLine));
         }
 
         player.sendMessage("§7§m────────────────────────────────");
 
-        // Message final avec hover d'aide
-        TextComponent finalComponent = new TextComponent(
-                "§7Ces bonus s'appliquent automatiquement à tous vos gains! §8[?]");
-        ComponentBuilder finalHover = createHelpHover();
-        finalComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, finalHover.create()));
-        player.spigot().sendMessage(finalComponent);
+        Component finalHover = createHelpHoverComponent();
+        Component finalLine = Component.text("§7Ces bonus s'appliquent automatiquement à tous vos gains! §8[?]")
+                .hoverEvent(HoverEvent.showText(finalHover))
+                .color(NamedTextColor.GRAY)
+                .decoration(TextDecoration.ITALIC, false);
+        player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(finalLine));
     }
 
     /**
      * Crée le texte de survol pour un bonus spécifique
      * SIMPLIFIÉ grâce à l'API de GlobalBonusManager!
      */
-    private ComponentBuilder createBonusHoverText(GlobalBonusManager.BonusCategory category,
-                                                  GlobalBonusManager.BonusSourceDetails details) {
-        ComponentBuilder builder = new ComponentBuilder(
-                "§e§lSources du bonus " + category.getDisplayName() + ":");
-
-        builder.append("\n§7" + category.getDescription());
-        builder.append("\n");
-
-        // Utilise les données déjà calculées par GlobalBonusManager
-        if (details.getCristalBonus() > 0) {
-            builder.append("\n§e⚡ Cristaux§7: +" + String.format("%.1f", details.getCristalBonus()) + "%");
-        }
-
-        if (details.getProfessionBonus() > 0) {
-            builder.append("\n§d🔨 Talents Métiers§7: +" + String.format("%.1f", details.getProfessionBonus()) + "%");
-        }
-
-        if (details.getPrestigeBonus() > 0) {
-            builder.append("\n§5👑 Talents Prestige§7: +" + String.format("%.1f", details.getPrestigeBonus()) + "%");
-        }
-
-        if (details.getTemporaryBoostBonus() > 0) {
-            builder.append("\n§b⚡ Boosts Temporaires§7: +" + String.format("%.1f", details.getTemporaryBoostBonus()) + "%");
-        }
-
-        // Affiche les sources détaillées si disponibles
+    private Component createBonusHoverComponent(GlobalBonusManager.BonusCategory category,
+                                                GlobalBonusManager.BonusSourceDetails details) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("§e§lSources du bonus ").append(category.getDisplayName()).append(":");
+        sb.append("\n§7").append(category.getDescription());
+        sb.append("\n");
+        if (details.getCristalBonus() > 0) sb.append("\n§e⚡ Cristaux§7: +").append(String.format("%.1f", details.getCristalBonus())).append("%");
+        if (details.getProfessionBonus() > 0) sb.append("\n§d🔨 Talents Métiers§7: +").append(String.format("%.1f", details.getProfessionBonus())).append("%");
+        if (details.getPrestigeBonus() > 0) sb.append("\n§5👑 Talents Prestige§7: +").append(String.format("%.1f", details.getPrestigeBonus())).append("%");
+        if (details.getTemporaryBoostBonus() > 0) sb.append("\n§b⚡ Boosts Temporaires§7: +").append(String.format("%.1f", details.getTemporaryBoostBonus())).append("%");
         if (!details.getDetailedSources().isEmpty()) {
-            builder.append("\n\n§8Détails:");
+            sb.append("\n\n§8Détails:");
             for (var source : details.getDetailedSources().entrySet()) {
-                builder.append("\n§8• " + source.getKey() + ": +" +
-                        String.format("%.1f", source.getValue()) + "%");
+                sb.append("\n§8• ").append(source.getKey()).append(": +").append(String.format("%.1f", source.getValue())).append("%");
             }
         }
-
-        builder.append("\n\n§8Total: +" + String.format("%.1f", details.getTotalBonus()) + "%");
-
-        return builder;
+        sb.append("\n\n§8Total: +").append(String.format("%.1f", details.getTotalBonus())).append("%");
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(sb.toString()).decoration(TextDecoration.ITALIC, false);
     }
 
     /**
      * Crée le hover d'information générale
      */
-    private ComponentBuilder createGeneralInfoHover() {
-        ComponentBuilder builder = new ComponentBuilder("§e§lExplication des sources de bonus:");
-        builder.append("\n\n§eCristaux:");
-        builder.append("\n§7• Bonus permanents basés sur le niveau des cristaux");
-        builder.append("\n§7• Se cumulent selon le type de cristal équipé");
-        builder.append("\n\n§dTalents Métiers:");
-        builder.append("\n§7• Bonus selon la progression dans les métiers");
-        builder.append("\n§7• Dépendent du métier actif et du niveau des talents");
-        builder.append("\n\n§5Talents Prestige:");
-        builder.append("\n§7• Bonus selon le niveau de prestige");
-        builder.append("\n§7• Débloques avec la progression de prestige");
-        builder.append("\n\n§bBoosts Temporaires:");
-        builder.append("\n§7• Bonus limités dans le temps");
-        builder.append("\n§7• Activés via des items ou par les admins");
-        return builder;
+    private Component createGeneralInfoHoverComponent() {
+        String text = "§e§lExplication des sources de bonus:" +
+                "\n\n§eCristaux:" +
+                "\n§7• Bonus permanents basés sur le niveau des cristaux" +
+                "\n§7• Se cumulent selon le type de cristal équipé" +
+                "\n\n§dTalents Métiers:" +
+                "\n§7• Bonus selon la progression dans les métiers" +
+                "\n§7• Dépendent du métier actif et du niveau des talents" +
+                "\n\n§5Talents Prestige:" +
+                "\n§7• Bonus selon le niveau de prestige" +
+                "\n§7• Débloques avec la progression de prestige" +
+                "\n\n§bBoosts Temporaires:" +
+                "\n§7• Bonus limités dans le temps" +
+                "\n§7• Activés via des items ou par les admins";
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(text).decoration(TextDecoration.ITALIC, false);
     }
 
     /**
      * Crée le hover d'aide final
      */
-    private ComponentBuilder createHelpHover() {
-        ComponentBuilder builder = new ComponentBuilder("§e§lComment ça marche:");
-        builder.append("\n\n§7• Les bonus se §acumulent§7 entre eux");
-        builder.append("\n§7• Ils s'appliquent §eautomatiquement§7 lors du minage");
-        builder.append("\n§7• Plus votre multiplicateur est élevé, plus vous gagnez!");
-        builder.append("\n\n§7Commandes utiles:");
-        builder.append("\n§e/boost §7- Gérer vos boosts temporaires");
-        builder.append("\n§e/cristal §7- Gérer vos cristaux");
-        builder.append("\n§e/metier §7- Voir votre progression métier");
-        return builder;
+    private Component createHelpHoverComponent() {
+        String text = "§e§lComment ça marche:" +
+                "\n\n§7• Les bonus se §acumulent§7 entre eux" +
+                "\n§7• Ils s'appliquent §eautomatiquement§7 lors du minage" +
+                "\n§7• Plus votre multiplicateur est élevé, plus vous gagnez!" +
+                "\n\n§7Commandes utiles:" +
+                "\n§e/boost §7- Gérer vos boosts temporaires" +
+                "\n§e/cristal §7- Gérer vos cristaux" +
+                "\n§e/metier §7- Voir votre progression métier";
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(text).decoration(TextDecoration.ITALIC, false);
     }
 }

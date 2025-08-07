@@ -276,10 +276,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                 return;
             }
 
-            boolean useLevier = false;
-            if (args.length == 5 && args[4].equalsIgnoreCase("levier")) {
-                useLevier = true;
-            }
+            boolean useLevier = args.length == 5 && args[4].equalsIgnoreCase("levier");
 
             bankManager.buyInvestment(player, material, quantity, useLevier);
         } catch (NumberFormatException e) {
@@ -615,7 +612,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                 }
             }
         } else if (args.length == 5) {
-            if ("invest".equals(args[0].toLowerCase()) && "buy".equals(args[1].toLowerCase())) {
+            if ("invest".equalsIgnoreCase(args[0]) && "buy".equalsIgnoreCase(args[1])) {
                 List<String> leverOptions = List.of("levier");
                 StringUtil.copyPartialMatches(args[4], leverOptions, completions);
             }

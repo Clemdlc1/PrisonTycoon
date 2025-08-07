@@ -1,9 +1,13 @@
 package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -21,6 +25,7 @@ public class GUIManager {
 
     private final PrisonTycoon plugin;
     private final NamespacedKey guiTypeKey;
+        private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacySection();
 
     // Cache des GUIs ouverts par joueur avec l'inventaire associé
     private final Map<UUID, GUIInfo> openGUIs = new ConcurrentHashMap<>();
@@ -31,7 +36,67 @@ public class GUIManager {
     public GUIManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.guiTypeKey = new NamespacedKey(plugin, "gui_type");
-        NamespacedKey guiInstanceKey = new NamespacedKey(plugin, "gui_instance");
+    }
+
+    // ===============================================================================================
+    // UTILITAIRES ADVENTURE (TITRE, NOM, LORE)
+    // ===============================================================================================
+
+    /**
+     * Désérialise un texte legacy (§) en Component et supprime l'italique par défaut.
+     */
+    public Component deserializeNoItalic(String legacyText) {
+        return legacy.deserialize(legacyText).decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Désérialise une liste de textes legacy en liste de Components sans italique.
+     */
+    public java.util.List<Component> deserializeNoItalics(java.util.List<String> lines) {
+        return lines.stream().map(this::deserializeNoItalic).toList();
+    }
+
+    /**
+     * Crée un inventaire avec un titre Adventure (non italique) à partir d'un titre legacy.
+     */
+    public Inventory createInventory(int size, String legacyTitle) {
+        return org.bukkit.Bukkit.createInventory(null, size, deserializeNoItalic(legacyTitle));
+    }
+
+    /**
+     * Applique un nom personnalisé Adventure (non italique) à partir d'un texte legacy.
+     * Utilise ItemMeta.customName pour éviter les APIs dépréciées.
+     */
+    public void applyName(ItemMeta meta, String legacyName) {
+        if (meta == null) return;
+        Component name = deserializeNoItalic(legacyName);
+        meta.customName(name);
+        meta.displayName(name);
+    }
+
+    /**
+     * Applique une lore Adventure non italique à partir d'une liste de textes legacy.
+     */
+    public void applyLore(ItemMeta meta, java.util.List<String> legacyLore) {
+        if (meta == null) return;
+        meta.lore(deserializeNoItalics(legacyLore));
+    }
+
+    /**
+     * Applique display name + lore en une fois.
+     */
+    public void applyNameAndLore(ItemMeta meta, String legacyName, java.util.List<String> legacyLore) {
+        if (meta == null) return;
+        applyName(meta, legacyName);
+        applyLore(meta, legacyLore);
+    }
+
+    /**
+     * Retourne le titre legacy (§) d'une InventoryView (évite les appels verbeux au serializer).
+     */
+    public String getLegacyTitle(InventoryView view) {
+        if (view == null) return "";
+        return legacy.serialize(view.title());
     }
 
     /**

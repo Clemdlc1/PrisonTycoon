@@ -3,7 +3,6 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.crates.CrateType;
 import fr.prisontycoon.managers.CrateManager;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -39,7 +38,7 @@ public class CrateGUI {
 
         // Crée l'inventaire
         String title = crateType.getColor() + "Récompenses - Crate " + crateType.getDisplayName();
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = plugin.getGUIManager().createInventory(54, title);
 
         // Ajoute les récompenses
         populateRewardsInventory(gui, crateType);
@@ -93,30 +92,14 @@ public class CrateGUI {
 
         // Détermine l'item d'affichage selon le type de récompense
         switch (reward.getType()) {
-            case CONTAINER -> {
-                displayItem = new ItemStack(Material.CHEST);
-            }
-            case KEY -> {
-                displayItem = new ItemStack(Material.TRIPWIRE_HOOK);
-            }
-            case CRISTAL_VIERGE -> {
-                displayItem = new ItemStack(Material.NETHER_STAR);
-            }
-            case LIVRE_UNIQUE -> {
-                displayItem = new ItemStack(Material.ENCHANTED_BOOK);
-            }
-            case AUTOMINER -> {
-                displayItem = new ItemStack(Material.IRON_PICKAXE);
-            }
-            case VOUCHER -> {
-                displayItem = new ItemStack(Material.PAPER);
-            }
-            case BOOST -> {
-                displayItem = new ItemStack(Material.POTION);
-            }
-            default -> {
-                displayItem = new ItemStack(Material.BARRIER);
-            }
+            case CONTAINER -> displayItem = new ItemStack(Material.CHEST);
+            case KEY -> displayItem = new ItemStack(Material.TRIPWIRE_HOOK);
+            case CRISTAL_VIERGE -> displayItem = new ItemStack(Material.NETHER_STAR);
+            case LIVRE_UNIQUE -> displayItem = new ItemStack(Material.ENCHANTED_BOOK);
+            case AUTOMINER -> displayItem = new ItemStack(Material.IRON_PICKAXE);
+            case VOUCHER -> displayItem = new ItemStack(Material.PAPER);
+            case BOOST -> displayItem = new ItemStack(Material.POTION);
+            default -> displayItem = new ItemStack(Material.BARRIER);
         }
 
         // Configure les métadonnées
@@ -124,7 +107,7 @@ public class CrateGUI {
         if (meta == null) return displayItem;
 
         // Nom de l'item
-        meta.setDisplayName(getRewardDisplayName(reward));
+        plugin.getGUIManager().applyName(meta, getRewardDisplayName(reward));
 
         // Lore détaillée
         List<String> lore = new ArrayList<>();
@@ -147,7 +130,7 @@ public class CrateGUI {
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§7Disponible dans: " + crateType.getColor() + "Crate " + crateType.getDisplayName());
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         displayItem.setItemMeta(meta);
 
         return displayItem;
@@ -268,7 +251,7 @@ public class CrateGUI {
         // Bordures décoratives
         ItemStack border = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta borderMeta = border.getItemMeta();
-        borderMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(borderMeta, " ");
         border.setItemMeta(borderMeta);
 
         // Première et dernière ligne
@@ -286,7 +269,7 @@ public class CrateGUI {
         // Informations de la crate
         ItemStack crateInfo = new ItemStack(Material.CHEST);
         ItemMeta crateInfoMeta = crateInfo.getItemMeta();
-        crateInfoMeta.setDisplayName(crateType.getColor() + "Crate " + crateType.getDisplayName());
+        plugin.getGUIManager().applyName(crateInfoMeta, crateType.getColor() + "Crate " + crateType.getDisplayName());
 
         List<String> crateInfoLore = new ArrayList<>();
         crateInfoLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -305,7 +288,7 @@ public class CrateGUI {
         crateInfoLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         crateInfoLore.add("§cFermez ce menu pour retourner au jeu");
 
-        crateInfoMeta.setLore(crateInfoLore);
+        plugin.getGUIManager().applyLore(crateInfoMeta, crateInfoLore);
         crateInfo.setItemMeta(crateInfoMeta);
 
         gui.setItem(49, crateInfo); // Slot central du bas
@@ -313,8 +296,8 @@ public class CrateGUI {
         // Bouton de fermeture
         ItemStack closeButton = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = closeButton.getItemMeta();
-        closeMeta.setDisplayName("§c✖ Fermer");
-        closeMeta.setLore(List.of("§7Cliquez pour fermer ce menu"));
+        plugin.getGUIManager().applyName(closeMeta, "§c✖ Fermer");
+        plugin.getGUIManager().applyLore(closeMeta, List.of("§7Cliquez pour fermer ce menu"));
         closeButton.setItemMeta(closeMeta);
 
         gui.setItem(53, closeButton);
@@ -322,7 +305,7 @@ public class CrateGUI {
         // Bouton d'aide
         ItemStack helpButton = new ItemStack(Material.BOOK);
         ItemMeta helpMeta = helpButton.getItemMeta();
-        helpMeta.setDisplayName("§e❓ Aide");
+        plugin.getGUIManager().applyName(helpMeta, "§e❓ Aide");
 
         List<String> helpLore = new ArrayList<>();
         helpLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -335,7 +318,7 @@ public class CrateGUI {
         helpLore.add("§7inventaire ou dans vos conteneurs!");
         helpLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        helpMeta.setLore(helpLore);
+        plugin.getGUIManager().applyLore(helpMeta, helpLore);
         helpButton.setItemMeta(helpMeta);
 
         gui.setItem(45, helpButton);

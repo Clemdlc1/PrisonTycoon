@@ -60,7 +60,7 @@ public class GangGUI {
      * Menu pour les joueurs sans gang
      */
     private void openNoGangMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§6⭐ §lGANG - Menu Principal §6⭐");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§6⭐ §lGANG - Menu Principal §6⭐");
         guiManager.registerOpenGUI(player, GUIType.GANG_NO_GANG, gui);
 
         fillWithGlass(gui, DyeColor.GRAY);
@@ -68,7 +68,7 @@ public class GangGUI {
         // Créer un gang
         ItemStack createGang = new ItemStack(Material.EMERALD);
         ItemMeta createMeta = createGang.getItemMeta();
-        createMeta.setDisplayName("§a✅ §lCréer un Gang");
+        plugin.getGUIManager().applyName(createMeta, "§a✅ §lCréer un Gang");
         List<String> createLore = new ArrayList<>();
         createLore.add("");
         createLore.add("§7Créez votre propre gang et");
@@ -97,7 +97,7 @@ public class GangGUI {
         // Liste des gangs
         ItemStack listGangs = new ItemStack(Material.BOOK);
         ItemMeta listMeta = listGangs.getItemMeta();
-        listMeta.setDisplayName("§e📚 §lListe des Gangs");
+        plugin.getGUIManager().applyName(listMeta, "§e📚 §lListe des Gangs");
         List<String> listLore = new ArrayList<>();
         listLore.add("");
         listLore.add("§7Consultez la liste de tous");
@@ -111,7 +111,7 @@ public class GangGUI {
         // Invitations en attente
         ItemStack invitations = new ItemStack(Material.PAPER);
         ItemMeta inviteMeta = invitations.getItemMeta();
-        inviteMeta.setDisplayName("§6📨 §lInvitations");
+        plugin.getGUIManager().applyName(inviteMeta, "§6📨 §lInvitations");
         List<String> inviteLore = new ArrayList<>();
         inviteLore.add("");
 
@@ -149,7 +149,7 @@ public class GangGUI {
      * Menu principal pour les membres d'un gang
      */
     private void openGangMenu(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6☠ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6☠");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6☠ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6☠");
         guiManager.registerOpenGUI(player, GUIType.GANG_MAIN, gui);
 
         fillWithGlass(gui, DyeColor.YELLOW);
@@ -164,7 +164,7 @@ public class GangGUI {
         if (itemMeta instanceof BannerMeta bannerMeta) {
 
             // Définir le nom et la description
-            bannerMeta.setDisplayName("§e📋 §lInformations du Gang");
+            plugin.getGUIManager().applyName(bannerMeta, "§e📋 §lInformations du Gang");
             List<String> infoLore = new ArrayList<>();
             infoLore.add("");
             infoLore.add("§7Nom: §e" + gang.getName());
@@ -195,7 +195,7 @@ public class GangGUI {
         // Membres
         ItemStack members = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta membersMeta = members.getItemMeta();
-        membersMeta.setDisplayName("§b👥 §lMembres du Gang");
+        plugin.getGUIManager().applyName(membersMeta, "§b👥 §lMembres du Gang");
         List<String> membersLore = new ArrayList<>();
         membersLore.add("");
         membersLore.add("§7Consultez la liste des membres");
@@ -211,7 +211,7 @@ public class GangGUI {
         // Banque du gang
         ItemStack bank = new ItemStack(Material.CHEST);
         ItemMeta bankMeta = bank.getItemMeta();
-        bankMeta.setDisplayName("§6💰 §lBanque du Gang");
+        plugin.getGUIManager().applyName(bankMeta, "§6💰 §lBanque du Gang");
         List<String> bankLore = new ArrayList<>();
         bankLore.add("");
         bankLore.add("§7Solde: §e" + NumberFormatter.format(gang.getBankBalance()) + " coins");
@@ -230,7 +230,7 @@ public class GangGUI {
         if (playerRole == GangRole.CHEF) {
             ItemStack upgrade = new ItemStack(Material.ANVIL);
             ItemMeta upgradeMeta = upgrade.getItemMeta();
-            upgradeMeta.setDisplayName("§c⚡ §lAméliorations");
+            plugin.getGUIManager().applyName(upgradeMeta, "§c⚡ §lAméliorations");
             List<String> upgradeLore = new ArrayList<>();
             upgradeLore.add("");
             upgradeLore.add("§7Niveau actuel: §6" + gang.getLevel());
@@ -255,7 +255,7 @@ public class GangGUI {
         // Talents du gang
         ItemStack talents = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta talentsMeta = talents.getItemMeta();
-        talentsMeta.setDisplayName("§5🎯 §lTalents du Gang");
+        plugin.getGUIManager().applyName(talentsMeta, "§5🎯 §lTalents du Gang");
         List<String> talentsLore = new ArrayList<>();
         talentsLore.add("");
         talentsLore.add("§7Achetez des talents permanents");
@@ -271,7 +271,7 @@ public class GangGUI {
         // Boutique du gang
         ItemStack shop = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shop.getItemMeta();
-        shopMeta.setDisplayName("§a🛒 §lBoutique du Gang");
+        plugin.getGUIManager().applyName(shopMeta, "§a🛒 §lBoutique du Gang");
         List<String> shopLore = new ArrayList<>();
         shopLore.add("");
         shopLore.add("§7Achetez des boosts temporaires");
@@ -285,7 +285,7 @@ public class GangGUI {
         // Chat du gang
         ItemStack chat = new ItemStack(Material.PAPER);
         ItemMeta chatMeta = chat.getItemMeta();
-        chatMeta.setDisplayName("§e💬 §lChat du Gang");
+        plugin.getGUIManager().applyName(chatMeta, "§e💬 §lChat du Gang");
         List<String> chatLore = new ArrayList<>();
         chatLore.add("");
         chatLore.add("§7Communiquez avec les");
@@ -302,7 +302,7 @@ public class GangGUI {
         if (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER) {
             ItemStack settings = new ItemStack(Material.COMPARATOR);
             ItemMeta settingsMeta = settings.getItemMeta();
-            settingsMeta.setDisplayName("§c⚙️ §lParamètres");
+            plugin.getGUIManager().applyName(settingsMeta,"§c⚙️ §lParamètres");
             List<String> settingsLore = new ArrayList<>();
             settingsLore.add("");
             settingsLore.add("§7Gérez les paramètres du gang:");
@@ -323,7 +323,7 @@ public class GangGUI {
         if (playerRole != GangRole.CHEF) {
             ItemStack leave = new ItemStack(Material.BARRIER);
             ItemMeta leaveMeta = leave.getItemMeta();
-            leaveMeta.setDisplayName("§c❌ §lQuitter le Gang");
+            plugin.getGUIManager().applyName(leaveMeta,"§c❌ §lQuitter le Gang");
             List<String> leaveLore = new ArrayList<>();
             leaveLore.add("");
             leaveLore.add("§cQuitte définitivement ce gang.");
@@ -345,7 +345,7 @@ public class GangGUI {
      * Ouvre le menu des informations d'un gang
      */
     public void openGangInfo(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§6📋 §l" + gang.getName() + " - Informations");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6📋 §l" + gang.getName() + " - Informations");
         guiManager.registerOpenGUI(player, GUIType.GANG_INFO, gui);
 
         fillWithGlass(gui, DyeColor.LIGHT_BLUE);
@@ -357,7 +357,7 @@ public class GangGUI {
         // Informations générales
         ItemStack info = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName("§e📋 §lInformations Générales");
+        plugin.getGUIManager().applyName(infoMeta, "§e📋 §lInformations Générales");
         List<String> infoLore = new ArrayList<>();
         infoLore.add("");
         infoLore.add("§7Nom: §e" + gang.getName());
@@ -378,7 +378,7 @@ public class GangGUI {
         // Membres
         ItemStack members = new ItemStack(Material.SKELETON_SKULL, gang.getMembers().size(), (short) 3);
         ItemMeta membersMeta = members.getItemMeta();
-        membersMeta.setDisplayName("§b👥 §lMembres §7(" + gang.getMembers().size() + "/" + gang.getMaxMembers() + ")");
+        plugin.getGUIManager().applyName(membersMeta, "§b👥 §lMembres §7(" + gang.getMembers().size() + "/" + gang.getMaxMembers() + ")");
         List<String> membersLore = new ArrayList<>();
         membersLore.add("");
 
@@ -413,7 +413,7 @@ public class GangGUI {
         // Statistiques
         ItemStack stats = new ItemStack(Material.DIAMOND);
         ItemMeta statsMeta = stats.getItemMeta();
-        statsMeta.setDisplayName("§b📊 §lStatistiques");
+        plugin.getGUIManager().applyName(statsMeta, "§b📊 §lStatistiques");
         List<String> statsLore = new ArrayList<>();
         statsLore.add("");
         statsLore.add("§7Niveau: §6" + gang.getLevel());
@@ -446,7 +446,7 @@ public class GangGUI {
         // Talents actifs
         ItemStack talents = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta talentsMeta = talents.getItemMeta();
-        talentsMeta.setDisplayName("§5🎯 §lTalents Actifs");
+        plugin.getGUIManager().applyName(talentsMeta, "§5🎯 §lTalents Actifs");
         List<String> talentsLore = new ArrayList<>();
         talentsLore.add("");
 
@@ -486,7 +486,7 @@ public class GangGUI {
      * Ouvre le menu d'amélioration du gang
      */
     public void openUpgradeMenu(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 36, "§c⚡ §lAméliorations - " + gang.getName());
+        Inventory gui = plugin.getGUIManager().createInventory(36, "§c⚡ §lAméliorations - " + gang.getName());
         guiManager.registerOpenGUI(player, GUIType.GANG_UPGRADES, gui);
 
         fillWithGlass(gui, DyeColor.RED);
@@ -494,7 +494,7 @@ public class GangGUI {
         // Niveau actuel
         ItemStack currentLevel = new ItemStack(Material.DIAMOND, gang.getLevel());
         ItemMeta currentMeta = currentLevel.getItemMeta();
-        currentMeta.setDisplayName("§6📈 §lNiveau Actuel: " + gang.getLevel());
+        plugin.getGUIManager().applyName(currentMeta, "§6📈 §lNiveau Actuel: " + gang.getLevel());
         List<String> currentLore = new ArrayList<>();
         currentLore.add("");
         currentLore.add("§7Avantages actuels:");
@@ -507,7 +507,7 @@ public class GangGUI {
             // Prochain niveau
             ItemStack nextLevel = new ItemStack(Material.EMERALD, gang.getLevel() + 1);
             ItemMeta nextMeta = nextLevel.getItemMeta();
-            nextMeta.setDisplayName("§a⬆ §lProchain Niveau: " + (gang.getLevel() + 1));
+            plugin.getGUIManager().applyName(nextMeta, "§a⬆ §lProchain Niveau: " + (gang.getLevel() + 1));
             List<String> nextLore = new ArrayList<>();
             nextLore.add("");
 
@@ -535,7 +535,7 @@ public class GangGUI {
             // Niveau maximum
             ItemStack maxLevel = new ItemStack(Material.GOLD_BLOCK);
             ItemMeta maxMeta = maxLevel.getItemMeta();
-            maxMeta.setDisplayName("§6👑 §lNiveau Maximum Atteint!");
+            plugin.getGUIManager().applyName(maxMeta, "§6👑 §lNiveau Maximum Atteint!");
             List<String> maxLore = new ArrayList<>();
             maxLore.add("");
             maxLore.add("§aFélicitations! Votre gang a");
@@ -562,7 +562,7 @@ public class GangGUI {
      * Ouvre la boutique du gang
      */
     public void openShop(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§a🛒 §lBoutique - " + gang.getName());
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§a🛒 §lBoutique - " + gang.getName());
         guiManager.registerOpenGUI(player, GUIType.GANG_SHOP, gui);
 
         fillWithGlass(gui, DyeColor.GREEN);
@@ -586,7 +586,7 @@ public class GangGUI {
         if (gang.getLevel() >= 10) {
             ItemStack banner = createGangBanner(gang);
             ItemMeta bannerMeta = banner.getItemMeta();
-            bannerMeta.setDisplayName("§6🏳️ §lBannière du Gang");
+            plugin.getGUIManager().applyName(bannerMeta, "§6🏳️ §lBannière du Gang");
             List<String> bannerLore = new ArrayList<>();
             bannerLore.add("");
             bannerLore.add("§7Achetez la bannière officielle");
@@ -614,7 +614,7 @@ public class GangGUI {
      * Ouvre le créateur de bannière
      */
     public void openBannerCreator(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§6🏳️ §lCréateur de Bannière");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§6🏳️ §lCréateur de Bannière");
         guiManager.registerOpenGUI(player, GUIType.BANNER_CREATOR, gui);
 
         fillWithGlass(gui, DyeColor.YELLOW);
@@ -622,7 +622,7 @@ public class GangGUI {
         // Instructions
         ItemStack instructions = new ItemStack(Material.BOOK);
         ItemMeta instructionsMeta = instructions.getItemMeta();
-        instructionsMeta.setDisplayName("§e📖 §lInstructions");
+        plugin.getGUIManager().applyName(instructionsMeta, "§e📖 §lInstructions");
         List<String> instructionsLore = new ArrayList<>();
         instructionsLore.add("");
         instructionsLore.add("§71. Placez une bannière dans le slot central");
@@ -640,7 +640,7 @@ public class GangGUI {
         // Confirmer
         ItemStack confirm = new ItemStack(Material.EMERALD_BLOCK);
         ItemMeta confirmMeta = confirm.getItemMeta();
-        confirmMeta.setDisplayName("§a✅ §lConfirmer");
+        plugin.getGUIManager().applyName(confirmMeta, "§a✅ §lConfirmer");
         List<String> confirmLore = new ArrayList<>();
         confirmLore.add("");
         confirmLore.add("§7Enregistre cette bannière");
@@ -654,7 +654,7 @@ public class GangGUI {
         // Annuler
         ItemStack cancel = new ItemStack(Material.REDSTONE_BLOCK);
         ItemMeta cancelMeta = cancel.getItemMeta();
-        cancelMeta.setDisplayName("§c❌ §lAnnuler");
+        plugin.getGUIManager().applyName(cancelMeta, "§c❌ §lAnnuler");
         cancel.setItemMeta(cancelMeta);
         gui.setItem(24, cancel);
 
@@ -721,7 +721,7 @@ public class GangGUI {
     private ItemStack createGangBanner(Gang gang) {
         ItemStack banner = new ItemStack(Material.WHITE_BANNER, 1, DyeColor.YELLOW.getWoolData());
         BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
-        bannerMeta.setDisplayName("§6🏳️ §l" + gang.getName());
+        plugin.getGUIManager().applyName(bannerMeta,"§6🏳️ §l" + gang.getName());
 
         // Si le gang a une bannière personnalisée, l'utiliser
         if (gang.getBannerPatterns() != null && !gang.getBannerPatterns().isEmpty()) {
@@ -736,7 +736,7 @@ public class GangGUI {
         ItemStack item = new ItemStack(Material.WHITE_BANNER, 1, DyeColor.YELLOW.getWoolData());
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6🏰 §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7]");
+        plugin.getGUIManager().applyName(meta,"§6🏰 §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7]");
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -765,7 +765,7 @@ public class GangGUI {
         int[] durations = {30, 60, 180}; // minutes
         long[] costs = boostType.getCosts();
 
-        meta.setDisplayName(boostType.getColor() + "⚡ §l" + boostType.getDisplayName() + " " + multipliers[tier - 1]);
+        plugin.getGUIManager().applyName(meta,boostType.getColor() + "⚡ §l" + boostType.getDisplayName() + " " + multipliers[tier - 1]);
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -789,7 +789,7 @@ public class GangGUI {
     private ItemStack createCloseButton() {
         ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = close.getItemMeta();
-        closeMeta.setDisplayName("§c❌ §lFermer");
+        plugin.getGUIManager().applyName(closeMeta,"§c❌ §lFermer");
         close.setItemMeta(closeMeta);
         return close;
     }
@@ -797,7 +797,7 @@ public class GangGUI {
     private ItemStack createBackButton() {
         ItemStack back = new ItemStack(Material.ARROW);
         ItemMeta backMeta = back.getItemMeta();
-        backMeta.setDisplayName("§a⬅ §lRetour");
+        plugin.getGUIManager().applyName(backMeta,"§a⬅ §lRetour");
         back.setItemMeta(backMeta);
         return back;
     }
@@ -805,7 +805,7 @@ public class GangGUI {
     private void fillWithGlass(Inventory gui, DyeColor color) {
         ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, color.getWoolData());
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName("§7");
+        plugin.getGUIManager().applyName(glassMeta,"§7");
         glass.setItemMeta(glassMeta);
 
         // Remplir les bordures
@@ -889,7 +889,7 @@ public class GangGUI {
      * Ouvre le menu des membres du gang
      */
     private void openMembersMenu(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§b👥 §l" + gang.getName() + " - Membres");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§b👥 §l" + gang.getName() + " - Membres");
         guiManager.registerOpenGUI(player, GUIType.GANG_MEMBERS, gui);
 
         fillWithGlass(gui, DyeColor.BLUE);
@@ -909,7 +909,7 @@ public class GangGUI {
             ItemMeta meta = memberItem.getItemMeta();
 
             String memberName = getPlayerName(memberId);
-            meta.setDisplayName(role.getColor() + "👤 " + memberName);
+            plugin.getGUIManager().applyName(meta, role.getColor() + "👤 " + memberName);
 
             List<String> lore = new ArrayList<>();
             lore.add("");
@@ -937,7 +937,7 @@ public class GangGUI {
         if (canManage) {
             ItemStack invite = new ItemStack(Material.EMERALD);
             ItemMeta inviteMeta = invite.getItemMeta();
-            inviteMeta.setDisplayName("§a➕ §lInviter un Joueur");
+            plugin.getGUIManager().applyName(inviteMeta, "§a➕ §lInviter un Joueur");
             List<String> inviteLore = new ArrayList<>();
             inviteLore.add("");
             inviteLore.add("§7Invitez un nouveau membre");
@@ -961,7 +961,7 @@ public class GangGUI {
      * Ouvre le menu des talents du gang
      */
     private void openTalentsMenu(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§5🎯 §l" + gang.getName() + " - Talents");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§5🎯 §l" + gang.getName() + " - Talents");
         guiManager.registerOpenGUI(player, GUIType.GANG_TALENTS, gui);
 
         fillWithGlass(gui, DyeColor.PURPLE);
@@ -1008,7 +1008,7 @@ public class GangGUI {
         // Informations
         ItemStack info = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = info.getItemMeta();
-        infoMeta.setDisplayName("§e📚 §lInformations");
+        plugin.getGUIManager().applyName(infoMeta, "§e📚 §lInformations");
         List<String> infoLore = new ArrayList<>();
         infoLore.add("");
         infoLore.add("§7Banque du gang: §6" + NumberFormatter.format(gang.getBankBalance()) + " coins");
@@ -1039,11 +1039,11 @@ public class GangGUI {
         boolean levelSufficient = gang.getLevel() >= talent.getRequiredGangLevel();
 
         if (owned) {
-            meta.setDisplayName("§a✅ §l" + talent.getName());
+            plugin.getGUIManager().applyName(meta,"§a✅ §l" + talent.getName());
         } else if (canAfford && levelSufficient && canBuy) {
-            meta.setDisplayName("§e⭐ §l" + talent.getName());
+            plugin.getGUIManager().applyName(meta,"§e⭐ §l" + talent.getName());
         } else {
-            meta.setDisplayName("§7❌ §l" + talent.getName());
+            plugin.getGUIManager().applyName(meta,"§7❌ §l" + talent.getName());
         }
 
         List<String> lore = new ArrayList<>();
@@ -1075,7 +1075,7 @@ public class GangGUI {
      * Ouvre le menu des paramètres du gang
      */
     private void openSettingsMenu(Player player, Gang gang) {
-        Inventory gui = Bukkit.createInventory(null, 45, "§6⚙️ §l" + gang.getName() + " - Paramètres");
+        Inventory gui = plugin.getGUIManager().createInventory(45, "§6⚙️ §l" + gang.getName() + " - Paramètres");
         guiManager.registerOpenGUI(player, GUIType.GANG_SETTINGS, gui);
 
         fillWithGlass(gui, DyeColor.ORANGE);
@@ -1086,7 +1086,7 @@ public class GangGUI {
         // Modifier description
         ItemStack description = new ItemStack(Material.WRITABLE_BOOK);
         ItemMeta descMeta = description.getItemMeta();
-        descMeta.setDisplayName("§e📝 §lModifier la Description");
+        plugin.getGUIManager().applyName(descMeta, "§e📝 §lModifier la Description");
         List<String> descLore = new ArrayList<>();
         descLore.add("");
         descLore.add("§7Description actuelle:");
@@ -1111,7 +1111,7 @@ public class GangGUI {
         if (isLeader) {
             ItemStack rename = new ItemStack(Material.NAME_TAG);
             ItemMeta renameMeta = rename.getItemMeta();
-            renameMeta.setDisplayName("§e✏️ §lRenommer le Gang");
+            plugin.getGUIManager().applyName(renameMeta, "§e✏️ §lRenommer le Gang");
             List<String> renameLore = new ArrayList<>();
             renameLore.add("");
             renameLore.add("§7Nom actuel: §e" + gang.getName());
@@ -1127,7 +1127,7 @@ public class GangGUI {
         if (gang.getLevel() >= 2 && isLeader) {
             ItemStack bannerCreator = new ItemStack(Material.WHITE_BANNER);
             ItemMeta bannerMeta = bannerCreator.getItemMeta();
-            bannerMeta.setDisplayName("§6🏳️ §lCréateur de Bannière");
+            plugin.getGUIManager().applyName(bannerMeta, "§6🏳️ §lCréateur de Bannière");
             List<String> bannerLore = new ArrayList<>();
             bannerLore.add("");
             bannerLore.add("§7Créez une bannière personnalisée");
@@ -1140,7 +1140,7 @@ public class GangGUI {
         } else {
             ItemStack bannerCreator = new ItemStack(Material.RED_BANNER);
             ItemMeta bannerMeta = bannerCreator.getItemMeta();
-            bannerMeta.setDisplayName("§6🏳️ §lCréateur de Bannière");
+            plugin.getGUIManager().applyName(bannerMeta, "§6🏳️ §lCréateur de Bannière");
             List<String> bannerLore = new ArrayList<>();
             bannerLore.add("");
             bannerLore.add("§7Créez une bannière personnalisée");
@@ -1156,7 +1156,7 @@ public class GangGUI {
         if (isLeader) {
             ItemStack dissolve = new ItemStack(Material.TNT);
             ItemMeta dissolveMeta = dissolve.getItemMeta();
-            dissolveMeta.setDisplayName("§c💥 §lDissoudre le Gang");
+            plugin.getGUIManager().applyName(dissolveMeta, "§c💥 §lDissoudre le Gang");
             List<String> dissolveLore = new ArrayList<>();
             dissolveLore.add("");
             dissolveLore.add("§c⚠️ ATTENTION: Cette action est");
@@ -1173,7 +1173,7 @@ public class GangGUI {
         if (isLeader) {
             ItemStack transfer = new ItemStack(Material.GOLDEN_HELMET);
             ItemMeta transferMeta = transfer.getItemMeta();
-            transferMeta.setDisplayName("§6👑 §lTransférer le Leadership");
+            plugin.getGUIManager().applyName(transferMeta, "§6👑 §lTransférer le Leadership");
             List<String> transferLore = new ArrayList<>();
             transferLore.add("");
             transferLore.add("§7Transférez le leadership du gang");
@@ -1313,7 +1313,6 @@ public class GangGUI {
 
         // On récupère l'inventaire du GUI
         Inventory gui = player.getOpenInventory().getTopInventory();
-        if (gui == null) return;
 
         switch (slot) {
             case 13: { // Slot de la bannière
@@ -1384,7 +1383,7 @@ public class GangGUI {
             BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
 
             bannerMeta.setPatterns(gang.getBannerPatterns());
-            bannerMeta.setDisplayName("§6🏳️ §lBannière Actuelle");
+            plugin.getGUIManager().applyName(bannerMeta,"§6🏳️ §lBannière Actuelle");
 
             List<String> lore = new ArrayList<>();
             lore.add("");
@@ -1399,7 +1398,7 @@ public class GangGUI {
             // Sinon, on affiche le placeholder par défaut
             ItemStack placeholder = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
             ItemMeta placeholderMeta = placeholder.getItemMeta();
-            placeholderMeta.setDisplayName("§7Placez votre bannière ici");
+            plugin.getGUIManager().applyName(placeholderMeta,"§7Placez votre bannière ici");
 
             List<String> lore = new ArrayList<>();
             lore.add("");
@@ -1440,9 +1439,8 @@ public class GangGUI {
                     openGangList(player, page - 1);
                 }
             }
-            case 53 -> { // Page suivante
-                openGangList(player, page + 1);
-            }
+            case 53 -> // Page suivante
+                    openGangList(player, page + 1);
             case 49 -> openMainMenu(player); // Retour au menu principal
         }
     }
@@ -1460,7 +1458,7 @@ public class GangGUI {
         if (page >= totalPages) page = Math.max(0, totalPages - 1);
         if (page < 0) page = 0;
 
-        Inventory gui = Bukkit.createInventory(null, 54, "§6📋 §lListe des Gangs §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6📋 §lListe des Gangs §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
         guiManager.registerOpenGUI(player, GUIType.GANG_LIST, gui, Map.of("page", String.valueOf(page)));
 
         fillWithGlass(gui, DyeColor.ORANGE);
@@ -1486,7 +1484,7 @@ public class GangGUI {
         if (page > 0) {
             ItemStack prevPage = new ItemStack(Material.ARROW);
             ItemMeta prevMeta = prevPage.getItemMeta();
-            prevMeta.setDisplayName("§a⬅ §lPage Précédente");
+            plugin.getGUIManager().applyName(prevMeta, "§a⬅ §lPage Précédente");
             prevPage.setItemMeta(prevMeta);
             gui.setItem(45, prevPage);
         }
@@ -1494,7 +1492,7 @@ public class GangGUI {
         if (page < totalPages - 1) {
             ItemStack nextPage = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = nextPage.getItemMeta();
-            nextMeta.setDisplayName("§a➡ §lPage Suivante");
+            plugin.getGUIManager().applyName(nextMeta, "§a➡ §lPage Suivante");
             nextPage.setItemMeta(nextMeta);
             gui.setItem(53, nextPage);
         }
@@ -1561,17 +1559,13 @@ public class GangGUI {
         // Gang Collectif talents (slots 28-32)
         if (slot >= 28 && slot <= 32) {
             int index = slot - 28;
-            if (index < 5) {
-                return "gang_collectif_" + (index + 1);
-            }
+            return "gang_collectif_" + (index + 1);
         }
 
         // Beacon Multiplier talents (slots 37-41)
         if (slot >= 37 && slot <= 41) {
             int index = slot - 37;
-            if (index < 5) {
-                return "beacon_multiplier_" + (index + 1);
-            }
+            return "beacon_multiplier_" + (index + 1);
         }
 
         return null;

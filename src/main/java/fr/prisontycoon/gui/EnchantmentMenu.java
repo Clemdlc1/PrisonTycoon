@@ -6,7 +6,6 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.CustomEnchantment;
 import fr.prisontycoon.enchantments.EnchantmentCategory;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -47,7 +46,7 @@ public class EnchantmentMenu {
      * Ouvre le menu principal
      */
     public void openEnchantmentMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 36, "§6✨ §lMenu Enchantement §6✨");
+        Inventory gui = plugin.getGUIManager().createInventory(36, "§6✨ §lMenu Enchantement §6✨");
 
         // Remplissage décoratif
         fillEmptySlots(gui);
@@ -59,13 +58,13 @@ public class EnchantmentMenu {
 
 
         gui.setItem(UNIQUE_ENCHANTS_SLOT, createFutureFeatureItem("Enchantements Uniques", Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE,
-                "§dEnchantements légendaires rares", "§7Implémentation future"));
+                "§dEnchantements légendaires rares"));
 
         gui.setItem(PETS_SLOT, createFutureFeatureItem("Pets", Material.WOLF_SPAWN_EGG,
-                "§6Compagnons de minage", "§7Implémentation future"));
+                "§6Compagnons de minage"));
 
         gui.setItem(MAIN_MENU_SLOT, createFutureFeatureItem("Menu Principal", Material.COMPASS,
-                "§eNavigation générale", "§7Implémentation future"));
+                "§eNavigation générale"));
 
         gui.setItem(REPAIR_PICKAXE_SLOT, createRepairPickaxeButton(player));
 
@@ -89,7 +88,7 @@ public class EnchantmentMenu {
             case CRYSTALS_SLOT -> plugin.getCristalGUI().openCristalMenu(player);
             case UNIQUE_ENCHANTS_SLOT -> plugin.getEnchantmentBookGUI().openEnchantmentBookMenu(player);
             case PETS_SLOT -> plugin.getPetsMenuGUI().openPetsMenu(player);
-            case MAIN_MENU_SLOT -> plugin.getMainMenuGUI().openGeneralMainMenu(player);
+            case MAIN_MENU_SLOT -> plugin.getMainNavigationGUI().openMainMenu(player);
             case REPAIR_PICKAXE_SLOT -> plugin.getPickaxeRepairMenu().openRepairGUI(player);
 
             // Catégories d'enchantements
@@ -115,7 +114,7 @@ public class EnchantmentMenu {
         ItemMeta meta = item.getItemMeta();
 
         // CORRECTION: Nom en gras
-        meta.setDisplayName(category.getIcon() + " §l" + category.getDisplayName().toUpperCase());
+        plugin.getGUIManager().applyName(meta, category.getIcon() + " §l" + category.getDisplayName().toUpperCase());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -206,7 +205,7 @@ public class EnchantmentMenu {
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§e✨ Cliquez pour explorer cette catégorie!");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -215,18 +214,18 @@ public class EnchantmentMenu {
     /**
      * NOUVEAU: Crée un item pour une feature future
      */
-    private ItemStack createFutureFeatureItem(String name, Material material, String description, String status) {
+    private ItemStack createFutureFeatureItem(String name, Material material, String description) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
         // CORRECTION: Nom en gras
-        meta.setDisplayName("§e🔮 §l" + name);
+        plugin.getGUIManager().applyName(meta, "§e🔮 §l" + name);
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§7" + description);
         lore.add("§7");
-        lore.add("§6Statut: " + status);
+        lore.add("§6Statut: " + "§7Implémentation future");
         lore.add("§7");
         lore.add("§7Cette fonctionnalité sera disponible");
         lore.add("§7dans une future mise à jour du plugin.");
@@ -234,7 +233,7 @@ public class EnchantmentMenu {
         lore.add("§e✨ Cliquez pour un aperçu!");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -257,7 +256,7 @@ public class EnchantmentMenu {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        meta.setDisplayName("§6📊 §l" + player.getName());
+        plugin.getGUIManager().applyName(meta, "§6📊 §l" + player.getName());
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -268,7 +267,7 @@ public class EnchantmentMenu {
         lore.add("§7│ §aExpérience: §2" + NumberFormatter.format(playerData.getExperience()));
         lore.add("§7│ §dBeacons: §c" + NumberFormatter.format(playerData.getBeacons()));
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         head.setItemMeta(meta);
 
         return head;
@@ -282,7 +281,7 @@ public class EnchantmentMenu {
         ItemMeta meta = filler.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName("§7");
+            plugin.getGUIManager().applyName(meta,"§7");
             filler.setItemMeta(meta);
         }
 
@@ -303,7 +302,7 @@ public class EnchantmentMenu {
         ItemStack item = new ItemStack(Material.ANVIL);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§c🔨 §lRÉPARATION DE PIOCHE");
+        plugin.getGUIManager().applyName(meta, "§c🔨 §lRÉPARATION DE PIOCHE");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -369,7 +368,7 @@ public class EnchantmentMenu {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -415,7 +414,7 @@ public class EnchantmentMenu {
     private ItemStack createCristalsButton(Player player) {
         ItemStack cristalsBtn = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = cristalsBtn.getItemMeta();
-        meta.setDisplayName("§d✨ §lGestion des Cristaux §d✨");
+        plugin.getGUIManager().applyName(meta, "§d✨ §lGestion des Cristaux §d✨");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -442,7 +441,7 @@ public class EnchantmentMenu {
         lore.add("§a🖱 Clic pour ouvrir le menu");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
         cristalsBtn.setItemMeta(meta);

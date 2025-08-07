@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -35,7 +34,7 @@ public class AutominerGUI {
     public void openMainMenu(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        Inventory inv = Bukkit.createInventory(null, 27, "§8Menu Automineurs");
+        Inventory inv = plugin.getGUIManager().createInventory(27, "§8Menu Automineurs");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_MAIN, inv);
 
         // Slots des automineurs actifs
@@ -196,10 +195,8 @@ public class AutominerGUI {
     private ItemStack createEmptySlotItem(String name, String... lore) {
         ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
-        if (lore.length > 0) {
-            meta.setLore(List.of(lore));
-        }
+        plugin.getGUIManager().applyName(meta, name);
+        if (lore.length > 0) plugin.getGUIManager().applyLore(meta, List.of(lore));
         item.setItemMeta(meta);
         return item;
     }
@@ -214,7 +211,7 @@ public class AutominerGUI {
             playerData.setAutominerCurrentWorld(currentWorld);
         }
 
-        meta.setDisplayName("§2🌍 Monde de Minage");
+        plugin.getGUIManager().applyName(meta, "§2🌍 Monde de Minage");
         List<String> lore = new ArrayList<>();
         lore.add("§7Monde actuel: §f" + currentWorld.toUpperCase());
         lore.add("");
@@ -261,7 +258,7 @@ public class AutominerGUI {
         lore.add("§eShift+Clic: §7Changer de monde");
         lore.add("§7Coût: §e" + calculateWorldChangeCost() + " beacons");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -270,7 +267,7 @@ public class AutominerGUI {
         ItemStack item = new ItemStack(Material.CHEST);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6📦 Stockage");
+        plugin.getGUIManager().applyName(meta, "§6📦 Stockage");
         List<String> lore = new ArrayList<>();
 
         Map<Material, Long> storage = playerData.getAutominerStorageContents();
@@ -300,7 +297,7 @@ public class AutominerGUI {
         lore.add("");
         lore.add("§eClic: §7Ouvrir le stockage");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -309,7 +306,7 @@ public class AutominerGUI {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§c⛽ Carburant");
+        plugin.getGUIManager().applyName(meta, "§c⛽ Carburant");
         List<String> lore = new ArrayList<>();
 
         double fuelReserve = playerData.getAutominerFuelReserve();
@@ -337,7 +334,7 @@ public class AutominerGUI {
         lore.add("");
         lore.add("§eClic: §7Ajouter du carburant");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -346,7 +343,7 @@ public class AutominerGUI {
         ItemStack item = new ItemStack(Material.CRAFTING_TABLE);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§d🔧 Condensation");
+        plugin.getGUIManager().applyName(meta, "§d🔧 Condensation");
         List<String> lore = new ArrayList<>();
         lore.add("§7Fusionnez 9 automineurs identiques");
         lore.add("§7pour obtenir 1 du type supérieur");
@@ -355,7 +352,7 @@ public class AutominerGUI {
         lore.add("");
         lore.add("§eClic: §7Ouvrir la condensation");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -363,7 +360,7 @@ public class AutominerGUI {
     private void fillEmptySlots(Inventory inv) {
         ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta fillerMeta = filler.getItemMeta();
-        fillerMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(fillerMeta, " ");
         filler.setItemMeta(fillerMeta);
 
         for (int i = 0; i < inv.getSize(); i++) {
@@ -419,7 +416,7 @@ public class AutominerGUI {
             case COBBLESTONE -> "Pierre Taillée";
             default -> {
                 String name = material.name().toLowerCase().replace("_", " ");
-                String[] words = name.split(" ");
+                String[] words = name.split("");
                 StringBuilder formatted = new StringBuilder();
                 for (String word : words) {
                     if (!word.isEmpty()) {

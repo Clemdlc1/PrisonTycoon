@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.BankManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -51,7 +50,7 @@ public class BankGUI {
             return;
         }
 
-        Inventory gui = Bukkit.createInventory(null, 54, "§6🏦 Banque PrisonTycoon");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏦 Banque PrisonTycoon");
         guiManager.registerOpenGUI(player, GUIType.BANK_MAIN, gui);
         fillWithGlass(gui);
         setupMainMenu(gui, player);
@@ -96,7 +95,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.EMERALD);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§a💰 Compte d'Épargne");
+        plugin.getGUIManager().applyName(meta, "§a💰 Compte d'Épargne");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Solde actuel: §a" + NumberFormatter.format(playerData.getSavingsBalance()) + " coins");
@@ -110,7 +109,7 @@ public class BankGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour gérer votre épargne");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -123,7 +122,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.DIAMOND);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§b📈 Investissements");
+        plugin.getGUIManager().applyName(meta, "§b📈 Investissements");
 
         List<String> lore = new ArrayList<>();
 
@@ -163,7 +162,7 @@ public class BankGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour gérer vos investissements");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -176,7 +175,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.CHEST);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6🔒 Coffre-Fort");
+        plugin.getGUIManager().applyName(meta, "§6🔒 Coffre-Fort");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Solde: §a" + NumberFormatter.format(playerData.getSafeBalance()) + " coins");
@@ -189,7 +188,7 @@ public class BankGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour gérer votre coffre-fort");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -202,7 +201,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§c🔒 Coffre-Fort Verrouillé");
+        plugin.getGUIManager().applyName(meta, "§c🔒 Coffre-Fort Verrouillé");
 
         List<String> lore = new ArrayList<>();
         lore.add("§c❌ Prestige 10+ requis");
@@ -215,7 +214,7 @@ public class BankGUI {
         lore.add("§7Frais de retrait: §c20%");
         lore.add("§7Frais de gestion: §c10% toutes les 12h");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -229,7 +228,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6⭐ Niveau Bancaire: " + currentLevel + "/10");
+        plugin.getGUIManager().applyName(meta, "§6⭐ Niveau Bancaire: " + currentLevel + "/10");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Niveau actuel: §e" + currentLevel);
@@ -263,7 +262,7 @@ public class BankGUI {
             lore.add("§a✅ Niveau maximum atteint!");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -276,7 +275,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6👤 " + player.getName());
+        plugin.getGUIManager().applyName(meta, "§6👤 " + player.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Solde: §a" + NumberFormatter.format(playerData.getCoins()) + " coins");
@@ -291,7 +290,7 @@ public class BankGUI {
                     " §7Niv." + playerData.getProfessionLevel(profession));
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -301,7 +300,7 @@ public class BankGUI {
      * Ouvre le menu des investissements
      */
     public void openInvestmentMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, "§b📈 Investissements");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§b📈 Investissements");
         plugin.getGUIManager().registerOpenGUI(player,GUIType.INVESTMENT_MENU,gui);
         fillWithGlass(gui);
         setupInvestmentMenu(gui, player);
@@ -323,7 +322,7 @@ public class BankGUI {
                 Material.DIAMOND_ORE, Material.EMERALD_ORE, Material.BEACON
         };
 
-        for (int i = 0; i < materials.length && i < INVESTMENT_SLOTS.length; i++) {
+        for (int i = 0; i < materials.length; i++) {
             gui.setItem(INVESTMENT_SLOTS[i], createInvestmentBlockItem(player, materials[i], playerData));
         }
 
@@ -342,7 +341,7 @@ public class BankGUI {
         ItemMeta meta = item.getItemMeta();
 
         String blockName = bankManager.getBlockDisplayName(material);
-        meta.setDisplayName("§e" + blockName);
+        plugin.getGUIManager().applyName(meta, "§e" + blockName);
 
         List<String> lore = new ArrayList<>();
         boolean isTrader3Plus = bankManager.isTraderLevel3Plus(player);
@@ -392,7 +391,7 @@ public class BankGUI {
             lore.add("§7§o💡 Commerçant pour plus d'infos");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Ajout des données pour le clic
         meta.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "investment_material"),
@@ -409,7 +408,7 @@ public class BankGUI {
         ItemStack item = new ItemStack(Material.BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§6📊 Résumé du Portefeuille");
+        plugin.getGUIManager().applyName(meta, "§6📊 Résumé du Portefeuille");
 
         List<String> lore = new ArrayList<>();
         Map<Material, Long> investments = playerData.getAllInvestments();
@@ -444,7 +443,7 @@ public class BankGUI {
             lore.add("§7• Informations détaillées");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -456,8 +455,8 @@ public class BankGUI {
     private ItemStack createBackButton() {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§7← Retour");
-        meta.setLore(List.of("§7Retour au menu principal"));
+        plugin.getGUIManager().applyName(meta, "§7← Retour");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retour au menu principal"));
         item.setItemMeta(meta);
         return item;
     }
@@ -468,8 +467,8 @@ public class BankGUI {
     private ItemStack createCloseItem() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c✖ Fermer");
-        meta.setLore(List.of("§7Ferme ce menu"));
+        plugin.getGUIManager().applyName(meta, "§c✖ Fermer");
+        plugin.getGUIManager().applyLore(meta, List.of("§7Ferme ce menu"));
         item.setItemMeta(meta);
         return item;
     }
@@ -480,7 +479,7 @@ public class BankGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack glass = new ItemStack(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
         ItemMeta meta = glass.getItemMeta();
-        meta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(meta, " ");
         glass.setItemMeta(meta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -556,7 +555,7 @@ public class BankGUI {
 
             Material material;
             try {
-                material = Material.valueOf(materialName);
+                Material.valueOf(materialName);
             } catch (IllegalArgumentException e) {
                 return;
             }

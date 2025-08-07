@@ -1,9 +1,14 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -18,6 +23,8 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Gestionnaire d'événements pour le chat amélioré
@@ -29,6 +36,10 @@ public class ChatListener implements Listener {
     private final PrisonTycoon plugin;
     private final Map<UUID, String> lastMessages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastMessageTimes = new ConcurrentHashMap<>();
+
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]");
+
+
 
     public ChatListener(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -43,47 +54,40 @@ public class ChatListener implements Listener {
             return;
         }
 
-        // Annule l'événement par défaut pour gérer le chat manuellement
         event.setCancelled(true);
 
-        // Vérifie si le joueur peut envoyer un message
         if (!canPlayerChat(player, message)) {
             return;
         }
 
-        // Vérifie si le joueur est muté
         if (plugin.getModerationManager().isMuted(player.getUniqueId())) {
             var muteData = plugin.getModerationManager().getMuteData(player.getUniqueId());
             if (muteData != null) {
-                player.sendMessage(ChatColor.RED + "🔇 Vous êtes muté!");
-                player.sendMessage(ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + muteData.reason());
+                player.sendMessage(Component.text("🔇 Vous êtes muté!", NamedTextColor.RED));
+                player.sendMessage(Component.text("Raison: ", NamedTextColor.GRAY)
+                        .append(Component.text(muteData.reason(), NamedTextColor.YELLOW)));
                 if (!muteData.isPermanent()) {
-                    long remaining = muteData.getRemainingTime();
-                    player.sendMessage(ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining));
+                    player.sendMessage(Component.text("Temps restant: ", NamedTextColor.GRAY)
+                            .append(Component.text(formatDuration(muteData.getRemainingTime()), NamedTextColor.YELLOW)));
                 } else {
-                    player.sendMessage(ChatColor.GRAY + "Durée: " + ChatColor.RED + "Permanent");
+                    player.sendMessage(Component.text("Durée: ", NamedTextColor.GRAY)
+                            .append(Component.text("Permanent", NamedTextColor.RED)));
                 }
             } else {
-                player.sendMessage(ChatColor.RED + "🔇 Vous êtes muté!");
+                player.sendMessage(Component.text("🔇 Vous êtes muté!", NamedTextColor.RED));
             }
             return;
         }
 
-        // Traite le message
         String processedMessage = processMessage(player, message);
+        Component formattedMessage = createFormattedMessage(player, processedMessage);
 
-        // Crée le message formaté avec la nouvelle méthode commune
-        TextComponent formattedMessage = createFormattedMessage(player, processedMessage);
-
-        // Diffuse le message à tous les joueurs en ligne
         plugin.getServer().getScheduler().runTask(plugin, () -> broadcastMessage(formattedMessage, player));
 
-        // Log le message
         String rawLogMessage = getPlayerPrefix(player) + " " + player.getName() + ": " + message;
-        String formattedLogMessage = ChatColor.stripColor(formattedMessage.toLegacyText());
+        String formattedLogMessage = PlainTextComponentSerializer.plainText().serialize(formattedMessage);
         plugin.getChatLogger().logChatMessage(player, rawLogMessage, formattedLogMessage);
 
-        // Met à jour les données anti-spam
         updateSpamData(player, message);
     }
 
@@ -91,27 +95,32 @@ public class ChatListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // Vérifie si le joueur est banni
         if (plugin.getModerationManager().isBanned(player.getUniqueId())) {
             var banData = plugin.getModerationManager().getBanData(player.getUniqueId());
             if (banData != null) {
-                String kickMessage = ChatColor.RED.toString() + ChatColor.BOLD + "=== BANNISSEMENT ===\n\n" +
-                        ChatColor.RED + "Vous êtes banni du serveur\n" +
-                        ChatColor.GRAY + "Raison: " + ChatColor.YELLOW + banData.reason() + "\n";
+                Component kickMessage = Component.text()
+                        .append(Component.text("=== BANNISSEMENT ===", NamedTextColor.RED, TextDecoration.BOLD))
+                        .append(Component.newline()).append(Component.newline())
+                        .append(Component.text("Vous êtes banni du serveur", NamedTextColor.RED))
+                        .append(Component.newline())
+                        .append(Component.text("Raison: ", NamedTextColor.GRAY).append(Component.text(banData.reason(), NamedTextColor.YELLOW)))
+                        .append(Component.newline())
+                        .build();
 
                 if (!banData.isPermanent()) {
-                    long remaining = banData.getRemainingTime();
-                    kickMessage += ChatColor.GRAY + "Temps restant: " + ChatColor.YELLOW + formatDuration(remaining);
+                    kickMessage = kickMessage.append(Component.text("Temps restant: ", NamedTextColor.GRAY)
+                            .append(Component.text(formatDuration(banData.getRemainingTime()), NamedTextColor.YELLOW)));
                 } else {
-                    kickMessage += ChatColor.GRAY + "Durée: " + ChatColor.RED + "PERMANENT";
+                    kickMessage = kickMessage.append(Component.text("Durée: ", NamedTextColor.GRAY)
+                            .append(Component.text("PERMANENT", NamedTextColor.RED)));
                 }
 
-                player.kickPlayer(kickMessage);
+                // La méthode moderne pour kick un joueur utilise un Component
+                player.kick(kickMessage);
                 return;
             }
         }
 
-        // Nettoie les données du joueur s'il était en ligne
         lastMessages.remove(player.getUniqueId());
         lastMessageTimes.remove(player.getUniqueId());
     }
@@ -135,38 +144,29 @@ public class ChatListener implements Listener {
 
         if (player.hasPermission("specialmine.admin")) {
             playerType = "ADMIN";
-            playerTypeColor = "§4"; // Rouge foncé
+            playerTypeColor = "§4";
         } else if (player.hasPermission("specialmine.vip")) {
             playerType = "VIP";
-            playerTypeColor = "§e"; // Jaune
+            playerTypeColor = "§e";
         } else {
             playerType = "JOUEUR";
-            playerTypeColor = "§7"; // Gris
+            playerTypeColor = "§7";
         }
 
-        // Récupère le niveau de prestige
         int prestigeLevel = plugin.getPrestigeManager().getPrestigeLevel(player);
-
-        // Récupère le rang de mine actuel
         String[] rankInfo = plugin.getMineManager().getRankAndColor(player);
-        String mineRank = rankInfo[0].toUpperCase(); // A, B, C... Z
-        String mineRankColor = rankInfo[1]; // Couleur du rang
+        String mineRank = rankInfo[0].toUpperCase();
+        String mineRankColor = rankInfo[1];
 
-        // Construit le préfixe selon les spécifications
         StringBuilder prefix = new StringBuilder();
-
-        // [TYPE] en couleur du type de joueur
         prefix.append(playerTypeColor).append("[").append(playerType).append("]");
 
-        // [P{niveau}] seulement si prestige > 0, couleur selon prestige
         if (prestigeLevel > 0) {
             String prestigeColor = getPrestigeColor(prestigeLevel);
             prefix.append(" ").append(prestigeColor).append("[P").append(prestigeLevel).append("]");
         }
 
-        // [RANG] en couleur du rang de mine
         prefix.append(" ").append(mineRankColor).append("[").append(mineRank).append("]");
-
         return prefix.toString();
     }
 
@@ -186,128 +186,78 @@ public class ChatListener implements Listener {
     /**
      * Crée le message formaté avec le nouveau système de préfixes
      */
-    private TextComponent createFormattedMessage(Player player, String processedMessage) {
-        TextComponent finalMessage = new TextComponent();
+    private Component createFormattedMessage(Player player, String processedMessage) {
+        TextComponent.Builder finalMessage = Component.text();
 
-        // Ajoute le préfixe complet du joueur
-        String prefix = getPlayerPrefix(player);
-        finalMessage.addExtra(new TextComponent(prefix + " "));
+        String prefixString = getPlayerPrefix(player);
+        finalMessage.append(LegacyComponentSerializer.legacySection().deserialize(prefixString + " "));
+        finalMessage.append(Component.text(player.getName() + ": ", NamedTextColor.WHITE));
 
-        // Ajoute le nom en blanc suivi de ": "
-        finalMessage.addExtra(new TextComponent("§f" + player.getName() + ": "));
+        boolean canUseSpecialPlaceholders = player.hasPermission("specialmine.chat.hand") || player.hasPermission("specialmine.chat.inv") || player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(processedMessage);
+        int lastEnd = 0;
 
-        // Traitement des placeholders [hand] et [inv]
-        if (processedMessage.contains("[hand]") || processedMessage.contains("[inv]")) {
-            // Vérifie les permissions pour les placeholders spéciaux
-            boolean canUseSpecialPlaceholders = player.hasPermission("specialmine.chat.hand") ||
-                    player.hasPermission("specialmine.chat.inv") ||
-                    player.hasPermission("specialmine.vip") ||
-                    player.hasPermission("specialmine.admin");
-
+        while (matcher.find()) {
+            String beforeText = processedMessage.substring(lastEnd, matcher.start());
+            if (!beforeText.isEmpty()) {
+                finalMessage.append(LegacyComponentSerializer.legacySection().deserialize(beforeText));
+            }
+            String placeholder = matcher.group();
             if (!canUseSpecialPlaceholders) {
-                // Si pas de permission, retire les placeholders
-                processedMessage = processedMessage.replaceAll("\\[hand\\]", ChatColor.RED + "[PERMISSION REQUISE]");
-                processedMessage = processedMessage.replaceAll("\\[inv\\]", ChatColor.RED + "[PERMISSION REQUISE]");
-                finalMessage.addExtra(new TextComponent(processedMessage));
-                return finalMessage;
+                finalMessage.append(Component.text("[PERMISSION REQUISE]", NamedTextColor.RED));
+            } else if (placeholder.equals("[hand]")) {
+                finalMessage.append(createHandComponent(player.getInventory().getItemInMainHand()));
+            } else if (placeholder.equals("[inv]")) {
+                finalMessage.append(createInventoryComponent(player));
             }
-
-            // Traite le message partie par partie
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[hand\\]|\\[inv\\]");
-            java.util.regex.Matcher matcher = pattern.matcher(processedMessage);
-
-            int lastEnd = 0;
-
-            while (matcher.find()) {
-                // Ajoute le texte avant le placeholder
-                String beforePlaceholder = processedMessage.substring(lastEnd, matcher.start());
-                if (!beforePlaceholder.isEmpty()) {
-                    finalMessage.addExtra(new TextComponent(beforePlaceholder));
-                }
-
-                String placeholder = matcher.group();
-
-                if (placeholder.equals("[hand]")) {
-                    // Crée le composant pour [hand]
-                    ItemStack handItem = player.getInventory().getItemInMainHand();
-                    TextComponent handComponent = createHandComponent(handItem);
-                    finalMessage.addExtra(handComponent);
-
-                } else if (placeholder.equals("[inv]")) {
-                    // Crée le composant pour [inv]
-                    TextComponent invComponent = createInventoryComponent(player);
-                    finalMessage.addExtra(invComponent);
-                }
-
-                lastEnd = matcher.end();
-            }
-
-            // Ajoute le texte restant après le dernier placeholder
-            String remaining = processedMessage.substring(lastEnd);
-            if (!remaining.isEmpty()) {
-                finalMessage.addExtra(new TextComponent(remaining));
-            }
-        } else {
-            // Pas de placeholder spécial, ajoute le message directement
-            finalMessage.addExtra(new TextComponent(processedMessage));
+            lastEnd = matcher.end();
         }
 
-        return finalMessage;
+        String remainingText = processedMessage.substring(lastEnd);
+        if (!remainingText.isEmpty()) {
+            finalMessage.append(LegacyComponentSerializer.legacySection().deserialize(remainingText));
+        }
+
+        return finalMessage.build();
     }
 
-    /**
-     * Crée le composant pour [hand]
-     */
-    private TextComponent createHandComponent(ItemStack handItem) {
+    private Component createHandComponent(ItemStack handItem) {
         if (handItem == null || handItem.getType() == Material.AIR) {
-            TextComponent emptyHand = new TextComponent("§7[Rien en main]");
-            emptyHand.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new TextComponent[]{new TextComponent("§cAucun objet en main")}));
-            return emptyHand;
+            return Component.text("[Rien en main]", NamedTextColor.GRAY)
+                    .hoverEvent(HoverEvent.showText(Component.text("Aucun objet en main", NamedTextColor.RED)));
         }
 
-        String itemName = getItemDisplayName(handItem);
+        // On récupère le nom de l'item comme avant
+        Component itemName = handItem.hasItemMeta() && handItem.getItemMeta().hasDisplayName()
+                ? LegacyComponentSerializer.legacySection().deserialize(handItem.getItemMeta().getDisplayName())
+                : Component.translatable(handItem.getType());
+
         int amount = handItem.getAmount();
-        String displayText = amount > 1 ? itemName + " x" + amount : itemName;
 
-        TextComponent handComponent = new TextComponent("§e[" + displayText + "]");
+        // On construit le texte à afficher
+        TextComponent.Builder displayBuilder = Component.text()
+                .color(NamedTextColor.YELLOW)
+                .append(Component.text("["))
+                .append(itemName)
+                .append(Component.text(amount > 1 ? " x" + amount : ""))
+                .append(Component.text("]"));
 
-        // Crée le texte de hover détaillé
-        StringBuilder hoverText = new StringBuilder();
-        hoverText.append("§6").append(itemName);
+        displayBuilder.hoverEvent(handItem);
 
-        if (amount > 1) {
-            hoverText.append(" §7x").append(amount);
-        }
-
-        hoverText.append("\n§7Type: §f").append(handItem.getType().name().toLowerCase().replace("_", " "));
-
-        if (handItem.hasItemMeta() && handItem.getItemMeta().hasLore()) {
-            hoverText.append("\n\n§7Description:");
-            for (String lore : handItem.getItemMeta().getLore()) {
-                hoverText.append("\n").append(lore);
-            }
-        }
-
-        handComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM,
-                new TextComponent[]{new TextComponent(hoverText.toString())}));
-
-        return handComponent;
+        return displayBuilder.build();
     }
 
     /**
      * Crée le composant pour [inv]
      */
-    private TextComponent createInventoryComponent(Player player) {
-        TextComponent invComponent = new TextComponent("§b[📦 Inventaire]");
-
-        invComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                new TextComponent[]{new TextComponent("§7Cliquez pour voir l'inventaire de §e" + player.getName())}));
-
-        invComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                "/invsee " + player.getName()));
-
-        return invComponent;
+    private Component createInventoryComponent(Player player) {
+        return Component.text("[📦 Inventaire]", NamedTextColor.AQUA)
+                .hoverEvent(HoverEvent.showText(Component.text()
+                        .color(NamedTextColor.GRAY)
+                        .append(Component.text("Cliquez pour voir l'inventaire de "))
+                        .append(Component.text(player.getName(), NamedTextColor.YELLOW))
+                        .build()))
+                .clickEvent(ClickEvent.runCommand("/invsee " + player.getName()));
     }
 
     /**
@@ -317,23 +267,18 @@ public class ChatListener implements Listener {
         UUID uuid = player.getUniqueId();
         long currentTime = System.currentTimeMillis();
 
-        // Vérifie le délai anti-spam
         if (lastMessageTimes.containsKey(uuid)) {
             long timeSinceLastMessage = currentTime - lastMessageTimes.get(uuid);
             if (timeSinceLastMessage < SPAM_DELAY) {
                 long remainingTime = (SPAM_DELAY - timeSinceLastMessage) / 1000;
-                player.sendMessage(ChatColor.RED + "⏳ Attendez " + remainingTime + " seconde(s) avant d'envoyer un autre message!");
+                player.sendMessage(Component.text("⏳ Attendez " + (remainingTime + 1) + " seconde(s) avant d'envoyer un autre message!", NamedTextColor.RED));
                 return false;
             }
         }
 
-        // Vérifie la répétition de messages
-        if (lastMessages.containsKey(uuid)) {
-            String lastMessage = lastMessages.get(uuid);
-            if (lastMessage.equals(message)) {
-                player.sendMessage(ChatColor.RED + "🔄 Vous ne pouvez pas envoyer le même message deux fois de suite!");
-                return false;
-            }
+        if (message.equalsIgnoreCase(lastMessages.get(uuid))) {
+            player.sendMessage(Component.text("🔄 Vous ne pouvez pas envoyer le même message deux fois de suite!", NamedTextColor.RED));
+            return false;
         }
 
         return true;
@@ -348,41 +293,18 @@ public class ChatListener implements Listener {
         lastMessageTimes.put(uuid, System.currentTimeMillis());
     }
 
-    /**
-     * Traite le message (couleurs, validation, etc.)
-     */
     private String processMessage(Player player, String message) {
-        // Vérifie les permissions pour les couleurs
-        boolean canUseColors = player.hasPermission("specialmine.chat.colors") ||
-                player.hasPermission("specialmine.vip") ||
-                player.hasPermission("specialmine.admin");
-
-        // Applique les couleurs si autorisé
+        boolean canUseColors = player.hasPermission("specialmine.chat.colors") || player.hasPermission("specialmine.vip") || player.hasPermission("specialmine.admin");
         if (canUseColors) {
             message = ChatColor.translateAlternateColorCodes('&', message);
         }
-
-        // Vérifie si le message ne contient QUE des placeholders
-        String trimmedMessage = message.trim();
-        if (trimmedMessage.equals("[hand]") || trimmedMessage.equals("[inv]") ||
-                (trimmedMessage.contains("[hand]") && trimmedMessage.contains("[inv]") &&
-                        trimmedMessage.replaceAll("\\[hand\\]|\\[inv\\]", "").trim().isEmpty())) {
-
-            // Ajoute un texte par défaut pour éviter un message vide
-            if (trimmedMessage.equals("[hand]")) {
-                message = "Regarde mon objet: [hand]";
-            } else if (trimmedMessage.equals("[inv]")) {
-                message = "Voir mon inventaire: [inv]";
-            } else {
-                message = "Mon stuff: [hand] [inv]";
-            }
-
-            // Applique les couleurs après modification
+        String stripped = ChatColor.stripColor(message).trim();
+        if (stripped.equals("[hand]") || stripped.equals("[inv]") || (stripped.contains("[hand]") && stripped.contains("[inv]") && stripped.replace("[hand]", "").replace("[inv]", "").trim().isEmpty())) {
+            message = "Mon stuff: [hand] [inv]";
             if (canUseColors) {
                 message = ChatColor.translateAlternateColorCodes('&', message);
             }
         }
-
         return message;
     }
 
@@ -420,13 +342,11 @@ public class ChatListener implements Listener {
     /**
      * Diffuse le message à tous les joueurs
      */
-    private void broadcastMessage(TextComponent message, Player sender) {
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            player.spigot().sendMessage(message);
+    private void broadcastMessage(Component message, Player sender) {
+        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
+            onlinePlayer.sendMessage(message);
         }
-
-        // Log dans la console
-        plugin.getPluginLogger().info(ChatColor.stripColor(message.toLegacyText()));
+        plugin.getLogger().info(PlainTextComponentSerializer.plainText().serialize(message));
     }
 
     /**
@@ -447,14 +367,5 @@ public class ChatListener implements Listener {
         if (seconds > 0 && days == 0) result.append(seconds).append("s ");
 
         return result.toString().trim();
-    }
-
-    /**
-     * Obtient les statistiques du chat
-     */
-    public String getChatStats() {
-        return ChatColor.GRAY + "Statistiques du chat:\n" +
-                ChatColor.YELLOW + "- Joueurs avec historique: " + ChatColor.GOLD + lastMessages.size() + "\n" +
-                ChatColor.YELLOW + "- Messages en cache anti-spam: " + ChatColor.GOLD + lastMessageTimes.size();
     }
 }

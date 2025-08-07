@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -19,6 +18,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Interface graphique pour enchanter les épées et armures
@@ -49,7 +49,7 @@ public class WeaponArmorEnchantGUI {
 
         boolean isWeapon = isValidWeapon(item);
         String title = isWeapon ? "§c⚔ §lEnchantement d'Épée" : "§9🛡 §lEnchantement d'Armure";
-        Inventory gui = Bukkit.createInventory(null, 27, title);
+        Inventory gui = plugin.getGUIManager().createInventory(27, title);
         plugin.getGUIManager().registerOpenGUI(player, GUIType.WEAPON_ARMOR_ENCHANT, gui);
 
         fillWithGlass(gui, isWeapon);
@@ -69,7 +69,7 @@ public class WeaponArmorEnchantGUI {
         Material glassType = isWeapon ? Material.RED_STAINED_GLASS_PANE : Material.BLUE_STAINED_GLASS_PANE;
         ItemStack glass = new ItemStack(glassType);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(glassMeta, " ");
         glass.setItemMeta(glassMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -86,9 +86,9 @@ public class WeaponArmorEnchantGUI {
         ItemStack displayItem = item.clone();
         ItemMeta meta = displayItem.getItemMeta();
 
-        List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+        List<String> lore = meta.hasLore() ? new ArrayList<>(Objects.requireNonNull(meta.getLore())) : new ArrayList<>();
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         displayItem.setItemMeta(meta);
         gui.setItem(ITEM_DISPLAY_SLOT, displayItem);
     }
@@ -107,13 +107,13 @@ public class WeaponArmorEnchantGUI {
         boolean canAfford = playerData.getBeacons() >= 50;
 
         if (isMaxEnchanted) {
-            meta.setDisplayName("§c❌ §lDéjà Enchanté au Maximum");
-            button.setType(Material.BARRIER);
+            plugin.getGUIManager().applyName(meta, "§c❌ §lDéjà Enchanté au Maximum");
+            button.withType(Material.BARRIER);
         } else if (!canAfford) {
-            meta.setDisplayName("§c💸 §lPas Assez de Beacons");
-            button.setType(Material.REDSTONE_BLOCK);
+            plugin.getGUIManager().applyName(meta, "§c💸 §lPas Assez de Beacons");
+            button.withType(Material.REDSTONE_BLOCK);
         } else {
-            meta.setDisplayName("§a⚡ §lEnchanter au Maximum");
+            plugin.getGUIManager().applyName(meta, "§a⚡ §lEnchanter au Maximum");
         }
 
         List<String> lore = new ArrayList<>();
@@ -142,7 +142,7 @@ public class WeaponArmorEnchantGUI {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         button.setItemMeta(meta);
         gui.setItem(VANILLA_ENCHANT_BUTTON, button);
     }
@@ -164,8 +164,8 @@ public class WeaponArmorEnchantGUI {
             // Slot vide comme avant
             ItemStack slot1 = new ItemStack(Material.ITEM_FRAME);
             ItemMeta meta1 = slot1.getItemMeta();
-            meta1.setDisplayName("§5📚 §lSlot Livre Unique");
-            meta1.setLore(List.of(
+            plugin.getGUIManager().applyName(meta1, "§5📚 §lSlot Livre Unique");
+            plugin.getGUIManager().applyLore(meta1, List.of(
                     "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                     "§7Glissez un livre d'enchantement unique",
                     "§7ici pour l'appliquer à votre item.",
@@ -188,8 +188,8 @@ public class WeaponArmorEnchantGUI {
                 // Slot vide comme avant
                 ItemStack slot2 = new ItemStack(Material.ITEM_FRAME);
                 ItemMeta meta2 = slot2.getItemMeta();
-                meta2.setDisplayName("§5📚 §lSlot Livre Unique #2");
-                meta2.setLore(List.of(
+                plugin.getGUIManager().applyName(meta2, "§5📚 §lSlot Livre Unique #2");
+                plugin.getGUIManager().applyLore(meta2, List.of(
                         "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                         "§7Second slot pour livres d'enchantement",
                         "§7unique (épées seulement).",
@@ -218,7 +218,7 @@ public class WeaponArmorEnchantGUI {
         // Couleur selon le type
         String typeColor = getEnchantmentColor(enchantId);
         String levelStr = enchant.getMaxLevel() > 1 ? " " + toRoman(level) : "";
-        meta.setDisplayName(typeColor + "⚡ §l" + enchant.getName() + levelStr);
+        plugin.getGUIManager().applyName(meta, typeColor + "⚡ §l" + enchant.getName() + levelStr);
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -243,7 +243,7 @@ public class WeaponArmorEnchantGUI {
         lore.add("§e➤ Appliquez un livre pour améliorer!");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         book.setItemMeta(meta);
         return book;
     }
@@ -266,8 +266,8 @@ public class WeaponArmorEnchantGUI {
         // Bouton boutique
         ItemStack shopButton = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shopButton.getItemMeta();
-        shopMeta.setDisplayName("§a💰 §lBoutique de Livres");
-        shopMeta.setLore(List.of(
+        plugin.getGUIManager().applyName(shopMeta, "§a💰 §lBoutique de Livres");
+        plugin.getGUIManager().applyLore(shopMeta, List.of(
                 "§7Achetez des livres d'enchantement",
                 "§7uniques avec vos beacons!",
                 "",
@@ -279,8 +279,8 @@ public class WeaponArmorEnchantGUI {
         // Bouton retour
         ItemStack backButton = new ItemStack(Material.ARROW);
         ItemMeta backMeta = backButton.getItemMeta();
-        backMeta.setDisplayName("§c⬅ §lRetour");
-        backMeta.setLore(List.of("§7Fermer le menu"));
+        plugin.getGUIManager().applyName(backMeta, "§c⬅ §lRetour");
+        plugin.getGUIManager().applyLore(backMeta, List.of("§7Fermer le menu"));
         backButton.setItemMeta(backMeta);
         gui.setItem(BACK_BUTTON_SLOT, backButton);
     }
@@ -316,7 +316,7 @@ public class WeaponArmorEnchantGUI {
      */
     private void handleVanillaEnchant(Player player) {
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (item == null || item.getType() == Material.AIR) {
+        if (item.getType() == Material.AIR) {
             player.sendMessage("§cVous devez tenir l'item à enchanter!");
             return;
         }
@@ -374,7 +374,7 @@ public class WeaponArmorEnchantGUI {
      */
     public void applyUniqueBook(Player player, ItemStack book, int slot) {
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (item == null || item.getType() == Material.AIR) {
+        if (item.getType() == Material.AIR) {
             player.sendMessage("§c❌ Vous devez tenir l'item à enchanter!");
             return;
         }
@@ -397,8 +397,9 @@ public class WeaponArmorEnchantGUI {
         }
 
         // Vérifier la compatibilité
-        if (!plugin.getWeaponArmorEnchantmentManager().isCompatible(enchantId, item)) {
+        if (plugin.getWeaponArmorEnchantmentManager().isCompatible(enchantId, item)) {
             player.sendMessage("§c❌ Cet enchantement n'est pas compatible avec cet item!");
+            assert enchantId != null;
             player.sendMessage("§7ℹ §e" + enchant.getName() + " §7fonctionne sur: " + getCompatibilityInfo(enchantId));
             return;
         }

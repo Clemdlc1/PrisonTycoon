@@ -116,7 +116,7 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
         // Accès
         if (reputation == ReputationTier.EXEMPLAIRE) {
             player.sendMessage("§c⚠ §7Votre réputation est trop propre pour accéder au marché noir!");
-        } else if (!plugin.getBlackMarketManager().isAvailable()) {
+        } else if (plugin.getBlackMarketManager().isAvailable()) {
             player.sendMessage("§c⚠ §7Le marché noir est actuellement fermé!");
         } else {
             player.sendMessage("§a✅ §7Vous pouvez accéder au marché noir!");
@@ -137,7 +137,7 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
      * Localise le marché noir actuel
      */
     private void locateBlackMarket(Player player) {
-        if (!plugin.getBlackMarketManager().isAvailable()) {
+        if (plugin.getBlackMarketManager().isAvailable()) {
             BlackMarketManager.MarketState state = plugin.getBlackMarketManager().getCurrentState();
             player.sendMessage("§c§lMARCHÉ INDISPONIBLE!");
             player.sendMessage("§7État: " + state.getDisplay());

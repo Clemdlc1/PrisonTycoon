@@ -559,59 +559,51 @@ public class ContainerManager {
             return 0;
         }
 
-        int updatedCount = 0;
-        int processedCount = 0;
+        // Étape 1: Initialisation et recherche des conteneurs.
+        // Cet ensemble contiendra les UUIDs de tous les conteneurs valides dans l'inventaire.
+        Set<String> foundUuids = new HashSet<>();
+        ItemStack[] contents = player.getInventory().getContents(); // On récupère l'inventaire une seule fois.
 
-        try {
-            // Parcourt tout l'inventaire du joueur
-            ItemStack[] contents = player.getInventory().getContents();
-
-            for (int i = 0; i < contents.length; i++) {
-                ItemStack item = contents[i];
-
-                if (!isContainer(item)) {
-                    continue;
-                }
-
-                processedCount++;
-
-                // Récupère l'UUID du conteneur
+        // Étape 2: Parcourir l'inventaire pour trouver les conteneurs et mettre à jour le cache (Item -> Cache).
+        for (ItemStack item : contents) {
+            if (isContainer(item)) {
                 String uuid = getContainerUUID(item);
-                if (uuid == null) {
-                    plugin.getPluginLogger().debug("§cConteneur sans UUID trouvé dans l'inventaire de " + player.getName());
-                    continue;
+                if (uuid != null) {
+                    foundUuids.add(uuid);
+                    loadDataFromItem(item);
                 }
+            }
+        }
 
-                // Récupère les données depuis le cache ou l'item
-                ContainerData data = containerCache.get(uuid);
-                if (data == null) {
-                    // Charge les données depuis l'item si pas en cache
-                    data = loadDataFromItem(item);
-                    if (data == null) {
-                        plugin.getPluginLogger().debug("§cImpossible de charger les données du conteneur UUID: " + uuid.substring(0, 8));
-                        continue;
+        if (foundUuids.isEmpty()) {
+            playerContainers.remove(player.getUniqueId());
+        } else {
+            playerContainers.put(player.getUniqueId(), foundUuids);
+        }
+
+        // Si aucun conteneur n'a été trouvé, on peut s'arrêter ici.
+        if (foundUuids.isEmpty()) {
+            return 0;
+        }
+
+        int updatedCount = 0;
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack item = contents[i];
+            if (isContainer(item)) {
+                String uuid = getContainerUUID(item);
+                // On s'assure que l'UUID est bien dans notre liste d'UUIDs valides.
+                if (foundUuids.contains(uuid)) {
+                    ContainerData dataFromCache = containerCache.get(uuid);
+                    if (dataFromCache != null) {
+                        // On sauvegarde les données du cache vers l'item pour mettre à jour son nom, son lore, etc.
+                        if (saveDataToItem(item, dataFromCache)) {
+                            updatedCount++;
+                            // setItem garantit la mise à jour visuelle pour le joueur.
+                            player.getInventory().setItem(i, item);
+                        }
                     }
                 }
-
-                // Met à jour le lore et les métadonnées du conteneur
-                if (saveDataToItem(item, data)) {
-                    updatedCount++;
-
-                    // Met à jour l'item dans l'inventaire si nécessaire
-                    player.getInventory().setItem(i, item);
-                } else {
-                    plugin.getPluginLogger().debug("§cÉchec de la mise à jour du conteneur UUID: " + uuid.substring(0, 8));
-                }
             }
-
-            if (processedCount > 0) {
-                plugin.getPluginLogger().debug("§7Conteneurs mis à jour pour " + player.getName() +
-                        ": " + updatedCount + "/" + processedCount);
-            }
-
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("§cErreur lors de la mise à jour des conteneurs de " +
-                    player.getName() + ": " + e.getMessage());
         }
 
         return updatedCount;

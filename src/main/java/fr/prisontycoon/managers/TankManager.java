@@ -269,7 +269,7 @@ public class TankManager {
         int amount = itemToSell.getAmount();
         long totalPrice = pricePerItem * amount;
         Player owner = plugin.getServer().getPlayer(tankData.getOwner());
-        if (!tankData.canAddItems(amount)) {
+        if (tankData.canAddItems(amount)) {
             seller.sendMessage("§c❌ Le tank est plein!");
             return false;
         }

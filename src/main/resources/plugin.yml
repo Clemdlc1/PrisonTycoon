@@ -374,6 +374,11 @@ commands:
     permission: specialmine.basic
     aliases: [warps]
 
+  menu:
+    description: "Ouvre le menu principal"
+    usage: "/menu"
+    permission: specialmine.basic
+
   # Modifier la commande mine existante :
   mine:
     description: "Téléportation vers les mines"

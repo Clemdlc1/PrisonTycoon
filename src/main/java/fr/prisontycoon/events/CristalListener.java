@@ -80,7 +80,7 @@ public class CristalListener implements Listener {
         if (!(event.getPlayer() instanceof Player player)) return;
 
         // Vérifier que c'est le menu de fusion qui se ferme
-        if (!event.getView().getTitle().equals("§6⚡ Fusion de Cristaux ⚡")) return;
+        if (!plugin.getGUIManager().getLegacyTitle(event.getView()).equals("§6⚡ Fusion de Cristaux ⚡")) return;
 
         Inventory fusionInv = event.getInventory();
         List<ItemStack> cristalsInMenu = new ArrayList<>();

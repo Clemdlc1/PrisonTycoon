@@ -1,12 +1,6 @@
 package fr.prisontycoon;
 
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.PluginCommand;
-import org.bukkit.command.TabCompleter;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import fr.custommobs.CustomMobsPlugin;
-
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
@@ -24,6 +18,10 @@ import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
 import fr.prisontycoon.utils.StartupBedrockReplacer;
 import fr.prisontycoon.vouchers.VoucherManager;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Plugin principal PrisonTycoon
@@ -89,6 +87,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private CristalGUI cristalGUI;
     private EnchantmentBookGUI enchantmentBookGUI;
     private EnchantmentMenu mainMenuGUI;
+    private MainMenuGUI mainNavigationGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
     private GangGUI gangGUI;
     private OutpostGUI outpostGUI;
@@ -249,6 +248,7 @@ public final class PrisonTycoon extends JavaPlugin {
         logger.info("§7Initialisation des interfaces graphiques...");
 
         mainMenuGUI = new EnchantmentMenu(this);
+        mainNavigationGUI = new MainMenuGUI(this);
         categoryMenuGUI = new CategoryMenuGUI(this);
         enchantmentUpgradeGUI = new EnchantmentUpgradeGUI(this);
         cristalGUI = new CristalGUI(this);
@@ -364,6 +364,7 @@ public final class PrisonTycoon extends JavaPlugin {
         // Commandes avec alias
         registerCommand(new GangCommand(this), "gang", "g");
         registerCommand(new WarpCommand(this), "warp", "mine", "spawn");
+        registerCommand(new MenuCommand(this), "menu");
 
         // Commandes n'ayant pas de TabCompleter (la méthode gère cela automatiquement)
         registerCommand(new EnchantmentBookCommand(this), "enchantbook");
@@ -498,6 +499,7 @@ public final class PrisonTycoon extends JavaPlugin {
 
     // --- GUIs ---
     public EnchantmentMenu getMainMenuGUI() { return mainMenuGUI; }
+    public MainMenuGUI getMainNavigationGUI() { return mainNavigationGUI; }
     public CategoryMenuGUI getCategoryMenuGUI() { return categoryMenuGUI; }
     public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
     public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }

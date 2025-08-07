@@ -2,7 +2,6 @@ package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.gui.GUIType;
 import fr.prisontycoon.managers.HeadCollectionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -42,7 +41,7 @@ public class HeadCollectionGUI {
         int totalCount = plugin.getHeadCollectionManager().getTotalHeads();
 
         String title = "§8• §6Collection de Têtes §8(" + collectedCount + "/" + totalCount + ") •";
-        Inventory gui = Bukkit.createInventory(null, 54, title);
+        Inventory gui = plugin.getGUIManager().createInventory(54, title);
 
         // Remplir avec du verre
         fillWithGlass(gui);
@@ -79,7 +78,9 @@ public class HeadCollectionGUI {
     public void handleCollectionMenuClick(Player player, int slot, ItemStack item) {
         if (item == null || !item.hasItemMeta()) return;
 
-        String displayName = item.getItemMeta().getDisplayName();
+        String displayName = item.getItemMeta().hasDisplayName() && item.getItemMeta().displayName() != null
+                ? net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName())
+                : "";
 
         // Bouton fermer
         if (displayName.contains("§c✖ Fermer")) {
@@ -128,9 +129,7 @@ public class HeadCollectionGUI {
                             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
                             // Attendre un peu puis rafraîchir
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                                openCollectionMenu(player);
-                            }, 20L); // 1 seconde
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> openCollectionMenu(player), 20L); // 1 seconde
                         }
                     } else {
                         if (playerData.getClaimedHeadRewards().contains(rewardLevel)) {
@@ -158,7 +157,7 @@ public class HeadCollectionGUI {
         SkullMeta meta = (SkullMeta) item.getItemMeta();
 
         meta.setOwningPlayer(player);
-        meta.setDisplayName("§6§l📊 Vos Statistiques");
+        plugin.getGUIManager().applyName(meta, "§6§l📊 Vos Statistiques");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7");
@@ -197,7 +196,7 @@ public class HeadCollectionGUI {
         }
         lore.add("§7");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -218,7 +217,7 @@ public class HeadCollectionGUI {
         ItemMeta meta = item.getItemMeta();
 
         String title = "§6🎁 Récompense " + requiredHeads + " §8(" + requiredHeads + " têtes)";
-        meta.setDisplayName(title);
+        plugin.getGUIManager().applyName(meta, title);
 
         List<String> lore = new ArrayList<>();
         lore.add("§7");
@@ -244,7 +243,7 @@ public class HeadCollectionGUI {
         }
 
         lore.add("§7");
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -292,7 +291,7 @@ public class HeadCollectionGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.setDisplayName("§r");
+        plugin.getGUIManager().applyName(glassMeta, "§r");
         glass.setItemMeta(glassMeta);
 
         // Bordures
@@ -310,10 +309,10 @@ public class HeadCollectionGUI {
     private ItemStack createCloseItem() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c✖ Fermer");
+        plugin.getGUIManager().applyName(meta, "§c✖ Fermer");
         List<String> lore = new ArrayList<>();
         lore.add("§7Ferme ce menu");
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -324,11 +323,11 @@ public class HeadCollectionGUI {
     private ItemStack createRefreshItem() {
         ItemStack item = new ItemStack(Material.LIME_DYE);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§a🔄 Actualiser");
+        plugin.getGUIManager().applyName(meta, "§a🔄 Actualiser");
         List<String> lore = new ArrayList<>();
         lore.add("§7Actualise l'affichage de vos");
         lore.add("§7statistiques et récompenses");
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -339,11 +338,11 @@ public class HeadCollectionGUI {
     private ItemStack createInfoItem() {
         ItemStack item = new ItemStack(Material.BOOK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§b📖 Comment ça marche ?");
+        plugin.getGUIManager().applyName(meta, "§b📖 Comment ça marche ?");
         List<String> lore = new ArrayList<>();
         lore.add("§7Cliquez pour recevoir des");
         lore.add("§7explications sur la collection");
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }

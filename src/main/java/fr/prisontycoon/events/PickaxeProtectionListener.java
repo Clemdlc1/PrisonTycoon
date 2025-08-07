@@ -46,7 +46,7 @@ public class PickaxeProtectionListener implements Listener {
 
         // NOUVEAU : Ne pas bloquer les clics molette dans les GUIs du plugin pour les enchants mobilité
         if (event.getClick() == org.bukkit.event.inventory.ClickType.MIDDLE) {
-            String title = event.getView().getTitle();
+            String title = plugin.getGUIManager().getLegacyTitle(event.getView());
             if (title.contains("Mobilité")) {
                 // Laisse passer le clic molette pour les enchants mobilité
                 return;
@@ -418,7 +418,7 @@ public class PickaxeProtectionListener implements Listener {
 
         // Vérifie placement dans des inventaires d'entités
         if (event.getClickedInventory() != null) {
-            String inventoryTitle = event.getView().getTitle().toLowerCase();
+            String inventoryTitle = plugin.getGUIManager().getLegacyTitle(event.getView()).toLowerCase();
 
             // Bloque placement dans des inventaires spéciaux
             if (inventoryTitle.contains("armor stand") ||

@@ -1693,6 +1693,38 @@ warps:
     enabled: true
     description: "Zone des crates et récompenses"
 
+  # Accès rapide banque (sera configuré précisément plus tard)
+  banque:
+    display-name: "§6💰 Banque"
+    type: "OTHER"
+    world: "Spawn"
+    x: 25
+    y: 70
+    z: -15
+    yaw: 90.0
+    pitch: 0.0
+    permission: ""
+    head-material: "GOLD_INGOT"
+    head-texture: ""
+    enabled: true
+    description: "Banque: épargne, investissements et coffre-fort"
+
+  # Accès rapide recherche (placeholder futur)
+  recherche:
+    display-name: "§b🔬 Recherche"
+    type: "OTHER"
+    world: "Spawn"
+    x: -30
+    y: 72
+    z: 10
+    yaw: -45.0
+    pitch: 0.0
+    permission: ""
+    head-material: "ENCHANTING_TABLE"
+    head-texture: ""
+    enabled: true
+    description: "Centre de recherche (placeholder)"
+
   # Warp vers les caves
   caves:
     display-name: "§8🕳 Caves"

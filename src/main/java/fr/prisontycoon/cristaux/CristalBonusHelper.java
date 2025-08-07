@@ -2,7 +2,6 @@ package fr.prisontycoon.cristaux;
 
 import fr.prisontycoon.PrisonTycoon;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.Random;
@@ -63,17 +62,15 @@ public class CristalBonusHelper {
      * Calcule la durée prolongée de l'enchantement Abondance
      */
     public int getAbondanceDuration(Player player, int baseDuration) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return baseDuration;
-
+        // Utilise directement les cristaux stockés côté joueur (évite la lecture ItemMeta)
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
+        if (cristals == null || cristals.isEmpty()) return baseDuration;
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.ABONDANCE_CRISTAL) {
                 int bonus = cristal.getType().getAbondanceDurationBonus(cristal.getNiveau());
                 return baseDuration + bonus;
             }
         }
-
         return baseDuration;
     }
 
@@ -81,17 +78,15 @@ public class CristalBonusHelper {
      * Applique les bonus du cristal Combustion
      */
     public double applyCombustionEfficiency(Player player, double baseEfficiency) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return baseEfficiency;
-
+        // Évite de parcourir l'inventaire et d'appeler getItemMeta à chaque bloc miné
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
+        if (cristals == null || cristals.isEmpty()) return baseEfficiency;
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.COMBUSTION_CRISTAL) {
                 double bonus = cristal.getType().getCombustionEfficiencyBonus(cristal.getNiveau());
                 return baseEfficiency * (1.0 + bonus / 100.0);
             }
         }
-
         return baseEfficiency;
     }
 
@@ -99,17 +94,15 @@ public class CristalBonusHelper {
      * Applique la réduction de diminution du cristal Combustion
      */
     public double applyCombustionDecayReduction(Player player, double baseDecay) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return baseDecay;
-
+        // Lit directement les cristaux depuis les données joueur
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
+        if (cristals == null || cristals.isEmpty()) return baseDecay;
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.COMBUSTION_CRISTAL) {
                 double reduction = cristal.getType().getCombustionDecayReduction(cristal.getNiveau());
                 return baseDecay * (1.0 - reduction / 100.0);
             }
         }
-
         return baseDecay;
     }
 
@@ -121,9 +114,9 @@ public class CristalBonusHelper {
      * @return Le nombre d'échos (ex: de 1 à 5), ou 0 si aucun ne se déclenche.
      */
     public int getEchoCount(Player player) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return 0;
+        // Pas besoin de vérifier la pioche, les cristaux sont en PlayerData
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
+        if (cristals == null || cristals.isEmpty()) return 0;
         for (Cristal cristal : cristals) {
             if (cristal.getType() == CristalType.ECHO_CRISTAL) {
                 double[] chances = cristal.getType().getEchoChances(cristal.getNiveau());
@@ -141,16 +134,13 @@ public class CristalBonusHelper {
      * Récupère le niveau du cristal d'un type spécifique
      */
     public int getCristalLevel(Player player, CristalType type) {
-        ItemStack pickaxe = plugin.getPickaxeManager().getPlayerPickaxe(player);
-        if (pickaxe == null) return 0;
-
         List<Cristal> cristals = plugin.getCristalManager().getPickaxeCristals(player);
+        if (cristals == null || cristals.isEmpty()) return 0;
         for (Cristal cristal : cristals) {
             if (cristal.getType() == type) {
                 return cristal.getNiveau();
             }
         }
-
         return 0;
     }
 }

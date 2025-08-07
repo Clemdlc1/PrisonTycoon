@@ -134,7 +134,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!outpostManager.isPlayerInOutpost(player)) {
+        if (outpostManager.isPlayerInOutpost(player)) {
             player.sendMessage("§c❌ Vous devez être sur l'avant-poste pour le capturer!");
             player.sendMessage("§7Position: §e-14, -16, 106");
             return;

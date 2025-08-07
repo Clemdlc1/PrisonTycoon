@@ -110,7 +110,7 @@ public class MineManager {
                     adaptGenerationParameters();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 50L);
     }
 
     /**

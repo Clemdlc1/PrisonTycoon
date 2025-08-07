@@ -27,8 +27,6 @@ public class ContainerListener implements Listener {
         this.plugin = plugin;
     }
 
-    // === ÉVÉNEMENTS DU CYCLE DE VIE DU CACHE ET DE LA PERSISTANCE ===
-
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
         // Délai pour s'assurer que le joueur est bien chargé
@@ -103,7 +101,7 @@ public class ContainerListener implements Listener {
         }
 
         // --- Logique de gestion des GUIs ---
-        String title = event.getView().getTitle();
+        String title = plugin.getGUIManager().getLegacyTitle(event.getView());
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
             event.setCancelled(true);
             ItemStack clickedItem = event.getCurrentItem();
@@ -124,7 +122,7 @@ public class ContainerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
-        String title = event.getView().getTitle();
+        String title = plugin.getGUIManager().getLegacyTitle(event.getView());
         if (title.contains("Configuration Conteneur") || title.contains("Conteneur Cassé")) {
             event.setCancelled(true);
             return;
