@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Gestionnaire unifié des bonus (cristaux, talents, boosts)
@@ -20,6 +21,8 @@ import java.util.Objects;
 public class GlobalBonusManager {
 
     private final PrisonTycoon plugin;
+    private final Map<UUID, Map<BonusCategory, CachedMultiplier>> bonusCache = new HashMap<>();
+    private static final long BONUS_CACHE_TTL_MS = 2_000L;
 
     public GlobalBonusManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -29,9 +32,27 @@ public class GlobalBonusManager {
      * MÉTHODE PRINCIPALE : Calcule le multiplicateur total pour une catégorie de bonus
      */
     public double getTotalBonusMultiplier(Player player, BonusCategory category) {
+        UUID pid = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Map<BonusCategory, CachedMultiplier> perPlayer = bonusCache.get(pid);
+        if (perPlayer != null) {
+            CachedMultiplier cached = perPlayer.get(category);
+            if (cached != null && (now - cached.timestampMs) <= BONUS_CACHE_TTL_MS) {
+                return cached.multiplier;
+            }
+        }
+
         BonusSourceDetails details = getBonusSourcesDetails(player, category);
-        return details.getTotalMultiplier();
+        double mult = details.getTotalMultiplier();
+        if (perPlayer == null) {
+            perPlayer = new HashMap<>();
+            bonusCache.put(pid, perPlayer);
+        }
+        perPlayer.put(category, new CachedMultiplier(mult, now));
+        return mult;
     }
+
+    private record CachedMultiplier(double multiplier, long timestampMs) { }
 
     /**
      * MÉTHODE UTILITAIRE : Obtient les détails complets des sources d'un bonus

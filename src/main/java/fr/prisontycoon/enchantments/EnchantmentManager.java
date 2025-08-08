@@ -155,7 +155,6 @@ public class EnchantmentManager {
      * NOUVEAU : Active l'effet Jackhammer (casse une couche)
      */
     private int activateJackhammer(Player player, Location center, String mineName, boolean isEcho) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) return 0;
 
@@ -209,7 +208,7 @@ public class EnchantmentManager {
                     if (mineData.contains(loc)) {
                         Material blockType = loc.getBlock().getType();
                         if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                            loc.getBlock().setType(Material.AIR);
+                            loc.getBlock().setType(Material.AIR, false);
                             blocksDestroyed++;
 
                             // Traiter comme un bloc cassé (processBlockDestroyed)
@@ -270,7 +269,7 @@ public class EnchantmentManager {
                         if (mineData.contains(loc)) {
                             Material blockType = loc.getBlock().getType();
                             if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                                loc.getBlock().setType(Material.AIR);
+                                loc.getBlock().setType(Material.AIR,false);
                                 blocksDestroyed++;
 
                                 // Traiter comme un bloc cassé (processBlockDestroyed)
@@ -327,7 +326,7 @@ public class EnchantmentManager {
                         if (mineData.contains(loc)) {
                             Material blockType = loc.getBlock().getType();
                             if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                                loc.getBlock().setType(Material.AIR);
+                                loc.getBlock().setType(Material.AIR,false);
                                 blocksDestroyed++;
 
                                 // Traiter comme un bloc cassé (processBlockDestroyed)
@@ -408,7 +407,7 @@ public class EnchantmentManager {
             if (mineData.contains(current)) {
                 Material blockType = current.getBlock().getType();
                 if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                    current.getBlock().setType(Material.AIR);
+                    current.getBlock().setType(Material.AIR, false);
                     blocksDestroyed++;
                     processBlockDestroyed(player, current, blockType, mineName);
 
@@ -451,7 +450,7 @@ public class EnchantmentManager {
                     if (mineData.contains(loc)) {
                         Material blockType = loc.getBlock().getType();
                         if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                            loc.getBlock().setType(Material.AIR);
+                            loc.getBlock().setType(Material.AIR, false);
                             blocksDestroyed++;
                             processBlockDestroyed(player, loc, blockType, mineName);
                         }
@@ -563,32 +562,29 @@ public class EnchantmentManager {
         if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "plusvalue") && !isPlayerPickaxeBroken(player)) {
             material = plugin.getEnchantmentBookManager().getHighestValueBlockInMine(mineName);
         }
+        final Material effectiveMaterial = material;
 
-        plugin.getPluginLogger().debug("Tentative d'ajout de " + quantity + "x " + material.name() + " pour " + player.getName());
+        plugin.getPluginLogger().debugLazy(() -> "Tentative d'ajout de " + quantity + "x " + effectiveMaterial.name() + " pour " + player.getName());
 
-        // NOUVEAU : Tente d'abord d'ajouter aux conteneurs
-        while (remaining > 0) {
-            ItemStack itemToAdd = new ItemStack(material, 1);
-            boolean addedToContainer = plugin.getContainerManager().addItemToContainers(player, itemToAdd);
-            if (addedToContainer) {
-                actuallyAdded++;
-                remaining--;
-                plugin.getPluginLogger().debug("1x " + material.name() + " ajouté au conteneur");
-            } else {
-                // Aucun conteneur disponible, sort de la boucle
-                break;
-            }
+        // NOUVEAU : tente d'ajouter aux conteneurs en un seul batch quand c'est possible
+        ItemStack batch = new ItemStack(effectiveMaterial, remaining);
+        int added = plugin.getContainerManager().addItemsBatchToContainers(player, batch);
+        if (added > 0) {
+            actuallyAdded += added;
+            remaining -= added;
+            plugin.getPluginLogger().debugLazy(() -> added + "x " + effectiveMaterial.name() + " ajouté(s) au(x) conteneur(s)");
         }
 
         // Si il reste des items, tente de les ajouter à l'inventaire normal
         if (remaining > 0) {
-            ItemStack remainingStack = new ItemStack(material, remaining);
+            ItemStack remainingStack = new ItemStack(effectiveMaterial, remaining);
             Map<Integer, ItemStack> leftover = player.getInventory().addItem(remainingStack);
 
             if (leftover.isEmpty()) {
                 // Tous les items restants ont été ajoutés à l'inventaire
                 actuallyAdded += remaining;
-                plugin.getPluginLogger().debug(remaining + "x " + material.name() + " ajoutés à l'inventaire normal");
+                int finalRemaining = remaining;
+                plugin.getPluginLogger().debugLazy(() -> finalRemaining + "x " + effectiveMaterial.name() + " ajoutés à l'inventaire normal");
             } else {
                 // Calcule combien ont vraiment été ajoutés à l'inventaire
                 int addedToInventory = remaining;
@@ -617,7 +613,8 @@ public class EnchantmentManager {
             playerData.addBlocksToInventory(actuallyAdded);
         }
 
-        plugin.getPluginLogger().debug("Blocs ajoutés au total: " + actuallyAdded + "/" + quantity + "x " + material.name() +
+        int finalActuallyAdded = actuallyAdded;
+        plugin.getPluginLogger().debugLazy(() -> "Blocs ajoutés au total: " + finalActuallyAdded + "/" + quantity + "x " + effectiveMaterial.name() +
                 " (conteneurs + inventaire + droppés)");
     }
 

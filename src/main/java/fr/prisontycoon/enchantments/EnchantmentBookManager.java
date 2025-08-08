@@ -631,7 +631,7 @@ public class EnchantmentBookManager {
             }
             if (blockLoc.getBlock().getType() != Material.AIR) {
                 plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "excavation");
-                blockLoc.getBlock().setType(Material.AIR);
+                blockLoc.getBlock().setType(Material.AIR,false);
             }
         }
     }
@@ -737,7 +737,7 @@ public class EnchantmentBookManager {
                                 }
                                 if (blockLoc.getBlock().getType() != Material.AIR) {
                                     plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "tunnel");
-                                    blockLoc.getBlock().setType(Material.AIR);
+                                    blockLoc.getBlock().setType(Material.AIR,false);
                                     blockLoc.getWorld().spawnParticle(Particle.BLOCK, blockLoc, 5, blockLoc.getBlock().getBlockData());
                                 }
                             }
@@ -855,7 +855,7 @@ public class EnchantmentBookManager {
                                             }
                                             if (blockLoc.getBlock().getType() != Material.AIR) {
                                                 plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "tonnerre");
-                                                blockLoc.getBlock().setType(Material.AIR);
+                                                blockLoc.getBlock().setType(Material.AIR,false);
                                                 blockLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, blockLoc, 3);
                                             }
                                         }
@@ -929,7 +929,7 @@ public class EnchantmentBookManager {
                         Location loc = iterator.next();
                         if (loc.getBlock().getType() == targetMaterial) {
                             plugin.getEnchantmentManager().processBlockDestroyed(player, loc, targetMaterial, "veinminer");
-                            loc.getBlock().setType(Material.AIR);
+                            loc.getBlock().setType(Material.AIR, false);
                             loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 3);
                             count++;
                         }
@@ -1042,7 +1042,7 @@ public class EnchantmentBookManager {
                         // NOUVEAU : Protection Beacon
                         if (randomLoc.getBlock().getType() != Material.AIR && randomLoc.getBlock().getType() != Material.BEACON) {
                             plugin.getEnchantmentManager().processBlockDestroyed(player, randomLoc, randomLoc.getBlock().getType(), "chaos");
-                            randomLoc.getBlock().setType(Material.AIR);
+                            randomLoc.getBlock().setType(Material.AIR, false);
                             randomLoc.getWorld().spawnParticle(Particle.PORTAL, randomLoc, 5, 0.5, 0.5, 0.5, 0.1);
                         }
                     }

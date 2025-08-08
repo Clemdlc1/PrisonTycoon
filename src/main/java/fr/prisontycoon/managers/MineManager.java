@@ -544,8 +544,8 @@ public class MineManager {
         safeLoc.setY(safeLoc.getY() + 2);
 
         // S'assurer que la zone est safe
-        safeLoc.getBlock().setType(Material.AIR);
-        safeLoc.clone().add(0, 1, 0).getBlock().setType(Material.AIR);
+        safeLoc.getBlock().setType(Material.AIR,false);
+        safeLoc.clone().add(0, 1, 0).getBlock().setType(Material.AIR,false);
 
         player.teleport(safeLoc);
     }
@@ -748,8 +748,8 @@ public class MineManager {
         }
 
         Location teleportLocation = mine.getCenterLocation(world);
-        teleportLocation.getBlock().setType(Material.AIR);
-        teleportLocation.clone().add(0, 1, 0).getBlock().setType(Material.AIR);
+        teleportLocation.getBlock().setType(Material.AIR,false);
+        teleportLocation.clone().add(0, 1, 0).getBlock().setType(Material.AIR, false);
 
         player.teleport(teleportLocation);
 

@@ -136,7 +136,7 @@ public class MiningListener implements Listener {
 
             // Logique spécifique à la zone
             if (mineName != null) {
-                blockLocation.getBlock().setType(Material.AIR); // Disparaît simplement dans une mine
+                blockLocation.getBlock().setType(Material.AIR, false); // Disparaît simplement dans une mine
             } else {
                 handleCaveBeaconBreak(player, blockLocation, finalBeaconGain);
             }
@@ -150,13 +150,13 @@ public class MiningListener implements Listener {
      * @param blockLocation La localisation de la balise.
      */
     private void handleCaveBeaconBreak(Player player, Location blockLocation, int beaconsGained) {
-        blockLocation.getBlock().setType(Material.BEDROCK);
+        blockLocation.getBlock().setType(Material.BEDROCK, false);
         int playerCountInCave = blockLocation.getWorld().getPlayers().size();
         long respawnDelayTicks = calculateBeaconRespawnTime(playerCountInCave);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (blockLocation.getBlock().getType() == Material.BEDROCK) {
-                blockLocation.getBlock().setType(Material.BEACON);
+                blockLocation.getBlock().setType(Material.BEACON,false);
             }
         }, respawnDelayTicks);
 

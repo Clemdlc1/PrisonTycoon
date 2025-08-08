@@ -149,6 +149,45 @@ public class ContainerManager {
         return false;
     }
 
+    /**
+     * Ajoute un lot d'items similaire aux conteneurs du joueur.
+     * Retourne le nombre réellement ajouté (peut être inférieur si manque d'espace ou filtres).
+     */
+    public int addItemsBatchToContainers(Player player, ItemStack stack) {
+        if (stack == null || stack.getAmount() <= 0) return 0;
+        Set<String> playerUUIDs = playerContainers.get(player.getUniqueId());
+        if (playerUUIDs == null || playerUUIDs.isEmpty()) return 0;
+
+        int remaining = stack.getAmount();
+        int added = 0;
+
+        // Essaye chaque conteneur jusqu'à épuisement
+        for (String uuid : playerUUIDs) {
+            if (remaining <= 0) break;
+            ContainerData data = containerCache.get(uuid);
+            if (data == null || data.isBroken() || data.isFull()) continue;
+
+            // Calcule l'espace libre et tente d'ajouter en une fois
+            int free = data.getFreeSpace();
+            if (free <= 0) continue;
+
+            int toPut = Math.min(remaining, free);
+
+            ItemStack slice = stack.clone();
+            slice.setAmount(toPut);
+            boolean ok = data.addItem(slice);
+            if (ok) {
+                added += toPut;
+                remaining -= toPut;
+                if (data.isFull()) {
+                    updateContainerInInventory(player, uuid, data);
+                }
+            }
+        }
+
+        return added;
+    }
+
     public List<ContainerData> getPlayerContainers(Player player) {
         List<ContainerData> containers = new ArrayList<>();
         Set<String> uuids = playerContainers.get(player.getUniqueId());

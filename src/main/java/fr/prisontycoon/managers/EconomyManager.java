@@ -136,10 +136,12 @@ public class EconomyManager {
                 player.setLevel(Math.max(0, Math.min(21863, vanillaLevel)));
                 player.setExp(Math.max(0.0f, Math.min(1.0f, progress)));
 
-                // Message de log pour le débogage.
-                plugin.getPluginLogger().debug("Sync exp pour " + player.getName() + ": " +
-                        "custom=" + customExp + " -> vanilla=" + vanillaLevel + " (+" +
-                        String.format("%.1f%%", progress * 100) + ") [" + expDansNiveauActuel + "/" + expTotalPourNiveau + "]");
+                // Message de log pour le débogage (paresseux, évite String.format quand debug off)
+                final long customExpFinal = customExp;
+                plugin.getPluginLogger().debugLazy(() -> "Sync exp pour " + player.getName() + ": " +
+                        "custom=" + customExpFinal + " -> vanilla=" + vanillaLevel +
+                        " (+" + String.format("%.1f%%", progress * 100) + ") [" +
+                        expDansNiveauActuel + "/" + expTotalPourNiveau + "]");
             } catch (Exception e) {
                 plugin.getPluginLogger().warning("Erreur sync exp pour " + player.getName() +
                         ": level=" + vanillaLevel + ", exp=" + progress + " - " + e.getMessage());

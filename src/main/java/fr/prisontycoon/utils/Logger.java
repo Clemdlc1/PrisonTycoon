@@ -4,6 +4,7 @@ import fr.prisontycoon.PrisonTycoon;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.function.Supplier;
 
 /**
  * Logger personnalisé pour le plugin
@@ -54,6 +55,15 @@ public class Logger {
     }
 
     /**
+     * Log de debug paresseux: le message n'est construit que si le debug est actif.
+     */
+    public void debugLazy(Supplier<String> messageSupplier) {
+        if (debugEnabled) {
+            debug(messageSupplier.get());
+        }
+    }
+
+    /**
      * Log avec stack trace
      */
     public void severe(String message, Throwable throwable) {
@@ -100,5 +110,12 @@ public class Logger {
 
     public enum LogLevel {
         DEBUG, INFO, WARNING, SEVERE
+    }
+
+    /**
+     * Indique si le mode debug est activé (utile pour court-circuiter des calculs coûteux).
+     */
+    public boolean isDebugEnabled() {
+        return debugEnabled;
     }
 }
