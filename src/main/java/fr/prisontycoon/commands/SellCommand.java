@@ -1,6 +1,7 @@
 package fr.prisontycoon.commands;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -214,7 +215,8 @@ public class SellCommand implements CommandExecutor, TabCompleter {
         // CORRIGÉ: Inclure la valeur des conteneurs dans le calcul total
         long combinedValue = totalValue + containerValue;
         double finalPrice = plugin.getGlobalBonusManager().applySellBonus(player, combinedValue);
-        plugin.getEconomyManager().addCoins(player, (long) finalPrice);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        playerData.addCoins((long) finalPrice);
 
         // Envoi des messages de succès
         player.sendMessage("§a✅ §lVente réussie!");

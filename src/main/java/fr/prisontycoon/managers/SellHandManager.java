@@ -1,6 +1,7 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.data.TankData;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
@@ -138,7 +139,8 @@ public class SellHandManager {
 
         // Effectuer la vente
         tankData.clearContents();
-        // plugin.getEconomyManager().addMoney(player, finalValue);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        playerData.addCoins(finalValue);
 
         // Messages de succès
         player.sendMessage("§a✓ §lVENTE AU SERVEUR:");

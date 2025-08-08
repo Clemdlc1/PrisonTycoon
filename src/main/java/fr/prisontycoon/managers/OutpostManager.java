@@ -539,9 +539,9 @@ public class OutpostManager {
         }
 
         // Distribuer les récompenses
-        plugin.getEconomyManager().addCoins(controller, finalCoins);
-        plugin.getEconomyManager().addTokens(controller, finalTokens);
-        plugin.getEconomyManager().addExperience(controller, finalExp);
+        playerData.addCoins(finalCoins);
+        playerData.addTokens(finalTokens);
+        playerData.addExperience(finalExp);
         playerData.addBeacons(finalBeacons);
 
         // XP métier guerrier

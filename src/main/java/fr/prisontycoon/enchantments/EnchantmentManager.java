@@ -683,7 +683,7 @@ public class EnchantmentManager {
             long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
 
             long finalGains = plugin.getGlobalBonusManager().applyMoneyBonus(player, baseGains);
-            plugin.getEconomyManager().addCoins(player, finalGains);
+            playerData.addCoins(finalGains);
             playerData.addGreedTrigger();
         }
     }
