@@ -32,13 +32,13 @@ public enum CrateType {
     private final String displayName;
     private final String color;
     private final int tier;
-    private final List<CrateReward> rewards;
+    private List<CrateReward> rewards;
 
     CrateType(String displayName, String color, int tier) {
         this.displayName = displayName;
         this.color = color;
         this.tier = tier;
-        this.rewards = CrateRewardRegistry.getRewardsFor(this);
+        this.rewards = null; // initialisation paresseuse pour éviter les cycles d'initialisation
     }
 
     // ================================================================= //
@@ -46,21 +46,29 @@ public enum CrateType {
     // ================================================================= //
 
     public CrateReward selectRandomReward() {
-        double totalWeight = rewards.stream().mapToDouble(CrateReward::getProbability).sum();
+        List<CrateReward> localRewards = getRewards();
+        double totalWeight = localRewards.stream().mapToDouble(CrateReward::getProbability).sum();
         double randomValue = Math.random() * totalWeight;
         double currentWeight = 0.0;
 
-        for (CrateReward reward : rewards) {
+        for (CrateReward reward : localRewards) {
             currentWeight += reward.getProbability();
             if (randomValue <= currentWeight) {
                 return reward;
             }
         }
-        return rewards.getFirst();
+        return localRewards.getFirst();
     }
 
     public List<CrateReward> getAllRewards() {
-        return new ArrayList<>(rewards);
+        return new ArrayList<>(getRewards());
+    }
+
+    private List<CrateReward> getRewards() {
+        if (this.rewards == null) {
+            this.rewards = CrateRewardRegistry.getRewardsFor(this);
+        }
+        return this.rewards;
     }
 
     public ItemStack convertRewardToItem(CrateReward reward, PrisonTycoon plugin) {

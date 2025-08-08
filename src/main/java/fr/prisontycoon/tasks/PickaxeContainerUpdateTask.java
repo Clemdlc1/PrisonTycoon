@@ -65,8 +65,13 @@ public class PickaxeContainerUpdateTask extends BukkitRunnable {
             return;
         }
 
-        // 2. On lance le traitement séquentiel avec délai
-        processPlayersSequentially(playersToUpdate.iterator());
+        // 2. Démarre TOUJOURS le traitement sur le thread principal
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                processPlayersSequentially(playersToUpdate.iterator());
+            }
+        }.runTask(plugin);
     }
 
     /**

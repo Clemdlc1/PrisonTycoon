@@ -12,6 +12,7 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.data.WarpData;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -43,10 +44,14 @@ public class MineManager {
     private final PriorityBlockingQueue<MineResetTask> resetQueue = new PriorityBlockingQueue<>();
     private final ExecutorService asyncExecutor = Executors.newFixedThreadPool(2);
 
+
+
     // Monitoring TPS
     private double currentTPS = 20.0;
     private final LinkedList<Long> tickTimes = new LinkedList<>();
     private static final int TPS_SAMPLE_SIZE = 100;
+     private static final long TPS_MONITOR_PERIOD_TICKS = 20L; // 1 seconde à 20 TPS
+     private static final long NANOS_PER_TICK_TARGET = 50_000_000L; // 50ms
 
     // Paramètres adaptatifs
     private int currentChunkSize = 50000; // Nombre de blocs par batch
@@ -89,7 +94,7 @@ public class MineManager {
             @Override
             public void run() {
                 long currentTick = System.nanoTime();
-                long delta = currentTick - lastTick;
+                long delta = currentTick - lastTick; // temps écoulé depuis la dernière exécution (en ns)
                 lastTick = currentTick;
 
                 tickTimes.add(delta);
@@ -97,20 +102,21 @@ public class MineManager {
                     tickTimes.removeFirst();
                 }
 
-                // Calculer le TPS moyen
-                if (tickTimes.size() >= 10) {
-                    double avgTickTime = tickTimes.stream()
+                // Calculer le TPS moyen en tenant compte de la période de planification (en ticks)
+                if (tickTimes.size() >= 5) {
+                    double avgDeltaNs = tickTimes.stream()
                             .mapToLong(Long::longValue)
                             .average()
-                            .orElse(50_000_000L); // 50ms par défaut
+                            .orElse(TPS_MONITOR_PERIOD_TICKS * NANOS_PER_TICK_TARGET);
 
-                    currentTPS = Math.min(20.0, 1_000_000_000.0 / avgTickTime);
+                    double tpsEstimate = (TPS_MONITOR_PERIOD_TICKS * 1_000_000_000.0) / avgDeltaNs;
+                    currentTPS = Math.max(0.0, Math.min(20.0, tpsEstimate));
 
                     // Adapter les paramètres selon le TPS
                     adaptGenerationParameters();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 50L);
+        }.runTaskTimer(plugin, 0L, TPS_MONITOR_PERIOD_TICKS);
     }
 
     /**
@@ -147,11 +153,13 @@ public class MineManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!resetQueue.isEmpty() && currentTPS > 15.0) {
+                if (!resetQueue.isEmpty() && currentTPS > 15.0 && !isAnyMineGenerating()) {
                     MineResetTask task = resetQueue.poll();
                     if (task != null && !isMineGenerating(task.mineId)) {
                         executeProgressiveGeneration(task.mineId, task.priority);
                     }
+                } else if (!resetQueue.isEmpty()) {
+                    plugin.getPluginLogger().debug("§7Queue en attente (" + resetQueue.size() + ") - TPS trop bas: " + String.format("%.1f", currentTPS));
                 }
             }
         }.runTaskTimer(plugin, 0L, 20L); // Vérifie toutes les secondes
@@ -287,15 +295,17 @@ public class MineManager {
                 // Phase 3: Génération asynchrone optimisée avec timeout
                 World finalFaweWorld = faweWorld;
                 CompletableFuture<Void> generationFuture = CompletableFuture.runAsync(() -> {
-                    if (region.getVolume() <= 50000) {
+                    long volume = region.getVolume();
+                    if (volume <= 150_000) {
                         executeBatchedGeneration(finalFaweWorld, region, pattern, mineId, priority, startTime);
                     } else {
                         generateInChunksAsync(finalFaweWorld, region, pattern, mineId, priority, startTime);
                     }
                 }, asyncExecutor);
 
-                // Timeout de 30 secondes
-                generationFuture.orTimeout(30, TimeUnit.SECONDS).exceptionally(ex -> {
+                // Timeout dynamique basé sur le volume (60s min, 600s max)
+                long dynamicTimeoutSeconds = Math.max(60, Math.min(600, region.getVolume() / 15_000));
+                generationFuture.orTimeout(dynamicTimeoutSeconds, TimeUnit.SECONDS).exceptionally(ex -> {
                     plugin.getPluginLogger().severe("§cTimeout génération FAWE pour " + mineId + ", bascule sur Bukkit API");
                     generating.set(false);
 
@@ -337,10 +347,6 @@ public class MineManager {
                 // Créer l'EditSession en mode async
                 EditSession editSession = WorldEdit.getInstance().newEditSession(world);
                 editSession.setFastMode(true); // Mode rapide pour les grandes opérations
-
-                // Configurer les limites
-                int blockLimit = calculateBlockLimit(priority);
-                editSession.setBlockChangeLimit(blockLimit);
 
                 // Exécuter la génération complète en ASYNC
                 editSession.setBlocks((Region) region, pattern);
@@ -410,7 +416,6 @@ public class MineManager {
                     // Créer un nouvel EditSession pour ce batch
                     EditSession editSession = WorldEdit.getInstance().newEditSession(world);
                     editSession.setFastMode(true);
-                    editSession.setBlockChangeLimit((int)subRegion.getVolume());
 
                     // Appliquer les blocs
                     editSession.setBlocks((Region) subRegion, pattern);
@@ -426,7 +431,6 @@ public class MineManager {
                     }
 
                     // Planifier le prochain chunk avec délai adaptatif
-                    long delay = Math.max(1L, currentDelay * 50L); // Convertir ticks en ms
                     Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, this, currentDelay);
 
                 } catch (Exception e) {
@@ -449,19 +453,20 @@ public class MineManager {
         BlockVector3 min = region.getMinimumPoint();
         BlockVector3 max = region.getMaximumPoint();
 
-        int width = max.x() - min.x() + 1;
-        int height = max.y() - min.y() + 1;
-        int length = max.z() - min.z() + 1;
+        // Alignement aux chunks 16x16 pour de meilleures perfs côté serveur/clients
+        final int stepX = 16;
+        final int stepZ = 16;
 
-        // Calculer la taille optimale des chunks
-        int chunkSize = (int) Math.ceil(Math.cbrt(maxBlocksPerChunk));
+        int height = Math.max(1, max.y() - min.y() + 1);
+        int maxYStep = Math.max(1, maxBlocksPerChunk / (stepX * stepZ)); // garantir volume <= maxBlocksPerChunk
+        int stepY = Math.min(height, Math.max(1, maxYStep));
 
-        for (int x = min.x(); x <= max.x(); x += chunkSize) {
-            for (int y = min.y(); y <= max.y(); y += chunkSize) {
-                for (int z = min.z(); z <= max.z(); z += chunkSize) {
-                    int maxX = Math.min(x + chunkSize - 1, max.x());
-                    int maxY = Math.min(y + chunkSize - 1, max.y());
-                    int maxZ = Math.min(z + chunkSize - 1, max.z());
+        for (int x = min.x(); x <= max.x(); x += stepX) {
+            int maxX = Math.min(x + stepX - 1, max.x());
+            for (int z = min.z(); z <= max.z(); z += stepZ) {
+                int maxZ = Math.min(z + stepZ - 1, max.z());
+                for (int y = min.y(); y <= max.y(); y += stepY) {
+                    int maxY = Math.min(y + stepY - 1, max.y());
 
                     BlockVector3 subMin = BlockVector3.at(x, y, z);
                     BlockVector3 subMax = BlockVector3.at(maxX, maxY, maxZ);
@@ -486,6 +491,8 @@ public class MineManager {
                 break;
             case HIGH:
                 baseLimit = (int) (baseLimit * 1.5);
+                break;
+            case NORMAL:
                 break;
             case LOW:
                 baseLimit /= 2;
@@ -1133,6 +1140,14 @@ public class MineManager {
 
     // ==================== CLASSES INTERNES ====================
 
+    private boolean isAnyMineGenerating() {
+        for (AtomicBoolean generating : mineGenerating.values()) {
+            if (generating.get()) return true;
+        }
+        return false;
+    }
+
+
     /**
      * Énumération des priorités de reset
      */
@@ -1228,8 +1243,20 @@ public class MineManager {
 
             @Override
             public void run() {
-                // Adjust this value to balance speed and performance
-                int blocksPerTick = 2048;
+                // Ajuste dynamiquement la cadence selon le TPS
+                int blocksPerTick;
+                double tps = currentTPS;
+                if (tps >= 19.5) {
+                    blocksPerTick = 4096;
+                } else if (tps >= 18.0) {
+                    blocksPerTick = 3072;
+                } else if (tps >= 16.0) {
+                    blocksPerTick = 2048;
+                } else if (tps >= 14.0) {
+                    blocksPerTick = 1024;
+                } else {
+                    blocksPerTick = 512;
+                }
                 for (int i = 0; i < blocksPerTick; i++) {
                     if (!patternIterator.hasNext() || y > mine.getMaxY()) {
                         // Finalize and stop

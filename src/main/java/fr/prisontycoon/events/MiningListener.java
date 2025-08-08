@@ -61,6 +61,10 @@ public class MiningListener implements Listener {
 
         // Cas 1 : Le joueur est dans une mine configurée
         if (mineName != null) {
+            if (plugin.getMineManager().isMineGenerating(mineName)) {
+                event.setCancelled(true);
+                player.sendMessage("§c❌ Attendez la fin de la génération de la mine!");
+            }
             if (!isLegendaryPickaxe) {
                 event.setCancelled(true);
                 player.sendMessage("§c❌ Seule la pioche légendaire peut miner dans cette zone!");
