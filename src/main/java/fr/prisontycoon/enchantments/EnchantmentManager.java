@@ -594,12 +594,12 @@ public class EnchantmentManager {
 
                 actuallyAdded += addedToInventory;
 
-                // Message d'avertissement moins fréquent pour l'inventaire plein
+                // Message d'avertissement (max une fois toutes les 5s) pour l'inventaire/containers pleins
                 if (!player.hasMetadata("inventory_full_warning") ||
-                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
+                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 5000) {
 
                     int droppedCount = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
-                    player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items droppés au sol.");
+                    player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items supprimés.");
                     player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, System.currentTimeMillis()));
 
                     // Suggestion d'utiliser /sell all
@@ -615,7 +615,7 @@ public class EnchantmentManager {
 
         int finalActuallyAdded = actuallyAdded;
         plugin.getPluginLogger().debugLazy(() -> "Blocs ajoutés au total: " + finalActuallyAdded + "/" + quantity + "x " + effectiveMaterial.name() +
-                " (conteneurs + inventaire + droppés)");
+                " (conteneurs + inventaire + supprimés)");
     }
 
     /**
