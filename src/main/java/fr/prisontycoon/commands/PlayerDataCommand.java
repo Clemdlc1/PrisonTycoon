@@ -35,7 +35,12 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
 
         if (args.length < 2) {
             sender.sendMessage("§eUsage: /" + label + " <save|load|dump> <joueur> [colonne]");
-            sender.sendMessage("§7Colonnes supportées: profession_levels, profession_xp, talent_levels, kit_levels, profession_rewards");
+            try {
+                List<String> cols = plugin.getPlayerDataManager().getAllPlayerColumns();
+                if (!cols.isEmpty()) {
+                    sender.sendMessage("§7Colonnes: §f" + String.join(", ", cols));
+                }
+            } catch (Exception ignored) {}
             return true;
         }
 
@@ -231,7 +236,7 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
             }
             StringUtil.copyPartialMatches(args[1], players, completions);
         } else if (args.length == 3 && (args[0].equalsIgnoreCase("save") || args[0].equalsIgnoreCase("load"))) {
-            List<String> columns = Arrays.asList("profession_levels", "profession_xp", "talent_levels", "kit_levels", "profession_rewards");
+            List<String> columns = plugin.getPlayerDataManager().getAllPlayerColumns();
             StringUtil.copyPartialMatches(args[2], columns, completions);
         }
 

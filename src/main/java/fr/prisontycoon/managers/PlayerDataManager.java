@@ -762,15 +762,33 @@ public class PlayerDataManager {
     }
 
     /**
+     * Liste toutes les colonnes de la table players (lowercase). Fallback sur une liste statique si indisponible.
+     */
+    public List<String> getAllPlayerColumns() {
+        List<String> columns = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection()) {
+            var meta = conn.getMetaData();
+            try (ResultSet rs = meta.getColumns(null, null, "players", null)) {
+                while (rs.next()) {
+                    String columnName = rs.getString("COLUMN_NAME");
+                    if (columnName != null) {
+                        columns.add(columnName.toLowerCase());
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getPluginLogger().debug("Impossible de lister les colonnes via metadata: " + e.getMessage());
+        }
+        return columns;
+    }
+
+    /**
      * NOUVELLE MÉTHODE : Force le rechargement d'un joueur depuis la BDD
      */
     public void reloadPlayerData(UUID playerId) {
         if (playerId != null) {
-            // Sauvegarde d'abord si le joueur est modifié
-            if (dirtyPlayers.contains(playerId)) {
-                savePlayerNow(playerId);
-            }
-
+            // Toujours ignorer les changements non sauvegardés
+            dirtyPlayers.remove(playerId);
             // Supprime du cache et recharge
             playerDataCache.remove(playerId);
             getPlayerData(playerId); // Force le rechargement
