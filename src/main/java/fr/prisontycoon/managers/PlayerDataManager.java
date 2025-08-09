@@ -258,13 +258,33 @@ public class PlayerDataManager {
                 }
 
                 Map<String, Integer> professionLevels = loadJsonValue(rs, "profession_levels", stringIntegerMapType);
+                boolean hadInvalidProfessionKeys = false;
                 if (professionLevels != null) {
-                    data.setProfessionLevel(professionLevels.toString(), 0);
+                    for (Map.Entry<String, Integer> entry : professionLevels.entrySet()) {
+                        String prof = entry.getKey();
+                        if (prof != null && plugin.getProfessionManager().getProfession(prof) != null) {
+                            data.setProfessionLevel(prof, entry.getValue());
+                        } else {
+                            hadInvalidProfessionKeys = true;
+                        }
+                    }
                 }
 
                 Map<String, Integer> professionXP = loadJsonValue(rs, "profession_xp", stringIntegerMapType);
                 if (professionXP != null) {
-                    data.setProfessionXP(professionXP.toString(), 0);
+                    for (Map.Entry<String, Integer> entry : professionXP.entrySet()) {
+                        String prof = entry.getKey();
+                        if (prof != null && plugin.getProfessionManager().getProfession(prof) != null) {
+                            data.setProfessionXP(prof, entry.getValue());
+                        } else {
+                            hadInvalidProfessionKeys = true;
+                        }
+                    }
+                }
+
+                if (hadInvalidProfessionKeys) {
+                    // Marque pour sauvegarde afin d'assainir les colonnes JSON à la prochaine écriture
+                    markDirty(playerId);
                 }
 
                 Map<String, Map<String, Integer>> talentLevels = loadJsonValue(rs, "talent_levels", stringMapMapType);

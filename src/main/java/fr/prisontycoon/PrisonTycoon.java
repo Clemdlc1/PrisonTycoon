@@ -377,6 +377,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new VoucherCommand(this), "voucher");
         registerCommand(new AutominerCommand(this), "autominer");
         registerCommand(new OutpostCommand(this), "ap");
+        registerCommand(new PlayerDataCommand(this), "playerdata");
 
         logger.info("§aCommandes enregistrées.");
     }
