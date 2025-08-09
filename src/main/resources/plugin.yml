@@ -235,6 +235,12 @@ commands:
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
+  playerdata:
+    description: "Admin: sauvegarder/charger/dumper les données joueur"
+    usage: /playerdata <save|load|dump> <joueur>
+    permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+
   # Commandes existantes conservées
   pickaxe:
     description: "Ouvre le menu de la pioche légendaire"

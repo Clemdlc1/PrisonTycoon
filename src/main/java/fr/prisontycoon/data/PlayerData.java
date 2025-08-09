@@ -1104,10 +1104,34 @@ public class PlayerData {
     }
 
     /**
+     * Remplace complètement la map des niveaux de métiers
+     */
+    public void setAllProfessionLevels(Map<String, Integer> levels) {
+        synchronized (dataLock) {
+            this.professionLevels.clear();
+            if (levels != null) {
+                this.professionLevels.putAll(levels);
+            }
+        }
+    }
+
+    /**
      * Obtient tout l'XP de métiers
      */
     public Map<String, Integer> getAllProfessionXP() {
         return new HashMap<>(professionXP);
+    }
+
+    /**
+     * Remplace complètement la map des XP de métiers
+     */
+    public void setAllProfessionXP(Map<String, Integer> xpMap) {
+        synchronized (dataLock) {
+            this.professionXP.clear();
+            if (xpMap != null) {
+                this.professionXP.putAll(xpMap);
+            }
+        }
     }
 
     /**
