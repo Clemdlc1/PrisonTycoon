@@ -180,7 +180,7 @@ public class AutominerCondHeadGUI {
             ItemMeta meta = displayItem.getItemMeta();
 
             String materialName = formatMaterialName(entry.getKey());
-            meta.setDisplayName("§f" + materialName);
+            plugin.getGUIManager().applyName(meta,"§f" + materialName);
 
             List<String> lore = new ArrayList<>();
             lore.add("§7Quantité: §e" + NumberFormatter.format(entry.getValue()));

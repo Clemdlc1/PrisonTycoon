@@ -35,7 +35,7 @@ public class EnchantmentUpgradeGUI {
         if (enchantment == null) return;
 
         String title = "§6🔧 §l" + enchantment.getDisplayName() + " §6🔧";
-        Inventory gui = Bukkit.createInventory(null, 27, title);
+        Inventory gui = plugin.getGUIManager().createInventory( 27, title);
 
         // Remplissage décoratif
         fillBorders(gui);

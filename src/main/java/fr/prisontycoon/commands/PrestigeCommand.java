@@ -9,6 +9,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +31,7 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
             return true;
@@ -50,7 +51,6 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
             case "effectuer", "faire", "perform" -> handlePerformCommand(player);
             case "confirmer", "confirm" -> handleConfirmCommand(player);
             case "confirmer-reset", "confirm-reset", "confirmreset" -> handleConfirmResetCommand(player); // NOUVEAU
-            case "help", "aide" -> sendHelpMessage(player);
             default -> sendHelpMessage(player);
         }
 
@@ -209,7 +209,7 @@ public class PrestigeCommand implements CommandExecutor, TabCompleter {
 
     // Modifier la méthode getTabCompletions pour inclure la nouvelle commande :
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
             List<String> commands = Arrays.asList("info", "progression", "effectuer",

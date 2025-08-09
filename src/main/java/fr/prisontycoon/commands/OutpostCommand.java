@@ -8,10 +8,12 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Commande /AP pour gérer l'avant-poste
@@ -29,7 +31,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§c❌ Cette commande ne peut être utilisée que par un joueur!");
             return true;
@@ -235,7 +237,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         if (!(sender instanceof Player player)) {
             return new ArrayList<>();
         }
@@ -253,7 +255,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("admin") && player.hasPermission(PERMISSION_ADMIN)) {
-            return Arrays.asList("reset", "setskin", "stats", "reload").stream()
+            return Stream.of("reset", "setskin", "stats", "reload")
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .toList();
         }

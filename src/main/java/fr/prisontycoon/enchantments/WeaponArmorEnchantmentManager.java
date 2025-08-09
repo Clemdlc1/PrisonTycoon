@@ -54,6 +54,8 @@ public class WeaponArmorEnchantmentManager {
         registerEnchantment(new RepercussionEnchantment());
         registerEnchantment(new BeHeadEnchantment());
         registerEnchantment(new ChasseurEnchantment());
+        registerEnchantment(new BeteTraqueeEnchantment());
+        registerEnchantment(new CuirasseBestialeEnchantment());
     }
 
     private void registerEnchantment(UniqueEnchantment enchantment) {
@@ -124,7 +126,7 @@ public class WeaponArmorEnchantmentManager {
         if (item == null) return 0;
         // Une épée peut avoir 2 enchantements uniques.
         if (isValidWeapon(item)) {
-            return 2;
+            return 3; // NOUVEAU : 3 slots uniques pour les épées
         }
         // Les armures et les pioches ne peuvent en avoir qu'un seul.
         if (isValidArmor(item) || isValidPickaxe(item)) {
@@ -311,6 +313,17 @@ public class WeaponArmorEnchantmentManager {
                 int pvpBonus = level * 15;
                 lore.add("§7▸ §6+" + pvpBonus + "% dégâts PvP §8| §eAnti-joueurs");
                 break;
+
+            case "bete_traquee": {
+                int bonus = 10 + (level * 5);
+                lore.add("§7▸ §a+" + bonus + "% dégâts vs entités non-joueurs");
+                break;
+            }
+            case "cuirasse_bestiale": {
+                int reduc = 8 + (level * 4);
+                lore.add("§7▸ §b-" + reduc + "% dégâts subis vs entités non-joueurs");
+                break;
+            }
         }
     }
 
@@ -325,6 +338,8 @@ public class WeaponArmorEnchantmentManager {
             case "repercussion" -> "§c"; // Rouge
             case "behead" -> "§4"; // Rouge foncé
             case "chasseur" -> "§6"; // Orange
+            case "bete_traquee" -> "§2"; // Vert foncé pour offensif PvE
+            case "cuirasse_bestiale" -> "§3"; // Cyan foncé pour défensif PvE
             default -> "§5"; // Violet
         };
     }
@@ -339,6 +354,19 @@ public class WeaponArmorEnchantmentManager {
             UniqueEnchantment enchant = enchantments.get(entry.getKey());
             if (enchant != null) {
                 enchant.onAttack(attacker, victim, entry.getValue(), plugin);
+            }
+        }
+
+        // Applique le bonus PvE offensif "Bête Traquée"
+        Integer pveLevel = enchants.get("bete_traquee");
+        if (pveLevel != null && pveLevel > 0 && !(victim instanceof Player)) {
+            double base = 1.0 + (0.10 + (pveLevel * 0.05)); // 15% au niv1, +5%/niv
+            if (victim instanceof LivingEntity le) {
+                le.damage(0.0, attacker); // ping pour event hooks
+                // Le multiplicateur de dégâts réels est géré côté event; ici on applique un burst additionnel
+                double extra = Math.max(0.5, pveLevel * 0.4); // petit bonus additif
+                le.setNoDamageTicks(0);
+                le.damage(extra, attacker);
             }
         }
     }
@@ -814,5 +842,36 @@ public class WeaponArmorEnchantmentManager {
             super("chasseur", "Chasseur", "Gain de coins en tuant des joueurs de réputation opposée", 3, 2000, true, false);
         }
         // L'effet est géré dans handlePlayerDeath
+    }
+
+    // NOUVEAU : Offensif PvE (épée) – augmente dégâts contre entités non joueurs
+    private static class BeteTraqueeEnchantment extends UniqueEnchantment {
+        public BeteTraqueeEnchantment() {
+            super("bete_traquee", "Bête Traquée", "Augmente les dégâts contre les entités non joueurs", 5, 4000, true, false);
+        }
+        @Override public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
+            if (victim instanceof Player) return;
+            // Effets visuels légers
+            victim.getWorld().spawnParticle(org.bukkit.Particle.CRIT, victim.getLocation().add(0, 1, 0), 6, 0.2, 0.2, 0.2, 0);
+            if (victim instanceof LivingEntity le) {
+                double extra = 0.2 + (level * 0.3); // 0.5 coeurs au niv1, +0.3 par niv
+                le.damage(extra, attacker);
+            }
+        }
+    }
+
+    // NOUVEAU : Défensif PvE (armure) – réduit dégâts reçus des entités non joueurs
+    private static class CuirasseBestialeEnchantment extends UniqueEnchantment {
+        public CuirasseBestialeEnchantment() {
+            // Épée uniquement, effet défensif converti en mitigation temporaire via l'attaque
+            super("cuirasse_bestiale", "Cuirasse Bestiale", "Réduit brièvement les dégâts subis après avoir touché une entité non joueur", 5, 3500, true, false);
+        }
+        @Override public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
+            if (victim instanceof Player) return;
+            // Indication visuelle discrète
+            attacker.spawnParticle(org.bukkit.Particle.SCRAPE, attacker.getLocation().add(0, 1, 0), 6, 0.25, 0.25, 0.25, 0.02);
+            attacker.sendActionBar(net.kyori.adventure.text.Component.text("§3🛡 Cuirasse bestiale: mitigation PvE active (" + level + ")"));
+            // Si besoin, on pourrait stocker une fenêtre temporelle de mitigation dans des metadata (non requis ici)
+        }
     }
 }

@@ -70,7 +70,7 @@ public class PrestigeGUI {
      * Ouvre le menu principal du prestige
      */
     public void openMainPrestigeMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§6🏆 §lSystème de Prestige §6🏆");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§6🏆 §lSystème de Prestige §6🏆");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PRESTIGE_MENU, gui);
 
         fillWithGlass(gui);
@@ -121,7 +121,7 @@ public class PrestigeGUI {
         int maxPage = (maxPrestige - 1) / 5;
         page = Math.max(0, Math.min(page, maxPage));
 
-        Inventory gui = Bukkit.createInventory(null, 54, "§6🏆 Progression Prestige : P" + (page * 5 + 1) + "-P" + Math.min((page + 1) * 5, maxPrestige));
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏆 Progression Prestige : P" + (page * 5 + 1) + "-P" + Math.min((page + 1) * 5, maxPrestige));
 
         fillWithGlass(gui);
         setupProgressionMenu(gui, player, page);
@@ -1197,7 +1197,7 @@ public class PrestigeGUI {
             } else {
                 for (Map.Entry<Integer, String> entry : chosenRewards.entrySet().stream()
                         .sorted(Map.Entry.comparingByKey())
-                        .collect(toList())) {
+                        .toList()) {
                     int level = entry.getKey();
                     String rewardId = entry.getValue();
 

@@ -112,6 +112,12 @@ public class GlobalBonusManager {
             details.addDetailedSource("Enchantements", enchantmentBonus);
         }
 
+        double overloadBonus = getMineOverloadBonus(player, category);
+        details.setOverloadBonus(overloadBonus);
+        if (overloadBonus > 0) {
+            details.addDetailedSource("Surcharge de Mine", overloadBonus);
+        }
+
 
         return details;
     }
@@ -253,6 +259,7 @@ public class GlobalBonusManager {
                             bonus += talent.getValueAtLevel(talentLevel);
                         }
                     }
+                    default -> {}
                 }
             }
             case "commercant" -> {
@@ -273,6 +280,7 @@ public class GlobalBonusManager {
                             bonus += talent.getValueAtLevel(talentLevel);
                         }
                     }
+                    default -> {}
                 }
             }
             case "guerrier" -> {
@@ -285,6 +293,8 @@ public class GlobalBonusManager {
                         bonus += (multiplierValue - 1) * 100; // x2 devient +100%
                     }
                 }
+            }
+            default -> {
             }
         }
 
@@ -324,6 +334,10 @@ public class GlobalBonusManager {
             case PVP_MERCHANT_REDUCTION -> {
                 int level = talents.getOrDefault(PrestigeTalent.PVP_MERCHANT_REDUCTION, 0);
                 bonus = level * 1.0; // -1% par niveau (réduction)
+            }
+            case EXPERIENCE_BONUS, FORTUNE_BONUS, HDV_SLOT, BEACON_MULTIPLIER, GANG_BONUS, JOB_XP_BONUS -> {
+                // Pas de talents de prestige définis pour ces catégories
+                bonus = 0.0;
             }
         }
 
@@ -385,6 +399,8 @@ public class GlobalBonusManager {
                     bonus += (multiplier - 1.0) * 100; // Convertir en pourcentage
                 }
             }
+            default -> {
+            }
         }
 
         // Bonus des talents de gang
@@ -412,6 +428,19 @@ public class GlobalBonusManager {
             }
         }
         return bonus;
+    }
+
+    /**
+     * NOUVEAU : Calcule le bonus (en %) provenant de la surcharge de mine pour une catégorie donnée
+     */
+    private double getMineOverloadBonus(Player player, BonusCategory category) {
+        try {
+            if (plugin.getMineOverloadManager() == null) return 0.0;
+            // Exclut KeyGreed car non mappé ici et non demandé
+            return plugin.getMineOverloadManager().getOverloadBonusPercent(player, category);
+        } catch (Throwable t) {
+            return 0.0;
+        }
     }
 
     // ========================================
@@ -655,12 +684,13 @@ public class GlobalBonusManager {
         private double professionBonus = 0.0;
         private double prestigeBonus = 0.0;
         private double temporaryBoostBonus = 0.0;
-        private double gangBonus = 0.0; // Bonus permanents (niveaux, talents)
-        private double temporaryGangBoostBonus = 0.0; // Bonus temporaires (activables)
+        private double gangBonus = 0.0;
+        private double temporaryGangBoostBonus = 0.0;
         private double enchantmentBonus = 0.0;
+        private double overloadBonus = 0.0;
 
         public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus;
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus;
         }
 
         public double getTotalMultiplier() {
@@ -673,6 +703,14 @@ public class GlobalBonusManager {
 
         public void setEnchantmentBonus(double enchantmentBonus) {
             this.enchantmentBonus = enchantmentBonus;
+        }
+
+        public double getOverloadBonus() {
+            return overloadBonus;
+        }
+
+        public void setOverloadBonus(double overloadBonus) {
+            this.overloadBonus = overloadBonus;
         }
 
         // Getters
@@ -705,9 +743,7 @@ public class GlobalBonusManager {
             return temporaryBoostBonus;
         }
 
-        public void setTemporaryBoostBonus(double temporaryBoostBonus) {
-            this.temporaryBoostBonus = temporaryBoostBonus;
-        }
+        public void setTemporaryBoostBonus(double temporaryBoostBonus) { this.temporaryBoostBonus = temporaryBoostBonus; }
 
         public double getGangBonus() {
             return gangBonus;
@@ -721,10 +757,7 @@ public class GlobalBonusManager {
             return temporaryGangBoostBonus;
         }
 
-        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) {
-            this.temporaryGangBoostBonus = temporaryGangBoostBonus;
-        }
-
+        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) { this.temporaryGangBoostBonus = temporaryGangBoostBonus; }
 
         public Map<String, Double> getDetailedSources() {
             return detailedSources;

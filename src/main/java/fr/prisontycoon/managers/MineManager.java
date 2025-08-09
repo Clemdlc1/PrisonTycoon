@@ -12,15 +12,16 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.data.WarpData;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,8 +51,8 @@ public class MineManager {
     private double currentTPS = 20.0;
     private final LinkedList<Long> tickTimes = new LinkedList<>();
     private static final int TPS_SAMPLE_SIZE = 100;
-     private static final long TPS_MONITOR_PERIOD_TICKS = 20L; // 1 seconde à 20 TPS
-     private static final long NANOS_PER_TICK_TARGET = 50_000_000L; // 50ms
+    private static final long TPS_MONITOR_PERIOD_TICKS = 20L; // 1 seconde à 20 TPS
+    private static final long NANOS_PER_TICK_TARGET = 50_000_000L; // 50ms
 
     // Paramètres adaptatifs
     private int currentChunkSize = 50000; // Nombre de blocs par batch
@@ -61,9 +62,19 @@ public class MineManager {
         this.plugin = plugin;
         configureFAWE(); // Configuration critique pour éviter les freezes
         loadMinesFromConfigManager();
+        // Initialisation des hologrammes de mines après chargement
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                initializeMineHolograms();
+                // Reset toutes les mines au démarrage
+                resetAllMines();
+            }
+        }.runTaskLater(plugin, 20L);
         startMineResetScheduler();
         startTPSMonitor();
         startResetQueueProcessor();
+        startHologramAutoRefresher();
     }
 
     /**
@@ -198,6 +209,205 @@ public class MineManager {
         plugin.getPluginLogger().info("§aMines chargées: " + mines.size());
     }
 
+    // ==================== HOLOGRAMMES DE MINE (SECTION MODIFIÉE) ====================
+    private final Map<String, List<ArmorStand>> mineHolograms = new ConcurrentHashMap<>();
+
+    /**
+     * Met en majuscule la première lettre de chaque mot dans une chaîne.
+     * @param text Le texte à transformer.
+     * @return Le texte formaté.
+     */
+    private String capitalizeWords(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        return Arrays.stream(text.split(" "))
+                .map(word -> {
+                    if (word.isEmpty()) return "";
+                    return Character.toUpperCase(word.charAt(0)) + word.substring(1);
+                })
+                .collect(Collectors.joining(" "));
+    }
+
+    private Location getMineHologramBase(String mineId) {
+        MineData mine = mines.get(mineId);
+        if (mine == null) return null;
+        org.bukkit.World world = Bukkit.getWorld(mine.getWorldName());
+        if (world == null) return null;
+        // Ajustement de la hauteur pour un meilleur espacement
+        return mine.getCenterLocation(world).add(0, 8, 0);
+    }
+
+    public void initializeMineHolograms() {
+        for (String mineId : mines.keySet()) {
+            ensureMineHologram(mineId);
+            updateMineHologram(mineId);
+        }
+    }
+
+    private List<ArmorStand> spawnHologramStack(Location base, int lines) {
+        if (base == null || base.getWorld() == null) return List.of();
+        List<ArmorStand> list = new ArrayList<>(lines);
+        // Espacement ajusté pour la lisibilité
+        double step = 0.45;
+        // Inverser la création pour que la ligne 0 soit la plus haute
+        Location currentLoc = base.clone();
+        for (int i = 0; i < lines; i++) {
+            ArmorStand stand = base.getWorld().spawn(currentLoc, ArmorStand.class, s -> {
+                s.setInvisible(true);
+                s.setMarker(true);
+                s.setCustomNameVisible(true);
+                s.customName(Component.text(" "));
+                s.setGravity(false);
+            });
+            list.add(stand);
+            currentLoc.subtract(0, step, 0);
+        }
+        return list;
+    }
+
+    public void ensureMineHologram(String mineId) {
+        if (mineHolograms.containsKey(mineId)) return;
+        Location base = getMineHologramBase(mineId);
+        if (base == null) return;
+        // 8 lignes pour le nouvel affichage : Titre, Comp, Surcharge, Header Top, Top1, Top2, Top3, Vide
+        mineHolograms.put(mineId, spawnHologramStack(base, 14));
+    }
+
+    /**
+     * Méthode d'affichage de l'hologramme entièrement remaniée.
+     */
+    public void updateMineHologram(String mineId) {
+        ensureMineHologram(mineId);
+        List<ArmorStand> stands = mineHolograms.get(mineId);
+        if (stands == null || stands.isEmpty()) return;
+
+        MineData mine = mines.get(mineId);
+        String mineTitle = mine != null ? mine.getDisplayName() : mineId;
+
+        // --- Surcharge (calculs en amont) ---
+        var overload = plugin.getMineOverloadManager();
+        double gauge = 0.0;
+        double mult = 1.0;
+        int actifs = 0;
+        List<Map.Entry<UUID, Long>> top3 = new ArrayList<>();
+
+        if (overload != null) {
+            actifs = overload.getActiveMinersCount(mineId);
+            mult = overload.getOverloadMultiplier(null, GlobalBonusManager.BonusCategory.MONEY_BONUS);
+            if (mult >= 2.0) gauge = 1.0;
+            top3 = overload.getTop3(mineId);
+        }
+        String bar = buildBar(gauge);
+        String overloadLine = "§cSurcharge §f[" + bar + "] §8(§cx" + String.format(Locale.FRANCE, "%.2f", mult) + "§8)  §7Actifs: §f" + actifs;
+
+        // --- Lignes de l'hologramme ---
+
+        // Ligne 0: Titre (en gras)
+        setStandName(stands, 0, Component.text("§f§l" + mineTitle));
+
+        // Ligne 1: Surcharge
+        setStandName(stands, 1, Component.text(overloadLine));
+
+        // Ligne 2: Espaceur
+        setStandName(stands, 2, Component.text(" "));
+
+        // Lignes 3-8: Composition (1 ligne par matériau)
+        setStandName(stands, 3, Component.text("§f§lComposition:")); // En-tête en gras
+
+        // Prépare le format pour les pourcentages (ex: 50.25% ou 50%)
+        DecimalFormat df = new DecimalFormat("0.##");
+
+        List<Map.Entry<Material, Double>> compositionEntries = mine != null ?
+                mine.getBlockComposition().entrySet().stream()
+                        .sorted(Map.Entry.<Material, Double>comparingByValue().reversed())
+                        .limit(5) // On affiche le top 5
+                        .toList() :
+                Collections.emptyList();
+
+        for (int i = 0; i < 5; i++) {
+            int lineIndex = 4 + i;
+            if (i < compositionEntries.size()) {
+                Map.Entry<Material, Double> entry = compositionEntries.get(i);
+                String name = capitalizeWords(entry.getKey().name().toLowerCase().replace('_', ' '));
+                String percent = df.format(entry.getValue() * 100) + "%";
+                setStandName(stands, lineIndex, Component.text("  §7- " + name + ": §f" + percent));
+            } else {
+                setStandName(stands, lineIndex, Component.text(" ")); // Vide si moins de 5 matériaux
+            }
+        }
+
+        // Ligne 9: Espaceur
+        setStandName(stands, 9, Component.text(" "));
+
+        // Lignes 10-13: Top 3 Mineurs
+        setStandName(stands, 10, Component.text("§f§lTop Mineurs:")); // En-tête en gras
+        setStandName(stands, 11, Component.text("§6§l1. " + formatTopEntry(top3, 0)));
+        setStandName(stands, 12, Component.text(top3.size() > 1 ? "§e§l2. " + formatTopEntry(top3, 1) : "  §7-"));
+        setStandName(stands, 13, Component.text(top3.size() > 2 ? "§c§l3. " + formatTopEntry(top3, 2) : "  §7-"));
+    }
+
+
+    private void setStandName(List<ArmorStand> stands, int index, Component name) {
+        if (index < 0 || index >= stands.size()) return;
+        ArmorStand s = stands.get(index);
+        if (s != null && !s.isDead()) {
+            s.customName(name);
+        }
+    }
+
+    private String buildBar(double gauge) {
+        int segments = 24;
+        int filled = (int) Math.round(gauge * segments);
+        StringBuilder sb = new StringBuilder(segments * 3); // *3 pour les codes couleurs
+        sb.append("§f");
+        for (int i = 0; i < segments; i++) {
+            if (i < filled) {
+                if (i > segments * 0.8) sb.append("§c|"); // Rouge
+                else if (i > segments * 0.5) sb.append("§6|"); // Orange
+                else sb.append("§e|"); // Jaune
+            } else {
+                sb.append("§7|"); // Gris
+            }
+        }
+        return sb.toString();
+    }
+
+    private String formatTopEntry(List<Map.Entry<UUID, Long>> top, int idx) {
+        if (idx >= top.size()) return "§7-";
+        var entry = top.get(idx);
+        Player p = Bukkit.getPlayer(entry.getKey());
+        // Fournit un nom par défaut si le joueur est hors ligne
+        String name = (p != null) ? p.getName() : Bukkit.getOfflinePlayer(entry.getKey()).getName();
+        if (name == null) name = "Inconnu";
+        // Formatage du score (ex: 1.2k, 1.5M)
+        return "§f" + name + " §7(" + formatScore(entry.getValue()) + ")";
+    }
+
+    private String formatScore(long score) {
+        if (score < 1000) return String.valueOf(score);
+        if (score < 1_000_000) return String.format(Locale.US, "%.1fk", score / 1000.0);
+        if (score < 1_000_000_000) return String.format(Locale.US, "%.1fM", score / 1_000_000.0);
+        return String.format(Locale.US, "%.1fG", score / 1_000_000_000.0);
+    }
+
+
+    private void startHologramAutoRefresher() {
+        int refresh = plugin.getConfigManager().getOverloadHologramRefreshTicks();
+        if (refresh <= 0) refresh = 60; // Refresh toutes les 3 secondes par défaut
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (String id : mines.keySet()) {
+                    updateMineHologram(id);
+                }
+            }
+        }.runTaskTimer(plugin, refresh, refresh);
+    }
+
+    // ... Le reste du code est inchangé ...
+
+//<editor-fold desc="Le reste du code reste inchangé">
     /**
      * Ajoute une mine à la queue de régénération avec priorité
      */
@@ -725,40 +935,9 @@ public class MineManager {
     /**
      * Téléporte un joueur à une mine
      */
+    @Deprecated
     public boolean teleportToMine(Player player, String mineId) {
-        return teleportToMine(player, mineId, false);
-    }
-
-    private boolean teleportToMine(Player player, String mineId, boolean isForced) {
-        if (!isForced && !canAccessMine(player, mineId)) {
-            player.sendMessage("§c❌ Vous n'avez pas accès à cette mine!");
-            return false;
-        }
-
-        MineData mine = mines.get(mineId);
-        if (mine == null) {
-            player.sendMessage("§c❌ Mine introuvable!");
-            return false;
-        }
-
-        org.bukkit.World world = Bukkit.getWorld(mine.getWorldName());
-        if (world == null) {
-            player.sendMessage("§c❌ Monde de la mine introuvable!");
-            return false;
-        }
-
-        Location teleportLocation = mine.getCenterLocation(world);
-        teleportLocation.getBlock().setType(Material.AIR,false);
-        teleportLocation.clone().add(0, 1, 0).getBlock().setType(Material.AIR, false);
-
-        player.teleport(teleportLocation);
-
-        if (!isForced) {
-            player.sendMessage("§a✅ Téléporté à la mine " + mine.getDisplayName());
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
-        }
-
-        return true;
+        return plugin.getWarpManager().teleportToWarp(player, "mine-" + mineId, true);
     }
 
     /**
@@ -1169,20 +1348,20 @@ public class MineManager {
     }
 
     /**
-         * Tâche de reset de mine avec priorité
-         */
-        private record MineResetTask(String mineId, MineResetPriority priority,
-                                     long timestamp) implements Comparable<MineResetTask> {
+     * Tâche de reset de mine avec priorité
+     */
+    private record MineResetTask(String mineId, MineResetPriority priority,
+                                 long timestamp) implements Comparable<MineResetTask> {
 
         @Override
-            public int compareTo(MineResetTask other) {
-                int priorityCompare = Integer.compare(this.priority.getPriority(), other.priority.getPriority());
-                if (priorityCompare != 0) {
-                    return priorityCompare;
-                }
-                return Long.compare(this.timestamp, other.timestamp);
+        public int compareTo(MineResetTask other) {
+            int priorityCompare = Integer.compare(this.priority.getPriority(), other.priority.getPriority());
+            if (priorityCompare != 0) {
+                return priorityCompare;
             }
+            return Long.compare(this.timestamp, other.timestamp);
         }
+    }
     /**
      * Fallback mine generation using the Bukkit API.
      * This is slower and more resource-intensive than FAWE but provides a failsafe.
@@ -1284,5 +1463,4 @@ public class MineManager {
             }
         }.runTaskTimer(plugin, 0L, 1L); // Runs every tick
     }
-
 }

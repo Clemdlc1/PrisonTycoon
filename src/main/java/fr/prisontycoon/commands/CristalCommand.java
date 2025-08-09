@@ -20,6 +20,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String alias, String[] args) {
+    public boolean onCommand(CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         if (!sender.hasPermission("specialmine.admin") && !sender.isOp()) {
             sender.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");
             return true;
@@ -131,7 +132,7 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
 
         // Vérifier que le joueur a un cristal en main
-        if (itemInHand == null || itemInHand.getType() == Material.AIR) {
+        if (itemInHand.getType() == Material.AIR) {
             player.sendMessage("§cVous devez avoir un cristal en main!");
             return true;
         }
@@ -278,7 +279,7 @@ public class CristalCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> suggestions = new ArrayList<>();
 
         if (!sender.hasPermission("specialmine.admin") && !sender.isOp()) {

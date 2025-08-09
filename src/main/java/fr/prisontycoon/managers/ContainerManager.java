@@ -301,10 +301,10 @@ public class ContainerManager {
         lore.add("§7┃ Capacité: §a" + NumberFormatter.format(data.getMaxCapacity()) + " items");
         if (data.isBroken()) {
             lore.add("§7┃ État: §c💥 CASSÉ");
-            meta.setDisplayName("§c💥 Conteneur Cassé - " + getTierName(data.getTier()));
+            plugin.getGUIManager().applyName(meta,"§c💥 Conteneur Cassé - " + getTierName(data.getTier()));
         } else {
             lore.add("§7┃ Durabilité: §2" + data.getDurability() + "§7/§2" + data.getMaxDurability());
-            meta.setDisplayName("§6📦 Conteneur " + getTierName(data.getTier()));
+            plugin.getGUIManager().applyName(meta,"§6📦 Conteneur " + getTierName(data.getTier()));
         }
         lore.add("");
         lore.add("§e📦 Contenu actuel:");

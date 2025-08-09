@@ -30,6 +30,10 @@ public class CristalManager {
     private final NamespacedKey cristalTypeKey;
     private final NamespacedKey cristalViergeKey;
 
+    // Cache léger pour éviter de parser la map à chaque bloc miné
+    private final java.util.Map<java.util.UUID, CachedCristals> cristalsCache = new java.util.HashMap<>();
+    private static final long CRISTALS_CACHE_TTL_MS = 10_000L;
+
     public CristalManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.cristalUuidKey = new NamespacedKey(plugin, "cristal_uuid");
@@ -38,6 +42,12 @@ public class CristalManager {
         this.cristalViergeKey = new NamespacedKey(plugin, "cristal_vierge");
 
         plugin.getPluginLogger().info("§aCristalManager initialisé.");
+    }
+
+    private record CachedCristals(java.util.List<Cristal> list, long tsMs) {}
+
+    private void invalidateCristalCache(java.util.UUID playerId) {
+        cristalsCache.remove(playerId);
     }
 
     /**
@@ -207,6 +217,7 @@ public class CristalManager {
         // NOUVEAU : Sauvegarde dans PlayerData au lieu de la pioche
         String cristalData = cristal.getNiveau() + "," + cristal.getType().name();
         playerData.setPickaxeCristal(cristal.getUuid(), cristalData);
+        invalidateCristalCache(player.getUniqueId());
 
         // Mise à jour de la pioche
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -257,6 +268,7 @@ public class CristalManager {
         // Suppression du PlayerData
         playerData.removePickaxeCristal(cristalUuid);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        invalidateCristalCache(player.getUniqueId());
 
         // Mise à jour de la pioche
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -284,27 +296,36 @@ public class CristalManager {
      * MODIFIÉ : Récupère les cristaux de la pioche depuis PlayerData
      */
     public List<Cristal> getPickaxeCristals(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        UUID pid = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        CachedCristals cached = cristalsCache.get(pid);
+        if (cached != null && (now - cached.tsMs) <= CRISTALS_CACHE_TTL_MS) {
+            // Retourne une copie pour éviter toute modification externe
+            return new ArrayList<>(cached.list);
+        }
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(pid);
         Map<String, String> pickaxeCristals = playerData.getPickaxeCristals();
 
-        List<Cristal> cristals = new ArrayList<>();
-
+        List<Cristal> cristals = new ArrayList<>(pickaxeCristals.size());
         for (Map.Entry<String, String> entry : pickaxeCristals.entrySet()) {
+            String value = entry.getValue();
+            int comma = value.indexOf(',');
+            if (comma <= 0 || comma >= value.length() - 1) {
+                continue;
+            }
             try {
-                String[] parts = entry.getValue().split(",");
-                if (parts.length == 2) {
-                    String uuid = entry.getKey();
-                    int niveau = Integer.parseInt(parts[0]);
-                    CristalType type = CristalType.valueOf(parts[1]);
-
-                    cristals.add(new Cristal(uuid, niveau, type, false));
-                }
+                String uuid = entry.getKey();
+                int niveau = Integer.parseInt(value.substring(0, comma));
+                CristalType type = CristalType.valueOf(value.substring(comma + 1));
+                cristals.add(new Cristal(uuid, niveau, type, false));
             } catch (Exception e) {
-                plugin.getPluginLogger().warning("Erreur de parsing cristal: " + entry.getValue());
+                plugin.getPluginLogger().warning("Erreur de parsing cristal: " + value);
             }
         }
 
-        return cristals;
+        cristalsCache.put(pid, new CachedCristals(cristals, now));
+        return new ArrayList<>(cristals);
     }
 
     /**

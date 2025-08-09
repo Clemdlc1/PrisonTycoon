@@ -66,7 +66,7 @@ public class PickaxeManager {
         ItemMeta meta = pickaxe.getItemMeta();
 
         // Nom et protection
-        meta.setDisplayName("§6✨ Pioche Légendaire ✨");
+        plugin.getGUIManager().applyName(meta,"§6✨ Pioche Légendaire ✨");
         meta.getPersistentDataContainer().set(legendaryPickaxeKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(pickaxeOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
 

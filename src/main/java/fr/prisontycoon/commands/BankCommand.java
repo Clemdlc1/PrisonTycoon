@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -43,7 +44,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§c❌ Cette commande ne peut être exécutée que par un joueur!");
             return true;
@@ -135,7 +136,6 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             case "sell" -> handleInvestSell(player, args);
             default -> {
                 player.sendMessage("§c❌ Usage: /bank invest [info|buy|sell]");
-                return;
             }
         }
     }
@@ -572,7 +572,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
@@ -596,20 +596,20 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                 }
             }
         } else if (args.length == 3) {
-            if ("invest".equals(args[0].toLowerCase())) {
-                if ("info".equals(args[1].toLowerCase()) || "buy".equals(args[1].toLowerCase()) || "sell".equals(args[1].toLowerCase())) {
+            if ("invest".equalsIgnoreCase(args[0])) {
+                if ("info".equalsIgnoreCase(args[1]) || "buy".equalsIgnoreCase(args[1]) || "sell".equalsIgnoreCase(args[1])) {
                     StringUtil.copyPartialMatches(args[2], INVESTMENT_MATERIALS, completions);
                 }
             }
         } else if (args.length == 4) {
-            if ("invest".equals(args[0].toLowerCase()) && ("buy".equals(args[1].toLowerCase()) || "sell".equals(args[1].toLowerCase()))) {
-                if ("sell".equals(args[1].toLowerCase())) {
-                    List<String> quantities = Arrays.asList("1", "5", "10", "25", "50", "100", "all");
-                    StringUtil.copyPartialMatches(args[3], quantities, completions);
+            if ("invest".equalsIgnoreCase(args[0]) && ("buy".equalsIgnoreCase(args[1]) || "sell".equalsIgnoreCase(args[1]))) {
+                List<String> quantities;
+                if ("sell".equalsIgnoreCase(args[1])) {
+                    quantities = Arrays.asList("1", "5", "10", "25", "50", "100", "all");
                 } else {
-                    List<String> quantities = Arrays.asList("1", "5", "10", "25", "50", "100", "1k", "10k");
-                    StringUtil.copyPartialMatches(args[3], quantities, completions);
+                    quantities = Arrays.asList("1", "5", "10", "25", "50", "100", "1k", "10k");
                 }
+                StringUtil.copyPartialMatches(args[3], quantities, completions);
             }
         } else if (args.length == 5) {
             if ("invest".equalsIgnoreCase(args[0]) && "buy".equalsIgnoreCase(args[1])) {

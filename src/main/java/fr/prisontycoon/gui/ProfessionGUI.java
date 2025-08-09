@@ -635,7 +635,7 @@ public class ProfessionGUI {
     }
 
     public void openChooseProfessionMenu(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§e⚒ §lChoisir un Métier §e⚒");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§e⚒ §lChoisir un Métier §e⚒");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
         fillWithGlass(gui);
@@ -656,7 +656,7 @@ public class ProfessionGUI {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String currentProfession = playerData.getActiveProfession();
 
-        Inventory gui = Bukkit.createInventory(null, 27, "§c🔄 §lChanger de Métier §c🔄");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§c🔄 §lChanger de Métier §c🔄");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
         fillWithGlass(gui);

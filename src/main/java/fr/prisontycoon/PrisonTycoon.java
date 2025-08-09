@@ -72,6 +72,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private CristalManager cristalManager;
     private CristalBonusHelper cristalBonusHelper;
     private HeadCollectionManager headCollectionManager;
+    private MineOverloadManager mineOverloadManager;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -86,6 +87,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private CrateGUI crateGUI;
     private CristalGUI cristalGUI;
     private EnchantmentBookGUI enchantmentBookGUI;
+    private BookShopGUI bookShopGUI;
     private EnchantmentMenu mainMenuGUI;
     private MainMenuGUI mainNavigationGUI;
     private EnchantmentUpgradeGUI enchantmentUpgradeGUI;
@@ -208,6 +210,7 @@ public final class PrisonTycoon extends JavaPlugin {
         // L'ordre est important pour les dépendances
         databaseManager = new DatabaseManager(this);
         playerDataManager = new PlayerDataManager(this);
+        guiManager = new GUIManager(this);
         economyManager = new EconomyManager(this);
         enchantmentManager = new EnchantmentManager(this);
         pickaxeManager = new PickaxeManager(this);
@@ -239,7 +242,7 @@ public final class PrisonTycoon extends JavaPlugin {
         outpostManager = new OutpostManager(this);
         warpManager = new WarpManager(this);
         headCollectionManager = new HeadCollectionManager(this);
-        guiManager = new GUIManager(this);
+        mineOverloadManager = new MineOverloadManager(this);
 
         logger.info("§aTous les managers ont été initialisés.");
     }
@@ -253,6 +256,7 @@ public final class PrisonTycoon extends JavaPlugin {
         enchantmentUpgradeGUI = new EnchantmentUpgradeGUI(this);
         cristalGUI = new CristalGUI(this);
         enchantmentBookGUI = new EnchantmentBookGUI(this);
+        bookShopGUI = new BookShopGUI(this);
         petsMenuGUI = new PetsMenuGUI(this);
         pickaxeRepairGUI = new PickaxeRepairGUI(this);
         containerGUI = new ContainerGUI(this);
@@ -467,6 +471,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public NotificationManager getNotificationManager() { return notificationManager; }
     public ContainerManager getContainerManager() { return containerManager; }
     public GlobalBonusManager getGlobalBonusManager() { return globalBonusManager; }
+    public MineOverloadManager getMineOverloadManager() { return mineOverloadManager; }
     public TabManager getTabManager() { return tabManager; }
     public ModerationManager getModerationManager() { return moderationManager; }
     public VipManager getVipManager() { return vipManager; }
@@ -503,6 +508,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public CategoryMenuGUI getCategoryMenuGUI() { return categoryMenuGUI; }
     public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
     public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
+    public BookShopGUI getBookShopGUI() { return bookShopGUI; }
     public PetsMenuGUI getPetsMenuGUI() { return petsMenuGUI; }
     public PickaxeRepairGUI getPickaxeRepairMenu() { return pickaxeRepairGUI; }
     public ContainerGUI getContainerGUI() { return containerGUI; }

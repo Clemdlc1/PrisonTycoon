@@ -129,7 +129,7 @@ public class EnchantmentMenu {
                 lore.add("§7▸ §6Tokens, Coins, Expérience bonus via Greeds");
                 lore.add("§7▸ §6Multiplicateurs temporaires (Combustion)");
                 lore.add("§7▸ §6Effets d'abondance (x2 gains temporaire)");
-                lore.add("§7▸ §6Bonus de vente permanent (Sell Greed)"); // NOUVEAU
+                lore.add("§7▸ §6Bonus de vente permanent (Sell Greed)");
                 lore.add("§7▸ §6Expérience pour pets (Pet XP)");
             }
             case UTILITY -> {
@@ -159,9 +159,10 @@ public class EnchantmentMenu {
                 lore.add("§e✨ §lEffets principaux:");
                 lore.add("§7▸ §dExplosions de minage destructrices");
                 lore.add("§7▸ §dLaser destructeur en ligne droite");
-                lore.add("§7▸ §dCouches entières détruites (Jackhammer)"); // NOUVEAU
-                lore.add("§7▸ §dClés de coffres rares (Key Greed)"); // DÉPLACÉ
+                lore.add("§7▸ §dCouches entières détruites (Jackhammer)");
+                lore.add("§7▸ §dClés de coffres rares (Key Greed)");
                 lore.add("§7▸ §dAugmentation globale de chance (Luck)");
+                lore.add("§7▸ §6Jackpot, Héritage, Cohésion, Fièvre d'opportunité");
             }
         }
 

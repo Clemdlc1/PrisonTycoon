@@ -10,6 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +32,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
             return true;
@@ -53,7 +54,6 @@ public class MineCommand implements CommandExecutor, TabCompleter {
             case "stats", "statistics", "statistiques" -> handleStatsCommand(player);
             case "search", "find", "chercher" -> handleSearchCommand(player, args);
             case "current", "actuel" -> handleCurrentCommand(player);
-            case "help", "aide" -> sendHelpMessage(player);
             default -> sendHelpMessage(player);
         }
 
@@ -292,15 +292,15 @@ public class MineCommand implements CommandExecutor, TabCompleter {
         // Grouper par type
         List<MineData> normalAccessible = accessibleMines.stream()
                 .filter(m -> m.getType() == MineData.MineType.NORMAL)
-                .collect(Collectors.toList());
+                .toList();
 
         List<MineData> prestigeAccessible = accessibleMines.stream()
                 .filter(m -> m.getType() == MineData.MineType.PRESTIGE)
-                .collect(Collectors.toList());
+                .toList();
 
         List<MineData> vipAccessible = accessibleMines.stream()
                 .filter(m -> m.getType() == MineData.MineType.VIP)
-                .collect(Collectors.toList());
+                .toList();
 
         if (!normalAccessible.isEmpty()) {
             player.sendMessage("§f📍 Mines normales:");
@@ -544,7 +544,7 @@ public class MineCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {

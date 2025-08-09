@@ -9,11 +9,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Commande pour gérer les joueurs VIP
@@ -28,7 +26,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         // Vérification des permissions pour les sous-commandes admin
         if (args.length > 0 && (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("remove") || args[0].equalsIgnoreCase("list"))) {
             if (!sender.hasPermission("specialmine.admin.vip")) {
@@ -92,7 +90,6 @@ public class VipCommand implements CommandExecutor, TabCompleter {
 
         String playerName = args[1];
 
-        // CORRIGÉ 2: Obtenir l'objet Player de la cible (doit être en ligne)
         Player target = Bukkit.getPlayer(playerName);
 
         // Si getPlayer renvoie null, le joueur n'est pas en ligne.
@@ -109,8 +106,6 @@ public class VipCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // CORRIGÉ 3: Appel de la méthode addVip avec les bons types (Player, Player)
-        // En supposant que la signature attendue est : addVip(Player target, Player addedBy)
         plugin.getVipManager().addVip(target.getUniqueId(), target, addedByPlayer);
 
         // Messages de succès
@@ -119,6 +114,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
 
         if (target.isOnline()) {
             Player onlineTarget = target.getPlayer();
+            assert onlineTarget != null;
             onlineTarget.sendMessage("§e🌟 Félicitations ! Vous êtes maintenant VIP!");
             onlineTarget.sendMessage("§7Vous pouvez maintenant:");
             onlineTarget.sendMessage("§e• Utiliser les couleurs dans le chat (&c, &e, etc.)");
@@ -171,6 +167,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
 
         if (target.isOnline()) {
             Player onlineTarget = target.getPlayer();
+            assert onlineTarget != null;
             onlineTarget.sendMessage("§c❌ Votre grade VIP vous a été retiré.");
 
             // Force la synchronisation immédiate pour le joueur en ligne
@@ -244,13 +241,13 @@ public class VipCommand implements CommandExecutor, TabCompleter {
         String playerName = args[1];
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
 
-        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
             sender.sendMessage("§c❌ Joueur introuvable: " + playerName);
             return;
         }
 
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        sender.sendMessage("§6§l🔍 STATUT VIP DÉTAILLÉ - " + target.getName().toUpperCase());
+        sender.sendMessage("§6§l🔍 STATUT VIP DÉTAILLÉ - " + Objects.requireNonNull(target.getName()).toUpperCase());
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
         String statusDetails = plugin.getVipManager().getVipStatusDetailed(target.getUniqueId());
@@ -258,6 +255,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
 
         if (target.isOnline()) {
             Player onlineTarget = target.getPlayer();
+            assert onlineTarget != null;
             boolean isConsistent = plugin.getVipManager().checkVipConsistency(onlineTarget);
 
             sender.sendMessage("§7Cohérence: " + (isConsistent ? "§a✅ OK" : "§c❌ PROBLÈME"));
@@ -377,7 +375,7 @@ public class VipCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (!sender.hasPermission("specialmine.admin.vip")) {

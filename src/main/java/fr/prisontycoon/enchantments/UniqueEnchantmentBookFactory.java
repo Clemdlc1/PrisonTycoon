@@ -38,7 +38,7 @@ public class UniqueEnchantmentBookFactory {
 
         // Titre avec couleur selon le type
         String typeColor = getEnchantmentColor(enchantId);
-        meta.setDisplayName(typeColor + "⚡ §l" + enchant.getName());
+        plugin.getGUIManager().applyName(meta,typeColor + "⚡ §l" + enchant.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -92,6 +92,8 @@ public class UniqueEnchantmentBookFactory {
             case "repercussion" -> "Explosion vengeresse";
             case "behead" -> "Décapitation brutale";
             case "chasseur" -> "Bonus contre les joueurs";
+            case "bete_traquee" -> "Augmente fortement vos dégâts contre les entités non joueurs (PvE)";
+            case "cuirasse_bestiale" -> "Après avoir touché une entité non joueur, réduis brièvement les dégâts subis (PvE)";
             default -> "Effet mystérieux";
         };
     }
@@ -113,7 +115,7 @@ public class UniqueEnchantmentBookFactory {
 
         // Titre avec couleur selon le type
         String typeColor = getEnchantmentColor(enchantId);
-        meta.setDisplayName(typeColor + "⚡ §l" + enchant.getName());
+        plugin.getGUIManager().applyName(meta,typeColor + "⚡ §l" + enchant.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -165,6 +167,8 @@ public class UniqueEnchantmentBookFactory {
             case "repercussion":
             case "behead":
             case "chasseur":
+            case "bete_traquee":
+            case "cuirasse_bestiale":
                 lore.add("§c⚔ §lCompatible: §7Épées uniquement");
                 break;
             default:
@@ -195,6 +199,8 @@ public class UniqueEnchantmentBookFactory {
             case "repercussion" -> Material.DIAMOND_SWORD;
             case "behead" -> Material.IRON_SWORD;
             case "chasseur" -> Material.GOLDEN_SWORD;
+            case "bete_traquee" -> Material.DAMAGED_ANVIL; // marqueur offensif PvE
+            case "cuirasse_bestiale" -> Material.NETHERITE_SWORD; // désormais épée
             default -> Material.ENCHANTED_BOOK;
         };
     }
@@ -205,7 +211,7 @@ public class UniqueEnchantmentBookFactory {
     private String getMaxBooksPerItem(String enchantId) {
         return switch (enchantId) {
             case "tonnerre", "incassable" -> "1"; // Livres universels : 1 seul par item
-            default -> "1-2"; // Épées peuvent avoir 2 enchantements uniques
+            default -> "1-3"; // Épées peuvent avoir jusqu'à 3 enchantements uniques maintenant
         };
     }
 

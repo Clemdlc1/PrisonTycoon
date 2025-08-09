@@ -9,6 +9,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!sender.hasPermission("specialmine.admin")) {
             sender.sendMessage("§c❌ Vous n'avez pas la permission d'utiliser cette commande!");
             return true;
@@ -91,13 +92,13 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
 
         // Cherche le joueur (en ligne ou hors ligne)
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
-        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
             sender.sendMessage("§c❌ Joueur introuvable: " + playerName);
             return;
         }
 
         // Vérifie si c'est un admin
-        if (target.isOnline() && target.getPlayer().hasPermission("specialmine.admin")) {
+        if (target.isOnline() && plugin.getPermissionManager().hasPermission(target.getPlayer(),"specialmine.admin")) {
             sender.sendMessage("§c❌ Vous ne pouvez pas muter un administrateur!");
             return;
         }
@@ -139,7 +140,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         String playerName = args[1];
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
 
-        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
             sender.sendMessage("§c❌ Joueur introuvable: " + playerName);
             return;
         }
@@ -198,13 +199,13 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
 
         // Cherche le joueur
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
-        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
             sender.sendMessage("§c❌ Joueur introuvable: " + playerName);
             return;
         }
 
         // Vérifie si c'est un admin
-        if (target.isOnline() && target.getPlayer().hasPermission("specialmine.admin")) {
+        if (target.isOnline() && plugin.getPermissionManager().hasPermission(target.getPlayer(), "specialmine.admin")) {
             sender.sendMessage("§c❌ Vous ne pouvez pas bannir un administrateur!");
             return;
         }
@@ -248,7 +249,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         String playerName = args[1];
         OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
 
-        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
             sender.sendMessage("§c❌ Joueur introuvable: " + playerName);
             return;
         }
@@ -451,7 +452,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {

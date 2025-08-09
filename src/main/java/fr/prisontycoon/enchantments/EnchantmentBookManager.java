@@ -25,6 +25,8 @@ public class EnchantmentBookManager {
     private final PrisonTycoon plugin;
     private final Map<String, EnchantmentBook> enchantmentBooks;
     private final Map<UUID, Set<String>> activeEnchantments; // Joueur -> enchants actifs
+    // Cache: bloc de plus grande valeur par mine (composition statique)
+    private final Map<String, Material> highestValueCache = new HashMap<>();
 
     public EnchantmentBookManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -169,7 +171,7 @@ public class EnchantmentBookManager {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName("§5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
+        plugin.getGUIManager().applyName(meta,"§5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -266,7 +268,11 @@ public class EnchantmentBookManager {
      */
     public void processMiningEnchantments(Player player, Location location) {
         Set<String> activeEnchants = getActiveEnchantments(player);
+        if (activeEnchants == null || activeEnchants.isEmpty()) {
+            return;
+        }
 
+        // Itération simple sans streams ni copies
         for (String bookId : activeEnchants) {
             EnchantmentBook book = enchantmentBooks.get(bookId);
             if (book != null) {
@@ -337,6 +343,10 @@ public class EnchantmentBookManager {
      * NOUVEAU : Obtient le bloc de plus haute valeur dans la mine
      */
     public Material getHighestValueBlockInMine(String mineName) {
+        // Cache rapide (composition des mines rarement modifiée en runtime)
+        Material cached = highestValueCache.get(mineName);
+        if (cached != null) return cached;
+
         ConfigManager configManager = plugin.getConfigManager();
         MineData mineData = configManager.getMineData(mineName);
 
@@ -363,7 +373,9 @@ public class EnchantmentBookManager {
             }
         }
 
-        return highestValueBlock != null ? highestValueBlock : Material.STONE; // Sécurité
+        Material result = highestValueBlock != null ? highestValueBlock : Material.STONE;
+        highestValueCache.put(mineName, result);
+        return result; // Sécurité
     }
 
     public void clearActiveEnchantments(UUID playerId) {
@@ -917,7 +929,7 @@ public class EnchantmentBookManager {
 
         private void triggerVeinMining(Player player, Location start, PrisonTycoon plugin) {
             Material targetMaterial = start.getBlock().getType();
-            Set<Location> vein = findConnectedBlocks(start, targetMaterial, 100);
+            Set<Location> vein = findConnectedBlocks(start, targetMaterial);
 
             new BukkitRunnable() {
                 final Iterator<Location> iterator = vein.iterator();
@@ -944,7 +956,7 @@ public class EnchantmentBookManager {
             }.runTaskTimer(plugin, 0, 1);
         }
 
-        private Set<Location> findConnectedBlocks(Location start, Material material, int maxBlocks) {
+        private Set<Location> findConnectedBlocks(Location start, Material material) {
             Set<Location> found = new HashSet<>();
             Queue<Location> toCheck = new LinkedList<>();
             toCheck.add(start);
@@ -952,7 +964,7 @@ public class EnchantmentBookManager {
 
             int[] offsets = {-1, 0, 1};
 
-            while (!toCheck.isEmpty() && found.size() < maxBlocks) {
+            while (!toCheck.isEmpty() && found.size() < 100) {
                 Location current = toCheck.poll();
 
                 for (int x : offsets) {
@@ -965,12 +977,12 @@ public class EnchantmentBookManager {
                                 found.add(neighbor);
                                 toCheck.add(neighbor);
 
-                                if (found.size() >= maxBlocks) break;
+                                if (found.size() >= 100) break;
                             }
                         }
-                        if (found.size() >= maxBlocks) break;
+                        if (found.size() >= 100) break;
                     }
-                    if (found.size() >= maxBlocks) break;
+                    if (found.size() >= 100) break;
                 }
             }
             return found;

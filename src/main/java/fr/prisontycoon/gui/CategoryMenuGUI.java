@@ -51,7 +51,7 @@ public class CategoryMenuGUI {
         int[] slots;
 
         if (category == EnchantmentCategory.UTILITY) {
-            slots = new int[]{11, 13, 15};
+            slots = new int[]{11,12, 13,14, 15};
         } else {
             slots = new int[]{10, 11, 12, 13, 14, 15, 16};
         }
@@ -335,8 +335,31 @@ public class CategoryMenuGUI {
                 lore.add("§7▸ §dRayon: " + " blocs");
                 lore.add("§7▸ §dSusceptible à Echo (plusieurs couches)");
             }
+            case "jackpot" -> {
+                double chance = level * 0.0001; // ex: 0.01% par 100 niveaux
+                lore.add("§7▸ §e" + String.format("%.4f%%", chance) + " chance de voucher aléatoire");
+                lore.add("§7▸ §7Augmente avec le niveau");
+            }
+            case "cohesion" -> {
+                double mult = 1.0 + Math.min(2.0, (level / 10000.0) * 0.5); // +50% max via cohesion
+                lore.add("§7▸ §aMultiplicateur Greed: §ex" + String.format("%.2f", mult));
+                lore.add("§7▸ §7Dépend du nombre de joueurs dans la mine");
+            }
+            case "heritage" -> {
+                double chance = Math.min(50.0, level * 0.05); // 0.05%/niv, cap 50%
+                lore.add("§7▸ §e" + String.format("%.2f%%", chance) + " chance de copier un Greed voisin");
+                lore.add("§7▸ §7Anti-boucle inclus");
+            }
+            case "opportunity_fever" -> {
+                double chance = Math.min(25.0, level * 0.01); // 0.01%/niv, cap 25%
+                lore.add("§7▸ §e" + String.format("%.2f%%", chance) + " de Fièvre 10s (bloc cible garanti)");
+            }
+            case "planneur" -> {
+                lore.add("§7▸ §bChute lente en l'air (sneak pour annuler)");
+                lore.add("§7▸ §7Niv.2: rayon d'activation plus permissif");
+            }
             default -> lore.add("§7▸ §7Effet de niveau " + level + " actif");
-        }
+        }            
     }
 
     /**

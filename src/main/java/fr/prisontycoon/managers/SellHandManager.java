@@ -56,7 +56,7 @@ public class SellHandManager {
         meta.getPersistentDataContainer().set(sellHandDurabilityKey, PersistentDataType.INTEGER, type.getMaxDurability());
 
         // Apparence
-        meta.setDisplayName(type.getDisplayName());
+        plugin.getGUIManager().applyName(meta,type.getDisplayName());
         updateSellHandLore(meta, type, type.getMaxDurability());
 
         // Enchantement pour l'effet visuel

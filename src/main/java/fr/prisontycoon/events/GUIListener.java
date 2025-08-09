@@ -131,7 +131,7 @@ public class GUIListener implements Listener {
             case ENCHANTMENT_BOOK ->
                     plugin.getEnchantmentBookGUI().handleEnchantmentBookMenuClick(player, slot, item, clickType);
 
-            case BOOK_SHOP -> plugin.getEnchantmentBookGUI().handleBookShopClick(player, slot, item);
+            case BOOK_SHOP_SELECTOR, BOOK_SHOP_PICKAXE, BOOK_SHOP_WEAPON_ARMOR -> plugin.getBookShopGUI().handleClick(player, guiType, slot, item);
 
             case PETS_MENU -> plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
 

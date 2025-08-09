@@ -586,6 +586,36 @@ public class ConfigManager {
         return (T) config.get(path, def);
     }
 
+    // ==================== OVERLOAD (Surcharge de mine) ====================
+
+    public double[] getOverloadThresholds() {
+        java.util.List<Double> list = (java.util.List<Double>) config.getList("overload.thresholds",
+                java.util.Arrays.asList(0.0, 0.20, 0.40, 0.60, 0.80, 1.00));
+        double[] arr = new double[list.size()];
+        for (int i = 0; i < list.size(); i++) arr[i] = list.get(i);
+        return arr;
+    }
+
+    public double[] getOverloadMultipliers() {
+        java.util.List<Double> list = (java.util.List<Double>) config.getList("overload.multipliers",
+                java.util.Arrays.asList(1.00, 1.10, 1.25, 1.50, 1.75, 2.00));
+        double[] arr = new double[list.size()];
+        for (int i = 0; i < list.size(); i++) arr[i] = list.get(i);
+        return arr;
+    }
+
+    public double getOverloadDecayPerSecond() {
+        return config.getDouble("overload.decay-per-second", 0.02);
+    }
+
+    public long getOverloadActiveWindowMs() {
+        return config.getLong("overload.active-window-ms", 3000L);
+    }
+
+    public int getOverloadHologramRefreshTicks() {
+        return config.getInt("overload.hologram-refresh-ticks", 100);
+    }
+
     /**
      * Recharge la configuration depuis le fichier
      */

@@ -425,11 +425,11 @@ public class BlackMarketManager {
             return;
         }
         checkRandomEvents(player);
-        Inventory gui = Bukkit.createInventory(null, 54, "§8§l⚫ MARCHÉ NOIR ⚫");
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§8§l⚫ MARCHÉ NOIR ⚫");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.BLACK_MARKET, gui);
         ItemStack blackPane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta paneMeta = blackPane.getItemMeta();
-        paneMeta.setDisplayName(" ");
+        plugin.getGUIManager().applyName(paneMeta,"");
         blackPane.setItemMeta(paneMeta);
         for (int i = 0; i < 54; i++) {
             gui.setItem(i, blackPane);
@@ -470,7 +470,7 @@ public class BlackMarketManager {
                 meta.setLore(lore);
                 if (alreadyPurchased) {
                     displayItem.setType(Material.BARRIER);
-                    meta.setDisplayName("§c§l" + (meta.getDisplayName() != null ? meta.getDisplayName() : item.getType().name()) + " §7(Déjà acheté)");
+                    plugin.getGUIManager().applyName(meta,"§c§l" + (meta.getDisplayName() != null ? meta.getDisplayName() : item.getType().name()) + " §7(Déjà acheté)");
                 }
                 displayItem.setItemMeta(meta);
             }
@@ -482,7 +482,7 @@ public class BlackMarketManager {
     private void setupBlackMarketButtons(Inventory gui, Player player) {
         ItemStack infoItem = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = infoItem.getItemMeta();
-        infoMeta.setDisplayName("§e§lINFORMATIONS");
+        plugin.getGUIManager().applyName(infoMeta,"§e§lINFORMATIONS");
         infoMeta.setLore(Arrays.asList(
                 "§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                 "§8⚫ Marché Noir ⚫",
@@ -497,7 +497,7 @@ public class BlackMarketManager {
         gui.setItem(49, infoItem);
         ItemStack closeItem = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = closeItem.getItemMeta();
-        closeMeta.setDisplayName("§c§lFERMER");
+        plugin.getGUIManager().applyName(closeMeta,"§c§lFERMER");
         closeItem.setItemMeta(closeMeta);
         gui.setItem(53, closeItem);
     }
@@ -606,7 +606,7 @@ public class BlackMarketManager {
             } else {
                 ItemStack scamItem = new ItemStack(Material.ROTTEN_FLESH);
                 ItemMeta scamMeta = scamItem.getItemMeta();
-                scamMeta.setDisplayName("§c§lArticle Défectueux");
+                plugin.getGUIManager().applyName(scamMeta,"§c§lArticle Défectueux");
                 scamMeta.setLore(Arrays.asList("§7Vous vous êtes fait arnaquer...", "§cLa prochaine fois, soyez plus prudent!"));
                 scamItem.setItemMeta(scamMeta);
                 if (player.getInventory().firstEmpty() == -1) {

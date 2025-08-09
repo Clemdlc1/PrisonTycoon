@@ -253,7 +253,7 @@ public class PrestigeRewardManager {
         ItemStack armor = new ItemStack(material);
         ItemMeta meta = armor.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§6Armure de Prestige P" + prestigeLevel);
+            plugin.getGUIManager().applyName(meta,"§6Armure de Prestige P" + prestigeLevel);
             List<String> lore = new ArrayList<>();
             lore.add("§7Armure légendaire de prestige");
             lore.add("§6Niveau: P" + prestigeLevel);
@@ -274,7 +274,7 @@ public class PrestigeRewardManager {
         ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
         ItemMeta meta = sword.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§6Épée de Prestige P" + prestigeLevel);
+            plugin.getGUIManager().applyName(meta,"§6Épée de Prestige P" + prestigeLevel);
             List<String> lore = new ArrayList<>();
             lore.add("§7Épée légendaire de prestige");
             lore.add("§6Niveau: P" + prestigeLevel);

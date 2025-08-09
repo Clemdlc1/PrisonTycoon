@@ -1265,20 +1265,18 @@ database:
     name: "prisontycoon"
     user: "user"
     password: "password"
-
+    
 # ========================================
-#           HOOKS ET API
+#        SURCHARGE DE MINE (OVERLOAD)
 # ========================================
 
-hooks:
-  # PlaceholderAPI (futur)
-  placeholderapi: false
+overload:
+  thresholds: [0.0, 0.20, 0.40, 0.60, 0.80, 1.00]
+  multipliers: [1.00, 1.10, 1.25, 1.50, 1.75, 2.00]
+  decay-per-second: 0.05
+  active-window-ms: 3000
+  hologram-refresh-ticks: 100
 
-  # Vault (futur)
-  vault: false
-
-  # WorldGuard (futur)
-  worldguard: false
 
 # ========================================
 #        FONCTIONNALITÉS AVANCÉES

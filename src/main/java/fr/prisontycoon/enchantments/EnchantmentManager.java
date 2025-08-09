@@ -4,6 +4,7 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.BlockValueData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
+import fr.prisontycoon.vouchers.VoucherType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -41,17 +42,17 @@ public class EnchantmentManager {
         registerEnchantment(new TokenGreedEnchantment());
         registerEnchantment(new ExpGreedEnchantment());
         registerEnchantment(new MoneyGreedEnchantment());
-        // MODIFIÉ : KeyGreed retiré d'ici et déplacé dans SPECIAL
         registerEnchantment(new AbondanceEnchantment());
         registerEnchantment(new CombustionEnchantment());
         registerEnchantment(new PetXpEnchantment());
-        // NOUVEAU : SellGreed ajouté dans ECONOMIC
         registerEnchantment(new SellGreedEnchantment());
 
         // CATÉGORIE UTILITÉS
         registerEnchantment(new EfficiencyEnchantment());
         registerEnchantment(new FortuneEnchantment());
         registerEnchantment(new DurabilityEnchantment());
+        registerEnchantment(new JackpotEnchantment());
+        registerEnchantment(new CohesionEnchantment());
 
         // CATÉGORIE MOBILITÉ
         registerEnchantment(new NightVisionEnchantment());
@@ -59,15 +60,16 @@ public class EnchantmentManager {
         registerEnchantment(new HasteEnchantment());
         registerEnchantment(new JumpBoostEnchantment());
         registerEnchantment(new EscalatorEnchantment());
+        registerEnchantment(new PlanneurEnchantment());
 
         // CATÉGORIE SPÉCIAUX
         registerEnchantment(new LuckEnchantment());
         registerEnchantment(new LaserEnchantment());
         registerEnchantment(new ExplosionEnchantment());
-        // MODIFIÉ : KeyGreed déplacé ici depuis ECONOMIC
         registerEnchantment(new KeyGreedEnchantment());
-        // NOUVEAU : Jackhammer ajouté dans SPECIAL
         registerEnchantment(new JackhammerEnchantment());
+        registerEnchantment(new HeritageEnchantment());
+        registerEnchantment(new OpportunityFeverEnchantment());
     }
 
     /**
@@ -86,7 +88,57 @@ public class EnchantmentManager {
         // Ajoute aux statistiques de minage
         playerData.addMinedBlock(blockType);
 
-        processGreedEnchantments(player, playerData, blockType, true);
+        // NOUVEAU : Jackpot — chance d'obtenir un voucher aléatoire en minant
+        int jackpotLevel = playerData.getEnchantmentLevel("jackpot");
+        if (jackpotLevel > 0) {
+            double jChance = plugin.getConfigManager().getEnchantmentSetting("special.jackpot.base-chance", 0.0002) * jackpotLevel;
+            if (ThreadLocalRandom.current().nextDouble() < jChance) {
+                // Choix du type et du tier
+                VoucherType[] types = VoucherType.values();
+                VoucherType chosen = types[ThreadLocalRandom.current().nextInt(types.length)];
+                int tier = Math.min(10, Math.max(1, 1 + jackpotLevel / 10));
+                var item = plugin.getVoucherManager().createVoucher(chosen, tier);
+                boolean added = plugin.getContainerManager().addItemToContainers(player, item);
+                if (!added) {
+                    player.getInventory().addItem(item);
+                }
+                player.sendMessage("§6🎁 Jackpot! §eVous recevez un " + chosen.getItemName() + " §7Tier §6" + tier);
+            }
+        }
+
+        // NOUVEAU : Fièvre de l'Opportunité — si active et bloc ciblé, forcer un greed
+        if (player.hasMetadata("opportunity_fever_until")) {
+            long until = player.getMetadata("opportunity_fever_until").getFirst().asLong();
+            if (System.currentTimeMillis() > until) {
+                player.removeMetadata("opportunity_fever_until", plugin);
+                player.removeMetadata("opportunity_fever_block", plugin);
+            } else {
+                String targetName = player.hasMetadata("opportunity_fever_block") ? player.getMetadata("opportunity_fever_block").getFirst().asString() : null;
+                if (blockType.name().equalsIgnoreCase(targetName)) {
+                    // Force un greed aléatoire (hors keygreed)
+                    int r = ThreadLocalRandom.current().nextInt(3);
+                    int lvl = switch (r) {
+                        case 0 -> playerData.getEnchantmentLevel("token_greed");
+                        case 1 -> playerData.getEnchantmentLevel("money_greed");
+                        default -> playerData.getEnchantmentLevel("exp_greed");
+                    };
+                    if (lvl > 0) {
+                        // Chance garantie => on appelle directement les traitements avec probas=1
+                        final double cm = 1.0, am = 1.0;
+                        BlockValueData bv = plugin.getConfigManager().getBlockValue(blockType);
+                        if (r == 0) {
+                            processTokenGreed(player, playerData, bv, lvl, 1.0, cm, am, false);
+                        } else if (r == 1) {
+                            processMoneyGreed(player, playerData, bv, lvl, 1.0, cm, am);
+                        } else {
+                            processExpGreed(player, playerData, bv, lvl, 1.0, cm, am);
+                        }
+                    }
+                }
+            }
+        }
+
+        processGreedEnchantments(player, playerData, blockType);
 
         if (isPlayerPickaxeBroken(player)) {
             addBlocksToInventory(player, blockType, 1, blockLocation);
@@ -125,6 +177,7 @@ public class EnchantmentManager {
         int laserLevel = playerData.getEnchantmentLevel("laser");
         int explosionLevel = playerData.getEnchantmentLevel("explosion");
         int jackhammerLevel = playerData.getEnchantmentLevel("jackhammer"); // CORRIGÉ : était "explosion"
+        int feverLevel = playerData.getEnchantmentLevel("opportunity_fever");
 
         // Laser
         if (laserLevel > 0) {
@@ -149,6 +202,22 @@ public class EnchantmentManager {
                 activateJackhammer(player, blockLocation, mineName, false);
             }
         }
+
+        // NOUVEAU : Fièvre de l'Opportunité — fenêtre où un type de bloc déclenche systématiquement un greed
+        if (feverLevel > 0 && !player.hasMetadata("opportunity_fever_until")) {
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.opportunity_fever.base-chance", 0.0005) * feverLevel;
+            if (ThreadLocalRandom.current().nextDouble() < chance) {
+                long until = System.currentTimeMillis() + 10_000L; // 10s
+                player.setMetadata("opportunity_fever_until", new FixedMetadataValue(plugin, until));
+                // Choisit le bloc ciblé (sauf BEACON)
+                Material target = blockLocation.getBlock().getType();
+                if (target == Material.BEACON) {
+                    target = Material.STONE;
+                }
+                player.setMetadata("opportunity_fever_block", new FixedMetadataValue(plugin, target.name()));
+                player.sendMessage("§6🔥 Fièvre de l'Opportunité! §e10s de greeds garantis sur §f" + target.name());
+            }
+        }
     }
 
     /**
@@ -157,66 +226,43 @@ public class EnchantmentManager {
     private int activateJackhammer(Player player, Location center, String mineName, boolean isEcho) {
         var mineData = plugin.getConfigManager().getMineData(mineName);
         if (mineData == null) return 0;
+        var world = center.getWorld();
+        if (world == null || !world.getName().equals(mineData.getWorldName())) return 0;
 
         // Choisir aléatoirement entre couche horizontale ou verticale
         boolean isHorizontal = ThreadLocalRandom.current().nextBoolean();
 
         int blocksDestroyed = 0;
 
+        // Prépare une Location réutilisable pour éviter des allocations massives
+        Location loc = new Location(world, 0, 0, 0);
+
         if (isHorizontal) {
-            // Couche horizontale (même Y) - casse jusqu'aux limites de la mine
-            int y = center.getBlockY();
+            // Couche horizontale (même Y) - utilise directement les bornes de la mine
+            final int y = Math.max(mineData.getMinY(), Math.min(center.getBlockY(), mineData.getMaxY()));
+            final int minX = mineData.getMinX();
+            final int maxX = mineData.getMaxX();
+            final int minZ = mineData.getMinZ();
+            final int maxZ = mineData.getMaxZ();
 
-            // Détermine les limites de la mine
-            int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
-            int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
-
-            // Trouve les limites en testant progressivement
-            for (int x = center.getBlockX(); x >= center.getBlockX() - 1000; x--) {
-                Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
-                if (!mineData.contains(testLoc)) {
-                    minX = x + 1;
-                    break;
-                }
-            }
-            for (int x = center.getBlockX(); x <= center.getBlockX() + 1000; x++) {
-                Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
-                if (!mineData.contains(testLoc)) {
-                    maxX = x - 1;
-                    break;
-                }
-            }
-            for (int z = center.getBlockZ(); z >= center.getBlockZ() - 1000; z--) {
-                Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
-                if (!mineData.contains(testLoc)) {
-                    minZ = z + 1;
-                    break;
-                }
-            }
-            for (int z = center.getBlockZ(); z <= center.getBlockZ() + 1000; z++) {
-                Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
-                if (!mineData.contains(testLoc)) {
-                    maxZ = z - 1;
-                    break;
-                }
-            }
-
-            // Casse toute la couche horizontale
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    Location loc = new Location(center.getWorld(), x, y, z);
-                    if (mineData.contains(loc)) {
-                        Material blockType = loc.getBlock().getType();
-                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                            loc.getBlock().setType(Material.AIR, false);
-                            blocksDestroyed++;
+                    var block = world.getBlockAt(x, y, z);
+                    var crumbleData = block.getBlockData();
+                    Material blockType = block.getType();
+                    if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                        block.setType(Material.AIR, false);
+                        blocksDestroyed++;
 
-                            // Traiter comme un bloc cassé (processBlockDestroyed)
-                            processBlockDestroyed(player, loc, blockType, mineName);
+                        // Localisation integer pour la suite des traitements
+                        loc.setX(x);
+                        loc.setY(y);
+                        loc.setZ(z);
+                        processBlockDestroyed(player, loc, blockType, mineName);
 
-                            // Effets visuels
-                            center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, blockType.createBlockData());
-                        }
+                        // Effets visuels: réutilise le BlockData existant
+                        world.spawnParticle(Particle.BLOCK_CRUMBLE, x + 0.5, y + 0.5, z + 0.5,
+                                3, 0.25, 0.25, 0.25, crumbleData);
                     }
                 }
             }
@@ -225,125 +271,66 @@ public class EnchantmentManager {
             boolean sameX = ThreadLocalRandom.current().nextBoolean();
 
             if (sameX) {
-                // Plan vertical selon X - casse jusqu'aux limites de la mine
-                int x = center.getBlockX();
+                final int x = Math.max(mineData.getMinX(), Math.min(center.getBlockX(), mineData.getMaxX()));
+                final int minY = mineData.getMinY();
+                final int maxY = mineData.getMaxY();
+                final int minZ = mineData.getMinZ();
+                final int maxZ = mineData.getMaxZ();
 
-                // Détermine les limites de la mine
-                int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
-                int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
-
-                // Trouve les limites en testant progressivement
-                for (int y = center.getBlockY(); y >= center.getBlockY() - 1000; y--) {
-                    Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
-                    if (!mineData.contains(testLoc)) {
-                        minY = y + 1;
-                        break;
-                    }
-                }
-                for (int y = center.getBlockY(); y <= center.getBlockY() + 1000; y++) {
-                    Location testLoc = new Location(center.getWorld(), x, y, center.getBlockZ());
-                    if (!mineData.contains(testLoc)) {
-                        maxY = y - 1;
-                        break;
-                    }
-                }
-                for (int z = center.getBlockZ(); z >= center.getBlockZ() - 1000; z--) {
-                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
-                    if (!mineData.contains(testLoc)) {
-                        minZ = z + 1;
-                        break;
-                    }
-                }
-                for (int z = center.getBlockZ(); z <= center.getBlockZ() + 1000; z++) {
-                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
-                    if (!mineData.contains(testLoc)) {
-                        maxZ = z - 1;
-                        break;
-                    }
-                }
-
-                // Casse tout le plan vertical selon X
                 for (int y = minY; y <= maxY; y++) {
                     for (int z = minZ; z <= maxZ; z++) {
-                        Location loc = new Location(center.getWorld(), x, y, z);
-                        if (mineData.contains(loc)) {
-                            Material blockType = loc.getBlock().getType();
-                            if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                                loc.getBlock().setType(Material.AIR,false);
-                                blocksDestroyed++;
+                        var block = world.getBlockAt(x, y, z);
+                        var crumbleData = block.getBlockData();
+                        Material blockType = block.getType();
+                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                            block.setType(Material.AIR, false);
+                            blocksDestroyed++;
 
-                                // Traiter comme un bloc cassé (processBlockDestroyed)
-                                processBlockDestroyed(player, loc, blockType, mineName);
+                            loc.setX(x);
+                            loc.setY(y);
+                            loc.setZ(z);
+                            processBlockDestroyed(player, loc, blockType, mineName);
 
-                                // Effets visuels
-                                center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, blockType.createBlockData());
-                            }
+                            world.spawnParticle(Particle.BLOCK_CRUMBLE, x + 0.5, y + 0.5, z + 0.5,
+                                    3, 0.25, 0.25, 0.25, crumbleData);
                         }
                     }
                 }
             } else {
-                // Plan vertical selon Z - casse jusqu'aux limites de la mine
-                int z = center.getBlockZ();
+                final int z = Math.max(mineData.getMinZ(), Math.min(center.getBlockZ(), mineData.getMaxZ()));
+                final int minX = mineData.getMinX();
+                final int maxX = mineData.getMaxX();
+                final int minY = mineData.getMinY();
+                final int maxY = mineData.getMaxY();
 
-                // Détermine les limites de la mine
-                int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
-                int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
-
-                // Trouve les limites en testant progressivement
-                for (int x = center.getBlockX(); x >= center.getBlockX() - 1000; x--) {
-                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
-                    if (!mineData.contains(testLoc)) {
-                        minX = x + 1;
-                        break;
-                    }
-                }
-                for (int x = center.getBlockX(); x <= center.getBlockX() + 1000; x++) {
-                    Location testLoc = new Location(center.getWorld(), x, center.getBlockY(), z);
-                    if (!mineData.contains(testLoc)) {
-                        maxX = x - 1;
-                        break;
-                    }
-                }
-                for (int y = center.getBlockY(); y >= center.getBlockY() - 1000; y--) {
-                    Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
-                    if (!mineData.contains(testLoc)) {
-                        minY = y + 1;
-                        break;
-                    }
-                }
-                for (int y = center.getBlockY(); y <= center.getBlockY() + 1000; y++) {
-                    Location testLoc = new Location(center.getWorld(), center.getBlockX(), y, z);
-                    if (!mineData.contains(testLoc)) {
-                        maxY = y - 1;
-                        break;
-                    }
-                }
-
-                // Casse tout le plan vertical selon Z
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {
-                        Location loc = new Location(center.getWorld(), x, y, z);
-                        if (mineData.contains(loc)) {
-                            Material blockType = loc.getBlock().getType();
-                            if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                                loc.getBlock().setType(Material.AIR,false);
-                                blocksDestroyed++;
+                        var block = world.getBlockAt(x, y, z);
+                        var crumbleData = block.getBlockData();
+                        Material blockType = block.getType();
+                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                            block.setType(Material.AIR, false);
+                            blocksDestroyed++;
 
-                                // Traiter comme un bloc cassé (processBlockDestroyed)
-                                processBlockDestroyed(player, loc, blockType, mineName);
+                            loc.setX(x);
+                            loc.setY(y);
+                            loc.setZ(z);
+                            processBlockDestroyed(player, loc, blockType, mineName);
 
-                                // Effets visuels
-                                center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, blockType.createBlockData());
-                            }
+                            world.spawnParticle(Particle.BLOCK_CRUMBLE, x + 0.5, y + 0.5, z + 0.5,
+                                    3, 0.25, 0.25, 0.25, crumbleData);
                         }
                     }
                 }
             }
         }
 
-        // Son et effet pour l'activation
-        center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.8f);
-        center.getWorld().spawnParticle(Particle.EXPLOSION, center.add(0.5, 0.5, 0.5), 3, 2, 2, 2);
+        // Son et effet pour l'activation (sans muter 'center')
+        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.8f);
+        final double cx = center.getX();
+        final double cy = center.getY();
+        final double cz = center.getZ();
+        world.spawnParticle(Particle.EXPLOSION, cx + 0.5, cy + 0.5, cz + 0.5, 3, 2, 2, 2);
 
         // Gestion des échos seulement si ce n'est pas déjà un écho
         if (!isEcho) {
@@ -405,14 +392,16 @@ public class EnchantmentManager {
             current.add(direction);
 
             if (mineData.contains(current)) {
-                Material blockType = current.getBlock().getType();
+                var block = current.getBlock();
+                var crumbleData = block.getBlockData();
+                Material blockType = block.getType();
                 if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                    current.getBlock().setType(Material.AIR, false);
+                    block.setType(Material.AIR, false);
                     blocksDestroyed++;
                     processBlockDestroyed(player, current, blockType, mineName);
 
                     // Effets visuels
-                    current.getWorld().spawnParticle(Particle.WHITE_SMOKE, current.add(0.5, 0.5, 0.5), 5);
+                    current.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, current.getX() + 0.5, current.getY() + 0.5, current.getZ() + 0.5, 2, 0.2, 0.2, 0.2, crumbleData);
                 }
             } else {
                 break;
@@ -448,11 +437,14 @@ public class EnchantmentManager {
                     Location loc = center.clone().add(x, y, z);
 
                     if (mineData.contains(loc)) {
-                        Material blockType = loc.getBlock().getType();
+                        var block = loc.getBlock();
+                        var crumbleData = block.getBlockData();
+                        Material blockType = block.getType();
                         if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
-                            loc.getBlock().setType(Material.AIR, false);
+                            block.setType(Material.AIR, false);
                             blocksDestroyed++;
                             processBlockDestroyed(player, loc, blockType, mineName);
+                            center.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, loc.getX() + 0.5, loc.getY() + 0.5, loc.getZ() + 0.5, 2, 0.2, 0.2, 0.2, crumbleData);
                         }
                     }
                 }
@@ -549,7 +541,7 @@ public class EnchantmentManager {
         if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell")) {
             plugin.getEnchantmentBookManager().processAutoSell(player, material, quantity);
             String activeProfession = playerData.getActiveProfession();
-            if (activeProfession.equals("commercant")) {
+            if ("commercant".equals(activeProfession)) {
                 if (java.util.concurrent.ThreadLocalRandom.current().nextInt(1000) == 0) {
                     plugin.getProfessionManager().addProfessionXP(player, "commercant", 1);
                 }
@@ -557,18 +549,36 @@ public class EnchantmentManager {
             return;
         }
 
-        // Gestion spéciale pour PlusValue
-        String mineName = plugin.getConfigManager().getPlayerMine(blockLocation);
-        if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "plusvalue") && !isPlayerPickaxeBroken(player)) {
-            material = plugin.getEnchantmentBookManager().getHighestValueBlockInMine(mineName);
+        // Gestion spéciale pour PlusValue (résolution paresseuse + cache mineName par joueur)
+        if (!isPlayerPickaxeBroken(player) && plugin.getEnchantmentBookManager().isEnchantmentActive(player, "plusvalue")) {
+            final long now = System.currentTimeMillis();
+            final String cacheKeyName = "pt_cached_mine_name";
+            final String cacheKeyTime = "pt_cached_mine_time";
+
+            String mineName = null;
+            Long lastTs = null;
+            if (player.hasMetadata(cacheKeyName) && player.hasMetadata(cacheKeyTime)) {
+                mineName = player.getMetadata(cacheKeyName).getFirst().asString();
+                lastTs = player.getMetadata(cacheKeyTime).getFirst().asLong();
+            }
+
+            if (mineName == null || now - lastTs > 1500L) {
+                mineName = plugin.getConfigManager().getPlayerMine(blockLocation);
+                player.setMetadata(cacheKeyName, new FixedMetadataValue(plugin, mineName == null ? "" : mineName));
+                player.setMetadata(cacheKeyTime, new FixedMetadataValue(plugin, now));
+            }
+
+            if (mineName != null && !mineName.isEmpty()) {
+                material = plugin.getEnchantmentBookManager().getHighestValueBlockInMine(mineName);
+            }
         }
         final Material effectiveMaterial = material;
 
         plugin.getPluginLogger().debugLazy(() -> "Tentative d'ajout de " + quantity + "x " + effectiveMaterial.name() + " pour " + player.getName());
 
-        // NOUVEAU : tente d'ajouter aux conteneurs en un seul batch quand c'est possible
-        ItemStack batch = new ItemStack(effectiveMaterial, remaining);
-        int added = plugin.getContainerManager().addItemsBatchToContainers(player, batch);
+        // Ajout prioritaire en conteneurs via un seul batch
+        final ItemStack batch = new ItemStack(effectiveMaterial, remaining);
+        final int added = plugin.getContainerManager().addItemsBatchToContainers(player, batch);
         if (added > 0) {
             actuallyAdded += added;
             remaining -= added;
@@ -577,32 +587,33 @@ public class EnchantmentManager {
 
         // Si il reste des items, tente de les ajouter à l'inventaire normal
         if (remaining > 0) {
-            ItemStack remainingStack = new ItemStack(effectiveMaterial, remaining);
-            Map<Integer, ItemStack> leftover = player.getInventory().addItem(remainingStack);
+            // Ajout à l’inventaire en un seul appel
+            final ItemStack remainingStack = new ItemStack(effectiveMaterial, remaining);
+            final Map<Integer, ItemStack> leftover = player.getInventory().addItem(remainingStack);
 
             if (leftover.isEmpty()) {
-                // Tous les items restants ont été ajoutés à l'inventaire
                 actuallyAdded += remaining;
-                int finalRemaining = remaining;
+                final int finalRemaining = remaining;
                 plugin.getPluginLogger().debugLazy(() -> finalRemaining + "x " + effectiveMaterial.name() + " ajoutés à l'inventaire normal");
             } else {
-                // Calcule combien ont vraiment été ajoutés à l'inventaire
-                int addedToInventory = remaining;
+                // Calcul du nombre effectivement stocké
+                int droppedCount = 0;
                 for (ItemStack overflow : leftover.values()) {
-                    addedToInventory -= overflow.getAmount();
+                    droppedCount += overflow.getAmount();
                 }
-
+                int addedToInventory = Math.max(0, remaining - droppedCount);
                 actuallyAdded += addedToInventory;
 
-                // Message d'avertissement moins fréquent pour l'inventaire plein
-                if (!player.hasMetadata("inventory_full_warning") ||
-                        System.currentTimeMillis() - player.getMetadata("inventory_full_warning").getFirst().asLong() > 30000) {
-
-                    int droppedCount = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
+                // Message d’avertissement toutes les 30s max
+                long now = System.currentTimeMillis();
+                boolean shouldWarn = true;
+                if (player.hasMetadata("inventory_full_warning")) {
+                    long last = player.getMetadata("inventory_full_warning").getFirst().asLong();
+                    shouldWarn = (now - last) > 30_000L;
+                }
+                if (shouldWarn) {
+                    player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, now));
                     player.sendMessage("§c⚠️ Inventaire et conteneurs pleins! " + droppedCount + " items droppés au sol.");
-                    player.setMetadata("inventory_full_warning", new FixedMetadataValue(plugin, System.currentTimeMillis()));
-
-                    // Suggestion d'utiliser /sell all
                     player.sendMessage("§e💡 Utilisez §a/sell all §epour vider vos conteneurs et inventaire!");
                 }
             }
@@ -613,7 +624,7 @@ public class EnchantmentManager {
             playerData.addBlocksToInventory(actuallyAdded);
         }
 
-        int finalActuallyAdded = actuallyAdded;
+        final int finalActuallyAdded = actuallyAdded;
         plugin.getPluginLogger().debugLazy(() -> "Blocs ajoutés au total: " + finalActuallyAdded + "/" + quantity + "x " + effectiveMaterial.name() +
                 " (conteneurs + inventaire + droppés)");
     }
@@ -621,63 +632,88 @@ public class EnchantmentManager {
     /**
      * Traite les enchantements Greed
      */
-    private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType, boolean isMinedBlock) {
-        int luckLevel = playerData.getEnchantmentLevel("luck");
-        double baseCombustionMultiplier = playerData.getCombustionMultiplier();
-        double combustionMultiplier = plugin.getCristalBonusHelper().applyCombustionEfficiency(player, baseCombustionMultiplier);
-        double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
+    private void processGreedEnchantments(Player player, PlayerData playerData, Material blockType) {
+        // Pré-calculs partagés
+        final boolean pickaxeBroken = isPlayerPickaxeBroken(player);
+        final int luckLevel = playerData.getEnchantmentLevel("luck");
+        final int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
+        final int moneyGreedLevel = playerData.getEnchantmentLevel("money_greed");
+        final int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
 
-        BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
+        if (tokenGreedLevel <= 0 && moneyGreedLevel <= 0 && expGreedLevel <= 0) {
+            return; // aucun greed actif
+        }
 
-        // Token Greed
-        if (isPlayerPickaxeBroken(player)) {
-            processTokenGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
+        final double baseCombustionMultiplier = playerData.getCombustionMultiplier();
+        final double combustionMultiplier = plugin.getCristalBonusHelper().applyCombustionEfficiency(player, baseCombustionMultiplier);
+        final double abundanceMultiplier = playerData.isAbundanceActive() ? 2.0 : 1.0;
+        final BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
+
+        // Chances partagées
+        final double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        final double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+        final double totalChance = baseChance + luckBonus;
+
+        // NOUVEAU : Cohésion — multiplicateur de greed selon joueurs dans la mine
+        int cohesionLevel = playerData.getEnchantmentLevel("cohesion");
+        double cohesionMultiplier = 1.0;
+        if (cohesionLevel > 0) {
+            String mineId = plugin.getMineManager().getPlayerCurrentMine(player);
+            if (mineId != null) {
+                int active = plugin.getMineOverloadManager().getActiveMinersCount(mineId);
+                // 1% par niveau par joueur actif, borné à +100%
+                cohesionMultiplier += Math.min(1.0, active * (cohesionLevel * 0.01));
+            }
+        }
+
+        // Si la pioche est cassée: seul TokenGreed peut s'appliquer (comportement existant)
+        if (pickaxeBroken) {
+            if (tokenGreedLevel > 0) {
+                processTokenGreed(player, playerData, blockValue, tokenGreedLevel, totalChance, combustionMultiplier * cohesionMultiplier, abundanceMultiplier, true);
+            }
             return;
         }
 
-        processTokenGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
-
-        // Money Greed
-        processMoneyGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
-
-        processExpGreed(player, playerData, blockValue, luckLevel, combustionMultiplier, abundanceMultiplier);
+        if (tokenGreedLevel > 0) {
+            processTokenGreed(player, playerData, blockValue, tokenGreedLevel, totalChance, combustionMultiplier * cohesionMultiplier, abundanceMultiplier, false);
+        }
+        if (moneyGreedLevel > 0) {
+            processMoneyGreed(player, playerData, blockValue, moneyGreedLevel, totalChance, combustionMultiplier * cohesionMultiplier, abundanceMultiplier);
+        }
+        if (expGreedLevel > 0) {
+            processExpGreed(player, playerData, blockValue, expGreedLevel, totalChance, combustionMultiplier * cohesionMultiplier, abundanceMultiplier);
+        }
     }
 
     /**
      * Traite Token Greed
      */
-    private void processTokenGreed(Player player, PlayerData playerData, BlockValueData blockValue, int luckLevel, double combustionMultiplier, double abundanceMultiplier) {
-        int tokenGreedLevel = playerData.getEnchantmentLevel("token_greed");
-        if (tokenGreedLevel <= 0) return;
-
-        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-        double totalChance = baseChance + luckBonus;
-
+    private void processTokenGreed(Player player, PlayerData playerData, BlockValueData blockValue,
+                                   int tokenGreedLevel, double totalChance,
+                                   double combustionMultiplier, double abundanceMultiplier,
+                                   boolean pickaxeBroken) {
         if (ThreadLocalRandom.current().nextDouble() < totalChance) {
             long blockTokens = blockValue.tokens();
             long baseGains = Math.round((tokenGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.token-multiplier", 5) + blockTokens) * combustionMultiplier * abundanceMultiplier);
 
             long finalGains = plugin.getGlobalBonusManager().applyTokenBonus(player, baseGains);
-            if (isPlayerPickaxeBroken(player)) {
+            if (pickaxeBroken) {
                 finalGains = (long) (finalGains * 0.05);
             }
             playerData.addTokensViaPickaxe(finalGains);
             playerData.addGreedTrigger();
+
+            // Héritage: propage avec chance aux autres joueurs de la mine (sans boucler)
+            handleHeritagePropagation(player, blockValue, combustionMultiplier, abundanceMultiplier, "token");
         }
     }
 
     /**
      * Traite Money Greed
      */
-    private void processMoneyGreed(Player player, PlayerData playerData, BlockValueData blockValue, int luckLevel, double combustionMultiplier, double abundanceMultiplier) {
-        int moneyGreedLevel = playerData.getEnchantmentLevel("money_greed");
-        if (moneyGreedLevel <= 0) return;
-
-        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-        double totalChance = baseChance + luckBonus;
-
+    private void processMoneyGreed(Player player, PlayerData playerData, BlockValueData blockValue,
+                                   int moneyGreedLevel, double totalChance,
+                                   double combustionMultiplier, double abundanceMultiplier) {
         if (ThreadLocalRandom.current().nextDouble() < totalChance) {
             long blockCoins = blockValue.coins();
             long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
@@ -685,29 +721,66 @@ public class EnchantmentManager {
             long finalGains = plugin.getGlobalBonusManager().applyMoneyBonus(player, baseGains);
             playerData.addCoins(finalGains);
             playerData.addGreedTrigger();
+
+            handleHeritagePropagation(player, blockValue, combustionMultiplier, abundanceMultiplier, "money");
         }
     }
 
     /**
      * Traite Exp Greed
      */
-    private void processExpGreed(Player player, PlayerData playerData, BlockValueData blockValue, int luckLevel, double combustionMultiplier, double abundanceMultiplier) {
-        int expGreedLevel = playerData.getEnchantmentLevel("exp_greed");
-        if (expGreedLevel <= 0) return;
-
-        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-        double totalChance = baseChance + luckBonus;
-
+    private void processExpGreed(Player player, PlayerData playerData, BlockValueData blockValue,
+                                 int expGreedLevel, double totalChance,
+                                 double combustionMultiplier, double abundanceMultiplier) {
         if (ThreadLocalRandom.current().nextDouble() < totalChance) {
             long blockExp = blockValue.experience();
             long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
-
             long finalGains = plugin.getGlobalBonusManager().applyExperienceBonus(player, baseGains);
             playerData.addExperienceViaPickaxe(finalGains);
             playerData.addGreedTrigger();
 
             plugin.getEconomyManager().updateVanillaExpFromCustom(player, playerData.getExperience());
+
+            handleHeritagePropagation(player, blockValue, combustionMultiplier, abundanceMultiplier, "exp");
+        }
+    }
+
+    /**
+     * Propage un greed à d'autres joueurs de la même mine selon l'enchantement Héritage.
+     * Le greed hérité est marqué pour ne pas re-propager (évite les boucles).
+     */
+    private void handleHeritagePropagation(Player source, BlockValueData blockValue,
+                                           double combustionMultiplier, double abundanceMultiplier,
+                                           String greedType) {
+        // Ne propage pas si l'effet vient déjà d'un héritage
+        if (source.hasMetadata("heritage_copying")) {
+            source.removeMetadata("heritage_copying", plugin);
+            return;
+        }
+
+        String mineId = plugin.getMineManager().getPlayerCurrentMine(source);
+        if (mineId == null) return;
+
+        for (Player target : plugin.getServer().getOnlinePlayers()) {
+            if (target.equals(source)) continue;
+            String targetMine = plugin.getMineManager().getPlayerCurrentMine(target);
+            if (!mineId.equals(targetMine)) continue;
+
+            PlayerData td = plugin.getPlayerDataManager().getPlayerData(target.getUniqueId());
+            int heritageLevel = td.getEnchantmentLevel("heritage");
+            if (heritageLevel <= 0) continue;
+
+            double hChance = plugin.getConfigManager().getEnchantmentSetting("special.heritage.base-chance", 0.0005) * heritageLevel;
+            if (ThreadLocalRandom.current().nextDouble() < hChance) {
+                target.setMetadata("heritage_copying", new FixedMetadataValue(plugin, true));
+                switch (greedType) {
+                    case "token" -> processTokenGreed(target, td, blockValue, td.getEnchantmentLevel("token_greed"), 1.0, combustionMultiplier, abundanceMultiplier, false);
+                    case "money" -> processMoneyGreed(target, td, blockValue, td.getEnchantmentLevel("money_greed"), 1.0, combustionMultiplier, abundanceMultiplier);
+                    case "exp" -> processExpGreed(target, td, blockValue, td.getEnchantmentLevel("exp_greed"), 1.0, combustionMultiplier, abundanceMultiplier);
+                }
+                // Retire le flag après 1 tick
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> target.removeMetadata("heritage_copying", plugin), 1L);
+            }
         }
     }
 
@@ -719,10 +792,28 @@ public class EnchantmentManager {
         if (keyGreedLevel <= 0) return;
         double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.0001) * keyGreedLevel;
 
+        // On stocke temporairement un flag pour éviter les boucles
+        boolean heritageTrigger = false;
+        if (!player.hasMetadata("heritage_greed_copy")) {
+            int heritageLevel = playerData.getEnchantmentLevel("heritage");
+            if (heritageLevel > 0) {
+                double hChance = plugin.getConfigManager().getEnchantmentSetting("special.heritage.base-chance", 0.0005) * heritageLevel;
+                if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < hChance) {
+                    heritageTrigger = true;
+                    player.setMetadata("heritage_greed_copy", new FixedMetadataValue(plugin, true));
+                }
+            }
+        }
+
         if (ThreadLocalRandom.current().nextDouble() < chance) {
             giveRandomKey(player);
             player.sendMessage("§6🗝️ Vous avez trouvé une clé de coffre !");
             playerData.addGreedTrigger();
+        }
+
+        if (heritageTrigger) {
+            // Retire le flag immédiatement après un tick pour ne pas boucler
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.removeMetadata("heritage_greed_copy", plugin), 1L);
         }
     }
 
@@ -766,7 +857,7 @@ public class EnchantmentManager {
         ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
         var meta = key.getItemMeta();
 
-        meta.setDisplayName(keyColor + "Clé " + keyType);
+        plugin.getGUIManager().applyName(meta,keyColor + "Clé " + keyType);
         meta.setLore(Arrays.asList(
                 "§7Clé de coffre " + keyColor + keyType,
                 "§7Utilise cette clé pour ouvrir des coffres!"
@@ -858,7 +949,7 @@ public class EnchantmentManager {
         addBlocksToInventory(player, blockType, blocksToGive, blockLocation);
 
         // LIMITATION : Seuls Money/Token Greed s'appliquent sur les gains de base
-        processGreedEnchantments(player, playerData, blockType, false);
+        processGreedEnchantments(player, playerData, blockType);
 
         // Marque les données comme modifiées
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
@@ -980,8 +1071,8 @@ class SellGreedEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        // Prix exponentiel comme demandé
-        return Math.round(5000 * Math.pow(2, level));
+        // Prix rééquilibré: croissance douce
+        return Math.max(1000, Math.round(1000 * Math.pow(1.03, level)));
     }
 
     @Override
@@ -1575,4 +1666,59 @@ class ExplosionEnchantment implements CustomEnchantment {
     public Material getDisplayMaterial() {
         return Material.TNT;
     }
+}
+
+// Jackpot: chance de recevoir un voucher aléatoire
+class JackpotEnchantment implements CustomEnchantment {
+    @Override public String getName() { return "jackpot"; }
+    @Override public String getDisplayName() { return "§6Jackpot"; }
+    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
+    @Override public String getDescription() { return "Chance d'obtenir un coupon aléatoire en minant"; }
+    @Override public int getMaxLevel() { return 10000; }
+    @Override public long getUpgradeCost(int level) { return Math.max(10, Math.round(5 * Math.pow(1.02, level))); }
+    @Override public Material getDisplayMaterial() { return Material.PAPER; }
+}
+
+// Cohésion: multiplicateur de greeds selon joueurs dans la mine
+class CohesionEnchantment implements CustomEnchantment {
+    @Override public String getName() { return "cohesion"; }
+    @Override public String getDisplayName() { return "§aCohésion"; }
+    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
+    @Override public String getDescription() { return "Augmente les greeds selon les joueurs présents dans la mine"; }
+    @Override public int getMaxLevel() { return 10000; }
+    @Override public long getUpgradeCost(int level) { return Math.max(10, Math.round(3 * Math.pow(1.015, level))); }
+    @Override public Material getDisplayMaterial() { return Material.PLAYER_HEAD; }
+}
+
+// Héritage: chance de copier le greed d'un autre joueur
+class HeritageEnchantment implements CustomEnchantment {
+    @Override public String getName() { return "heritage"; }
+    @Override public String getDisplayName() { return "§dHéritage"; }
+    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
+    @Override public String getDescription() { return "Chance de déclencher un greed lorsqu'un autre joueur en déclenche un"; }
+    @Override public int getMaxLevel() { return 500; }
+    @Override public long getUpgradeCost(int level) { return Math.max(100, Math.round(250 * Math.pow(1.03, level))); }
+    @Override public Material getDisplayMaterial() { return Material.TOTEM_OF_UNDYING; }
+}
+
+// Fièvre de l'Opportunité: fenêtre de 10s de greeds garantis sur un bloc
+class OpportunityFeverEnchantment implements CustomEnchantment {
+    @Override public String getName() { return "opportunity_fever"; }
+    @Override public String getDisplayName() { return "§eFièvre de l'Opportunité"; }
+    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
+    @Override public String getDescription() { return "Chance de 10s pendant lesquelles un bloc déclenche toujours un greed"; }
+    @Override public int getMaxLevel() { return 10000; }
+    @Override public long getUpgradeCost(int level) { return Math.max(25, Math.round(4 * Math.pow(1.02, level))); }
+    @Override public Material getDisplayMaterial() { return Material.CLOCK; }
+}
+
+// Planneur: Chute lente en tombant (annulable en sneak)
+class PlanneurEnchantment implements CustomEnchantment {
+    @Override public String getName() { return "planneur"; }
+    @Override public String getDisplayName() { return "§bPlanneur"; }
+    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
+    @Override public String getDescription() { return "Applique chute lente en tombant; sneak pour l'annuler"; }
+    @Override public int getMaxLevel() { return 2; }
+    @Override public long getUpgradeCost(int level) { return level == 0 ? 1000 : 5000; }
+    @Override public Material getDisplayMaterial() { return Material.FEATHER; }
 }

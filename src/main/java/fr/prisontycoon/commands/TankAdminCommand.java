@@ -46,7 +46,6 @@ public class TankAdminCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase()) {
             case "give" -> handleGiveCommand(sender, args);
             case "reload" -> handleReloadCommand(sender);
-            case "help" -> sendHelpMessage(sender);
             default -> sendHelpMessage(sender);
         }
 

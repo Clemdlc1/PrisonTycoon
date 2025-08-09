@@ -13,6 +13,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +32,7 @@ public class HeadCollectionCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être utilisée que par un joueur !");
             return true;
@@ -189,7 +190,7 @@ public class HeadCollectionCommand implements CommandExecutor, TabCompleter {
         headMeta.setPlayerProfile(profile);
 
         // Définir le nom et la description
-        headMeta.setDisplayName("§6Tête de Collection");
+        plugin.getGUIManager().applyName(headMeta,"§6Tête de Collection");
         headMeta.setLore(Arrays.asList(
                 "§7Posez cette tête pour l'enregistrer",
                 "§7dans la collection du serveur."
@@ -309,7 +310,7 @@ public class HeadCollectionCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> suggestions = new ArrayList<>();
 
         if (args.length == 1) {

@@ -83,6 +83,7 @@ public class MiningListener implements Listener {
             event.setDropItems(false);
             event.setExpToDrop(0);
             processMiningInMine(player, location, material, mineName);
+            plugin.getMineOverloadManager().onBlockMined(player, mineName, material);
 
             // Cas 2 : Le joueur casse une balise dans la "Cave"
         } else if (material == Material.BEACON && worldName.startsWith("Cave")) {

@@ -192,6 +192,19 @@ public class WeaponArmorEnchantmentListener implements Listener {
         // Traite les enchantements d'armure de la victime
         if (event.getEntity() instanceof Player victim) {
             plugin.getWeaponArmorEnchantmentManager().handleArmorDamage(victim, attacker);
+
+            // NOUVEAU: Réduction de dégâts PvE si la victime tient une épée avec "cuirasse_bestiale"
+            ItemStack victimWeapon = victim.getInventory().getItemInMainHand();
+            if (victimWeapon != null && victimWeapon.getType() != Material.AIR) {
+                int level = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(victimWeapon, "cuirasse_bestiale");
+                if (level > 0 && !(attacker instanceof Player)) {
+                    // Réduction: 8% + 4%/niveau
+                    double reduction = (8.0 + 4.0 * level) / 100.0;
+                    double newDamage = Math.max(0.0, event.getDamage() * (1.0 - reduction));
+                    event.setDamage(newDamage);
+                    victim.sendActionBar(net.kyori.adventure.text.Component.text("§3🛡 Cuirasse bestiale: -" + String.format("%.0f", reduction * 100) + "% dégâts"));
+                }
+            }
         }
     }
 

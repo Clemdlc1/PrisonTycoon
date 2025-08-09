@@ -28,8 +28,9 @@ public class WeaponArmorEnchantGUI {
     // Slots du GUI
     private static final int ITEM_DISPLAY_SLOT = 4;
     private static final int VANILLA_ENCHANT_BUTTON = 13;
-    private static final int UNIQUE_BOOK_SLOT_1 = 15;
-    private static final int UNIQUE_BOOK_SLOT_2 = 16; // Seulement pour épées
+    private static final int UNIQUE_BOOK_SLOT_1 = 8;
+    private static final int UNIQUE_BOOK_SLOT_2 = 9; // Épées
+    private static final int UNIQUE_BOOK_SLOT_3 = 10; // NOUVEAU : 3ème slot épées
     private static final int SHOP_BUTTON_SLOT = 22;
     private static final int BACK_BUTTON_SLOT = 26;
     private final PrisonTycoon plugin;
@@ -177,7 +178,7 @@ public class WeaponArmorEnchantGUI {
             gui.setItem(UNIQUE_BOOK_SLOT_1, slot1);
         }
 
-        // Deuxième slot uniquement pour les épées
+        // Deuxième et troisième slot uniquement pour les épées
         if (isWeapon) {
             if (enchantList.size() > 1) {
                 // NOUVEAU : Affiche le deuxième enchantement existant
@@ -199,6 +200,26 @@ public class WeaponArmorEnchantGUI {
                 ));
                 slot2.setItemMeta(meta2);
                 gui.setItem(UNIQUE_BOOK_SLOT_2, slot2);
+            }
+
+            if (enchantList.size() > 2) {
+                Map.Entry<String, Integer> thirdEnchant = enchantList.get(2);
+                ItemStack existingBook3 = createDisplayBook(thirdEnchant.getKey(), thirdEnchant.getValue());
+                gui.setItem(UNIQUE_BOOK_SLOT_3, existingBook3);
+            } else {
+                ItemStack slot3 = new ItemStack(Material.ITEM_FRAME);
+                ItemMeta meta3 = slot3.getItemMeta();
+                plugin.getGUIManager().applyName(meta3, "§5📚 §lSlot Livre Unique #3");
+                plugin.getGUIManager().applyLore(meta3, List.of(
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+                        "§7Troisième slot pour livres d'enchantement",
+                        "§7unique (épées seulement).",
+                        "",
+                        "§e➤ Drag & Drop depuis votre inventaire!",
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+                ));
+                slot3.setItemMeta(meta3);
+                gui.setItem(UNIQUE_BOOK_SLOT_3, slot3);
             }
         }
     }
@@ -298,7 +319,7 @@ public class WeaponArmorEnchantGUI {
 
         // Bouton boutique
         if (slot == SHOP_BUTTON_SLOT) {
-            plugin.getEnchantmentBookGUI().openBookShop(player);
+            plugin.getBookShopGUI().openWeaponArmorShop(player);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
             return;
         }

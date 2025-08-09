@@ -47,6 +47,7 @@ public class PlayerJoinQuitListener implements Listener {
                 return; // Arrête le traitement ici
             }
         }
+        plugin.getWarpManager().teleportToWarp(player, "Spawn");
         plugin.getPermissionManager().applyStoredPermissions(player);
 
         plugin.getTabManager().onPlayerJoin(player);

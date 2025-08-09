@@ -9,6 +9,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§cCette commande ne peut être utilisée que par un joueur!");
             return true;
@@ -103,7 +104,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
         viewer.sendMessage("");
 
         // Barre de progression visuelle
-        viewer.sendMessage("§7Progression: " + createProgressBar(reputation, tier));
+        viewer.sendMessage("§7Progression: " + createProgressBar(reputation));
         viewer.sendMessage("");
 
         // Effets de la réputation
@@ -150,7 +151,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
     /**
      * Crée une barre de progression visuelle pour la réputation
      */
-    private String createProgressBar(int reputation, ReputationTier tier) {
+    private String createProgressBar(int reputation) {
         int barLength = 20;
         StringBuilder bar = new StringBuilder("§8[");
 
@@ -367,7 +368,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {

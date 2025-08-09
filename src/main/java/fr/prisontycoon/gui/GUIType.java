@@ -11,7 +11,6 @@ public enum GUIType {
     ENCHANTMENT_UPGRADE("enchantment_upgrade"),
     CRISTAL_MANAGEMENT("cristal_management"),
     ENCHANTMENT_BOOK("enchantment_book"),
-    BOOK_SHOP("book_shop"),
     PETS_MENU("pets_menu"),
     PICKAXE_REPAIR("pickaxe_repair"),
     PROFESSION_MAIN("profession_main"),
@@ -48,7 +47,10 @@ public enum GUIType {
     WARP_MENU("warp_menu"),
     WARP_MINES_MENU("warp_mines_menu"),
     HEAD_COLLECTION("head_collection"),
-    CRATE_MANAGEMENT("crate_management");
+    CRATE_MANAGEMENT("crate_management"),
+    BOOK_SHOP_SELECTOR("book_shop_selector"),
+    BOOK_SHOP_PICKAXE("book_shop_pickaxe"),
+    BOOK_SHOP_WEAPON_ARMOR("book_shop_weapon_armor");
 
     private final String id;
 

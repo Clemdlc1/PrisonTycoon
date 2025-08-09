@@ -6,6 +6,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -61,5 +64,33 @@ public class MobilityEffectsListener implements Listener {
                 plugin.getPickaxeManager().updateMobilityEffects(player);
             }
         }.runTaskLater(plugin, 1L);
+    }
+
+    /**
+     * Applique l'effet Planneur (chute lente) lors d'une chute si l'enchantement est actif.
+     * Sneak pour annuler temporairement.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data == null) return;
+
+        int planneur = data.getEnchantmentLevel("planneur");
+        if (planneur <= 0) return;
+
+        // Désactivation si le joueur sneak
+        if (player.isSneaking()) {
+            player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+            return;
+        }
+
+        // Applique l'effet si le joueur est en l'air et chute
+        if (player.getLocation().subtract(0, 0.1, 0).getBlock().getType().isAir() && player.getVelocity().getY() < -0.08) {
+            PotionEffect current = player.getPotionEffect(PotionEffectType.SLOW_FALLING);
+            if (current == null || current.getDuration() < 20) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 60, 0, true, false));
+            }
+        }
     }
 }

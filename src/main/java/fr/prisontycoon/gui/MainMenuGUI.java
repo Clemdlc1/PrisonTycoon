@@ -177,7 +177,7 @@ public class MainMenuGUI {
             case "gang" -> plugin.getGangGUI().openMainMenu(player);
             case "boost" -> plugin.getBoostGUI().openBoostMenu(player);
             case "autominer" -> plugin.getAutominerGUI().openMainMenu(player);
-            case "bookshop" -> plugin.getEnchantmentBookGUI().openBookShop(player);
+            case "bookshop" -> plugin.getBookShopGUI().openSelector(player);
             case "recherche", "ile", "boutique", "tutoriel" -> {
                 player.closeInventory();
                 player.sendMessage("§e🔮 Cette fonctionnalité arrive bientôt !");

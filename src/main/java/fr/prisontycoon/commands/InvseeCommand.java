@@ -16,6 +16,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("§c❌ Cette commande ne peut être utilisée que par un joueur!");
             return true;
@@ -83,7 +84,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
      */
     private void openInventoryView(Player viewer, Player target, boolean canModify) {
         // Crée un inventaire 6 lignes pour afficher TOUT l'équipement
-        Inventory inv = Bukkit.createInventory(null, 45,
+        Inventory inv = plugin.getGUIManager().createInventory(45,
                 "§8Inventaire de " + target.getName() + (canModify ? "" : " §c(Lecture seule)"));
 
         // === INVENTAIRE PRINCIPAL (slots 0-35) ===
@@ -151,7 +152,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     private ItemStack createSeparatorItem() {
         ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§8▬▬▬");
+        plugin.getGUIManager().applyName(meta,"§8▬▬▬");
         item.setItemMeta(meta);
         return item;
     }
@@ -159,7 +160,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     private ItemStack createAdminActionsItem() {
         ItemStack item = new ItemStack(Material.COMMAND_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§c§l⚙ Actions Admin");
+        plugin.getGUIManager().applyName(meta,"§c§l⚙ Actions Admin");
         meta.setLore(Arrays.asList(
                 "§7Vous êtes en mode administrateur",
                 "§7Vous pouvez modifier cet inventaire",
@@ -266,7 +267,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
