@@ -130,7 +130,7 @@ public class GlobalBonusManager {
 
         for (BonusCategory category : BonusCategory.values()) {
             BonusSourceDetails details = getBonusSourcesDetails(player, category);
-            if (details.getTotalBonus() > 0) {
+            if (details.getTotalBonus() != 0.0) {
                 bonuses.put(category, details);
             }
         }

@@ -177,7 +177,7 @@ public class BoostGUI {
 
                     lore.add(category.getColor() + category.getEmoji() + " " + category.getDisplayName() +
                             "§7: §f×" + String.format("%.2f", details.getTotalMultiplier()) +
-                            " §7(+" + String.format("%.1f", details.getTotalBonus()) + "%)");
+                            " §7(" + String.format("%+.1f", details.getTotalBonus()) + "%)");
                 }
             }
         } else {
@@ -189,6 +189,10 @@ public class BoostGUI {
         lore.add("§7• Bonus des cristaux");
         lore.add("§7• Bonus des talents métiers");
         lore.add("§7• Bonus des talents prestige");
+        lore.add("§6• Bonus du gang (permanents)");
+        lore.add("§6• Boosts de gang (temporaires)");
+        lore.add("§9• Enchantements");
+        lore.add("§c• Surcharge de mine");
         lore.add("§b• Boosts temporaires");
         lore.add("");
         lore.add("§e▶ Cliquez pour les détails dans le chat");
@@ -361,30 +365,28 @@ public class BoostGUI {
                 var category = entry.getKey();
                 var details = entry.getValue();
 
-                String arrow = details.getTotalBonus() > 0 ? "§a↗" : "§7→";
+                String arrow = details.getTotalBonus() > 0 ? "§a↗" : (details.getTotalBonus() < 0 ? "§c↘" : "§7→");
 
                 Component hover = createBonusHoverComponent(category, details);
 
-                Component mainLine = Component.text(category.getColor() + "▶ " + category.getDisplayName())
+                String mainText = category.getColor() + "▶ " + category.getDisplayName();
+                Component mainLine = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(mainText)
                         .hoverEvent(HoverEvent.showText(hover))
                         .decoration(TextDecoration.ITALIC, false);
 
-                Component multLine = Component.text("  §7Multiplicateur: §f×" + String.format("%.3f", details.getTotalMultiplier()) +
-                                " " + arrow + " §f+" + String.format("%.1f", details.getTotalBonus()) + "%")
+                String multText = "  §7Multiplicateur: §f×" + String.format("%.3f", details.getTotalMultiplier()) +
+                                " " + arrow + " §f" + String.format("%+.1f", details.getTotalBonus()) + "%";
+                Component multLine = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(multText)
                         .hoverEvent(HoverEvent.showText(hover))
                         .decoration(TextDecoration.ITALIC, false);
 
-                player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(mainLine));
-                player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(multLine));
+                player.sendMessage(mainLine);
+                player.sendMessage(multLine);
             }
 
             player.sendMessage("");
 
-            Component infoHover = createGeneralInfoHoverComponent();
-            Component infoLine = Component.text("§7§lSources disponibles: §eCristaux §7| §dMétiers §7| §5Prestige §7| §bBoosts")
-                    .hoverEvent(HoverEvent.showText(infoHover))
-                    .decoration(TextDecoration.ITALIC, false);
-            player.sendMessage(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(infoLine));
+
         }
 
         player.sendMessage("§7§m────────────────────────────────");
@@ -410,6 +412,10 @@ public class BoostGUI {
         if (details.getCristalBonus() > 0) sb.append("\n§e⚡ Cristaux§7: +").append(String.format("%.1f", details.getCristalBonus())).append("%");
         if (details.getProfessionBonus() > 0) sb.append("\n§d🔨 Talents Métiers§7: +").append(String.format("%.1f", details.getProfessionBonus())).append("%");
         if (details.getPrestigeBonus() > 0) sb.append("\n§5👑 Talents Prestige§7: +").append(String.format("%.1f", details.getPrestigeBonus())).append("%");
+        if (details.getGangBonus() > 0) sb.append("\n§6🏰 Gang (Perm.)§7: +").append(String.format("%.1f", details.getGangBonus())).append("%");
+        if (details.getTemporaryGangBoostBonus() > 0) sb.append("\n§6⚔ Boost de Gang§7: +").append(String.format("%.1f", details.getTemporaryGangBoostBonus())).append("%");
+        if (details.getEnchantmentBonus() > 0) sb.append("\n§9✨ Enchantements§7: +").append(String.format("%.2f", details.getEnchantmentBonus())).append("%");
+        if (details.getOverloadBonus() > 0) sb.append("\n§c🔥 Surcharge de Mine§7: +").append(String.format("%.1f", details.getOverloadBonus())).append("%");
         if (details.getTemporaryBoostBonus() > 0) sb.append("\n§b⚡ Boosts Temporaires§7: +").append(String.format("%.1f", details.getTemporaryBoostBonus())).append("%");
         if (!details.getDetailedSources().isEmpty()) {
             sb.append("\n\n§8Détails:");
@@ -417,7 +423,7 @@ public class BoostGUI {
                 sb.append("\n§8• ").append(source.getKey()).append(": +").append(String.format("%.1f", source.getValue())).append("%");
             }
         }
-        sb.append("\n\n§8Total: +").append(String.format("%.1f", details.getTotalBonus())).append("%");
+        sb.append("\n\n§8Total: ").append(String.format("%+.1f", details.getTotalBonus())).append("%");
         return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(sb.toString()).decoration(TextDecoration.ITALIC, false);
     }
 
