@@ -699,6 +699,321 @@ public class PlayerDataManager {
     }
 
     /**
+     * Charge une colonne spécifique depuis la BDD et met à jour le cache pour ce joueur
+     * Retourne true si la colonne est supportée et chargée (ou vide), false sinon
+     */
+    public boolean loadSingleColumn(UUID playerId, String columnName) {
+        if (playerId == null || columnName == null || columnName.isBlank()) return false;
+        String col = columnName.toLowerCase();
+        if (col.equals("uuid")) return false; // non applicable
+
+        String sql = "SELECT " + col + " AS col FROM players WHERE uuid = ?";
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, playerId.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return false;
+
+                PlayerData data = getPlayerData(playerId);
+
+                switch (col) {
+                    case "name" -> {
+                        // Non modifiable dans PlayerData (champ final) -> ignorer
+                        return true;
+                    }
+                    case "coins" -> data.setCoins(rs.getLong("col"));
+                    case "tokens" -> data.setTokens(rs.getLong("col"));
+                    case "experience" -> data.setExperience(rs.getLong("col"));
+                    case "beacons" -> data.setBeacons(rs.getLong("col"));
+                    case "coins_via_pickaxe" -> data.setCoinsViaPickaxe(rs.getLong("col"));
+                    case "tokens_via_pickaxe" -> data.setTokensViaPickaxe(rs.getLong("col"));
+                    case "experience_via_pickaxe" -> data.setExperienceViaPickaxe(rs.getLong("col"));
+                    case "active_profession" -> data.setActiveProfession(rs.getString("col"));
+                    case "last_profession_change" -> data.setLastProfessionChange(rs.getLong("col"));
+                    case "enchantments" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Integer> map = gson.fromJson(json, stringIntegerMapType);
+                        data.setEnchantmentLevel(map);
+                    }
+                    case "auto_upgrade" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<String> set = gson.fromJson(json, stringSetType);
+                        data.setAutoUpgradeEnabled(set);
+                    }
+                    case "mobility_disabled" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<String> set = gson.fromJson(json, stringSetType);
+                        data.setMobilityEnchantmentEnabled(set);
+                    }
+                    case "pickaxe_cristals" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, String> map = gson.fromJson(json, stringStringMapType);
+                        data.setPickaxeCristal(map);
+                    }
+                    case "custom_permissions" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<String> set = gson.fromJson(json, stringSetType);
+                        data.setCustomPermissions(set);
+                    }
+                    case "sanctions" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        List<PlayerData.SanctionData> list = gson.fromJson(json, sanctionListType);
+                        data.setSanctionHistory(list);
+                    }
+                    case "active_enchantments" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<String> set = gson.fromJson(json, stringSetType);
+                        data.setActiveEnchantmentBooks(set);
+                    }
+                    case "pickaxe_enchantment_book_levels" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Integer> map = gson.fromJson(json, stringIntegerMapType);
+                        data.setPickaxeEnchantmentBookLevels(map);
+                    }
+                    case "profession_levels" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Integer> levels = gson.fromJson(json, stringIntegerMapType);
+                        Map<String, Integer> cleaned = new HashMap<>();
+                        for (var e : levels.entrySet()) {
+                            if (plugin.getProfessionManager().getProfession(e.getKey()) != null) {
+                                cleaned.put(e.getKey(), e.getValue());
+                            }
+                        }
+                        data.setAllProfessionLevels(cleaned);
+                    }
+                    case "profession_xp" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Integer> xpMap = gson.fromJson(json, stringIntegerMapType);
+                        Map<String, Integer> cleaned = new HashMap<>();
+                        for (var e : xpMap.entrySet()) {
+                            if (plugin.getProfessionManager().getProfession(e.getKey()) != null) {
+                                cleaned.put(e.getKey(), e.getValue());
+                            }
+                        }
+                        data.setAllProfessionXP(cleaned);
+                    }
+                    case "talent_levels" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Map<String, Integer>> talents = gson.fromJson(json, stringMapMapType);
+                        data.setTalentLevels(talents);
+                    }
+                    case "kit_levels" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Integer> kits = gson.fromJson(json, stringIntegerMapType);
+                        data.setKitLevels(kits);
+                    }
+                    case "profession_rewards" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Set<Integer>> rewards = gson.fromJson(json, stringSetIntegerMapType);
+                        data.setClaimedProfessionRewards(rewards);
+                    }
+                    case "chosen_prestige_columns" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<Integer, PrestigeTalent> map = gson.fromJson(json, intTalentMapType);
+                        data.setChosenPrestigeColumns(map);
+                    }
+                    case "chosen_special_rewards" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<Integer, String> map = gson.fromJson(json, intStringMapType);
+                        data.setChosenSpecialRewards(map);
+                    }
+                    case "reputation" -> data.setReputation(rs.getInt("col"));
+                    case "boosts" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, PlayerBoost> map = gson.fromJson(json, stringBoostMapType);
+                        data.setActiveBoosts(map);
+                    }
+                    case "autominer_active_slot_1" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        ItemStack item = deserializeItemStack(json);
+                        data.setActiveAutominerSlot1(item);
+                    }
+                    case "autominer_active_slot_2" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        ItemStack item = deserializeItemStack(json);
+                        data.setActiveAutominerSlot2(item);
+                    }
+                    case "autominer_fuel_reserve" -> data.setAutominerFuelReserve(rs.getDouble("col"));
+                    case "autominer_current_world" -> data.setAutominerCurrentWorld(rs.getString("col"));
+                    case "autominer_storage_level" -> data.setAutominerStorageLevel(rs.getInt("col"));
+                    case "autominer_storage_items" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<Material, Long> items = gson.fromJson(json, materialLongMapType);
+                        data.setAutominerStorageContents(items);
+                    }
+                    case "autominer_pending_coins" -> data.setAutominerPendingCoins(rs.getLong("col"));
+                    case "autominer_pending_tokens" -> data.setAutominerPendingTokens(rs.getLong("col"));
+                    case "autominer_pending_experience" -> data.setAutominerPendingExperience(rs.getLong("col"));
+                    case "autominer_pending_beacons" -> data.setAutominerPendingBeacons(rs.getLong("col"));
+                    case "bank_savings_balance" -> data.setBankSavingsBalance(rs.getLong("col"));
+                    case "bank_safe_balance" -> data.setBankSafeBalance(rs.getLong("col"));
+                    case "bank_level" -> data.setBankLevel(rs.getInt("col"));
+                    case "bank_total_deposits" -> data.setTotalBankDeposits(rs.getLong("col"));
+                    case "bank_last_interest" -> data.setBankLastInterest(rs.getLong("col"));
+                    case "bank_investments" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Map<String, Long> inv = gson.fromJson(json, new TypeToken<Map<String, Long>>(){}.getType());
+                        if (inv != null) {
+                            for (Map.Entry<String, Long> entry : inv.entrySet()) {
+                                data.setBankInvestment(entry.getKey(), entry.getValue());
+                            }
+                        }
+                    }
+                    case "statistics_total_blocks_mined" -> data.setTotalBlocksMined(rs.getLong("col"));
+                    case "statistics_total_blocks_destroyed" -> data.setTotalBlocksDestroyed(rs.getLong("col"));
+                    case "statistics_total_greed_triggers" -> data.setTotalGreedTriggers(rs.getLong("col"));
+                    case "statistics_total_keys_obtained" -> data.setTotalKeysObtained(rs.getLong("col"));
+                    case "gang_id" -> data.setGangId(rs.getString("col"));
+                    case "gang_invitation" -> data.setGangInvitation(rs.getString("col"));
+                    case "selected_outpost_skin" -> data.setSelectedOutpostSkin(rs.getString("col"));
+                    case "unlocked_outpost_skins" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<String> set = gson.fromJson(json, stringSetType);
+                        data.setUnlockedOutpostSkins(set != null ? set : new HashSet<>());
+                    }
+                    case "collected_heads" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<String> set = gson.fromJson(json, stringSetType);
+                        data.setCollectedHeads(set != null ? set : new HashSet<>());
+                    }
+                    case "claimed_head_rewards" -> {
+                        String json = rs.getString("col");
+                        if (isNullJson(json)) break;
+                        Set<Integer> set = gson.fromJson(json, integerSetType);
+                        data.setClaimedHeadRewards(set != null ? set : new HashSet<>());
+                    }
+                    default -> {
+                        return false;
+                    }
+                }
+            }
+            markDirty(playerId);
+            return true;
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Erreur loadSingleColumn(" + columnName + "): " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Sauvegarde une colonne spécifique depuis le cache vers la BDD
+     */
+    public boolean saveSingleColumn(UUID playerId, String columnName) {
+        if (playerId == null || columnName == null || columnName.isBlank()) return false;
+        String col = columnName.toLowerCase();
+        if (col.equals("uuid")) return false;
+
+        PlayerData data = getPlayerData(playerId);
+        String sql = "UPDATE players SET " + col + " = ? WHERE uuid = ?";
+
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            switch (col) {
+                case "name" -> ps.setString(1, data.getPlayerName());
+                case "coins" -> ps.setLong(1, data.getCoins());
+                case "tokens" -> ps.setLong(1, data.getTokens());
+                case "experience" -> ps.setLong(1, data.getExperience());
+                case "beacons" -> ps.setLong(1, data.getBeacons());
+                case "coins_via_pickaxe" -> ps.setLong(1, data.getCoinsViaPickaxe());
+                case "tokens_via_pickaxe" -> ps.setLong(1, data.getTokensViaPickaxe());
+                case "experience_via_pickaxe" -> ps.setLong(1, data.getExperienceViaPickaxe());
+                case "active_profession" -> ps.setString(1, data.getActiveProfession());
+                case "last_profession_change" -> ps.setLong(1, data.getLastProfessionChange());
+                case "enchantments" -> ps.setString(1, gson.toJson(data.getEnchantmentLevels()));
+                case "auto_upgrade" -> ps.setString(1, gson.toJson(data.getAutoUpgradeEnabled()));
+                case "mobility_disabled" -> ps.setString(1, gson.toJson(data.getMobilityEnchantmentsDisabled()));
+                case "pickaxe_cristals" -> ps.setString(1, gson.toJson(data.getPickaxeCristals()));
+                case "custom_permissions" -> ps.setString(1, gson.toJson(data.getCustomPermissions()));
+                case "sanctions" -> ps.setString(1, gson.toJson(data.getSanctionHistory()));
+                case "active_enchantments" -> ps.setString(1, gson.toJson(data.getActiveEnchantmentBooks()));
+                case "pickaxe_enchantment_book_levels" -> ps.setString(1, gson.toJson(data.getPickaxeEnchantmentBookLevels()));
+                case "profession_levels" -> ps.setString(1, gson.toJson(data.getAllProfessionLevels()));
+                case "profession_xp" -> ps.setString(1, gson.toJson(data.getAllProfessionXP()));
+                case "talent_levels" -> ps.setString(1, gson.toJson(data.getAllTalentLevels()));
+                case "kit_levels" -> ps.setString(1, gson.toJson(data.getAllKitLevels()));
+                case "profession_rewards" -> ps.setString(1, gson.toJson(data.getAllClaimedProfessionRewards()));
+                case "chosen_prestige_columns" -> ps.setString(1, gson.toJson(data.getChosenPrestigeColumns()));
+                case "chosen_special_rewards" -> ps.setString(1, gson.toJson(data.getChosenSpecialRewards()));
+                case "reputation" -> ps.setInt(1, data.getReputation());
+                case "boosts" -> ps.setString(1, gson.toJson(data.getActiveBoosts()));
+                case "autominer_active_slot_1" -> ps.setString(1, serializeItemStack(data.getActiveAutominerSlot1()));
+                case "autominer_active_slot_2" -> ps.setString(1, serializeItemStack(data.getActiveAutominerSlot2()));
+                case "autominer_fuel_reserve" -> ps.setDouble(1, data.getAutominerFuelReserve());
+                case "autominer_current_world" -> ps.setString(1, data.getAutominerCurrentWorld());
+                case "autominer_storage_level" -> ps.setInt(1, data.getAutominerStorageLevel());
+                case "autominer_storage_items" -> ps.setString(1, gson.toJson(data.getAutominerStorageContents()));
+                case "autominer_pending_coins" -> ps.setLong(1, data.getAutominerPendingCoins());
+                case "autominer_pending_tokens" -> ps.setLong(1, data.getAutominerPendingTokens());
+                case "autominer_pending_experience" -> ps.setLong(1, data.getAutominerPendingExperience());
+                case "autominer_pending_beacons" -> ps.setLong(1, data.getAutominerPendingBeacons());
+                case "bank_savings_balance" -> ps.setLong(1, data.getBankSavingsBalance());
+                case "bank_safe_balance" -> ps.setLong(1, data.getBankSafeBalance());
+                case "bank_level" -> ps.setInt(1, data.getBankLevel());
+                case "bank_total_deposits" -> ps.setLong(1, data.getTotalBankDeposits());
+                case "bank_last_interest" -> ps.setLong(1, data.getBankLastInterest());
+                case "bank_investments" -> ps.setString(1, gson.toJson(data.getBankInvestments()));
+                case "statistics_total_blocks_mined" -> ps.setLong(1, data.getTotalBlocksMined());
+                case "statistics_total_blocks_destroyed" -> ps.setLong(1, data.getTotalBlocksDestroyed());
+                case "statistics_total_greed_triggers" -> ps.setLong(1, data.getTotalGreedTriggers());
+                case "statistics_total_keys_obtained" -> ps.setLong(1, data.getTotalKeysObtained());
+                case "gang_id" -> ps.setString(1, data.getGangId());
+                case "gang_invitation" -> ps.setString(1, data.getGangInvitation());
+                case "selected_outpost_skin" -> ps.setString(1, data.getSelectedOutpostSkin());
+                case "unlocked_outpost_skins" -> ps.setString(1, gson.toJson(data.getUnlockedOutpostSkins()));
+                case "collected_heads" -> ps.setString(1, gson.toJson(data.getCollectedHeads()));
+                case "claimed_head_rewards" -> ps.setString(1, gson.toJson(data.getClaimedHeadRewards()));
+                default -> { return false; }
+            }
+            ps.setString(2, playerId.toString());
+            ps.executeUpdate();
+            dirtyPlayers.remove(playerId);
+            return true;
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("Erreur saveSingleColumn(" + columnName + "): " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isNullJson(String json) {
+        return json == null || json.isBlank() || json.equals("null");
+    }
+
+    /**
+     * Désérialise un ItemStack depuis son JSON stocké en base
+     */
+    private ItemStack deserializeItemStack(String json) {
+        try {
+            if (json == null || json.isBlank() || json.equals("null")) return null;
+            Map<String, Object> itemData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
+            if (itemData == null) return null;
+            return ItemStack.deserialize(itemData);
+        } catch (Exception e) {
+            plugin.getPluginLogger().warning("§eErreur lors de la désérialisation d'un ItemStack: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Décharge un joueur du cache après sauvegarde
      */
     public void unloadPlayer(UUID playerId) {

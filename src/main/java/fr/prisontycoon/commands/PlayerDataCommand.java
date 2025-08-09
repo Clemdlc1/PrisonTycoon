@@ -1,7 +1,5 @@
 package fr.prisontycoon.commands;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import org.bukkit.Bukkit;
@@ -14,13 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Type;
 import java.util.*;
 
 public class PlayerDataCommand implements CommandExecutor, TabCompleter {
 
     private final PrisonTycoon plugin;
-    private final Gson gson = new Gson();
 
     public PlayerDataCommand(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -62,7 +58,7 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
                     plugin.getPlayerDataManager().savePlayerNow(targetId);
                     sender.sendMessage("§aSauvegardé: §e" + targetName);
                 } else {
-                    boolean ok = saveSingleColumn(targetId, column);
+                    boolean ok = plugin.getPlayerDataManager().saveSingleColumn(targetId, column);
                     if (ok) sender.sendMessage("§aSauvegardé colonne §e" + column + " §apour §e" + targetName);
                     else sender.sendMessage("§cColonne inconnue: §e" + column);
                 }
@@ -72,7 +68,7 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
                     plugin.getPlayerDataManager().reloadPlayerData(targetId);
                     sender.sendMessage("§aRechargé depuis la base: §e" + targetName);
                 } else {
-                    boolean ok = loadSingleColumn(targetId, column);
+                    boolean ok = plugin.getPlayerDataManager().loadSingleColumn(targetId, column);
                     if (ok) sender.sendMessage("§aRechargé colonne §e" + column + " §apour §e" + targetName);
                     else sender.sendMessage("§cColonne inconnue: §e" + column);
                 }
@@ -103,119 +99,6 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
 
     private void ensureCached(UUID playerId) {
         plugin.getPlayerDataManager().getPlayerData(playerId);
-    }
-
-    private boolean saveSingleColumn(UUID playerId, String column) {
-        // On persiste la colonne en mettant à jour uniquement cette colonne via une requête dédiée
-        // Pour rester simple ici: on sauvegarde d'abord en cache puis on exécute un UPDATE ciblé.
-        PlayerData data = plugin.getPlayerDataManager().getPlayerData(playerId);
-        String json;
-        String sql;
-
-        switch (column) {
-            case "profession_levels" -> {
-                json = new Gson().toJson(data.getAllProfessionLevels());
-                sql = "UPDATE players SET profession_levels = ? WHERE uuid = ?";
-            }
-            case "profession_xp" -> {
-                json = new Gson().toJson(data.getAllProfessionXP());
-                sql = "UPDATE players SET profession_xp = ? WHERE uuid = ?";
-            }
-            case "talent_levels" -> {
-                json = new Gson().toJson(data.getAllTalentLevels());
-                sql = "UPDATE players SET talent_levels = ? WHERE uuid = ?";
-            }
-            case "kit_levels" -> {
-                json = new Gson().toJson(data.getAllKitLevels());
-                sql = "UPDATE players SET kit_levels = ? WHERE uuid = ?";
-            }
-            case "profession_rewards" -> {
-                json = new Gson().toJson(data.getAllClaimedProfessionRewards());
-                sql = "UPDATE players SET profession_rewards = ? WHERE uuid = ?";
-            }
-            default -> {
-                return false;
-            }
-        }
-
-        try (var conn = plugin.getDatabaseManager().getConnection(); var ps = conn.prepareStatement(sql)) {
-            ps.setString(1, json);
-            ps.setString(2, playerId.toString());
-            ps.executeUpdate();
-            return true;
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("Erreur saveSingleColumn(" + column + "): " + e.getMessage());
-            return false;
-        }
-    }
-
-    private boolean loadSingleColumn(UUID playerId, String column) {
-        String sql;
-        Type mapStrInt = new TypeToken<Map<String, Integer>>(){}.getType();
-        Type mapStrMapStrInt = new TypeToken<Map<String, Map<String, Integer>>>(){}.getType();
-        Type mapStrSetInt = new TypeToken<Map<String, Set<Integer>>>(){}.getType();
-
-        switch (column) {
-            case "profession_levels" -> sql = "SELECT profession_levels AS col FROM players WHERE uuid = ?";
-            case "profession_xp" -> sql = "SELECT profession_xp AS col FROM players WHERE uuid = ?";
-            case "talent_levels" -> sql = "SELECT talent_levels AS col FROM players WHERE uuid = ?";
-            case "kit_levels" -> sql = "SELECT kit_levels AS col FROM players WHERE uuid = ?";
-            case "profession_rewards" -> sql = "SELECT profession_rewards AS col FROM players WHERE uuid = ?";
-            default -> { return false; }
-        }
-
-        try (var conn = plugin.getDatabaseManager().getConnection(); var ps = conn.prepareStatement(sql)) {
-            ps.setString(1, playerId.toString());
-            try (var rs = ps.executeQuery()) {
-                if (!rs.next()) return false;
-                String json = rs.getString("col");
-                if (json == null || json.isBlank() || json.equals("null")) return true; // rien à charger
-
-                PlayerData data = plugin.getPlayerDataManager().getPlayerData(playerId);
-
-                switch (column) {
-                    case "profession_levels" -> {
-                        Map<String, Integer> levels = gson.fromJson(json, mapStrInt);
-                        Map<String, Integer> cleaned = new HashMap<>();
-                        for (var e : levels.entrySet()) {
-                            if (plugin.getProfessionManager().getProfession(e.getKey()) != null) {
-                                cleaned.put(e.getKey(), e.getValue());
-                            }
-                        }
-                        data.setAllProfessionLevels(cleaned);
-                    }
-                    case "profession_xp" -> {
-                        Map<String, Integer> xpMap = gson.fromJson(json, mapStrInt);
-                        Map<String, Integer> cleaned = new HashMap<>();
-                        for (var e : xpMap.entrySet()) {
-                            if (plugin.getProfessionManager().getProfession(e.getKey()) != null) {
-                                cleaned.put(e.getKey(), e.getValue());
-                            }
-                        }
-                        data.setAllProfessionXP(cleaned);
-                    }
-                    case "talent_levels" -> {
-                        Map<String, Map<String, Integer>> talents = gson.fromJson(json, mapStrMapStrInt);
-                        data.setTalentLevels(talents);
-                    }
-                    case "kit_levels" -> {
-                        Map<String, Integer> kits = gson.fromJson(json, mapStrInt);
-                        data.setKitLevels(kits);
-                    }
-                    case "profession_rewards" -> {
-                        Map<String, Set<Integer>> rewards = gson.fromJson(json, mapStrSetInt);
-                        data.setClaimedProfessionRewards(rewards);
-                    }
-                }
-
-                // marque le joueur dirty pour qu'une sauvegarde complète assainisse la BDD
-                plugin.getPlayerDataManager().markDirty(playerId);
-                return true;
-            }
-        } catch (Exception e) {
-            plugin.getPluginLogger().warning("Erreur loadSingleColumn(" + column + "): " + e.getMessage());
-            return false;
-        }
     }
 
     @Override
