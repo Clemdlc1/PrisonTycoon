@@ -779,54 +779,20 @@ public class PlayerDataManager {
         } catch (SQLException e) {
             plugin.getPluginLogger().debug("Impossible de lister les colonnes via metadata: " + e.getMessage());
         }
-
-        if (columns.isEmpty()) {
-            // Fallback statique aligné avec createPlayersTable()
-            columns = Arrays.asList(
-                    "uuid", "name", "coins", "tokens", "experience", "beacons",
-                    "coins_via_pickaxe", "tokens_via_pickaxe", "experience_via_pickaxe",
-                    "active_profession", "last_profession_change", "enchantments",
-                    "auto_upgrade", "mobility_disabled", "pickaxe_cristals", "custom_permissions",
-                    "sanctions", "active_enchantments", "pickaxe_enchantment_book_levels",
-                    "profession_levels", "profession_xp", "talent_levels", "kit_levels",
-                    "profession_rewards", "chosen_prestige_columns", "chosen_special_rewards",
-                    "reputation", "boosts", "autominer_active_slot_1", "autominer_active_slot_2",
-                    "autominer_fuel_reserve", "autominer_current_world", "autominer_storage_level",
-                    "autominer_storage_items", "autominer_pending_coins", "autominer_pending_tokens",
-                    "autominer_pending_experience", "autominer_pending_beacons", "bank_savings_balance",
-                    "bank_safe_balance", "bank_level", "bank_total_deposits", "bank_last_interest",
-                    "bank_investments", "statistics_total_blocks_mined", "statistics_total_blocks_destroyed",
-                    "statistics_total_greed_triggers", "statistics_total_keys_obtained", "gang_id",
-                    "gang_invitation", "selected_outpost_skin", "unlocked_outpost_skins",
-                    "collected_heads", "claimed_head_rewards"
-            );
-        }
         return columns;
     }
 
     /**
      * NOUVELLE MÉTHODE : Force le rechargement d'un joueur depuis la BDD
-     * @param playerId Joueur ciblé
-     * @param discardUnsaved Si true, ignore et supprime les changements non sauvegardés au lieu de les persister
      */
-    public void reloadPlayerData(UUID playerId, boolean discardUnsaved) {
+    public void reloadPlayerData(UUID playerId) {
         if (playerId != null) {
-            if (!discardUnsaved && dirtyPlayers.contains(playerId)) {
-                savePlayerNow(playerId);
-            } else if (discardUnsaved) {
-                // Empêcher toute sauvegarde concurrente d'écrire l'ancien cache
-                dirtyPlayers.remove(playerId);
-            }
-
+            // Toujours ignorer les changements non sauvegardés
+            dirtyPlayers.remove(playerId);
             // Supprime du cache et recharge
             playerDataCache.remove(playerId);
             getPlayerData(playerId); // Force le rechargement
         }
-    }
-
-    // Compatibilité: surcharge sans paramètre, ne discard PAS par défaut
-    public void reloadPlayerData(UUID playerId) {
-        reloadPlayerData(playerId, false);
     }
 
     /**

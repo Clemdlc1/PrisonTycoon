@@ -69,7 +69,7 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
             }
             case "load" -> {
                 if (column == null) {
-                    plugin.getPlayerDataManager().reloadPlayerData(targetId, true);
+                    plugin.getPlayerDataManager().reloadPlayerData(targetId);
                     sender.sendMessage("§aRechargé depuis la base: §e" + targetName);
                 } else {
                     boolean ok = loadSingleColumn(targetId, column);
