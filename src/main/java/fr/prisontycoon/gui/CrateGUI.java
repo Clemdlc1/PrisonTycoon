@@ -99,6 +99,7 @@ public class CrateGUI {
             case AUTOMINER -> displayItem = new ItemStack(Material.IRON_PICKAXE);
             case VOUCHER -> displayItem = new ItemStack(Material.PAPER);
             case BOOST -> displayItem = new ItemStack(Material.POTION);
+            case FORGE_BLUEPRINT ->  displayItem = new ItemStack(Material.PAPER);
             default -> displayItem = new ItemStack(Material.BARRIER);
         }
 
@@ -170,6 +171,11 @@ public class CrateGUI {
                 lore.add("§7Cristal vierge à activer");
                 lore.add("§7Niveau: §5" + reward.getCristaltLevel());
                 lore.add("§7Applicable sur les outils");
+            }
+            case FORGE_BLUEPRINT -> {
+                lore.add("§7Plan de forge");
+                lore.add("§7Niveau: §5" + reward.getBlueprintTier());
+                lore.add("§7Permet de créer des armures à la forge");
             }
         }
     }
