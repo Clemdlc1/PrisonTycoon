@@ -146,11 +146,16 @@ public class WeaponArmorEnchantmentManager {
         Map<String, Integer> result = new HashMap<>();
 
         // CORRIGÉ : Retourne une map vide si pas de meta (c'est normal pour items vierges)
-        if (item == null) {
+        if (item == null || item.getType() == Material.AIR) {
             return result;
         }
 
-        String enchantData = item.getItemMeta().getPersistentDataContainer()
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return result;
+        }
+
+        String enchantData = meta.getPersistentDataContainer()
                 .get(uniqueEnchantsKey, PersistentDataType.STRING);
 
         if (enchantData == null || enchantData.isEmpty()) {
@@ -524,23 +529,28 @@ public class WeaponArmorEnchantmentManager {
         if (entity instanceof Player p) {
             return HeadUtils.createPlayerHead(p.getUniqueId(), "§6Tête de §e" + p.getName());
         }
-
-        HeadEnum mhf = switch (entity.getType()) {
-            case ZOMBIE -> HeadEnum.ZOMBIE;
-            case SKELETON -> HeadEnum.SKELETON;
-            case CREEPER -> HeadEnum.CREEPER;
-            case WITHER -> HeadEnum.WITHER;
-            case ENDERMAN -> HeadEnum.ENDERMAN;
-            case SPIDER -> HeadEnum.SPIDER;
-            case BLAZE -> HeadEnum.BLAZE;
-            case WITCH -> HeadEnum.WITCH;
-            case EVOKER -> HeadEnum.EVOKER;
-            case IRON_GOLEM -> HeadEnum.GOLEM;
-            default -> null;
+        // Utilise les têtes vanilla quand disponibles (textures garanties), sinon fallback MHF
+        ItemStack head = switch (entity.getType()) {
+            case ZOMBIE -> new ItemStack(Material.ZOMBIE_HEAD);
+            case SKELETON -> new ItemStack(Material.SKELETON_SKULL);
+            case CREEPER -> new ItemStack(Material.CREEPER_HEAD);
+            case WITHER_SKELETON -> new ItemStack(Material.WITHER_SKELETON_SKULL);
+            default -> {
+                HeadEnum mhf = switch (entity.getType()) {
+                    case WITHER -> HeadEnum.WITHER;
+                    case ENDERMAN -> HeadEnum.ENDERMAN;
+                    case SPIDER -> HeadEnum.SPIDER;
+                    case BLAZE -> HeadEnum.BLAZE;
+                    case WITCH -> HeadEnum.WITCH;
+                    case EVOKER -> HeadEnum.EVOKER;
+                    case IRON_GOLEM -> HeadEnum.GOLEM;
+                    default -> null;
+                };
+                yield mhf != null ? HeadUtils.createHead(mhf) : null;
+            }
         };
 
-        if (mhf == null) return null;
-        ItemStack head = HeadUtils.createHead(mhf);
+        if (head == null) return null;
         ItemMeta meta = head.getItemMeta();
         if (meta != null) {
             String name = "§6Tête de §e" + entity.getType().name().toLowerCase().replace('_', ' ');

@@ -115,7 +115,7 @@ public class ForgeRecipeGUI {
         createEmptyPlaceholder(inv, 31, "§7Placeholder 2", "§7les ressources nécessaires");
 
         // Bouton craft (désactivé par défaut)
-        createDisabledCraftButton(inv, 40);
+        createDisabledCraftButton(inv);
     }
 
     private void createEmptyPlaceholder(Inventory inv, int slot, String name, String description) {
@@ -127,13 +127,13 @@ public class ForgeRecipeGUI {
         inv.setItem(slot, placeholder);
     }
 
-    private void createDisabledCraftButton(Inventory inv, int slot) {
+    private void createDisabledCraftButton(Inventory inv) {
         ItemStack button = new ItemStack(Material.BARRIER);
         ItemMeta meta = button.getItemMeta();
         plugin.getGUIManager().applyName(meta, "§c✖ Sélectionnez une pièce");
         plugin.getGUIManager().applyLore(meta, List.of("§7Cliquez sur une pièce d'armure", "§7à gauche pour commencer"));
         button.setItemMeta(meta);
-        inv.setItem(slot, button);
+        inv.setItem(40, button);
     }
 
     private void createInfoZone(Inventory inv, ArmorTier tier) {
@@ -195,16 +195,16 @@ public class ForgeRecipeGUI {
         ForgeManager.CraftCost cost = plugin.getForgeManager().getCraftCost(tier, piece);
 
         // Placeholder 1: Plan + Fragments
-        createResourcePlaceholder1(inv, 22, tier, cost);
+        createResourcePlaceholder1(inv, cost);
 
         // Placeholder 2: Expérience + Pièce précédente
-        createResourcePlaceholder2(inv, 31, tier, piece, cost);
+        createResourcePlaceholder2(inv, tier, piece, cost);
 
         // Bouton craft activé
-        createActiveCraftButton(inv, 40, tier, piece);
+        createActiveCraftButton(inv, tier, piece);
     }
 
-    private void createResourcePlaceholder1(Inventory inv, int slot, ArmorTier tier, ForgeManager.CraftCost cost) {
+    private void createResourcePlaceholder1(Inventory inv, ForgeManager.CraftCost cost) {
         ItemStack item = new ItemStack(Material.PAPER);
         ItemMeta meta = item.getItemMeta();
         plugin.getGUIManager().applyName(meta, "§d📜 §lRESSOURCES PRIMAIRES");
@@ -220,10 +220,10 @@ public class ForgeRecipeGUI {
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
-        inv.setItem(slot, item);
+        inv.setItem(22, item);
     }
 
-    private void createResourcePlaceholder2(Inventory inv, int slot, ArmorTier tier, ArmorPiece piece, ForgeManager.CraftCost cost) {
+    private void createResourcePlaceholder2(Inventory inv, ArmorTier tier, ArmorPiece piece, ForgeManager.CraftCost cost) {
         ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE);
         ItemMeta meta = item.getItemMeta();
         plugin.getGUIManager().applyName(meta, "§a⚡ §lRESSOURCES SECONDAIRES");
@@ -233,16 +233,16 @@ public class ForgeRecipeGUI {
         lore.add("§a◆ Expérience: §fx" + cost.experienceCost());
 
         if (cost.requirePreviousPiece()) {
-            lore.add("§7◆ " + piece.getDisplayName() + " T" + (tier.getLevel() - 1) + ": §fx1");
+            lore.add("§7◆ " + piece.getDisplayName() + " " + ForgeManager.ArmorTier.ofLevel(tier.getLevel() - 1).getRPName() + ": §fx1");
         }
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
-        inv.setItem(slot, item);
+        inv.setItem(31, item);
     }
 
-    private void createActiveCraftButton(Inventory inv, int slot, ArmorTier tier, ArmorPiece piece) {
+    private void createActiveCraftButton(Inventory inv, ArmorTier tier, ArmorPiece piece) {
         ItemStack button = new ItemStack(Material.SMITHING_TABLE);
         ItemMeta meta = button.getItemMeta();
 
@@ -258,7 +258,7 @@ public class ForgeRecipeGUI {
 
         plugin.getGUIManager().applyLore(meta, lore);
         button.setItemMeta(meta);
-        inv.setItem(slot, plugin.getGUIManager().addGUIMetadata(button, GUIType.FORGE_RECIPE, "craft", piece.name() + ":" + tier.getLevel()));
+        inv.setItem(40, plugin.getGUIManager().addGUIMetadata(button, GUIType.FORGE_RECIPE, "craft", piece.name() + ":" + tier.getLevel()));
     }
 
     private String getBonusIcon(fr.prisontycoon.managers.GlobalBonusManager.BonusCategory category) {

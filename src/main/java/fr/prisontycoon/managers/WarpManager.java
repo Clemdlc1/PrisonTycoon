@@ -169,6 +169,9 @@ public class WarpManager {
                     plugin.getPluginLogger().warning("§cCoordonnées de téléportation invalides pour la mine " + mineId);
                 }
             }
+        } else if(warp.getType() == WarpData.WarpType.CAVE) {
+            player.sendMessage("§6Enchantements mobilités désactivés dans la cave");
+            plugin.getPickaxeManager().updateMobilityEffects(player);
         }
 
         // Téléportation standard

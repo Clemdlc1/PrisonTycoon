@@ -28,9 +28,9 @@ public class WeaponArmorEnchantGUI {
     // Slots du GUI
     private static final int ITEM_DISPLAY_SLOT = 4;
     private static final int VANILLA_ENCHANT_BUTTON = 13;
-    private static final int UNIQUE_BOOK_SLOT_1 = 8;
-    private static final int UNIQUE_BOOK_SLOT_2 = 9; // Épées
-    private static final int UNIQUE_BOOK_SLOT_3 = 10; // NOUVEAU : 3ème slot épées
+    private static final int UNIQUE_BOOK_SLOT_1 = 9;
+    private static final int UNIQUE_BOOK_SLOT_2 = 10; // Épées
+    private static final int UNIQUE_BOOK_SLOT_3 = 11; // NOUVEAU : 3ème slot épées
     private static final int SHOP_BUTTON_SLOT = 22;
     private static final int BACK_BUTTON_SLOT = 26;
     private final PrisonTycoon plugin;

@@ -455,9 +455,14 @@ public class PickaxeManager {
      * NOUVEAU : Met à jour les effets de mobilité selon les enchantements activés/désactivés
      */
     public void updateMobilityEffects(Player player) {
-
         ItemStack handItem = player.getInventory().getItemInMainHand();
-        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || !isPickaxeInCorrectSlot(player) || isPickaxeBroken(player)) {
+
+        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || isPickaxeBroken(player)) {
+            removeMobilityEffects(player);
+            return;
+        }
+
+        if (player.getLocation().getWorld().getName().equals("Cave")) {
             removeMobilityEffects(player);
             return;
         }
@@ -524,13 +529,17 @@ public class PickaxeManager {
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
-        // NOUVEAU : Vérifie que la pioche n'est pas cassée
         if (isPickaxeBroken(player) && playerData.getEnchantmentLevel("escalator") > 0) {
             player.sendMessage("§c❌ Votre pioche est trop endommagée pour utiliser Escalateur! Réparez-la d'abord.");
             return;
         }
 
-        if (playerData.getEnchantmentLevel("escalator") > 0 &&
+        if (player.getLocation().getWorld().getName().equals("Cave")) {
+            player.sendMessage("§c❌ Vous ne pouvez utiliser Escalateur dans la Cave.");
+            return;
+        }
+
+            if (playerData.getEnchantmentLevel("escalator") > 0 &&
                 playerData.isMobilityEnchantmentEnabled("escalator")) {
             Location location = player.getLocation();
             World world = location.getWorld();

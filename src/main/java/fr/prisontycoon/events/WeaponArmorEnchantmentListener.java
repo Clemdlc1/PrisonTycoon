@@ -258,6 +258,9 @@ public class WeaponArmorEnchantmentListener implements Listener {
         plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.KILL_MONSTERS, 1);
 
         ItemStack weapon = player.getInventory().getItemInMainHand();
+        if (weapon == null || weapon.getType() == Material.AIR) {
+            return;
+        }
 
         int beheadLevel = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(weapon, "behead");
         int chancePercent;
