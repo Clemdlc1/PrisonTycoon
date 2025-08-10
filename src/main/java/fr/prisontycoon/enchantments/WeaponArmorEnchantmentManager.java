@@ -544,6 +544,7 @@ public class WeaponArmorEnchantmentManager {
                     case WITCH -> HeadEnum.WITCH;
                     case EVOKER -> HeadEnum.EVOKER;
                     case IRON_GOLEM -> HeadEnum.GOLEM;
+                    case SHULKER ->  HeadEnum.SHULKER;
                     default -> null;
                 };
                 yield mhf != null ? HeadUtils.createHead(mhf) : null;

@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -50,10 +51,12 @@ public class ContainerListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+    public void onPlayerPickupItem(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+
         if (plugin.getContainerManager().isContainer(event.getItem().getItemStack())) {
             // Re-scanner l'inventaire après le ramassage pour mettre à jour le cache
-            Bukkit.getScheduler().runTask(plugin, () -> plugin.getContainerManager().rescanAndCachePlayerInventory(event.getPlayer()));
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getContainerManager().rescanAndCachePlayerInventory(player));
         }
     }
 

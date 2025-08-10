@@ -95,8 +95,29 @@ public final class HeadUtils {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         if (meta != null) {
-            OfflinePlayer op = Bukkit.getOfflinePlayer(mhfName);
-            meta.setOwningPlayer(op);
+            // Meilleur chemin: créer un profil par nom et tenter de le compléter (Paper)
+            PlayerProfile profile = null;
+            try {
+                profile = Bukkit.createProfile(mhfName);
+                try { profile.complete(true); } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {}
+
+            if (profile != null && !profile.getProperties().isEmpty()) {
+                meta.setPlayerProfile(profile);
+            } else {
+                // Fallback: utiliser OfflinePlayer (peut marcher en online-mode)
+                OfflinePlayer op = Bukkit.getOfflinePlayer(mhfName);
+                try {
+                    PlayerProfile opProfile = op.getPlayerProfile();
+                    if (opProfile != null && !opProfile.getProperties().isEmpty()) {
+                        meta.setPlayerProfile(opProfile);
+                    } else {
+                        meta.setOwningPlayer(op);
+                    }
+                } catch (Throwable ignored) {
+                    meta.setOwningPlayer(op);
+                }
+            }
             if (displayName != null) applyDisplayName(meta, "§f" + displayName);
             head.setItemMeta(meta);
         }

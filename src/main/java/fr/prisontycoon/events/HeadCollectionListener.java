@@ -33,20 +33,16 @@ public class HeadCollectionListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        Bukkit.broadcastMessage("1");
         // Ne fonctionne qu'en mode setup
         if (!setupMode) return;
         Player player = event.getPlayer();
         Block placedBlock = event.getBlock();
-        Bukkit.broadcastMessage("2");
 
         // Vérifier si c'est une tête de collection
         if (placedBlock.getType() == Material.PLAYER_HEAD &&
                 plugin.getHeadCollectionManager().isCollectionHeadItem(event.getItemInHand())) {
             // Enregistrer la position
             plugin.getHeadCollectionManager().registerHeadPlacement(placedBlock.getLocation());
-            Bukkit.broadcastMessage("3");
-
             player.sendMessage("§a✓ Tête de collection enregistrée !");
             player.sendMessage("§7Position: " + placedBlock.getX() + ", " + placedBlock.getY() + ", " + placedBlock.getZ());
 

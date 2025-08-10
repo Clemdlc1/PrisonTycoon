@@ -77,19 +77,19 @@ public class MobilityEffectsListener implements Listener {
         if (data == null) return;
 
         int planneur = data.getEnchantmentLevel("planneur");
-        if (planneur <= 0 || data.isMobilityEnchantmentEnabled("planneur")) return;
+        if (planneur <= 0 || data.isMobilityEnchantmentEnabled("planneur") || player.getWorld().equals("Cave")) return;
 
         // Désactivation si le joueur sneak
         if (player.isSneaking()) {
             player.removePotionEffect(PotionEffectType.SLOW_FALLING);
             return;
         }
-
+        int planneur_level = data.getEnchantmentLevel("planneur");
         // Applique l'effet si le joueur est en l'air et chute
         if (player.getLocation().subtract(0, 0.1, 0).getBlock().getType().isAir() && player.getVelocity().getY() < -0.08) {
             PotionEffect current = player.getPotionEffect(PotionEffectType.SLOW_FALLING);
             if (current == null || current.getDuration() < 20) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 60, 0, true, false));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 60, planneur_level, true, false));
             }
         }
     }

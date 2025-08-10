@@ -50,11 +50,13 @@ public enum HeadEnum {
     SKELETON("MHF_Skeleton", SourceType.MHF),
     SLIME("MHF_Slime", SourceType.MHF),
     SPIDER("MHF_Spider", SourceType.MHF),
+    SHULKER("MHF_Shulker", SourceType.MHF),
     SQUID("MHF_Squid", SourceType.MHF),
     VILLAGER("MHF_Villager", SourceType.MHF),
     WITCH("MHF_Witch", SourceType.MHF),
     WITHER("MHF_Wither", SourceType.MHF),
-    ZOMBIE("MHF_Zombie", SourceType.MHF);
+    ZOMBIE("MHF_Zombie", SourceType.MHF),
+    SHULKER("MHF_Shulker", SourceType.MHF);
 
     public enum SourceType { BASE64, URL, MHF }
 
