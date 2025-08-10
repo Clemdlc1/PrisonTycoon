@@ -87,6 +87,7 @@ public class EnchantmentManager {
 
         // Ajoute aux statistiques de minage
         playerData.addMinedBlock(blockType);
+        plugin.getBlockCollectorManager().add(player, blockType, 1);
 
         // NOUVEAU : Jackpot — chance d'obtenir un voucher aléatoire en minant
         int jackpotLevel = playerData.getEnchantmentLevel("jackpot");
@@ -942,6 +943,7 @@ public class EnchantmentManager {
 
         // Ajoute aux statistiques de destruction (CASSÉ)
         playerData.addDestroyedBlocks(1);
+        plugin.getBlockCollectorManager().add(player, blockType, 1);
 
         // NOUVEAU: Applique Fortune sur les blocs cassés
         int blocksfortune = calculateFortuneBlocks(player, playerData, blockType);
@@ -1035,7 +1037,6 @@ public class EnchantmentManager {
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
-            // Quêtes: améliorer un enchantement X fois
             plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.UPGRADE_ENCHANTMENTS, actualLevels);
             return true;
         }

@@ -58,7 +58,6 @@ public class MiningListener implements Listener {
         String mineName = plugin.getConfigManager().getPlayerMine(location);
         String worldName = location.getWorld().getName();
         boolean isLegendaryPickaxe = plugin.getPickaxeManager().isLegendaryPickaxe(playerPickaxe);
-        plugin.getBlockCollectorManager().add(player, material, 1);
 
         // Cas 1 : Le joueur est dans une mine configurée
         if (mineName != null) {

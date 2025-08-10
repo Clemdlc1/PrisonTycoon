@@ -52,7 +52,14 @@ public enum GUIType {
     BOOK_SHOP_PICKAXE("book_shop_pickaxe"),
     BOOK_SHOP_WEAPON_ARMOR("book_shop_weapon_armor"),
     QUESTS_MENU("quests_menu"),
-    BLOCK_COLLECTOR("block_collector");
+    QUESTS_DAILY("quests_daily"),
+    QUESTS_WEEKLY("quests_weekly"),
+    BLOCK_COLLECTOR("block_collector"),
+    BLOCK_COLLECTOR_STATS("block_collector_stats"),
+    BLOCK_COLLECTOR_LEADERBOARD("block_collector_leaderboard"),
+    ADVANCEMENT_QUESTS("advancement_quests"),
+    QUEST_STATISTICS("quest_statistics"),
+    QUEST_REWARDS_HISTORY("quest_rewards_history");
 
     private final String id;
 

@@ -24,7 +24,7 @@ public class QuestCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cCommande joueur uniquement.");
             return true;
         }
-        plugin.getQuestsGUI().open(player);
+        plugin.getQuestsGUI().openMainMenu(player);
         return true;
     }
 

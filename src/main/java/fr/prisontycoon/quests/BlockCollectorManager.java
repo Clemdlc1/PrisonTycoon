@@ -22,10 +22,12 @@ public class BlockCollectorManager {
     private final PrisonTycoon plugin;
     private final Gson gson = new Gson();
     private final Map<UUID, Map<Material, Long>> cache = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Material, Integer>> claimedCache = new ConcurrentHashMap<>(); // palier réclamé par matériau
     private static final int MAX_TIERS = 100;
 
     public BlockCollectorManager(PrisonTycoon plugin) {
         this.plugin = plugin;
+        ensureTables();
     }
 
     public long add(Player player, Material mat, long amount) {
@@ -43,7 +45,6 @@ public class BlockCollectorManager {
 
     public int getTierFor(Player player, Material mat) {
         long count = get(player, mat);
-        // Courbe de progression: palier n requiert n^2 * base (base=50)
         int tier = 0;
         long base = 50;
         long remaining = count;
@@ -71,12 +72,23 @@ public class BlockCollectorManager {
     }
 
     public boolean claimTier(Player player, Material mat) {
-        int tier = getTierFor(player, mat);
-        // On ne reclasse pas; cliquer valide simplement la récompense du tier atteint non encore réclamée.
-        // Pour simplicité: récompense = beacons = 5 * tier
-        if (tier <= 0) return false;
-        plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()).addBeacons(5L * tier);
+        int currentTier = getTierFor(player, mat);
+        if (currentTier <= 0) return false;
+
+        int alreadyClaimed = getClaimedTier(player.getUniqueId(), mat);
+        if (currentTier <= alreadyClaimed) return false;
+
+        long totalBeacons = 0;
+        for (int t = alreadyClaimed + 1; t <= currentTier; t++) {
+            totalBeacons += 5L * t;
+        }
+
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        data.addBeacons(totalBeacons);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+        setClaimedTier(player.getUniqueId(), mat, currentTier);
+        save(player.getUniqueId());
         return true;
     }
 
@@ -108,19 +120,38 @@ public class BlockCollectorManager {
 
     public void save(UUID playerId) {
         Map<Material, Long> map = cache.get(playerId);
-        if (map == null) return;
-        Map<String, Long> s = new HashMap<>();
-        for (var e : map.entrySet()) s.put(e.getKey().name(), e.getValue());
-        String sql = """
-                INSERT INTO player_block_stats(uuid, stats_json) VALUES(?,?)
-                ON CONFLICT (uuid) DO UPDATE SET stats_json = EXCLUDED.stats_json
-                """;
-        try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, playerId.toString());
-            ps.setString(2, gson.toJson(s));
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            plugin.getLogger().warning("save block stats error: " + e.getMessage());
+        if (map != null) {
+            Map<String, Long> s = new HashMap<>();
+            for (var e : map.entrySet()) s.put(e.getKey().name(), e.getValue());
+            String sql = """
+                    INSERT INTO player_block_stats(uuid, stats_json) VALUES(?,?)
+                    ON CONFLICT (uuid) DO UPDATE SET stats_json = EXCLUDED.stats_json
+                    """;
+            try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, playerId.toString());
+                ps.setString(2, gson.toJson(s));
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("save block stats error: " + e.getMessage());
+            }
+        }
+
+        // Sauvegarde des paliers réclamés
+        Map<Material, Integer> claimed = claimedCache.get(playerId);
+        if (claimed != null) {
+            Map<String, Integer> s = new HashMap<>();
+            for (var e : claimed.entrySet()) s.put(e.getKey().name(), e.getValue());
+            String sql = """
+                    INSERT INTO player_block_claims(uuid, claims_json) VALUES(?,?)
+                    ON CONFLICT (uuid) DO UPDATE SET claims_json = EXCLUDED.claims_json
+                    """;
+            try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, playerId.toString());
+                ps.setString(2, gson.toJson(s));
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("save block claims error: " + e.getMessage());
+            }
         }
     }
 
@@ -136,6 +167,8 @@ public class BlockCollectorManager {
                     if (s != null) for (var e : s.entrySet()) {
                         try { map.put(Material.valueOf(e.getKey()), e.getValue()); } catch (Exception ignored) {}
                     }
+                    // Précharge aussi les paliers réclamés
+                    claimedCache.computeIfAbsent(playerId, this::loadClaimsMap);
                     return map;
                 }
             }
@@ -143,6 +176,81 @@ public class BlockCollectorManager {
             plugin.getLogger().warning("load block stats error: " + e.getMessage());
         }
         return new ConcurrentHashMap<>();
+    }
+
+    private Map<Material, Integer> loadClaimsMap(UUID playerId) {
+        String sql = "SELECT claims_json FROM player_block_claims WHERE uuid = ?";
+        try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, playerId.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Type type = new TypeToken<Map<String, Integer>>(){}.getType();
+                    Map<String, Integer> s = gson.fromJson(rs.getString("claims_json"), type);
+                    Map<Material, Integer> map = new ConcurrentHashMap<>();
+                    if (s != null) for (var e : s.entrySet()) {
+                        try { map.put(Material.valueOf(e.getKey()), e.getValue()); } catch (Exception ignored) {}
+                    }
+                    return map;
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("load block claims error: " + e.getMessage());
+        }
+        return new ConcurrentHashMap<>();
+    }
+
+    private int getClaimedTier(UUID playerId, Material mat) {
+        Map<Material, Integer> map = claimedCache.computeIfAbsent(playerId, this::loadClaimsMap);
+        return map.getOrDefault(mat, 0);
+    }
+
+    private void setClaimedTier(UUID playerId, Material mat, int tier) {
+        Map<Material, Integer> map = claimedCache.computeIfAbsent(playerId, this::loadClaimsMap);
+        map.put(mat, Math.max(0, tier));
+    }
+
+    /**
+     * Indique si le joueur peut réclamer une récompense pour ce matériau (tier courant > tier réclamé)
+     */
+    public boolean canClaim(Player player, Material mat) {
+        int currentTier = getTierFor(player, mat);
+        int claimed = getClaimedTier(player.getUniqueId(), mat);
+        return currentTier > claimed;
+    }
+
+    /**
+     * Retourne le plus haut palier déjà réclamé pour ce matériau
+     */
+    public int getClaimedTierFor(Player player, Material mat) {
+        return getClaimedTier(player.getUniqueId(), mat);
+    }
+
+    private void ensureTables() {
+        // Table des stats (déjà créée ailleurs, mais inoffensif)
+        String q1 = """
+                CREATE TABLE IF NOT EXISTS player_block_stats (
+                    uuid VARCHAR(36) PRIMARY KEY,
+                    stats_json TEXT
+                );
+                """;
+        try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(q1)) {
+            ps.execute();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("BlockCollectorManager table error: " + e.getMessage());
+        }
+
+        // Nouvelle table: paliers réclamés
+        String q2 = """
+                CREATE TABLE IF NOT EXISTS player_block_claims (
+                    uuid VARCHAR(36) PRIMARY KEY,
+                    claims_json TEXT
+                );
+                """;
+        try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(q2)) {
+            ps.execute();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Block claims table error: " + e.getMessage());
+        }
     }
 }
 

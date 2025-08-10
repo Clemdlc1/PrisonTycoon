@@ -15,6 +15,7 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.OutpostData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.quests.QuestType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -377,6 +378,8 @@ public class OutpostManager {
 
         // Mettre à jour les bannières
         updateOutpostBanners(player);
+
+        plugin.getQuestManager().addProgress(player, QuestType.CAPTURE_OUTPOST,1);
 
         // Notifier
         broadcastToCaveWorld("§a🏰 §l" + player.getName() + " §aa capturé l'avant-poste!");

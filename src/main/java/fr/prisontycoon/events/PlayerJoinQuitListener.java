@@ -138,6 +138,11 @@ public class PlayerJoinQuitListener implements Listener {
         plugin.getEnchantmentBookManager().saveActiveEnchantments(player);
         plugin.getEnchantmentBookManager().clearActiveEnchantments(player.getUniqueId());
 
+        // Sauvegarde quêtes + collectionneur avant déchargement
+        var questProgress = plugin.getQuestManager().getProgress(player.getUniqueId());
+        plugin.getQuestManager().saveProgress(questProgress);
+        plugin.getBlockCollectorManager().save(player.getUniqueId());
+
         // Décharge les données du joueur (avec sauvegarde)
         plugin.getPlayerDataManager().unloadPlayer(player.getUniqueId());
         plugin.getPermissionManager().removeAttachment(player);

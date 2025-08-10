@@ -5,9 +5,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.NamespacedKey;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -128,6 +130,28 @@ public class GUIManager {
             openGUIs.remove(playerId);
             guiData.remove(playerId);
         }
+    }
+
+    /**
+     * Ajoute un effet de brillance (glow) à un item sans affecter ses enchantements
+     *
+     * @param item L'item à faire briller
+     * @return L'item avec l'effet de brillance
+     */
+    public ItemStack addGlowEffect(ItemStack item) {
+        if (item == null) return null;
+
+        ItemStack glowItem = item.clone();
+        ItemMeta meta = glowItem.getItemMeta();
+
+        if (meta != null) {
+            // Ajoute un enchantement invisible pour créer l'effet de brillance
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            glowItem.setItemMeta(meta);
+        }
+
+        return glowItem;
     }
 
     /**

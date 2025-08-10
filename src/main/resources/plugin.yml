@@ -408,11 +408,6 @@ commands:
     usage: /quetes
     permission: specialmine.basic
 
-  collector:
-    description: "Ouvre le collectionneur de blocs"
-    usage: /collector
-    permission: specialmine.basic
-
 # Compatibilité
 depend-bootstrap: false
 

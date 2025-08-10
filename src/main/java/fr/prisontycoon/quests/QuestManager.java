@@ -186,13 +186,8 @@ public class QuestManager {
                         weekly_completed = EXCLUDED.weekly_completed
                     """;
             try (PreparedStatement ps = c.prepareStatement(sql)) {
-                Map<String,Integer> progress = new HashMap<>();
-                Map<String,Boolean> claimed = new HashMap<>();
-                // cache p expose les maps en interne; on reconstruit depuis l'état public
-                // Ici, on ne dispose pas d’itérateurs publics; on s’appuie sur nos mises à jour centralisées
-                // Pour rester simple, on ne persiste que via incréments passés par updateProgress/claim.
-                // (Alternative: étendre PlayerQuestProgress pour exposer les maps — évité pour concision.)
-                // On sérialise le cache actuel de quêtes actives; pour robustesse on laisse vide si inconnu.
+                Map<String,Integer> progress = p.getAllProgress();
+                Map<String,Boolean> claimed = p.getAllClaimed();
                 ps.setString(1, p.getPlayerId().toString());
                 ps.setString(2, gson.toJson(progress));
                 ps.setString(3, gson.toJson(claimed));
@@ -235,6 +230,8 @@ public class QuestManager {
         if (q.getCategory() == QuestCategory.DAILY) p.incDailyCompleted();
         if (q.getCategory() == QuestCategory.WEEKLY) p.incWeeklyCompleted();
         cache.put(player.getUniqueId(), p);
+        // Sauvegarde immédiate après claim pour résilience (crash/déconnexion)
+        saveProgress(p);
         return true;
     }
 

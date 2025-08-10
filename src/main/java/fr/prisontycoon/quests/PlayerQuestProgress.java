@@ -55,6 +55,20 @@ public class PlayerQuestProgress {
     public void incWeeklyCompleted() { weeklyCompletedCount++; }
     public int getDailyCompletedCount() { return dailyCompletedCount; }
     public int getWeeklyCompletedCount() { return weeklyCompletedCount; }
+
+        /**
+         * Retourne une copie immuable de la progression par quête pour persistance
+         */
+        public Map<String, Integer> getAllProgress() {
+            return new HashMap<>(progressByQuest);
+        }
+
+        /**
+         * Retourne une copie immuable des quêtes réclamées pour persistance
+         */
+        public Map<String, Boolean> getAllClaimed() {
+            return new HashMap<>(claimedByQuest);
+        }
 }
 
 

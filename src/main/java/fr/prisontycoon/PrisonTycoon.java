@@ -106,7 +106,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
     private HeadCollectionGUI headCollectionGUI;
     private QuestsGUI questsGUI;
-    private BlockCollectorGUI blockCollectorGUI;
 
     // --- Tâches ---
     private ActionBarTask actionBarTask;
@@ -285,7 +284,6 @@ public final class PrisonTycoon extends JavaPlugin {
         weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
         headCollectionGUI = new HeadCollectionGUI(this);
         questsGUI = new QuestsGUI(this);
-        blockCollectorGUI = new BlockCollectorGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -388,7 +386,6 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new OutpostCommand(this), "ap");
         registerCommand(new PlayerDataCommand(this), "playerdata");
         registerCommand(new QuestCommand(this), "quetes");
-        registerCommand(new BlockCollectorCommand(this), "collector");
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -543,7 +540,6 @@ public final class PrisonTycoon extends JavaPlugin {
     public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
     public HeadCollectionGUI getHeadCollectionGUI() { return headCollectionGUI; }
     public QuestsGUI getQuestsGUI() { return questsGUI; }
-    public BlockCollectorGUI getBlockCollectorGUI() { return blockCollectorGUI; }
 
     // --- Commandes ---
     public RankupCommand getRankupCommand() { return rankupCommand; }
