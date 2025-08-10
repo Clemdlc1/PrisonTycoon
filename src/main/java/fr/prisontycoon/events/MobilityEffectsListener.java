@@ -77,7 +77,7 @@ public class MobilityEffectsListener implements Listener {
         if (data == null) return;
 
         int planneur = data.getEnchantmentLevel("planneur");
-        if (planneur <= 0) return;
+        if (planneur <= 0 || data.isMobilityEnchantmentEnabled("planneur")) return;
 
         // Désactivation si le joueur sneak
         if (player.isSneaking()) {

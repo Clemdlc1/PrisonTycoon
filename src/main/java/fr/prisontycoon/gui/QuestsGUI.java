@@ -23,18 +23,17 @@ public class QuestsGUI {
 
     // Slots de navigation principaux
     private static final int DAILY_QUESTS_SLOT = 11;
-    private static final int WEEKLY_QUESTS_SLOT = 13;
-    private static final int BLOCK_COLLECTOR_SLOT = 15;
-    private static final int ADVANCEMENT_QUESTS_SLOT = 22; // Centre, important
+    private static final int WEEKLY_QUESTS_SLOT = 15;
+    private static final int BLOCK_COLLECTOR_SLOT = 13;
+    private static final int ADVANCEMENT_QUESTS_SLOT = 22;
 
     // Slots de récompenses bonus
     private static final int DAILY_BONUS_SLOT = 29;
     private static final int WEEKLY_BONUS_SLOT = 33;
 
     // Slots utilitaires
-    private static final int REFRESH_SLOT = 49;
-    private static final int CLOSE_SLOT = 53;
-    private static final int STATS_SLOT = 45;
+    private static final int REFRESH_SLOT = 40;
+    private static final int CLOSE_SLOT = 44;
 
     public QuestsGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -45,7 +44,7 @@ public class QuestsGUI {
      * Ouvre le menu principal des quêtes
      */
     public void openMainMenu(Player player) {
-        Inventory gui = guiManager.createInventory(54, "§6✦ §lSYSTÈME DE QUÊTES §6✦");
+        Inventory gui = guiManager.createInventory(45, "§6✦ §lSYSTÈME DE QUÊTES §6✦");
 
         // Remplir avec du verre coloré
         fillWithDecorativeGlass(gui);
@@ -66,9 +65,6 @@ public class QuestsGUI {
         // Utilitaires
         gui.setItem(REFRESH_SLOT, createRefreshButton());
         gui.setItem(CLOSE_SLOT, createCloseButton());
-
-        // Séparateurs décoratifs
-        addDecorativeSeparators(gui);
 
         guiManager.registerOpenGUI(player, GUIType.QUESTS_MENU, gui);
         player.openInventory(gui);
@@ -183,11 +179,6 @@ public class QuestsGUI {
 
         if (slot == CLOSE_SLOT) {
             player.closeInventory();
-            return;
-        }
-
-        if (slot == STATS_SLOT) {
-            openStatsView(player);
             return;
         }
 
@@ -743,16 +734,6 @@ public class QuestsGUI {
         }
     }
 
-    private void addDecorativeSeparators(Inventory gui) {
-        ItemStack separator = new ItemStack(Material.YELLOW_STAINED_GLASS_PANE);
-        ItemMeta meta = separator.getItemMeta();
-        guiManager.applyName(meta, "§e⬥ §6NAVIGATION §e⬥");
-        separator.setItemMeta(meta);
-
-        gui.setItem(18, separator);
-        gui.setItem(26, separator);
-    }
-
     private String createProgressBar(int current, int max, int length) {
         if (max <= 0) return "§8[" + "§7".repeat(length) + "§8]";
 
@@ -988,11 +969,6 @@ public class QuestsGUI {
         player.sendMessage("§c⚠ Les quêtes d'avancement ne sont pas encore disponibles !");
         player.sendMessage("§7Cette fonctionnalité sera ajoutée dans une future mise à jour.");
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.8f, 1.0f);
-    }
-
-    private void openStatsView(Player player) {
-        player.sendMessage("§b📊 Statistiques détaillées - Fonctionnalité en développement");
-        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.0f);
     }
 
     private void checkAndGrantCategoryBonus(Player player, QuestCategory category) {

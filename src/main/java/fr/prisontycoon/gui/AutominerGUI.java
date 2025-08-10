@@ -11,6 +11,8 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import fr.prisontycoon.utils.HeadEnum;
+import fr.prisontycoon.utils.HeadUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -202,7 +204,7 @@ public class AutominerGUI {
     }
 
     private ItemStack createWorldItem(PlayerData playerData) {
-        ItemStack item = new ItemStack(Material.GRASS_BLOCK);
+        ItemStack item = HeadUtils.createHead(HeadEnum.GLOBE);
         ItemMeta meta = item.getItemMeta();
 
         String currentWorld = playerData.getAutominerCurrentWorld();
@@ -264,7 +266,7 @@ public class AutominerGUI {
     }
 
     private ItemStack createStorageItem(PlayerData playerData) {
-        ItemStack item = new ItemStack(Material.CHEST);
+        ItemStack item = HeadUtils.createHead(HeadEnum.CHEST_GUI);
         ItemMeta meta = item.getItemMeta();
 
         plugin.getGUIManager().applyName(meta, "§6📦 Stockage");
@@ -303,7 +305,7 @@ public class AutominerGUI {
     }
 
     private ItemStack createFuelItem(PlayerData playerData) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        ItemStack item = HeadUtils.createHead(HeadEnum.FUEL);
         ItemMeta meta = item.getItemMeta();
 
         plugin.getGUIManager().applyName(meta, "§c⛽ Carburant");
@@ -340,7 +342,7 @@ public class AutominerGUI {
     }
 
     private ItemStack createCondensationItem() {
-        ItemStack item = new ItemStack(Material.CRAFTING_TABLE);
+        ItemStack item = HeadUtils.createHead(HeadEnum.CRAFTING);
         ItemMeta meta = item.getItemMeta();
 
         plugin.getGUIManager().applyName(meta, "§d🔧 Condensation");

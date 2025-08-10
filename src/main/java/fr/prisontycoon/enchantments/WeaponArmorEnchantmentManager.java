@@ -4,12 +4,15 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.PlayerDataManager;
 import fr.prisontycoon.utils.NumberFormatter;
+import fr.prisontycoon.utils.HeadUtils;
+import fr.prisontycoon.utils.HeadEnum;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -410,6 +413,8 @@ public class WeaponArmorEnchantmentManager {
                 handleRepercussion(dead, killer, enchantLevel, event);
             } else if ("chasseur".equals(enchantKey)) {
                 handleChasseur(dead, killer, enchantLevel);
+            } else if ("behead".equals(enchantKey)) {
+                handleBehead(dead, killer, enchantLevel);
             }
         }
     }
@@ -486,6 +491,67 @@ public class WeaponArmorEnchantmentManager {
             killerData.addCoins(coinsGain);
             killer.sendMessage("§b§lCHASSEUR §3| Votre chasse à la réputation opposée vous rapporte §b" + NumberFormatter.format(coinsGain) + " coins§3 !");
         }
+    }
+
+    /**
+     * Donne la tête de la victime au tueur avec une certaine probabilité.
+     * Actif uniquement pour des victimes joueurs.
+     */
+    private void handleBehead(Player dead, Player killer, int level) {
+        if (dead == null || killer == null) return;
+        // 10% par niveau (actuellement 1 niveau max)
+        int chancePercent = Math.max(1, 10 * Math.max(1, level));
+        if (ThreadLocalRandom.current().nextInt(100) < chancePercent) {
+            // Crée une tête adaptée (joueur via UUID, sinon mob via MHF)
+            ItemStack head = createHeadForEntity(dead);
+            if (head != null) {
+                if (killer.getInventory().firstEmpty() != -1) {
+                    killer.getInventory().addItem(head);
+                } else {
+                    killer.getWorld().dropItemNaturally(killer.getLocation(), head);
+                }
+                killer.sendMessage("§6💀 BeHead: Vous obtenez la tête de §e" + dead.getName() + "§6!");
+            }
+        }
+    }
+
+    /**
+     * Crée une tête adaptée à l'entité tuée (joueur ou monstre) en utilisant les têtes MHF pour les mobs.
+     * Retourne null si aucun mapping n'existe.
+     */
+    public ItemStack createHeadForEntity(Entity entity) {
+        if (entity == null) return null;
+        if (entity instanceof Player p) {
+            return HeadUtils.createPlayerHead(p.getUniqueId(), "§6Tête de §e" + p.getName());
+        }
+
+        HeadEnum mhf = switch (entity.getType()) {
+            case ZOMBIE -> HeadEnum.ZOMBIE;
+            case SKELETON -> HeadEnum.SKELETON;
+            case CREEPER -> HeadEnum.CREEPER;
+            case WITHER -> HeadEnum.WITHER;
+            case ENDERMAN -> HeadEnum.ENDERMAN;
+            case SPIDER -> HeadEnum.SPIDER;
+            case BLAZE -> HeadEnum.BLAZE;
+            case WITCH -> HeadEnum.WITCH;
+            case EVOKER -> HeadEnum.EVOKER;
+            case IRON_GOLEM -> HeadEnum.GOLEM;
+            default -> null;
+        };
+
+        if (mhf == null) return null;
+        ItemStack head = HeadUtils.createHead(mhf);
+        ItemMeta meta = head.getItemMeta();
+        if (meta != null) {
+            String name = "§6Tête de §e" + entity.getType().name().toLowerCase().replace('_', ' ');
+            if (meta.hasDisplayName()) {
+                // override
+            }
+            // utilise notre helper Adventure
+            HeadUtils.applyDisplayName(meta, name);
+            head.setItemMeta(meta);
+        }
+        return head;
     }
 
     // Méthodes utilitaires
@@ -805,35 +871,7 @@ public class WeaponArmorEnchantmentManager {
 
         @Override
         public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
-            if (!(victim instanceof LivingEntity)) return;
-
-            if (ThreadLocalRandom.current().nextInt(10) == 0) { // 10% de chance
-                ItemStack head = null;
-
-                if (victim instanceof Player) {
-                    head = new ItemStack(Material.PLAYER_HEAD);
-                    // TODO: Configurer la tête du joueur
-                } else {
-                    // Têtes de monstres basiques
-                    head = switch (victim.getType()) {
-                        case ZOMBIE -> new ItemStack(Material.ZOMBIE_HEAD);
-                        case SKELETON -> new ItemStack(Material.SKELETON_SKULL);
-                        case CREEPER -> new ItemStack(Material.CREEPER_HEAD);
-                        case WITHER_SKELETON -> new ItemStack(Material.WITHER_SKELETON_SKULL);
-                        case ENDER_DRAGON -> new ItemStack(Material.DRAGON_HEAD);
-                        default -> head;
-                    };
-                }
-
-                if (head != null) {
-                    if (attacker.getInventory().firstEmpty() != -1) {
-                        attacker.getInventory().addItem(head);
-                    } else {
-                        attacker.getWorld().dropItemNaturally(attacker.getLocation(), head);
-                    }
-                    attacker.sendMessage("§6💀 BeHead: Tête obtenue!");
-                }
-            }
+            // Logique déplacée dans handlePlayerDeath pour garantir que la victime est morte
         }
     }
 

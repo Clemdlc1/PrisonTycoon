@@ -12,46 +12,44 @@ import org.bukkit.entity.Player;
 public class QuestRewards {
     private final long beacons;
     private final int jobXp;
-    private final VoucherType voucherType; // optionnel
-    private final int voucherTier;         // optionnel
-    private final BoostType boostType;     // optionnel
-    private final int boostMinutes;        // optionnel
-    private final double boostPercent;     // optionnel
+    private VoucherType voucherType; // optionnel
+    private int voucherTier;         // optionnel
+    private BoostType boostType;     // optionnel
+    private int boostMinutes;        // optionnel
+    private double boostPercent;     // optionnel
+    private int essenceFragments;
 
-    /**
-     * Constructeur principal pour toutes les récompenses
-     */
-    public QuestRewards(long beacons, int jobXp,
-                        VoucherType voucherType, int voucherTier,
-                        BoostType boostType, int boostMinutes, double boostPercent) {
+    // Constructeur principal simple pour beacons + jobXp
+    public QuestRewards(long beacons, int jobXp) {
         this.beacons = Math.max(0, beacons);
         this.jobXp = Math.max(0, jobXp);
+        this.voucherType = null;
+        this.voucherTier = 0;
+        this.boostType = null;
+        this.boostMinutes = 0;
+        this.boostPercent = 0.0;
+        this.essenceFragments = 0;
+    }
+
+    // Constructeur pratique avec voucher
+    public QuestRewards(long beacons, int jobXp, VoucherType voucherType, int voucherTier) {
+        this(beacons, jobXp);
         this.voucherType = voucherType;
         this.voucherTier = Math.max(1, voucherTier);
+    }
+
+    // Constructeur pratique avec boost
+    public QuestRewards(long beacons, int jobXp, BoostType boostType, int boostMinutes, double boostPercent) {
+        this(beacons, jobXp);
         this.boostType = boostType;
         this.boostMinutes = Math.max(1, boostMinutes);
         this.boostPercent = Math.max(1.0, boostPercent);
     }
 
-    /**
-     * Constructeur simplifié pour récompenses basiques (beacons + XP uniquement)
-     */
-    public QuestRewards(long beacons, int jobXp) {
-        this(beacons, jobXp, null, 0, null, 0, 0.0);
-    }
-
-    /**
-     * Constructeur avec voucher uniquement
-     */
-    public QuestRewards(long beacons, int jobXp, VoucherType voucherType, int voucherTier) {
-        this(beacons, jobXp, voucherType, voucherTier, null, 0, 0.0);
-    }
-
-    /**
-     * Constructeur avec boost uniquement
-     */
-    public QuestRewards(long beacons, int jobXp, BoostType boostType, int boostMinutes, double boostPercent) {
-        this(beacons, jobXp, null, 0, boostType, boostMinutes, boostPercent);
+    // Constructeur pratique avec fragments d'essence
+    public QuestRewards(long beacons, int jobXp, int essenceFragments) {
+        this(beacons, jobXp);
+        this.essenceFragments = Math.max(0, essenceFragments);
     }
 
     /**
@@ -89,6 +87,12 @@ public class QuestRewards {
             }
         }
 
+        // Fragments de forge: quêtes → Essence seulement
+        if (essenceFragments > 0) {
+            var it = plugin.getForgeManager().createFragment(fr.prisontycoon.managers.ForgeManager.FragmentType.ESSENCE, essenceFragments);
+            if (!plugin.getContainerManager().addItemToContainers(player, it)) player.getInventory().addItem(it);
+        }
+
         // Marque les données comme modifiées pour sauvegarde
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
     }
@@ -118,6 +122,11 @@ public class QuestRewards {
             desc.append("§aBoost ").append(boostType.name())
                     .append(" ").append(String.format("%.0f", boostPercent))
                     .append("% (").append(boostMinutes).append("min)");
+        }
+
+        if (essenceFragments > 0) {
+            if (desc.length() > 0) desc.append("§7, ");
+            desc.append("§bFragments Essence x").append(essenceFragments);
         }
 
         return desc.toString();
@@ -261,6 +270,7 @@ public class QuestRewards {
         private BoostType boostType = null;
         private int boostMinutes = 0;
         private double boostPercent = 0.0;
+        private int essenceFragments = 0;
 
         public Builder beacons(long beacons) {
             this.beacons = beacons;
@@ -285,9 +295,26 @@ public class QuestRewards {
             return this;
         }
 
+        public Builder essence(int essence) {
+            this.essenceFragments = essence;
+            return this;
+        }
+
         public QuestRewards build() {
-            return new QuestRewards(beacons, jobXp, voucherType, voucherTier,
-                    boostType, boostMinutes, boostPercent);
+            QuestRewards r = new QuestRewards(beacons, jobXp);
+            if (voucherType != null && voucherTier > 0) {
+                r.voucherType = voucherType;
+                r.voucherTier = Math.max(1, voucherTier);
+            }
+            if (boostType != null && boostMinutes > 0 && boostPercent > 0) {
+                r.boostType = boostType;
+                r.boostMinutes = Math.max(1, boostMinutes);
+                r.boostPercent = Math.max(1.0, boostPercent);
+            }
+            if (essenceFragments > 0) {
+                r.essenceFragments = Math.max(0, essenceFragments);
+            }
+            return r;
         }
     }
 
@@ -337,6 +364,7 @@ public class QuestRewards {
                 ", boostType=" + boostType +
                 ", boostMinutes=" + boostMinutes +
                 ", boostPercent=" + boostPercent +
+                ", essenceFragments=" + essenceFragments +
                 '}';
     }
 
@@ -359,6 +387,6 @@ public class QuestRewards {
     @Override
     public int hashCode() {
         return java.util.Objects.hash(beacons, jobXp, voucherType, voucherTier,
-                boostType, boostMinutes, boostPercent);
+                boostType, boostMinutes, boostPercent, essenceFragments);
     }
 }

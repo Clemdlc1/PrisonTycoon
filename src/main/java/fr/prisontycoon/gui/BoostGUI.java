@@ -176,6 +176,23 @@ public class BoostGUI {
                 }
             }
 
+            // Affiche une carte récap des bonus d'armure en bas (toutes catégories condensées)
+            double armorTokens = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.TOKEN_BONUS).getArmorBonus();
+            double armorMoney  = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.MONEY_BONUS).getArmorBonus();
+            double armorXp     = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.EXPERIENCE_BONUS).getArmorBonus();
+            double armorSell   = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.SELL_BONUS).getArmorBonus();
+            double armorFort   = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.FORTUNE_BONUS).getArmorBonus();
+
+            if (armorTokens > 0 || armorMoney > 0 || armorXp > 0 || armorSell > 0 || armorFort > 0) {
+                lore.add("");
+                lore.add("§6⚔ Bonus d'Armure (Forge)");
+                if (armorTokens > 0) lore.add("§b• Tokens: §a+" + String.format("%.1f", armorTokens) + "%");
+                if (armorMoney  > 0) lore.add("§6• Coins: §a+" + String.format("%.1f", armorMoney) + "%");
+                if (armorXp     > 0) lore.add("§a• Expérience: §a+" + String.format("%.1f", armorXp) + "%");
+                if (armorSell   > 0) lore.add("§e• Vente: §a+" + String.format("%.1f", armorSell) + "%");
+                if (armorFort   > 0) lore.add("§9• Fortune: §a+" + String.format("%.1f", armorFort) + "%");
+            }
+
             if (lore.size() == 3) { // rien ajouté après l'en-tête
                 lore.add("§7Aucun bonus actif actuellement");
             }

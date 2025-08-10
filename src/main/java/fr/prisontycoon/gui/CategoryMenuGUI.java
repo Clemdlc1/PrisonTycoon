@@ -413,10 +413,8 @@ public class CategoryMenuGUI {
     private ItemStack createBackButton() {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
-
         plugin.getGUIManager().applyName(meta, "§7← §lRetour");
         plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu principal"));
-
         arrow.setItemMeta(meta);
         return arrow;
     }

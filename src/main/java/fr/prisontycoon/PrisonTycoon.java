@@ -5,6 +5,7 @@ import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
 import fr.prisontycoon.commands.*;
+import fr.prisontycoon.commands.ForgeCommand;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentManager;
@@ -13,7 +14,10 @@ import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
 import fr.prisontycoon.quests.*;
 import fr.prisontycoon.events.*;
 import fr.prisontycoon.gui.*;
+import fr.prisontycoon.gui.ForgeGUI;
+import fr.prisontycoon.gui.ForgeRecipeGUI;
 import fr.prisontycoon.managers.*;
+import fr.prisontycoon.managers.ForgeManager;
 import fr.prisontycoon.tasks.*;
 import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
@@ -76,6 +80,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private MineOverloadManager mineOverloadManager;
     private QuestManager questManager;
     private BlockCollectorManager blockCollectorManager;
+    private ForgeManager forgeManager;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -106,6 +111,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
     private HeadCollectionGUI headCollectionGUI;
     private QuestsGUI questsGUI;
+    private ForgeGUI forgeGUI;
+    private ForgeRecipeGUI forgeRecipeGUI;
 
     // --- Tâches ---
     private ActionBarTask actionBarTask;
@@ -249,6 +256,7 @@ public final class PrisonTycoon extends JavaPlugin {
         mineOverloadManager = new MineOverloadManager(this);
         questManager = new QuestManager(this);
         blockCollectorManager = new BlockCollectorManager(this);
+        forgeManager = new ForgeManager(this);
 
         logger.info("§aTous les managers ont été initialisés.");
     }
@@ -284,6 +292,8 @@ public final class PrisonTycoon extends JavaPlugin {
         weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
         headCollectionGUI = new HeadCollectionGUI(this);
         questsGUI = new QuestsGUI(this);
+        forgeGUI = new ForgeGUI(this);
+        forgeRecipeGUI = new ForgeRecipeGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -386,6 +396,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new OutpostCommand(this), "ap");
         registerCommand(new PlayerDataCommand(this), "playerdata");
         registerCommand(new QuestCommand(this), "quetes");
+        registerCommand(new ForgeCommand(this), "forge");
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -506,6 +517,8 @@ public final class PrisonTycoon extends JavaPlugin {
     public CristalManager getCristalManager() { return cristalManager; }
     public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
     public HeadCollectionManager getHeadCollectionManager() { return headCollectionManager; }
+    public ForgeManager getForgeManager() { return forgeManager; }
+
     // --- Tâches ---
     public AutoUpgradeTask getAutoUpgradeTask() { return autoUpgradeTask; }
     public ActionBarTask getActionBarTask() { return actionBarTask; }
@@ -540,6 +553,8 @@ public final class PrisonTycoon extends JavaPlugin {
     public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
     public HeadCollectionGUI getHeadCollectionGUI() { return headCollectionGUI; }
     public QuestsGUI getQuestsGUI() { return questsGUI; }
+    public ForgeGUI getForgeGUI() { return forgeGUI; }
+    public ForgeRecipeGUI getForgeRecipeGUI() { return forgeRecipeGUI; }
 
     // --- Commandes ---
     public RankupCommand getRankupCommand() { return rankupCommand; }

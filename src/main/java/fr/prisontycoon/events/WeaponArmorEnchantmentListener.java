@@ -7,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -18,6 +19,7 @@ import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listener pour les enchantements d'épées et armures
@@ -241,6 +243,77 @@ public class WeaponArmorEnchantmentListener implements Listener {
             if (!player.getWorld().getName().equalsIgnoreCase("Cave")) {
                 event.setCancelled(true);
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityDeath(EntityDeathEvent event) {
+        if (!(event.getEntity().getKiller() instanceof Player player)) {
+            return;
+        }
+        if (event.getEntity() instanceof Player) {
+            return;
+        }
+        // Progression des quêtes
+        plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.KILL_MONSTERS, 1);
+
+        ItemStack weapon = player.getInventory().getItemInMainHand();
+
+        int beheadLevel = plugin.getWeaponArmorEnchantmentManager().getEnchantmentLevel(weapon, "behead");
+        int chancePercent;
+
+        // Si le joueur a l'enchantement, on calcule ses chances
+        if (beheadLevel > 0) {
+            chancePercent = Math.max(1, 10 * beheadLevel);
+        } else {
+            chancePercent = 1;
+        }
+
+        // Drop fragments de forge (quêtes/monstres)
+        dropForgeFragments(event, player);
+
+        // On lance le dé pour voir si la tête est obtenue
+        if (ThreadLocalRandom.current().nextInt(100) < chancePercent) {
+            ItemStack head = plugin.getWeaponArmorEnchantmentManager().createHeadForEntity(event.getEntity());
+            if (head != null) {
+                if (player.getInventory().firstEmpty() != -1) {
+                    player.getInventory().addItem(head);
+                } else {
+                    player.getWorld().dropItemNaturally(player.getLocation(), head);
+                }
+                if (beheadLevel > 0) {
+                    player.sendMessage("§6💀 BeHead: Tête obtenue!");
+                } else {
+                    player.sendMessage("§6💀 Tête obtenue!");
+                }
+            }
+        }
+    }
+
+    private void dropForgeFragments(EntityDeathEvent event, Player player) {
+        var rng = ThreadLocalRandom.current();
+        int roll = rng.nextInt(100);
+        // Chances modestes de drop, progressives selon mob HP (simple):
+        // 15% faible, 25% moyen, 35% élevé
+        int baseChance = 15;
+        double maxHealth = 20.0;
+        if (event.getEntity() instanceof org.bukkit.attribute.Attributable attributable) {
+            var attr = attributable.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            if (attr != null) maxHealth = attr.getBaseValue();
+        }
+        if (maxHealth >= 60) baseChance = 35; else if (maxHealth >= 30) baseChance = 25;
+        if (roll < baseChance) {
+            // Type de fragment aléatoire avec poids
+            fr.prisontycoon.managers.ForgeManager.FragmentType type;
+            int t = rng.nextInt(100);
+            if (t < 70) type = fr.prisontycoon.managers.ForgeManager.FragmentType.COPPER;
+            else type = fr.prisontycoon.managers.ForgeManager.FragmentType.ALLOY;
+
+            int amount = 1 + rng.nextInt(2); // 1-2
+            var item = plugin.getForgeManager().createFragment(type, amount);
+            if (player.getInventory().firstEmpty() != -1) player.getInventory().addItem(item);
+            else event.getEntity().getWorld().dropItemNaturally(event.getEntity().getLocation(), item);
+            player.sendMessage("§6💀 Fragment de forge obtenu!");
         }
     }
 

@@ -125,7 +125,23 @@ public class QuestManager {
                     boostPercent = r.getDouble("boost.percent", 50.0);
                 }
             }
-            QuestRewards rewards = new QuestRewards(beacons, jobXp, voucherType, voucherTier, boostType, boostMinutes, boostPercent);
+            // Seul fragments.essence est pris en compte pour les quêtes
+            int fragEssence = r != null ? r.getInt("fragments.essence", 0) : 0;
+
+            // Contrainte: les quêtes ne peuvent donner que des fragments d'Essence
+            QuestRewards.Builder builder = QuestRewards.builder()
+                    .beacons(beacons)
+                    .jobXp(jobXp);
+            if (fragEssence > 0) {
+                builder.essence(fragEssence);
+            }
+            if (voucherType != null && voucherTier > 0) {
+                builder.voucher(voucherType, voucherTier);
+            }
+            if (boostType != null && boostMinutes > 0 && boostPercent > 0) {
+                builder.boost(boostType, boostMinutes, boostPercent);
+            }
+            QuestRewards rewards = builder.build();
             quests.put(id, new QuestDefinition(id, category, type, target, params, rewards));
         }
     }

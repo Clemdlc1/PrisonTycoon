@@ -68,7 +68,14 @@ public class GlobalBonusManager {
             details.addDetailedSource("Cristaux " + getCristalTypeName(category), cristalBonus);
         }
 
-        // 2. Bonus des talents de métiers
+        // 2. Bonus armures forge (nouveau)
+        double armorBonus = getArmorBonus(player, category);
+        details.setArmorBonus(armorBonus);
+        if (armorBonus > 0) {
+            details.addDetailedSource("Armure Forge", armorBonus);
+        }
+
+        // 3. Bonus des talents de métiers
         double professionBonus = getProfessionTalentBonus(player, category);
         details.setProfessionBonus(professionBonus);
         if (professionBonus > 0) {
@@ -76,21 +83,21 @@ public class GlobalBonusManager {
             details.addDetailedSource("Talent " + (activeProfession != null ? activeProfession : "métier"), professionBonus);
         }
 
-        // 3. Bonus des talents de prestige
+        // 4. Bonus des talents de prestige
         double prestigeBonus = getPrestigeTalentBonus(player, category);
         details.setPrestigeBonus(prestigeBonus);
         if (prestigeBonus > 0) {
             details.addDetailedSource("Talent Prestige", prestigeBonus);
         }
 
-        // 4. Bonus des boosts temporaires (joueur)
+        // 5. Bonus des boosts temporaires (joueur)
         double boostBonus = getTemporaryBoostBonus(player, category);
         details.setTemporaryBoostBonus(boostBonus);
         if (boostBonus > 0) {
             details.addDetailedSource("Boosts Personnels", boostBonus);
         }
 
-        // 5. Bonus permanents du gang (niveaux, talents)
+        // 6. Bonus permanents du gang (niveaux, talents)
         double gangBonus = getGangBonus(player, category);
         details.setGangBonus(gangBonus);
         if (gangBonus > 0) {
@@ -99,7 +106,7 @@ public class GlobalBonusManager {
             details.addDetailedSource("Gang " + gangName, gangBonus);
         }
 
-        // 6. Bonus du boost de gang (temporaire)
+        // 7. Bonus du boost de gang (temporaire)
         double temporaryGangBoost = getTemporaryGangBoostBonus(player, category);
         details.setTemporaryGangBoostBonus(temporaryGangBoost);
         if (temporaryGangBoost > 0) {
@@ -443,6 +450,20 @@ public class GlobalBonusManager {
         }
     }
 
+    /**
+     * NOUVEAU : Bonus provenant de l'armure de forge équipée
+     */
+    private double getArmorBonus(Player player, BonusCategory category) {
+        try {
+            if (plugin.getForgeManager() == null) return 0.0;
+            var map = plugin.getForgeManager().getEquippedArmorBonuses(player);
+            Double val = map.get(category);
+            return val == null ? 0.0 : val;
+        } catch (Throwable t) {
+            return 0.0;
+        }
+    }
+
     // ========================================
     // MÉTHODES UTILITAIRES DE MAPPING
     // ========================================
@@ -688,9 +709,10 @@ public class GlobalBonusManager {
         private double temporaryGangBoostBonus = 0.0;
         private double enchantmentBonus = 0.0;
         private double overloadBonus = 0.0;
+            private double armorBonus = 0.0;
 
         public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus;
+                return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus;
         }
 
         public double getTotalMultiplier() {
@@ -712,6 +734,14 @@ public class GlobalBonusManager {
         public void setOverloadBonus(double overloadBonus) {
             this.overloadBonus = overloadBonus;
         }
+
+            public double getArmorBonus() {
+                return armorBonus;
+            }
+
+            public void setArmorBonus(double armorBonus) {
+                this.armorBonus = armorBonus;
+            }
 
         // Getters
         public double getCristalBonus() {

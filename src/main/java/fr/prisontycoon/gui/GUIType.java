@@ -59,7 +59,9 @@ public enum GUIType {
     BLOCK_COLLECTOR_LEADERBOARD("block_collector_leaderboard"),
     ADVANCEMENT_QUESTS("advancement_quests"),
     QUEST_STATISTICS("quest_statistics"),
-    QUEST_REWARDS_HISTORY("quest_rewards_history");
+    QUEST_REWARDS_HISTORY("quest_rewards_history"),
+    FORGE_MAIN("forge_main"),
+    FORGE_RECIPE("forge_recipe");
 
     private final String id;
 

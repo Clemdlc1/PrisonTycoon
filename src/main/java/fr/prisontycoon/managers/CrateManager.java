@@ -393,6 +393,7 @@ public class CrateManager {
             case AUTOMINER -> "§7Autominer " + reward.getAutominerType();
             case VOUCHER -> "§eVoucher " + reward.getVoucherType();
             case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
+            case FORGE_BLUEPRINT -> "§7Plan de forge " + reward.getBlueprintTier();
         };
     }
 

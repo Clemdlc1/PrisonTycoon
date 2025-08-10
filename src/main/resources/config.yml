@@ -1681,9 +1681,9 @@ warps:
     type: "CRATE"
     world: "Spawn"
     x: -10
-    y: 71
-    z: 43
-    yaw: 180.0
+    y: 70
+    z: 35
+    yaw: 0.0
     pitch: 0.0
     permission: ""
     head-material: "CHEST"
@@ -1728,9 +1728,9 @@ warps:
     display-name: "§8🕳 Caves"
     type: "CAVE"
     world: "Cave"
-    x: 0
-    y: 64
-    z: 0
+    x: 19.5
+    y: 8
+    z: -30.5
     yaw: 0.0
     pitch: 0.0
     permission: ""
@@ -1759,10 +1759,10 @@ warps:
   shops:
     display-name: "§a🏪 Magasins"
     type: "SHOP"
-    world: "Spawn"
-    x: 50
-    y: 70
-    z: 50
+    world: "Market"
+    x: 0.5
+    y: 74
+    z: 0.5
     yaw: 0.0
     pitch: 0.0
     permission: ""

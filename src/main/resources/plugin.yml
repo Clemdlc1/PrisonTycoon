@@ -408,6 +408,11 @@ commands:
     usage: /quetes
     permission: specialmine.basic
 
+  forge:
+    description: "Ouvre la Forge"
+    usage: /forge
+    permission: specialmine.basic
+
 # Compatibilité
 depend-bootstrap: false
 

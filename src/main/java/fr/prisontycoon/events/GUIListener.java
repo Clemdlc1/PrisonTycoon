@@ -183,6 +183,8 @@ public class GUIListener implements Listener {
             case HEAD_COLLECTION -> plugin.getHeadCollectionGUI().handleCollectionMenuClick(player, slot, item);
 
             case OUTPOST_MAIN, OUTPOST_SKINS -> plugin.getOutpostGUI().handleClick(player, item, guiType.name());
+            case FORGE_MAIN -> plugin.getForgeGUI().handleClick(player, slot, item);
+            case FORGE_RECIPE -> plugin.getForgeRecipeGUI().handleClick(player, slot, item);
             default -> plugin.getPluginLogger().warning("GUI non géré: " + guiType);
         }
     }
