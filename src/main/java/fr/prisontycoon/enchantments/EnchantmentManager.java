@@ -1035,6 +1035,8 @@ public class EnchantmentManager {
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
             plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+            // Quêtes: améliorer un enchantement X fois
+            plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.UPGRADE_ENCHANTMENTS, actualLevels);
             return true;
         }
 
@@ -1133,7 +1135,7 @@ class KeyGreedEnchantment implements CustomEnchantment {
 
     @Override
     public EnchantmentCategory getCategory() {
-        return EnchantmentCategory.SPECIAL; // MODIFIÉ : changé de ECONOMIC vers SPECIAL
+        return EnchantmentCategory.ECONOMIC; // MODIFIÉ : changé de ECONOMIC vers SPECIAL
     }
 
     @Override
@@ -1258,7 +1260,7 @@ class AbondanceEnchantment implements CustomEnchantment {
     }
 
     public EnchantmentCategory getCategory() {
-        return EnchantmentCategory.ECONOMIC;
+        return EnchantmentCategory.UTILITY;
     }
 
     public String getDescription() {
@@ -1288,7 +1290,7 @@ class CombustionEnchantment implements CustomEnchantment {
     }
 
     public EnchantmentCategory getCategory() {
-        return EnchantmentCategory.ECONOMIC;
+        return EnchantmentCategory.UTILITY;
     }
 
     public String getDescription() {
@@ -1588,7 +1590,7 @@ class LuckEnchantment implements CustomEnchantment {
     }
 
     public EnchantmentCategory getCategory() {
-        return EnchantmentCategory.SPECIAL;
+        return EnchantmentCategory.UTILITY;
     }
 
     public String getDescription() {
@@ -1705,7 +1707,7 @@ class HeritageEnchantment implements CustomEnchantment {
 class OpportunityFeverEnchantment implements CustomEnchantment {
     @Override public String getName() { return "opportunity_fever"; }
     @Override public String getDisplayName() { return "§eFièvre de l'Opportunité"; }
-    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
+    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
     @Override public String getDescription() { return "Chance de 10s pendant lesquelles un bloc déclenche toujours un greed"; }
     @Override public int getMaxLevel() { return 10000; }
     @Override public long getUpgradeCost(int level) { return Math.max(25, Math.round(4 * Math.pow(1.02, level))); }

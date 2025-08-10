@@ -226,6 +226,10 @@ public class ContainerManager {
                     data.clearVendableContents(plugin.getConfigManager()::getSellPrice);
                     if (!data.useDurability(1)) {
                         brokenMessages.add(getTierName(data.getTier()));
+                        // Quêtes: conteneur cassé (côté manager)
+                        try {
+                            plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.BREAK_CONTAINER, 1);
+                        } catch (Throwable ignored) {}
                     }
                     updateContainerInInventory(player, uuid, data);
                 }

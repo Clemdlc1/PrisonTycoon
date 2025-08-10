@@ -1,0 +1,93 @@
+daily:
+  kill_players:
+    type: KILL_PLAYERS
+    target: 5
+    rewards:
+      beacons: 10
+      job_xp: 25
+      voucher:
+        type: TOKEN
+        tier: 1
+
+  mine_beacons:
+    type: MINE_BEACONS
+    target: 20
+    rewards:
+      beacons: 15
+      job_xp: 20
+
+  upgrade_enchants:
+    type: UPGRADE_ENCHANTMENTS
+    target: 10
+    rewards:
+      beacons: 20
+      job_xp: 15
+      boost:
+        type: TOKEN_BOOST
+        minutes: 30
+        percent: 50.0
+
+  capture_outpost:
+    type: CAPTURE_OUTPOST
+    target: 1
+    rewards:
+      beacons: 20
+      job_xp: 15
+
+  win_spontaneous:
+    type: WIN_SPONTANEOUS_EVENT
+    target: 1
+    rewards:
+      beacons: 25
+      job_xp: 30
+
+weekly:
+  kill_players_week:
+    type: KILL_PLAYERS
+    target: 50
+    rewards:
+      beacons: 150
+      job_xp: 200
+
+  kill_monsters_week:
+    type: KILL_MONSTERS
+    target: 300
+    rewards:
+      beacons: 120
+      job_xp: 150
+
+  mine_beacons_week:
+    type: MINE_BEACONS
+    target: 120
+    rewards:
+      beacons: 200
+      job_xp: 150
+
+  sellhand_week:
+    type: USE_SELLHAND
+    target: 10
+    rewards:
+      beacons: 100
+      job_xp: 100
+
+  break_container_week:
+    type: BREAK_CONTAINER
+    target: 1
+    rewards:
+      beacons: 80
+      job_xp: 100
+
+  hold_outpost_week:
+    type: HOLD_OUTPOST_MINUTES
+    target: 10
+    rewards:
+      beacons: 150
+      job_xp: 200
+
+  participate_boss_week:
+    type: PARTICIPATE_BOSS
+    target: 2
+    rewards:
+      beacons: 200
+      job_xp: 250
+

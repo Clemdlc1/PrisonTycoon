@@ -176,6 +176,8 @@ public class GUIListener implements Listener {
             case WARP_MENU, WARP_MINES_MENU -> plugin.getWarpGUI().handleWarpMenuClick(player, item);
 
             case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
+            case QUESTS_MENU -> plugin.getQuestsGUI().handleClick(player, slot, item);
+            case BLOCK_COLLECTOR -> plugin.getBlockCollectorGUI().handleClick(player, slot, item);
 
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
 

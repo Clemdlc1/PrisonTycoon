@@ -58,6 +58,7 @@ public class MiningListener implements Listener {
         String mineName = plugin.getConfigManager().getPlayerMine(location);
         String worldName = location.getWorld().getName();
         boolean isLegendaryPickaxe = plugin.getPickaxeManager().isLegendaryPickaxe(playerPickaxe);
+        plugin.getBlockCollectorManager().add(player, material, 1);
 
         // Cas 1 : Le joueur est dans une mine configurée
         if (mineName != null) {
@@ -93,6 +94,7 @@ public class MiningListener implements Listener {
             int finalBeaconGain = (int) (1 * beaconBonus);
             playerData.addBeacons(finalBeaconGain);
             handleCaveBeaconBreak(player, location, finalBeaconGain);
+            plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.MINE_BEACONS, 1);
 
             // Cas 3 : Le joueur a la permission de miner dans des mondes spéciaux (hors mines)
         } else if (worldName.startsWith("Market") || worldName.startsWith("island") || player.hasPermission("specialmine.admin")) {
@@ -379,7 +381,8 @@ public class MiningListener implements Listener {
         if (material == Material.BEACON) {
             double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.BEACON_MULTIPLIER);
             int finalBeaconGain = (int) (1 * beaconBonus);
-            playerData.addBeacons(finalBeaconGain);
+            playerData.addBeacons(finalBeaconGain);            
+            plugin.getBlockCollectorManager().add(player, material, 1);
             return;
         }
         // Traite ce bloc MINÉ directement par le joueur (avec Greeds, enchants spéciaux, etc.)

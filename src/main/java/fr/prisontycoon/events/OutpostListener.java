@@ -90,6 +90,8 @@ public class OutpostListener implements Listener {
 
                 // Auto-démarrer la capture (optionnel)
                 outpostManager.startCapture(player);
+                // Quêtes: capture outpost
+                plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.CAPTURE_OUTPOST, 1);
             }
         }
     }

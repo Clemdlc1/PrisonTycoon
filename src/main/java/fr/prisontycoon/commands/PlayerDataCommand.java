@@ -73,16 +73,6 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
                     else sender.sendMessage("§cColonne inconnue: §e" + column);
                 }
             }
-            case "dump" -> {
-                PlayerData data = plugin.getPlayerDataManager().getPlayerData(targetId);
-                String activeProfession = data.getActiveProfession();
-                sender.sendMessage("§7--- §ePlayerData Dump§7 ---");
-                sender.sendMessage("§7Joueur: §e" + data.getPlayerName() + " §8(" + targetId + ")");
-                sender.sendMessage("§7Métier actif: §e" + (activeProfession == null ? "aucun" : activeProfession));
-                sender.sendMessage("§7Niveaux métiers: §e" + data.getAllProfessionLevels());
-                sender.sendMessage("§7XP métiers: §e" + data.getAllProfessionXP());
-                sender.sendMessage("§7Talents: §e" + data.getAllTalentLevels().keySet());
-            }
             default -> sender.sendMessage("§cAction inconnue. Utilisez: save, load, dump");
         }
 
@@ -110,7 +100,7 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> sub = Arrays.asList("save", "load", "dump");
+            List<String> sub = Arrays.asList("save", "load");
             StringUtil.copyPartialMatches(args[0], sub, completions);
         } else if (args.length == 2) {
             List<String> players = new ArrayList<>();

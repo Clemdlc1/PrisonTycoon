@@ -50,7 +50,9 @@ public enum GUIType {
     CRATE_MANAGEMENT("crate_management"),
     BOOK_SHOP_SELECTOR("book_shop_selector"),
     BOOK_SHOP_PICKAXE("book_shop_pickaxe"),
-    BOOK_SHOP_WEAPON_ARMOR("book_shop_weapon_armor");
+    BOOK_SHOP_WEAPON_ARMOR("book_shop_weapon_armor"),
+    QUESTS_MENU("quests_menu"),
+    BLOCK_COLLECTOR("block_collector");
 
     private final String id;
 

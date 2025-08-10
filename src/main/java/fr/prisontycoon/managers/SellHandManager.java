@@ -176,6 +176,11 @@ public class SellHandManager {
         // Sauvegarder le tank
         plugin.getTankManager().saveTank(tankData);
 
+        // Quêtes: utilisation d'un SellHand (compte les utilisations réussies)
+        try {
+            plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.USE_SELLHAND, 1);
+        } catch (Throwable ignored) {}
+
         return true;
     }
 

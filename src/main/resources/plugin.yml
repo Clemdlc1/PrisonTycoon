@@ -236,8 +236,8 @@ commands:
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
   playerdata:
-    description: "Admin: sauvegarder/charger/dumper les données joueur"
-    usage: /playerdata <save|load|dump> <joueur>
+    description: "Admin: sauvegarder/charger les données joueur"
+    usage: /playerdata <save|load> <joueur>
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
@@ -401,6 +401,16 @@ commands:
   collection:
     description: "Collection de têtes"
     usage: /collection
+    permission: specialmine.basic
+
+  quetes:
+    description: "Ouvre le menu des quêtes (quotidiennes/hebdomadaires)"
+    usage: /quetes
+    permission: specialmine.basic
+
+  collector:
+    description: "Ouvre le collectionneur de blocs"
+    usage: /collector
     permission: specialmine.basic
 
 # Compatibilité

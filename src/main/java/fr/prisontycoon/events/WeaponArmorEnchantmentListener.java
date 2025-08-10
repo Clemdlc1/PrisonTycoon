@@ -226,6 +226,8 @@ public class WeaponArmorEnchantmentListener implements Listener {
 
         if (killer != null) {
             plugin.getWeaponArmorEnchantmentManager().handlePlayerDeath(dead, killer, event);
+            // Quêtes: tuer des joueurs
+            plugin.getQuestManager().addProgress(killer, fr.prisontycoon.quests.QuestType.KILL_PLAYERS, 1);
         }
     }
 
