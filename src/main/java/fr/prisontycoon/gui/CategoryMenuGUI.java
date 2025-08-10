@@ -49,12 +49,7 @@ public class CategoryMenuGUI {
         // Enchantements de la catégorie
         var enchantments = plugin.getEnchantmentManager().getEnchantmentsByCategory(category);
         int[] slots;
-
-        if (category == EnchantmentCategory.UTILITY) {
-            slots = new int[]{11,12, 13,14, 15};
-        } else {
-            slots = new int[]{10, 11, 12, 13, 14, 15, 16};
-        }
+        slots = new int[]{10, 11, 12, 13, 14, 15, 16};
 
         for (int i = 0; i < enchantments.size() && i < slots.length; i++) {
             CustomEnchantment enchantment = enchantments.get(i);
