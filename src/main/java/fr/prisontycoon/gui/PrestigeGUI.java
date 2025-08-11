@@ -72,7 +72,7 @@ public class PrestigeGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§6🏆 §lSystème de Prestige §6🏆");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PRESTIGE_MENU, gui);
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupMainPrestigeMenu(gui, player);
 
         player.openInventory(gui);
@@ -122,7 +122,7 @@ public class PrestigeGUI {
 
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏆 Progression Prestige : P" + (page * 5 + 1) + "-P" + Math.min((page + 1) * 5, maxPrestige));
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupProgressionMenu(gui, player, page);
 
         player.openInventory(gui);
@@ -702,21 +702,6 @@ public class PrestigeGUI {
 
 
     // =============== MÉTHODES DE CRÉATION D'ITEMS ===============
-
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        if (glassMeta != null) {
-            plugin.getGUIManager().applyName(glassMeta, " ");
-            glass.setItemMeta(glassMeta);
-        }
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, glass);
-            }
-        }
-    }
 
     private ItemStack createPrestigeInfoItem(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());

@@ -76,7 +76,7 @@ public class EnchantmentMenu {
         }
 
         // Remplissage décoratif des espaces restants
-        fillEmptySlots(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.ENCHANTMENT_MENU, gui);
         player.openInventory(gui);
@@ -450,25 +450,6 @@ public class EnchantmentMenu {
         head.setItemMeta(meta);
 
         return head;
-    }
-
-    /**
-     * Remplit les bordures avec des items décoratifs
-     */
-    private void fillEmptySlots(Inventory gui) {
-        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = filler.getItemMeta();
-
-        if (meta != null) {
-            plugin.getGUIManager().applyName(meta, "§7");
-            filler.setItemMeta(meta);
-        }
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, filler);
-            }
-        }
     }
 
     /**

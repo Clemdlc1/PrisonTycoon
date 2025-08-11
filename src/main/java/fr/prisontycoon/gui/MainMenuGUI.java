@@ -38,7 +38,7 @@ public class MainMenuGUI {
 
     public void openMainMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§8• §6Menu Principal §8•");
-        fillBorders(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Placeholder infos joueur (tête)
         gui.setItem(4, createPlayerInfo(player));
@@ -255,27 +255,6 @@ public class MainMenuGUI {
         plugin.getGUIManager().applyLore(meta, lore);
         head.setItemMeta(meta);
         return head;
-    }
-
-    private void fillBorders(Inventory gui) {
-        ItemStack glass1 = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta m1 = glass1.getItemMeta();
-        if (m1 != null) {
-            plugin.getGUIManager().applyName(m1, " ");
-            glass1.setItemMeta(m1);
-        }
-        ItemStack glass2 = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta m2 = glass2.getItemMeta();
-        if (m2 != null) {
-            plugin.getGUIManager().applyName(m2, " ");
-            glass2.setItemMeta(m2);
-        }
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (i < 9 || i >= gui.getSize() - 9 || i % 9 == 0 || i % 9 == 8) {
-                gui.setItem(i, (i % 2 == 0) ? glass1 : glass2);
-            }
-        }
     }
 
     private Component deserializeNoItalic(String legacy) {

@@ -44,7 +44,7 @@ public class QuestsGUI {
         Inventory gui = guiManager.createInventory(45, "§6✦ §lSYSTÈME DE QUÊTES §6✦");
 
         // Remplir avec du verre coloré
-        fillWithDecorativeGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Titre central décoratif
         gui.setItem(4, createTitleItem());
@@ -90,7 +90,7 @@ public class QuestsGUI {
                 "§e⏰ §lQUÊTES JOURNALIÈRES" : "§d📅 §lQUÊTES HEBDOMADAIRES";
 
         Inventory gui = guiManager.createInventory(54, title);
-        fillWithDecorativeGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Header avec informations
         gui.setItem(4, createCategoryInfoItem(player, category));
@@ -118,7 +118,7 @@ public class QuestsGUI {
     public void openBlockCollector(Player player) {
         Inventory gui = guiManager.createInventory(54, "§a⛏ §lCOLLECTIONNEUR DE BLOCS");
 
-        fillWithDecorativeGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         gui.setItem(4, createBlockCollectorInfoItem(player));
         gui.setItem(45, createBackToMainButton());
         gui.setItem(49, createBlockStatsButton(player));
@@ -707,29 +707,6 @@ public class QuestsGUI {
     // ================================================================================================
     // MÉTHODES UTILITAIRES
     // ================================================================================================
-
-    private void fillWithDecorativeGlass(Inventory gui) {
-        ItemStack lightGlass = new ItemStack(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
-        ItemMeta lightMeta = lightGlass.getItemMeta();
-        guiManager.applyName(lightMeta, " ");
-        lightGlass.setItemMeta(lightMeta);
-
-        ItemStack darkGlass = new ItemStack(Material.BLUE_STAINED_GLASS_PANE);
-        ItemMeta darkMeta = darkGlass.getItemMeta();
-        guiManager.applyName(darkMeta, " ");
-        darkGlass.setItemMeta(darkMeta);
-
-        // Motif alternant
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                if ((i / 9) % 2 == 0) {
-                    gui.setItem(i, i % 2 == 0 ? lightGlass : darkGlass);
-                } else {
-                    gui.setItem(i, i % 2 == 0 ? darkGlass : lightGlass);
-                }
-            }
-        }
-    }
 
     private String createProgressBar(int current, int max, int length) {
         if (max <= 0) return "§8[" + "§7".repeat(length) + "§8]";

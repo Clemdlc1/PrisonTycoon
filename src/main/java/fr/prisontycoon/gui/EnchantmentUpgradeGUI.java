@@ -39,7 +39,7 @@ public class EnchantmentUpgradeGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, title);
 
         // Remplissage décoratif
-        fillBorders(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Tête du joueur
         gui.setItem(4, createPlayerHead(player));
@@ -207,11 +207,6 @@ public class EnchantmentUpgradeGUI {
             lore.add("§7▸ Coût total: §6" + NumberFormatter.format(totalCost));
             lore.add("§7▸ Tokens disponibles: §c" + NumberFormatter.format(availableTokens));
             lore.add("§7▸ Tokens manquants: §c" + NumberFormatter.format(totalCost - availableTokens));
-
-            // Progression vers cet objectif
-            double progressPercent = (double) availableTokens / totalCost * 100;
-            lore.add("§7▸ Progression: §e" + String.format("%.1f%%", progressPercent));
-            lore.add("");
 
             // Calcule combien on pourrait acheter avec les tokens actuels
             int maxAffordable = calculateMaxAffordableUpgrades(enchantment, currentLevel, availableTokens);
@@ -761,21 +756,5 @@ public class EnchantmentUpgradeGUI {
             case "explosion" -> "explosion";
             default -> cleanTitle.toLowerCase().replace(" ", "_");
         };
-    }
-
-    private void fillBorders(Inventory gui) {
-        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(meta, "§7");
-        filler.setItemMeta(meta);
-
-        // Slots à remplir pour décorer (en évitant les emplacements des items)
-        int[] borderSlots = {0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 23, 24, 25};
-        for (int slot : borderSlots) {
-            // Vérifie que l'on ne remplace pas un item déjà placé
-            if (gui.getItem(slot) == null) {
-                gui.setItem(slot, filler);
-            }
-        }
     }
 }

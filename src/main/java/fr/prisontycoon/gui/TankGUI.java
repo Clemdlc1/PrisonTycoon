@@ -98,7 +98,7 @@ public class TankGUI implements Listener {
         }
 
         // Bordures propres
-        fillBorders(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         player.openInventory(gui);
         openTankGUIs.put(player.getUniqueId(), tankId);
@@ -152,7 +152,7 @@ public class TankGUI implements Listener {
 
         // Bouton fermer
         gui.setItem(49, createCloseButton());
-        fillBorders(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         player.openInventory(gui);
     }
@@ -525,24 +525,6 @@ public class TankGUI implements Listener {
         plugin.getGUIManager().applyLore(meta, List.of("§7Fermer cette interface"));
         item.setItemMeta(meta);
         return item;
-    }
-
-    /**
-     * Remplit les bordures de la GUI de manière plus propre
-     */
-    private void fillBorders(Inventory gui) {
-        ItemStack border = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = border.getItemMeta();
-        plugin.getGUIManager().applyName(meta, "");
-        border.setItemMeta(meta);
-
-        // Bordures uniquement sur les côtés et coins
-        int[] borderSlots = {0, 1, 2, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 46, 47, 51, 52, 53};
-        for (int slot : borderSlots) {
-            if (gui.getItem(slot) == null) {
-                gui.setItem(slot, border);
-            }
-        }
     }
 
     // === GESTION DES ÉVÉNEMENTS ===

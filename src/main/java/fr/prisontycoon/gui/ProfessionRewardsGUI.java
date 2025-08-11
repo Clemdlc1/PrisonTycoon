@@ -51,7 +51,7 @@ public class ProfessionRewardsGUI {
         // Enregistre le GUI avec des données contextuelles pour le retour
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_REWARDS, gui, java.util.Map.of("professionId", professionId));
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupRewardsMenu(gui, player, profession);
 
         player.openInventory(gui);
@@ -77,22 +77,6 @@ public class ProfessionRewardsGUI {
                 }
             }
             case "back_to_professions" -> plugin.getProfessionGUI().openProfessionMenu(player);
-        }
-    }
-
-    /**
-     * Remplit l'inventaire avec du verre décoratif
-     */
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, " ");
-        glass.setItemMeta(glassMeta);
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, glass);
-            }
         }
     }
 

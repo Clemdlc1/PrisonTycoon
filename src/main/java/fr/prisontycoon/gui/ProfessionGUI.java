@@ -67,7 +67,7 @@ public class ProfessionGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§e⚒ §lMétiers §e⚒");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupProfessionMenu(gui, player);
 
         player.openInventory(gui);
@@ -111,7 +111,7 @@ public class ProfessionGUI {
         // CORRIGÉ : Enregistre le GUI avec le numéro de page actuel
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_TALENTS, gui, Map.of("page", String.valueOf(page)));
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupTalentsKitsMenu(gui, player, profession, page);
 
         player.openInventory(gui);
@@ -599,7 +599,6 @@ public class ProfessionGUI {
         lore.add("§7Commandes utiles:");
         lore.add("§e/metier info §7- Infos sur votre métier");
         lore.add("§e/metier changemetier <métier> §7- Changer de métier");
-        lore.add("§e/metier metierxp <nombre> §7- Admin: donner XP");
         lore.add("");
         lore.add("§7Débloquage: §eRang F §7requis");
 
@@ -637,7 +636,7 @@ public class ProfessionGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§e⚒ §lChoisir un Métier §e⚒");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Les 3 métiers
         gui.setItem(11, createProfessionChoiceItem("mineur"));
@@ -658,7 +657,7 @@ public class ProfessionGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§c🔄 §lChanger de Métier §c🔄");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.PROFESSION_MAIN, gui);
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Info au centre
         ItemStack info = new ItemStack(Material.KNOWLEDGE_BOOK);
@@ -747,19 +746,6 @@ public class ProfessionGUI {
         item.setItemMeta(meta);
 
         return item;
-    }
-
-    private void fillWithGlass(Inventory gui) {
-        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(meta, "§7");
-        filler.setItemMeta(meta);
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, filler);
-            }
-        }
     }
 
     private Material getProfessionMaterial(String professionId) {

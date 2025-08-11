@@ -92,7 +92,7 @@ public class EnchantmentManager {
         // NOUVEAU : Jackpot — chance d'obtenir un voucher aléatoire en minant
         int jackpotLevel = playerData.getEnchantmentLevel("jackpot");
         if (jackpotLevel > 0) {
-            double jChance = plugin.getConfigManager().getEnchantmentSetting("special.jackpot.base-chance", 0.0002) * jackpotLevel;
+            double jChance = plugin.getConfigManager().getEnchantmentSetting("special.jackpot.base-chance", 0.00002) * jackpotLevel;
             if (ThreadLocalRandom.current().nextDouble() < jChance) {
                 // Choix du type et du tier
                 VoucherType[] types = VoucherType.values();
@@ -162,7 +162,7 @@ public class EnchantmentManager {
 
         String activeProfession = playerData.getActiveProfession();
         if (activeProfession != null && activeProfession.equals("mineur")) {
-            if (java.util.concurrent.ThreadLocalRandom.current().nextInt(100) == 0) {
+            if (java.util.concurrent.ThreadLocalRandom.current().nextInt(10) == 0) {
                 plugin.getProfessionManager().addProfessionXP(player, "mineur", 1);
             }
         }
@@ -182,7 +182,7 @@ public class EnchantmentManager {
 
         // Laser
         if (laserLevel > 0) {
-            double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.001) * laserLevel;
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.00005) * laserLevel;
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateLaser(player, blockLocation, mineName, false);
             }
@@ -198,7 +198,7 @@ public class EnchantmentManager {
 
         // NOUVEAU : Jackhammer
         if (jackhammerLevel > 0) {
-            double chance = plugin.getConfigManager().getEnchantmentSetting("special.jackhammer.base-chance", 0.0005) * jackhammerLevel;
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.jackhammer.base-chance", 0.00005) * jackhammerLevel;
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateJackhammer(player, blockLocation, mineName, false);
             }
@@ -206,7 +206,7 @@ public class EnchantmentManager {
 
         // NOUVEAU : Fièvre de l'Opportunité — fenêtre où un type de bloc déclenche systématiquement un greed
         if (feverLevel > 0 && !player.hasMetadata("opportunity_fever_until")) {
-            double chance = plugin.getConfigManager().getEnchantmentSetting("special.opportunity_fever.base-chance", 0.0005) * feverLevel;
+            double chance = plugin.getConfigManager().getEnchantmentSetting("special.opportunity_fever.base-chance", 0.000005) * feverLevel;
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 long until = System.currentTimeMillis() + 10_000L; // 10s
                 player.setMetadata("opportunity_fever_until", new FixedMetadataValue(plugin, until));
@@ -519,7 +519,7 @@ public class EnchantmentManager {
         plugin.getPluginLogger().debug("Fortune " + fortuneLevel + " pour " + blockType.name() +
                 ": " + finalBonusBlocks + " blocs bonus (" + baseBonusBlocks + " base + cristal)");
 
-        return 1 + finalBonusBlocks;
+        return finalBonusBlocks;
     }
 
     /**
@@ -543,7 +543,7 @@ public class EnchantmentManager {
             plugin.getEnchantmentBookManager().processAutoSell(player, material, quantity);
             String activeProfession = playerData.getActiveProfession();
             if ("commercant".equals(activeProfession)) {
-                if (java.util.concurrent.ThreadLocalRandom.current().nextInt(1000) == 0) {
+                if (java.util.concurrent.ThreadLocalRandom.current().nextInt(100) == 0) {
                     plugin.getProfessionManager().addProfessionXP(player, "commercant", 1);
                 }
             }
@@ -653,7 +653,7 @@ public class EnchantmentManager {
         // Chances partagées
         final double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
         final double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-        final double totalChance = baseChance + luckBonus;
+        final double totalChance = baseChance * luckBonus / 100;
 
         // NOUVEAU : Cohésion — multiplicateur de greed selon joueurs dans la mine
         int cohesionLevel = playerData.getEnchantmentLevel("cohesion");
@@ -663,7 +663,7 @@ public class EnchantmentManager {
             if (mineId != null) {
                 int active = plugin.getMineOverloadManager().getActiveMinersCount(mineId);
                 // 1% par niveau par joueur actif, borné à +100%
-                cohesionMultiplier += Math.min(1.0, active * (cohesionLevel * 0.01));
+                cohesionMultiplier += Math.min(1.0, active * (cohesionLevel * 0.001));
             }
         }
 
@@ -717,7 +717,7 @@ public class EnchantmentManager {
                                    double combustionMultiplier, double abundanceMultiplier) {
         if (ThreadLocalRandom.current().nextDouble() < totalChance) {
             long blockCoins = blockValue.coins();
-            long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins * 2) * combustionMultiplier * abundanceMultiplier);
+            long baseGains = Math.round((moneyGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.money-multiplier", 10) + blockCoins) * combustionMultiplier * abundanceMultiplier);
 
             long finalGains = plugin.getGlobalBonusManager().applyMoneyBonus(player, baseGains);
             playerData.addCoins(finalGains);
@@ -735,7 +735,7 @@ public class EnchantmentManager {
                                  double combustionMultiplier, double abundanceMultiplier) {
         if (ThreadLocalRandom.current().nextDouble() < totalChance) {
             long blockExp = blockValue.experience();
-            long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 50) + blockExp * 3) * combustionMultiplier * abundanceMultiplier);
+            long baseGains = Math.round((expGreedLevel * plugin.getConfigManager().getEnchantmentSetting("greed.exp-multiplier", 5) + blockExp) * combustionMultiplier * abundanceMultiplier);
             long finalGains = plugin.getGlobalBonusManager().applyExperienceBonus(player, baseGains);
             playerData.addExperienceViaPickaxe(finalGains);
             playerData.addGreedTrigger();
@@ -794,30 +794,12 @@ public class EnchantmentManager {
     private void processKeyGreed(Player player, PlayerData playerData) {
         int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
         if (keyGreedLevel <= 0) return;
-        double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.0001) * keyGreedLevel;
-
-        // On stocke temporairement un flag pour éviter les boucles
-        boolean heritageTrigger = false;
-        if (!player.hasMetadata("heritage_greed_copy")) {
-            int heritageLevel = playerData.getEnchantmentLevel("heritage");
-            if (heritageLevel > 0) {
-                double hChance = plugin.getConfigManager().getEnchantmentSetting("special.heritage.base-chance", 0.0005) * heritageLevel;
-                if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < hChance) {
-                    heritageTrigger = true;
-                    player.setMetadata("heritage_greed_copy", new FixedMetadataValue(plugin, true));
-                }
-            }
-        }
+        double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.00001) * keyGreedLevel;
 
         if (ThreadLocalRandom.current().nextDouble() < chance) {
             giveRandomKey(player);
             player.sendMessage("§6🗝️ Vous avez trouvé une clé de coffre !");
             playerData.addGreedTrigger();
-        }
-
-        if (heritageTrigger) {
-            // Retire le flag immédiatement après un tick pour ne pas boucler
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.removeMetadata("heritage_greed_copy", plugin), 1L);
         }
     }
 
@@ -1077,8 +1059,7 @@ class SellGreedEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        // Prix rééquilibré: croissance douce
-        return Math.max(1000, Math.round(1000 * Math.pow(1.03, level)));
+        return Math.round(1000 * Math.pow(1.5, level));
     }
 
     @Override
@@ -1116,7 +1097,7 @@ class JackhammerEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        return Math.round(10000 * Math.pow(level, 1.8));
+        return Math.round(10000 * Math.pow(level, 1.3));
     }
 
     @Override
@@ -1149,12 +1130,12 @@ class KeyGreedEnchantment implements CustomEnchantment {
 
     @Override
     public int getMaxLevel() {
-        return 10;
+        return 100;
     }
 
     @Override
     public long getUpgradeCost(int level) {
-        return Math.round(500000 * Math.pow(level, 1.8));
+        return Math.round(50000 * Math.pow(level, 1.7));
     }
 
     @Override
@@ -1163,7 +1144,6 @@ class KeyGreedEnchantment implements CustomEnchantment {
     }
 }
 
-// Les autres classes d'enchantements restent inchangées...
 class TokenGreedEnchantment implements CustomEnchantment {
     public String getName() {
         return "token_greed";
@@ -1186,7 +1166,7 @@ class TokenGreedEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(5000 * Math.pow(level, 1.5));
+        return Math.round(500 * Math.pow(level, 1.1));
     }
 
     public Material getDisplayMaterial() {
@@ -1216,7 +1196,7 @@ class ExpGreedEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(3000 * Math.pow(level, 1.5));
+        return Math.round(750 * Math.pow(level, 1.1));
     }
 
     public Material getDisplayMaterial() {
@@ -1246,7 +1226,7 @@ class MoneyGreedEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(4000 * Math.pow(level, 1.5));
+        return Math.round(500 * Math.pow(level, 1.1));
     }
 
     public Material getDisplayMaterial() {
@@ -1272,11 +1252,11 @@ class AbondanceEnchantment implements CustomEnchantment {
     }
 
     public int getMaxLevel() {
-        return 100000;
+        return 10000;
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(3000 * Math.pow(level, 1.5));
+        return Math.round(2000 * Math.pow(level, 1.3));
     }
 
     public Material getDisplayMaterial() {
@@ -1306,7 +1286,7 @@ class CombustionEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(5000 * Math.pow(level, 1.5));
+        return Math.round(1500 * Math.pow(level, 1.3));
     }
 
     public Material getDisplayMaterial() {
@@ -1336,7 +1316,7 @@ class PetXpEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(2000 * Math.pow(level, 1.5));
+        return Math.round(1000 * Math.pow(level, 1.2));
     }
 
     public Material getDisplayMaterial() {
@@ -1366,7 +1346,7 @@ class EfficiencyEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return 10000L * level * level;
+        return Math.round(500 * Math.pow(level, 1.4));
     }
 
     public Material getDisplayMaterial() {
@@ -1396,7 +1376,7 @@ class FortuneEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(2000 * Math.pow(level, 1.6));
+        return Math.round(1500 * Math.pow(level, 1.5));
     }
 
     public Material getDisplayMaterial() {
@@ -1426,7 +1406,7 @@ class DurabilityEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(10000 * Math.pow(level, 5));
+        return Math.round(1000 * Math.pow(level, 3));
     }
 
     public Material getDisplayMaterial() {
@@ -1456,7 +1436,7 @@ class NightVisionEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return 150000;
+        return 50000;
     }
 
     public Material getDisplayMaterial() {
@@ -1486,7 +1466,7 @@ class SpeedEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return 100000L * level * level;
+        return Math.round(50000 * Math.pow(level, 2));
     }
 
     public Material getDisplayMaterial() {
@@ -1516,7 +1496,7 @@ class HasteEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(500000 * Math.pow(level, 3));
+        return Math.round(50000 * Math.pow(level, 2));
     }
 
     public Material getDisplayMaterial() {
@@ -1546,7 +1526,7 @@ class JumpBoostEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(75000 * Math.pow(level, 3));
+        return Math.round(75000 * Math.pow(level, 2));
     }
 
     public Material getDisplayMaterial() {
@@ -1606,7 +1586,7 @@ class LuckEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(3000 * Math.pow(level, 1.5));
+        return Math.round(2500 * Math.pow(level, 1.35));
     }
 
     public Material getDisplayMaterial() {
@@ -1636,7 +1616,7 @@ class LaserEnchantment implements CustomEnchantment {
     }
 
     public long getUpgradeCost(int level) {
-        return 20000L * level * level;
+        return Math.round(5000 * Math.pow(level, 1.2));
     }
 
     public Material getDisplayMaterial() {
@@ -1662,11 +1642,11 @@ class ExplosionEnchantment implements CustomEnchantment {
     }
 
     public int getMaxLevel() {
-        return 100;
+        return 1000;
     }
 
     public long getUpgradeCost(int level) {
-        return Math.round(25000 * Math.pow(level, 1.05));
+        return Math.round(2500 * Math.pow(level, 1.15));
     }
 
     public Material getDisplayMaterial() {
@@ -1703,7 +1683,7 @@ class JackpotEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        return Math.max(10, Math.round(5 * Math.pow(1.02, level)));
+        return Math.round(1000 * Math.pow(1.15, level));
     }
 
     @Override
@@ -1741,7 +1721,7 @@ class CohesionEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        return Math.max(10, Math.round(3 * Math.pow(1.015, level)));
+        return Math.round(5000 * Math.pow(1.15, level));
     }
 
     @Override
@@ -1779,7 +1759,7 @@ class HeritageEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        return Math.max(100, Math.round(250 * Math.pow(1.03, level)));
+        return Math.round(10000 * Math.pow(1.15, level));
     }
 
     @Override
@@ -1817,7 +1797,7 @@ class OpportunityFeverEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        return Math.max(25, Math.round(4 * Math.pow(1.02, level)));
+        return Math.round(1000 * Math.pow(1.15, level));
     }
 
     @Override
@@ -1855,7 +1835,7 @@ class PlanneurEnchantment implements CustomEnchantment {
 
     @Override
     public long getUpgradeCost(int level) {
-        return level == 0 ? 1000 : 5000;
+        return Math.round(100000 * Math.pow(2, level));
     }
 
     @Override

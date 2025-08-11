@@ -63,7 +63,7 @@ public class AutominerEnchantUpgradeGUI {
         plugin.getGUIManager().registerOpenGUI(player, GUIType.AUTOMINER_UPGRADE, gui, Map.of("enchantment", enchantmentName, "slot", String.valueOf(autominerSlot)));
 
         // Remplissage décoratif
-        fillBorders(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Tête du joueur avec informations
         gui.setItem(4, createPlayerHead(player, enchantmentName, currentLevel, maxLevel));
@@ -504,21 +504,5 @@ public class AutominerEnchantUpgradeGUI {
         plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu d'amélioration"));
         item.setItemMeta(meta);
         return item;
-    }
-
-    private void fillBorders(Inventory gui) {
-        ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta fillerMeta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(fillerMeta, "");
-        filler.setItemMeta(fillerMeta);
-
-        // Remplir les bordures
-        for (int i = 0; i < 27; i++) {
-            if (i < 9 || i >= 18 || i % 9 == 0 || i % 9 == 8) {
-                if (gui.getItem(i) == null) {
-                    gui.setItem(i, filler);
-                }
-            }
-        }
     }
 }

@@ -97,7 +97,7 @@ public class AutominerEnchantGUI {
         inv.setItem(49, createBackButton());
 
         // Remplir les slots vides avec du verre
-        fillEmptySlots(inv);
+        plugin.getGUIManager().fillBorders(inv);
 
         player.openInventory(inv);
     }
@@ -403,19 +403,6 @@ public class AutominerEnchantGUI {
         plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu principal"));
         item.setItemMeta(meta);
         return item;
-    }
-
-    private void fillEmptySlots(Inventory inv) {
-        ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta fillerMeta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(fillerMeta, " ");
-        filler.setItemMeta(fillerMeta);
-
-        for (int i = 0; i < inv.getSize(); i++) {
-            if (inv.getItem(i) == null) {
-                inv.setItem(i, filler);
-            }
-        }
     }
 
     private Material getEnchantmentMaterial(String enchantName) {

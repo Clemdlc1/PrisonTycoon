@@ -62,7 +62,7 @@ public class AutominerGUI {
         inv.setItem(22, createCondensationItem());
 
         // Items décoratifs
-        fillEmptySlots(inv);
+        plugin.getGUIManager().fillBorders(inv);
 
         player.openInventory(inv);
     }
@@ -357,19 +357,6 @@ public class AutominerGUI {
         plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
-    }
-
-    private void fillEmptySlots(Inventory inv) {
-        ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta fillerMeta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(fillerMeta, " ");
-        filler.setItemMeta(fillerMeta);
-
-        for (int i = 0; i < inv.getSize(); i++) {
-            if (inv.getItem(i) == null) {
-                inv.setItem(i, filler);
-            }
-        }
     }
 
     private String generateRandomWorld(String currentWorld) {

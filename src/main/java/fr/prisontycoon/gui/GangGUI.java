@@ -63,7 +63,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§6⭐ §lGANG - Menu Principal §6⭐");
         guiManager.registerOpenGUI(player, GUIType.GANG_NO_GANG, gui);
 
-        fillWithGlass(gui, DyeColor.GRAY);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Créer un gang
         ItemStack createGang = new ItemStack(Material.EMERALD);
@@ -152,7 +152,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6☠ §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7] §6☠");
         guiManager.registerOpenGUI(player, GUIType.GANG_MAIN, gui);
 
-        fillWithGlass(gui, DyeColor.YELLOW);
+        plugin.getGUIManager().fillBorders(gui);
 
         GangRole playerRole = gang.getMemberRole(player.getUniqueId());
 
@@ -348,7 +348,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6📋 §l" + gang.getName() + " - Informations");
         guiManager.registerOpenGUI(player, GUIType.GANG_INFO, gui);
 
-        fillWithGlass(gui, DyeColor.LIGHT_BLUE);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Bannière du gang au centre
         ItemStack banner = createGangBanner(gang);
@@ -489,7 +489,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(36, "§c⚡ §lAméliorations - " + gang.getName());
         guiManager.registerOpenGUI(player, GUIType.GANG_UPGRADES, gui);
 
-        fillWithGlass(gui, DyeColor.RED);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Niveau actuel
         ItemStack currentLevel = new ItemStack(Material.DIAMOND, gang.getLevel());
@@ -565,7 +565,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§a🛒 §lBoutique - " + gang.getName());
         guiManager.registerOpenGUI(player, GUIType.GANG_SHOP, gui);
 
-        fillWithGlass(gui, DyeColor.GREEN);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Boosts temporaires
         int slot = 10;
@@ -617,7 +617,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§6🏳️ §lCréateur de Bannière");
         guiManager.registerOpenGUI(player, GUIType.BANNER_CREATOR, gui);
 
-        fillWithGlass(gui, DyeColor.YELLOW);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Instructions
         ItemStack instructions = new ItemStack(Material.BOOK);
@@ -802,21 +802,6 @@ public class GangGUI {
         return back;
     }
 
-    private void fillWithGlass(Inventory gui, DyeColor color) {
-        ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, color.getWoolData());
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, "§7");
-        glass.setItemMeta(glassMeta);
-
-        // Remplir les bordures
-        for (int i = 0; i < 9; i++) gui.setItem(i, glass); // Première ligne
-        for (int i = gui.getSize() - 9; i < gui.getSize(); i++) gui.setItem(i, glass); // Dernière ligne
-        for (int i = 9; i < gui.getSize() - 9; i += 9) { // Côtés
-            gui.setItem(i, glass);
-            if (i + 8 < gui.getSize()) gui.setItem(i + 8, glass);
-        }
-    }
-
     private String getPlayerName(UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {
@@ -892,7 +877,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§b👥 §l" + gang.getName() + " - Membres");
         guiManager.registerOpenGUI(player, GUIType.GANG_MEMBERS, gui);
 
-        fillWithGlass(gui, DyeColor.BLUE);
+        plugin.getGUIManager().fillBorders(gui);
 
         GangRole playerRole = gang.getMemberRole(player.getUniqueId());
         boolean canManage = (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER);
@@ -964,7 +949,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§5🎯 §l" + gang.getName() + " - Talents");
         guiManager.registerOpenGUI(player, GUIType.GANG_TALENTS, gui);
 
-        fillWithGlass(gui, DyeColor.PURPLE);
+        plugin.getGUIManager().fillBorders(gui);
 
         GangRole playerRole = gang.getMemberRole(player.getUniqueId());
         boolean canBuy = (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER);
@@ -1078,7 +1063,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(45, "§6⚙️ §l" + gang.getName() + " - Paramètres");
         guiManager.registerOpenGUI(player, GUIType.GANG_SETTINGS, gui);
 
-        fillWithGlass(gui, DyeColor.ORANGE);
+        plugin.getGUIManager().fillBorders(gui);
 
         GangRole playerRole = gang.getMemberRole(player.getUniqueId());
         boolean isLeader = (playerRole == GangRole.CHEF);
@@ -1461,7 +1446,7 @@ public class GangGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6📋 §lListe des Gangs §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
         guiManager.registerOpenGUI(player, GUIType.GANG_LIST, gui, Map.of("page", String.valueOf(page)));
 
-        fillWithGlass(gui, DyeColor.ORANGE);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Afficher les gangs de cette page
         int startIndex = page * gangsPerPage;

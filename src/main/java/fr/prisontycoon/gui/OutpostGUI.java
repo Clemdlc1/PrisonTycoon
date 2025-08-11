@@ -41,7 +41,7 @@ public class OutpostGUI {
     public void openOutpostMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏰 §lAvant-Poste");
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupOutpostMenu(gui, player);
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.OUTPOST_MAIN, gui);
@@ -91,7 +91,7 @@ public class OutpostGUI {
 
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6🎨 Skins d'Avant-Poste §7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")");
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupSkinsMenu(gui, player, skinList, page);
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.OUTPOST_SKINS, gui);
@@ -414,21 +414,6 @@ public class OutpostGUI {
     }
 
     // Méthodes utilitaires
-
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, " ");
-        glass.setItemMeta(glassMeta);
-
-        // Remplir les bordures
-        for (int i = 0; i < 9; i++) gui.setItem(i, glass);
-        for (int i = 45; i < 54; i++) gui.setItem(i, glass);
-        for (int i = 9; i < 45; i += 9) {
-            gui.setItem(i, glass);
-            gui.setItem(i + 8, glass);
-        }
-    }
 
     private ItemStack createCloseButton() {
         ItemStack item = new ItemStack(Material.BARRIER);

@@ -28,7 +28,7 @@ public class BookShopGUI {
     // ==================== OUVERTURES ====================
     public void openSelector(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§a💰 §lBoutique de Livres");
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemMeta pickaxeMeta = pickaxe.getItemMeta();
@@ -56,13 +56,13 @@ public class BookShopGUI {
 
     public void openPickaxeShop(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(45, "§a💰 §lBoutique Livres §b⛏");
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         ItemStack playerInfo = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta infoMeta = playerInfo.getItemMeta();
         plugin.getGUIManager().applyName(infoMeta, "§6💰 Vos Beacons");
-        infoMeta.setLore(List.of("§7Beacons disponibles:", "§e" + NumberFormatter.format(playerData.getBeacons()) + " beacons"));
+        plugin.getGUIManager().applyLore(infoMeta, List.of("§7Beacons disponibles:", "§e" + NumberFormatter.format(playerData.getBeacons()) + " beacons"));
         playerInfo.setItemMeta(infoMeta);
         gui.setItem(4, playerInfo);
 
@@ -86,15 +86,15 @@ public class BookShopGUI {
     }
 
     public void openWeaponArmorShop(Player player) {
-        Inventory gui = plugin.getGUIManager().createInventory(45, "§a💰 §lBoutique §c⚔ §9🛡");
-        fillWithGlass(gui);
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§a💰 §lBoutique §c⚔ §9🛡");
+        plugin.getGUIManager().fillBorders(gui);
 
         // Placeholder info joueur (beacons)
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         ItemStack playerInfo = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta infoMeta = playerInfo.getItemMeta();
         plugin.getGUIManager().applyName(infoMeta, "§6💰 Vos Beacons");
-        infoMeta.setLore(List.of(
+        plugin.getGUIManager().applyLore(infoMeta, List.of(
                 "§7Beacons disponibles:",
                 "§e" + NumberFormatter.format(playerData.getBeacons()) + " beacons"
         ));
@@ -112,7 +112,7 @@ public class BookShopGUI {
         ItemMeta backMeta = back.getItemMeta();
         plugin.getGUIManager().applyName(backMeta, "§c⬅ §lRetour");
         back.setItemMeta(backMeta);
-        gui.setItem(36, back);
+        gui.setItem(18, back);
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.BOOK_SHOP_WEAPON_ARMOR, gui);
         player.openInventory(gui);
@@ -197,15 +197,6 @@ public class BookShopGUI {
     }
 
     // ==================== UTILITAIRES ====================
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, " ");
-        glass.setItemMeta(glassMeta);
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) gui.setItem(i, glass);
-        }
-    }
 
     private ItemStack createPickaxeShopItem(Player player, EnchantmentBookManager.EnchantmentBook book) {
         ItemStack item = new ItemStack(book.getDisplayMaterial());

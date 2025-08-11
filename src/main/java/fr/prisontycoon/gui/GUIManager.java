@@ -4,6 +4,7 @@ import fr.prisontycoon.PrisonTycoon;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -251,6 +252,27 @@ public class GUIManager {
 
         public long getOpenTime() {
             return openTime;
+        }
+    }
+
+    public void fillBorders(Inventory gui) {
+        ItemStack glass1 = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta m1 = glass1.getItemMeta();
+        if (m1 != null) {
+            plugin.getGUIManager().applyName(m1, "");
+            glass1.setItemMeta(m1);
+        }
+        ItemStack glass2 = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta m2 = glass2.getItemMeta();
+        if (m2 != null) {
+            plugin.getGUIManager().applyName(m2, "");
+            glass2.setItemMeta(m2);
+        }
+
+        for (int i = 0; i < gui.getSize(); i++) {
+            if (i < 9 || i >= gui.getSize() - 9 || i % 9 == 0 || i % 9 == 8) {
+                gui.setItem(i, (i % 2 == 0) ? glass1 : glass2);
+            }
         }
     }
 }

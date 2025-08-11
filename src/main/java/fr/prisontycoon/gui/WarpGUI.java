@@ -55,7 +55,7 @@ public class WarpGUI {
     public void openWarpMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§8• §6Menu des Warps §8•");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.WARP_MENU, gui);
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         Map<WarpData.WarpType, List<WarpData>> warpsByType = plugin.getWarpManager()
                 .getAccessibleWarps(player).stream()
@@ -96,7 +96,7 @@ public class WarpGUI {
 
         String title = "§8• §6Mines §8(§e" + page + "§8/§e" + totalPages + "§8) •";
         Inventory gui = plugin.getGUIManager().createInventory(54, title);
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         int startIndex = (page - 1) * ITEMS_PER_PAGE;
         int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, mineWarps.size());
@@ -335,24 +335,6 @@ public class WarpGUI {
         return item.getItemMeta().getPersistentDataContainer().get(warpIdKey, PersistentDataType.STRING);
     }
 
-    private void fillWithGlass(Inventory gui) {
-        ItemStack blackGlass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta blackMeta = blackGlass.getItemMeta();
-        plugin.getGUIManager().applyName(blackMeta, "");
-        blackGlass.setItemMeta(blackMeta);
-
-        ItemStack grayGlass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta grayMeta = grayGlass.getItemMeta();
-        plugin.getGUIManager().applyName(grayMeta, "");
-        grayGlass.setItemMeta(grayMeta);
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (i < 9 || i >= gui.getSize() - 9 || i % 9 == 0 || i % 9 == 8) {
-                gui.setItem(i, (i % 2 == 0) ? blackGlass : grayGlass);
-            }
-        }
-    }
-
     private void addQuickAccessIfPresent(Inventory gui, String warpId, int slot, String display) {
         WarpData data = plugin.getConfigManager().getWarp(warpId);
         if (data == null) return;
@@ -364,6 +346,4 @@ public class WarpGUI {
         item.setItemMeta(meta);
         gui.setItem(slot, item);
     }
-
-    // Titles and lore handled by GUIManager (Adventure)
 }

@@ -44,7 +44,7 @@ public class HeadCollectionGUI {
         Inventory gui = plugin.getGUIManager().createInventory(54, title);
 
         // Remplir avec du verre
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Item de statistiques (slot central haut)
         gui.setItem(13, createStatsItem(player, collectedCount, totalCount));
@@ -283,24 +283,6 @@ public class HeadCollectionGUI {
             case RARE -> "§5Rare";
             case LEGENDARY -> "§d§lLégendaire";
         };
-    }
-
-    /**
-     * Remplit l'inventaire avec du verre coloré
-     */
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, "§r");
-        glass.setItemMeta(glassMeta);
-
-        // Bordures
-        for (int i = 0; i < 9; i++) gui.setItem(i, glass);
-        for (int i = 45; i < 54; i++) gui.setItem(i, glass);
-        for (int i = 9; i < 45; i += 9) {
-            gui.setItem(i, glass);
-            gui.setItem(i + 8, glass);
-        }
     }
 
     /**

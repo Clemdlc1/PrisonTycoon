@@ -68,7 +68,7 @@ public class PickaxeRepairGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, "§c🔨 §lRéparation de Pioche §c🔨");
 
         // Remplissage décoratif
-        fillBorders(gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Informations de la pioche
         gui.setItem(PICKAXE_INFO_SLOT, createPickaxeInfoItem(player));
@@ -321,24 +321,6 @@ public class PickaxeRepairGUI {
         plugin.getPluginLogger().info("Réparation maximale effectuée pour " + player.getName() +
                 ": +" + maxRepair.repairPoints + " points (+" + String.format("%.1f%%", maxRepair.repairPercent) +
                 ") pour " + NumberFormatter.format(maxRepair.cost) + " tokens");
-    }
-
-    private void fillBorders(Inventory gui) {
-        ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = borderItem.getItemMeta();
-        plugin.getGUIManager().applyName(meta, " ");
-        borderItem.setItemMeta(meta);
-
-        // Remplir les bordures
-        for (int i = 0; i < 9; i++) {
-            gui.setItem(i, borderItem);
-            gui.setItem(i + 18, borderItem);
-        }
-
-        for (int i = 9; i < 18; i += 9) {
-            gui.setItem(i, borderItem);
-            gui.setItem(i + 8, borderItem);
-        }
     }
 
     private ItemStack createBackButton() {

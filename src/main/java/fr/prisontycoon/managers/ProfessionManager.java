@@ -46,7 +46,7 @@ public class ProfessionManager {
                 new ProfessionTalent("vitrines_sup", "Vitrines Sup.", "Slots HDV supplémentaires",
                         new int[]{0, 1, 1, 1, 1, 1, 1, 2, 2, 2}),
                 new ProfessionTalent("sell_boost", "SellBoost", "Augmentation prix de vente",
-                        new int[]{2, 5, 10, 20, 35, 60, 100, 150, 200, 300})
+                        new int[]{2, 5, 10, 15, 25, 35, 50, 75, 125, 200})
         )));
 
         // Métier Guerrier
@@ -195,13 +195,13 @@ public class ProfessionManager {
      */
     private int calculateLevelFromXP(int xp) {
         int level = 1;
-        int required = 100; // XP requis pour niveau 2
+        int required = 100;
         int totalRequired = 0;
 
         while (level < 10 && xp >= totalRequired + required) {
             totalRequired += required;
             level++;
-            required = (int) (required * 1.5); // Progression exponentielle
+            required = required * 3; // Progression exponentielle
         }
 
         return level;
@@ -218,7 +218,7 @@ public class ProfessionManager {
 
         for (int i = 1; i < currentLevel; i++) {
             totalRequired += required;
-            required = (int) (required * 1.5);
+            required = required * 3;
         }
 
         return totalRequired + required;
@@ -235,25 +235,9 @@ public class ProfessionManager {
         player.sendMessage("§e🎯 §lMétier: Niveau supérieur !");
         player.sendMessage("§7" + profession.displayName() + " §7→ §eNiveau " + newLevel);
 
-        // Récompenses selon le métier et niveau (à implémenter plus tard)
-        giveRewardsForLevel(player, professionId, newLevel);
+        player.sendMessage("§7Récupérez votre récompense et débloqué un talent via /metier");
 
         player.sendMessage("");
-    }
-
-    /**
-     * Donne les récompenses de niveau (à implémenter plus tard)
-     */
-    private void giveRewardsForLevel(Player player, String professionId, int level) {
-        // Récompenses définies dans la documentation mais marquées "à venir plus tard"
-        // On peut les implémenter ici quand les systèmes de clés/cristaux seront prêts
-
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-
-        // Pour l'instant, on donne juste des beacons comme récompense de base
-        int beaconReward = level * 10;
-        playerData.addBeacons(beaconReward);
-        player.sendMessage("§7Récompense: §e+" + beaconReward + " beacons");
     }
 
     /**
@@ -375,14 +359,14 @@ public class ProfessionManager {
      * Calcule le coût d'un talent (exponentiel)
      */
     private long calculateTalentCost(int level) {
-        return (long) (1000 * Math.pow(2, level - 1)); // 1000, 2000, 4000, 8000, etc.
+        return (long) (10000 * Math.pow(2, level - 1));
     }
 
     /**
      * NOUVEAU: Calcule le coût d'un kit (progression différente)
      */
     private long calculateKitCost(int level) {
-        return (long) (2000 * Math.pow(1.8, level - 1)); // 2000, 3600, 6480, etc.
+        return (long) (20000 * Math.pow(1.8, level - 1)); // 2000, 3600, 6480, etc.
     }
 
     /**

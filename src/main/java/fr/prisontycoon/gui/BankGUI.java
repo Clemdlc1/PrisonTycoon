@@ -52,7 +52,7 @@ public class BankGUI {
 
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏦 Banque PrisonTycoon");
         guiManager.registerOpenGUI(player, GUIType.BANK_MAIN, gui);
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupMainMenu(gui, player);
 
         player.openInventory(gui);
@@ -302,7 +302,7 @@ public class BankGUI {
     public void openInvestmentMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§b📈 Investissements");
         plugin.getGUIManager().registerOpenGUI(player, GUIType.INVESTMENT_MENU, gui);
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         setupInvestmentMenu(gui, player);
 
         player.openInventory(gui);
@@ -471,22 +471,6 @@ public class BankGUI {
         plugin.getGUIManager().applyLore(meta, List.of("§7Ferme ce menu"));
         item.setItemMeta(meta);
         return item;
-    }
-
-    /**
-     * Remplit l'inventaire avec du verre coloré
-     */
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
-        ItemMeta meta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(meta, " ");
-        glass.setItemMeta(meta);
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, glass);
-            }
-        }
     }
 
     /**

@@ -41,7 +41,7 @@ public class EnchantmentBookGUI {
     public void openEnchantmentBookMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(36, "§5⚡ §lEnchantements Uniques §5⚡");
 
-        fillWithGlass(gui);
+        plugin.getGUIManager().fillBorders(gui);
         displayEnchantmentBooks(gui, player);
         setupControlButtons(gui);
 
@@ -210,22 +210,6 @@ public class EnchantmentBookGUI {
         plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         gui.setItem(SUMMARY_SLOT, item);
-    }
-
-    /**
-     * Remplit les slots vides avec du verre coloré
-     */
-    private void fillWithGlass(Inventory gui) {
-        ItemStack glass = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, " ");
-        glass.setItemMeta(glassMeta);
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, glass);
-            }
-        }
     }
 
     /**

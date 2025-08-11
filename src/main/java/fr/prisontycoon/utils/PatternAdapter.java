@@ -1,5 +1,6 @@
 package fr.prisontycoon.utils;
 
+import com.fastasyncworldedit.core.configuration.Config;
 import com.google.gson.*;
 import org.bukkit.DyeColor;
 import org.bukkit.block.banner.Pattern;

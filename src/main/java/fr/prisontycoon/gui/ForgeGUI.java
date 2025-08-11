@@ -29,7 +29,7 @@ public class ForgeGUI {
         Inventory inv = plugin.getGUIManager().createInventory(27, "§8▬▬ §6⚒ §lFORGE LÉGENDAIRE §6⚒ §8▬▬");
 
         // Bordures simples
-        fillBorders(inv);
+        plugin.getGUIManager().fillBorders(inv);
 
         // Info joueur (centre haut)
         inv.setItem(4, createInfoItem(player));
@@ -49,23 +49,6 @@ public class ForgeGUI {
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.FORGE_MAIN, inv);
         player.openInventory(inv);
-    }
-
-    private void fillBorders(Inventory inv) {
-        ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta meta = border.getItemMeta();
-        meta.displayName(Component.text("§8▬").decoration(TextDecoration.ITALIC, false));
-        border.setItemMeta(meta);
-
-        // Bordures
-        for (int i = 0; i < 9; i++) {
-            if (i != 4) inv.setItem(i, border); // Sauf slot 4 (info)
-        }
-        inv.setItem(9, border);
-        inv.setItem(17, border);
-        for (int i = 18; i < 27; i++) {
-            inv.setItem(i, border);
-        }
     }
 
     private ItemStack createInfoItem(Player player) {

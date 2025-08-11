@@ -53,7 +53,7 @@ public class WeaponArmorEnchantGUI {
         Inventory gui = plugin.getGUIManager().createInventory(27, title);
         plugin.getGUIManager().registerOpenGUI(player, GUIType.WEAPON_ARMOR_ENCHANT, gui);
 
-        fillWithGlass(gui, isWeapon);
+        plugin.getGUIManager().fillBorders(gui);
         setupItemDisplay(gui, item, isWeapon);
         setupVanillaEnchantButton(gui, item, player);
         setupUniqueBookSlots(gui, isWeapon, item); // CORRIGÉ : Passe l'item en paramètre
@@ -61,23 +61,6 @@ public class WeaponArmorEnchantGUI {
 
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
-    }
-
-    /**
-     * Remplit le GUI avec du verre coloré
-     */
-    private void fillWithGlass(Inventory gui, boolean isWeapon) {
-        Material glassType = isWeapon ? Material.RED_STAINED_GLASS_PANE : Material.BLUE_STAINED_GLASS_PANE;
-        ItemStack glass = new ItemStack(glassType);
-        ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta, " ");
-        glass.setItemMeta(glassMeta);
-
-        for (int i = 0; i < gui.getSize(); i++) {
-            if (gui.getItem(i) == null) {
-                gui.setItem(i, glass);
-            }
-        }
     }
 
     /**

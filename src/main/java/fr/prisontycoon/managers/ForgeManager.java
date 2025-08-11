@@ -624,5 +624,3 @@ public class ForgeManager {
                             int experienceCost) {
     }
 }
-
-

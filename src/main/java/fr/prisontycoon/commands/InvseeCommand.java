@@ -152,7 +152,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     private ItemStack createSeparatorItem() {
         ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta, "§8▬▬▬");
+        plugin.getGUIManager().applyName(meta, "");
         item.setItemMeta(meta);
         return item;
     }

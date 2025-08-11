@@ -55,7 +55,7 @@ public class ForgeRecipeGUI {
     private void fillBorders(Inventory inv) {
         ItemStack border = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = border.getItemMeta();
-        meta.displayName(net.kyori.adventure.text.Component.text("§8▬")
+        meta.displayName(net.kyori.adventure.text.Component.text("")
                 .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
         border.setItemMeta(meta);
 
