@@ -251,7 +251,7 @@ public class EnchantmentManager {
                     var block = world.getBlockAt(x, y, z);
                     var crumbleData = block.getBlockData();
                     Material blockType = block.getType();
-                    if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                    if (blockType != Material.AIR && blockType != Material.BEACON) {
                         block.setType(Material.AIR, false);
                         blocksDestroyed++;
 
@@ -283,7 +283,7 @@ public class EnchantmentManager {
                         var block = world.getBlockAt(x, y, z);
                         var crumbleData = block.getBlockData();
                         Material blockType = block.getType();
-                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                        if (blockType != Material.AIR && blockType != Material.BEACON) {
                             block.setType(Material.AIR, false);
                             blocksDestroyed++;
 
@@ -309,7 +309,7 @@ public class EnchantmentManager {
                         var block = world.getBlockAt(x, y, z);
                         var crumbleData = block.getBlockData();
                         Material blockType = block.getType();
-                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                        if (blockType != Material.AIR && blockType != Material.BEACON) {
                             block.setType(Material.AIR, false);
                             blocksDestroyed++;
 
@@ -396,7 +396,7 @@ public class EnchantmentManager {
                 var block = current.getBlock();
                 var crumbleData = block.getBlockData();
                 Material blockType = block.getType();
-                if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                if (blockType != Material.AIR && blockType != Material.BEACON) {
                     block.setType(Material.AIR, false);
                     blocksDestroyed++;
                     processBlockDestroyed(player, current, blockType, mineName);
@@ -441,7 +441,7 @@ public class EnchantmentManager {
                         var block = loc.getBlock();
                         var crumbleData = block.getBlockData();
                         Material blockType = block.getType();
-                        if (blockType != Material.AIR && blockType != Material.BEDROCK && blockType != Material.BEACON) {
+                        if (blockType != Material.AIR && blockType != Material.BEACON) {
                             block.setType(Material.AIR, false);
                             blocksDestroyed++;
                             processBlockDestroyed(player, loc, blockType, mineName);
@@ -844,7 +844,7 @@ public class EnchantmentManager {
         var meta = key.getItemMeta();
 
         plugin.getGUIManager().applyName(meta, keyColor + "Clé " + keyType);
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Clé de coffre " + keyColor + keyType,
                 "§7Utilise cette clé pour ouvrir des coffres!"
         ));
