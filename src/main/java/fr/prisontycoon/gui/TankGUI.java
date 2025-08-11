@@ -71,6 +71,7 @@ public class TankGUI implements Listener {
 
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6⚡ Configuration Tank " + tankId);
         plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_CONFIG, gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // === LIGNE 1 : INFORMATIONS ===
         gui.setItem(4, createInfoItem(tankData));
@@ -97,9 +98,6 @@ public class TankGUI implements Listener {
             gui.setItem(37 + i, createMaterialFilterItem(tankData, DEEPSLATE_ORES[i]));
         }
 
-        // Bordures propres
-        plugin.getGUIManager().fillBorders(gui);
-
         player.openInventory(gui);
         openTankGUIs.put(player.getUniqueId(), tankId);
     }
@@ -111,6 +109,7 @@ public class TankGUI implements Listener {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6💰 Prix - Tank de " +
                 plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName());
         plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_PRICES, gui);
+        plugin.getGUIManager().fillBorders(gui);
 
         // Informations
         gui.setItem(4, createPublicInfoItem(tankData));
@@ -152,7 +151,6 @@ public class TankGUI implements Listener {
 
         // Bouton fermer
         gui.setItem(49, createCloseButton());
-        plugin.getGUIManager().fillBorders(gui);
 
         player.openInventory(gui);
     }

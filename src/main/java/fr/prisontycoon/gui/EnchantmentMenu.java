@@ -46,6 +46,7 @@ public class EnchantmentMenu {
      */
     public void openEnchantmentMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§6✨ §lMenu Enchantement §6✨");
+        plugin.getGUIManager().fillBorders(gui);
 
         // Tête du joueur avec informations économiques
         gui.setItem(PLAYER_HEAD_SLOT, createPlayerHead(player));
@@ -74,9 +75,6 @@ public class EnchantmentMenu {
         for (int i = 0; i < all.size() && i < slots.length; i++) {
             gui.setItem(slots[i], createEnchantmentItem(all.get(i), player));
         }
-
-        // Remplissage décoratif des espaces restants
-        plugin.getGUIManager().fillBorders(gui);
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.ENCHANTMENT_MENU, gui);
         player.openInventory(gui);
