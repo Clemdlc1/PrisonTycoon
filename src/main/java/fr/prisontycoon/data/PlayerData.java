@@ -1973,12 +1973,6 @@ public class PlayerData {
         return gangInvitation != null;
     }
 
-    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
-    }
-
-    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
-    }
-
     /**
      * Récupère le skin d'avant-poste sélectionné
      */
@@ -2001,6 +1995,13 @@ public class PlayerData {
     }
 
     /**
+     * Définit tous les skins d'avant-poste débloqués
+     */
+    public void setUnlockedOutpostSkins(Set<String> unlockedOutpostSkins) {
+        this.unlockedOutpostSkins = new HashSet<>(unlockedOutpostSkins);
+    }
+
+    /**
      * Vérifie si un skin d'avant-poste est débloqué
      */
     public boolean hasUnlockedOutpostSkin(String skinName) {
@@ -2012,13 +2013,6 @@ public class PlayerData {
      */
     public void unlockOutpostSkin(String skinName) {
         unlockedOutpostSkins.add(skinName);
-    }
-
-    /**
-     * Définit tous les skins d'avant-poste débloqués
-     */
-    public void setUnlockedOutpostSkins(Set<String> unlockedOutpostSkins) {
-        this.unlockedOutpostSkins = new HashSet<>(unlockedOutpostSkins);
     }
 
     /**
@@ -2047,5 +2041,11 @@ public class PlayerData {
      */
     public void setClaimedHeadRewards(Set<Integer> claimedHeadRewards) {
         this.claimedHeadRewards = claimedHeadRewards != null ? claimedHeadRewards : new HashSet<>();
+    }
+
+    public record AutoUpgradeDetail(String displayName, int levelsGained, int newLevel) {
+    }
+
+    public record SanctionData(String type, String reason, String moderator, long startTime, long endTime) {
     }
 }

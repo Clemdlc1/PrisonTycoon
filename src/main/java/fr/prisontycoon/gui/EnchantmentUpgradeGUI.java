@@ -4,6 +4,7 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.CustomEnchantment;
 import fr.prisontycoon.utils.NumberFormatter;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -35,7 +36,7 @@ public class EnchantmentUpgradeGUI {
         if (enchantment == null) return;
 
         String title = "§6🔧 §l" + enchantment.getDisplayName() + " §6🔧";
-        Inventory gui = plugin.getGUIManager().createInventory( 27, title);
+        Inventory gui = plugin.getGUIManager().createInventory(27, title);
 
         // Remplissage décoratif
         fillBorders(gui);
@@ -92,7 +93,7 @@ public class EnchantmentUpgradeGUI {
         // Boutons d'amélioration fixes
         if (item != null && item.hasItemMeta()) {
             String displayName = item.getItemMeta().displayName() != null ?
-                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName()) : "";
+                    LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName()) : "";
             String enchantmentName = extractEnchantmentNameFromTitle(title);
 
             // On teste les plus grands nombres en premier.
@@ -119,7 +120,7 @@ public class EnchantmentUpgradeGUI {
         for (int i = 0; i < upgradeAmounts.length; i++) {
             int amount = upgradeAmounts[i];
 
-            // CORRECTION : Toujours afficher le bouton, mais en rouge si impossible
+            // Toujours afficher le bouton, mais grisé/rouge si impossible
             gui.setItem(slots[i], createFixedUpgradeButton(enchantment, player, amount));
         }
 
@@ -158,7 +159,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
+        plugin.getGUIManager().applyName(meta, color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -221,7 +222,7 @@ public class EnchantmentUpgradeGUI {
                 lore.add("");
             }
 
-            // Ajoute les effets même si on ne peut pas se payer l'amélioration
+            // Ajoute un aperçu des effets si le nombre DEMANDÉ était acheté
             lore.add("§b🔮 §lEFFETS SI ACHETÉ");
             addEffectComparison(lore, enchantment, currentLevel, currentLevel + requestedLevels);
             lore.add("");
@@ -255,7 +256,8 @@ public class EnchantmentUpgradeGUI {
     private long calculateExactCost(CustomEnchantment enchantment, int currentLevel, int requestedLevels) {
         long totalCost = 0;
         for (int i = 1; i <= requestedLevels; i++) {
-            totalCost += enchantment.getUpgradeCost(currentLevel + i - 1); // Cost is for the target level
+            // Le coût d'un palier correspond au niveau cible (currentLevel + i)
+            totalCost += enchantment.getUpgradeCost(currentLevel + i);
         }
         return totalCost;
     }
@@ -282,6 +284,12 @@ public class EnchantmentUpgradeGUI {
                 long toCoins = toLevel * 10L;
                 lore.add("§7▸ Coins/Greed: §e" + NumberFormatter.format(fromCoins) +
                         " §7→ §a" + NumberFormatter.format(toCoins));
+            }
+            case "sell_greed" -> {
+                double fromBonus = fromLevel * 0.01;
+                double toBonus = toLevel * 0.01;
+                lore.add("§7▸ Bonus vente: §e+" + String.format("%.2f%%", fromBonus) +
+                        " §7→ §a+" + String.format("%.2f%%", toBonus));
             }
             case "key_greed" -> {
                 double fromChance = fromLevel * 1.0;
@@ -336,6 +344,13 @@ public class EnchantmentUpgradeGUI {
                     lore.add("§7▸ Téléportation: §aActive");
                 }
             }
+            case "planneur" -> {
+                if (fromLevel == 0 && toLevel >= 1) {
+                    lore.add("§7▸ Planneur: §cInactive §7→ §aActive");
+                } else {
+                    lore.add("§7▸ Planneur: §aActive");
+                }
+            }
             case "luck" -> {
                 double fromBonus = fromLevel * 0.2;
                 double toBonus = toLevel * 0.2;
@@ -352,6 +367,36 @@ public class EnchantmentUpgradeGUI {
                 double fromChance = fromLevel * 0.05;
                 double toChance = toLevel * 0.05;
                 lore.add("§7▸ Chance explosion: §e" + String.format("%.2f%%", fromChance) +
+                        " §7→ §a" + String.format("%.2f%%", toChance));
+            }
+            case "jackhammer" -> {
+                double fromChance = Math.min(2.0, fromLevel / 1000.0);
+                double toChance = Math.min(2.0, toLevel / 1000.0);
+                lore.add("§7▸ Chance Jackhammer: §e" + String.format("%.1f%%", fromChance) +
+                        " §7→ §a" + String.format("%.1f%%", toChance));
+            }
+            case "jackpot" -> {
+                double fromChance = fromLevel * 0.0001;
+                double toChance = toLevel * 0.0001;
+                lore.add("§7▸ Chance Jackpot: §e" + String.format("%.4f%%", fromChance) +
+                        " §7→ §a" + String.format("%.4f%%", toChance));
+            }
+            case "cohesion" -> {
+                double fromMult = 1.0 + Math.min(2.0, (fromLevel / 10000.0) * 0.5);
+                double toMult = 1.0 + Math.min(2.0, (toLevel / 10000.0) * 0.5);
+                lore.add("§7▸ Multiplicateur Greed: §ex" + String.format("%.2f", fromMult) +
+                        " §7→ §ax" + String.format("%.2f", toMult));
+            }
+            case "heritage" -> {
+                double fromChance = Math.min(50.0, fromLevel * 0.05);
+                double toChance = Math.min(50.0, toLevel * 0.05);
+                lore.add("§7▸ Chance Héritage: §e" + String.format("%.2f%%", fromChance) +
+                        " §7→ §a" + String.format("%.2f%%", toChance));
+            }
+            case "opportunity_fever" -> {
+                double fromChance = Math.min(25.0, fromLevel * 0.01);
+                double toChance = Math.min(25.0, toLevel * 0.01);
+                lore.add("§7▸ Chance Fièvre: §e" + String.format("%.2f%%", fromChance) +
                         " §7→ §a" + String.format("%.2f%%", toChance));
             }
             default -> lore.add("§7▸ Amélioration de §2+" + (toLevel - fromLevel) + " niveau" +
@@ -378,7 +423,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(canUpgrade ? Material.DIAMOND : Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,(canUpgrade ? "§6" : "§c") + "MAX Possible");
+        plugin.getGUIManager().applyName(meta, (canUpgrade ? "§6" : "§c") + "MAX Possible");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -391,7 +436,7 @@ public class EnchantmentUpgradeGUI {
             lore.add("§7▸ Niveau après: §a" + (currentLevel + maxAffordableLevels));
             lore.add("");
 
-            // Effets max
+            // Ici, c'est achetable: on peut afficher les effets correspondants
             lore.add("§b🔮 §lEFFETS MAXIMUM POSSIBLES");
             addEffectComparison(lore, enchantment, currentLevel, currentLevel + maxAffordableLevels);
             lore.add("");
@@ -409,9 +454,7 @@ public class EnchantmentUpgradeGUI {
                 lore.add("§7▸ Tokens manquants: §c" + NumberFormatter.format(nextCost - availableTokens));
                 lore.add("");
 
-                // Ajoute les effets même si impossible
-                lore.add("§b🔮 §lEFFETS SI ACHETÉ");
-                addEffectComparison(lore, enchantment, currentLevel, currentLevel + 1);
+                // Ne pas calculer d'effets pour MAX quand ce n'est pas achetable
             }
         }
 
@@ -461,7 +504,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,color + icon + " §lAuto-amélioration");
+        plugin.getGUIManager().applyName(meta, color + icon + " §lAuto-amélioration");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -508,7 +551,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack item = new ItemStack(Material.GRAY_DYE);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§7🔒 §lAuto-amélioration");
+        plugin.getGUIManager().applyName(meta, "§7🔒 §lAuto-amélioration");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -661,7 +704,7 @@ public class EnchantmentUpgradeGUI {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        plugin.getGUIManager().applyName(meta,"§6📊 §l" + player.getName());
+        plugin.getGUIManager().applyName(meta, "§6📊 §l" + player.getName());
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -682,7 +725,7 @@ public class EnchantmentUpgradeGUI {
         ItemStack arrow = new ItemStack(Material.ARROW);
         ItemMeta meta = arrow.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§7← §lRetour");
+        plugin.getGUIManager().applyName(meta, "§7← §lRetour");
         plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu précédent"));
 
         arrow.setItemMeta(meta);
@@ -723,7 +766,7 @@ public class EnchantmentUpgradeGUI {
     private void fillBorders(Inventory gui) {
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§7");
+        plugin.getGUIManager().applyName(meta, "§7");
         filler.setItemMeta(meta);
 
         // Slots à remplir pour décorer (en évitant les emplacements des items)

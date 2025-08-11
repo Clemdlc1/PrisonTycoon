@@ -1,6 +1,7 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.sql.Connection;
@@ -84,7 +85,9 @@ public class VipManager {
     }
 
     public boolean isVip(UUID uuid) {
-        return vipCache.contains(uuid);
+        Player player = Bukkit.getPlayer(uuid);
+        assert player != null;
+        return plugin.getPermissionManager().hasPermission(player, "specialmine.vip");
     }
 
     public VipData getVipData(UUID uuid) {

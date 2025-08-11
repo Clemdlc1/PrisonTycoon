@@ -1094,7 +1094,7 @@ public class PrisonTycoonAPI {
     /**
      * Dépose de l'argent depuis le solde d'un joueur vers la banque du gang.
      *
-     * @param gang Le gang cible.
+     * @param gang   Le gang cible.
      * @param player Le joueur qui dépose.
      * @param amount Le montant à déposer.
      * @return true si le dépôt a réussi.
@@ -1145,7 +1145,9 @@ public class PrisonTycoonAPI {
         return plugin.getReputationManager().getReputation(playerId);
     }
 
-    public void modifyReputation(UUID playerId, int reputation, String reason) {plugin.getReputationManager().modifyReputation(playerId, reputation, reason);}
+    public void modifyReputation(UUID playerId, int reputation, String reason) {
+        plugin.getReputationManager().modifyReputation(playerId, reputation, reason);
+    }
 
     public String getActiveProfession(UUID playerId) {
         PlayerData playerData = playerDataManager.getPlayerData(playerId);

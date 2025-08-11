@@ -7,18 +7,15 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -235,6 +232,7 @@ public class WeaponArmorEnchantmentListener implements Listener {
 
     /**
      * Annule les dégâts de chute sauf dans le monde spécifié.
+     *
      * @param event L'événement de dégâts.
      */
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -304,7 +302,8 @@ public class WeaponArmorEnchantmentListener implements Listener {
             var attr = attributable.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
             if (attr != null) maxHealth = attr.getBaseValue();
         }
-        if (maxHealth >= 60) baseChance = 35; else if (maxHealth >= 30) baseChance = 25;
+        if (maxHealth >= 60) baseChance = 35;
+        else if (maxHealth >= 30) baseChance = 25;
         if (roll < baseChance) {
             // Type de fragment aléatoire avec poids
             fr.prisontycoon.managers.ForgeManager.FragmentType type;

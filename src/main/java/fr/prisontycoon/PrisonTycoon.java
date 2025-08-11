@@ -5,19 +5,16 @@ import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
 import fr.prisontycoon.commands.*;
-import fr.prisontycoon.commands.ForgeCommand;
 import fr.prisontycoon.cristaux.CristalBonusHelper;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentManager;
 import fr.prisontycoon.enchantments.UniqueEnchantmentBookFactory;
 import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
-import fr.prisontycoon.quests.*;
 import fr.prisontycoon.events.*;
 import fr.prisontycoon.gui.*;
-import fr.prisontycoon.gui.ForgeGUI;
-import fr.prisontycoon.gui.ForgeRecipeGUI;
 import fr.prisontycoon.managers.*;
-import fr.prisontycoon.managers.ForgeManager;
+import fr.prisontycoon.quests.BlockCollectorManager;
+import fr.prisontycoon.quests.QuestManager;
 import fr.prisontycoon.tasks.*;
 import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
@@ -324,7 +321,7 @@ public final class PrisonTycoon extends JavaPlugin {
      * Enregistre une commande et ses alias en utilisant un seul objet handler.
      * Cette méthode vérifie automatiquement si le handler implémente CommandExecutor et/ou TabCompleter.
      *
-     * @param handler L'objet qui gère la commande (doit implémenter au moins CommandExecutor).
+     * @param handler      L'objet qui gère la commande (doit implémenter au moins CommandExecutor).
      * @param commandNames Le nom principal de la commande, suivi de tous ses alias.
      */
     private void registerCommand(Object handler, String... commandNames) {
@@ -471,93 +468,317 @@ public final class PrisonTycoon extends JavaPlugin {
     // ===============================================================================================
 
     // --- Core & Utils ---
-    public Logger getPluginLogger() { return logger; }
-    public ChatLogger getChatLogger() { return chatLogger; }
-    public ConfigManager getConfigManager() { return configManager; }
-    public DatabaseManager getDatabaseManager() { return databaseManager; }
+    public Logger getPluginLogger() {
+        return logger;
+    }
+
+    public ChatLogger getChatLogger() {
+        return chatLogger;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
 
     // --- Plugin Intégration ---
-    public CustomMobsPlugin getCustomMobsPlugin() { return this.customMobsPlugin; }
-    public void setCustomMobsPlugin(CustomMobsPlugin customMobsPlugin) { this.customMobsPlugin = customMobsPlugin; }
+    public CustomMobsPlugin getCustomMobsPlugin() {
+        return this.customMobsPlugin;
+    }
+
+    public void setCustomMobsPlugin(CustomMobsPlugin customMobsPlugin) {
+        this.customMobsPlugin = customMobsPlugin;
+    }
 
     // --- Managers ---
-    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
-    public MineManager getMineManager() { return mineManager; }
-    public EnchantmentManager getEnchantmentManager() { return enchantmentManager; }
-    public PickaxeManager getPickaxeManager() { return pickaxeManager; }
-    public EconomyManager getEconomyManager() { return economyManager; }
-    public NotificationManager getNotificationManager() { return notificationManager; }
-    public ContainerManager getContainerManager() { return containerManager; }
-    public GlobalBonusManager getGlobalBonusManager() { return globalBonusManager; }
-    public MineOverloadManager getMineOverloadManager() { return mineOverloadManager; }
-    public TabManager getTabManager() { return tabManager; }
-    public ModerationManager getModerationManager() { return moderationManager; }
-    public VipManager getVipManager() { return vipManager; }
-    public PermissionManager getPermissionManager() { return permissionManager; }
-    public EnchantmentBookManager getEnchantmentBookManager() { return enchantmentBookManager; }
-    public ProfessionManager getProfessionManager() { return professionManager; }
-    public PrestigeManager getPrestigeManager() { return prestigeManager; }
-    public ReputationManager getReputationManager() { return reputationManager; }
-    public BlackMarketManager getBlackMarketManager() { return blackMarketManager; }
-    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() { return weaponArmorEnchantmentManager; }
-    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() { return uniqueEnchantmentBookFactory; }
-    public VoucherManager getVoucherManager() { return voucherManager; }
-    public BoostManager getBoostManager() { return boostManager; }
-    public AutominerManager getAutominerManager() { return autominerManager; }
-    public BankManager getBankManager() { return bankManager; }
-    public CrateManager getCrateManager() { return crateManager; }
-    public TankManager getTankManager() { return tankManager; }
-    public SellHandManager getSellHandManager() { return sellHandManager; }
-    public GangManager getGangManager() { return gangManager; }
-    public GUIManager getGUIManager() { return guiManager; }
-    public OutpostManager getOutpostManager() { return outpostManager; }
-    public WarpManager getWarpManager() { return warpManager; }
-    public CristalManager getCristalManager() { return cristalManager; }
-    public CristalBonusHelper getCristalBonusHelper() { return cristalBonusHelper; }
-    public HeadCollectionManager getHeadCollectionManager() { return headCollectionManager; }
-    public ForgeManager getForgeManager() { return forgeManager; }
+    public PlayerDataManager getPlayerDataManager() {
+        return playerDataManager;
+    }
+
+    public MineManager getMineManager() {
+        return mineManager;
+    }
+
+    public EnchantmentManager getEnchantmentManager() {
+        return enchantmentManager;
+    }
+
+    public PickaxeManager getPickaxeManager() {
+        return pickaxeManager;
+    }
+
+    public EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+
+    public NotificationManager getNotificationManager() {
+        return notificationManager;
+    }
+
+    public ContainerManager getContainerManager() {
+        return containerManager;
+    }
+
+    public GlobalBonusManager getGlobalBonusManager() {
+        return globalBonusManager;
+    }
+
+    public MineOverloadManager getMineOverloadManager() {
+        return mineOverloadManager;
+    }
+
+    public TabManager getTabManager() {
+        return tabManager;
+    }
+
+    public ModerationManager getModerationManager() {
+        return moderationManager;
+    }
+
+    public VipManager getVipManager() {
+        return vipManager;
+    }
+
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+
+    public EnchantmentBookManager getEnchantmentBookManager() {
+        return enchantmentBookManager;
+    }
+
+    public ProfessionManager getProfessionManager() {
+        return professionManager;
+    }
+
+    public PrestigeManager getPrestigeManager() {
+        return prestigeManager;
+    }
+
+    public ReputationManager getReputationManager() {
+        return reputationManager;
+    }
+
+    public BlackMarketManager getBlackMarketManager() {
+        return blackMarketManager;
+    }
+
+    public WeaponArmorEnchantmentManager getWeaponArmorEnchantmentManager() {
+        return weaponArmorEnchantmentManager;
+    }
+
+    public UniqueEnchantmentBookFactory getUniqueEnchantmentBookFactory() {
+        return uniqueEnchantmentBookFactory;
+    }
+
+    public VoucherManager getVoucherManager() {
+        return voucherManager;
+    }
+
+    public BoostManager getBoostManager() {
+        return boostManager;
+    }
+
+    public AutominerManager getAutominerManager() {
+        return autominerManager;
+    }
+
+    public BankManager getBankManager() {
+        return bankManager;
+    }
+
+    public CrateManager getCrateManager() {
+        return crateManager;
+    }
+
+    public TankManager getTankManager() {
+        return tankManager;
+    }
+
+    public SellHandManager getSellHandManager() {
+        return sellHandManager;
+    }
+
+    public GangManager getGangManager() {
+        return gangManager;
+    }
+
+    public GUIManager getGUIManager() {
+        return guiManager;
+    }
+
+    public OutpostManager getOutpostManager() {
+        return outpostManager;
+    }
+
+    public WarpManager getWarpManager() {
+        return warpManager;
+    }
+
+    public CristalManager getCristalManager() {
+        return cristalManager;
+    }
+
+    public CristalBonusHelper getCristalBonusHelper() {
+        return cristalBonusHelper;
+    }
+
+    public HeadCollectionManager getHeadCollectionManager() {
+        return headCollectionManager;
+    }
+
+    public ForgeManager getForgeManager() {
+        return forgeManager;
+    }
 
     // --- Tâches ---
-    public AutoUpgradeTask getAutoUpgradeTask() { return autoUpgradeTask; }
-    public ActionBarTask getActionBarTask() { return actionBarTask; }
-    public ScoreboardTask getScoreboardTask() { return scoreboardTask; }
+    public AutoUpgradeTask getAutoUpgradeTask() {
+        return autoUpgradeTask;
+    }
+
+    public ActionBarTask getActionBarTask() {
+        return actionBarTask;
+    }
+
+    public ScoreboardTask getScoreboardTask() {
+        return scoreboardTask;
+    }
 
     // --- GUIs ---
-    public EnchantmentMenu getMainMenuGUI() { return mainMenuGUI; }
-    public MainMenuGUI getMainNavigationGUI() { return mainNavigationGUI; }
-    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
-    public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
-    public BookShopGUI getBookShopGUI() { return bookShopGUI; }
-    public PetsMenuGUI getPetsMenuGUI() { return petsMenuGUI; }
-    public PickaxeRepairGUI getPickaxeRepairMenu() { return pickaxeRepairGUI; }
-    public ContainerGUI getContainerGUI() { return containerGUI; }
-    public ContainerFilterGUI getContainerFilterGUI() { return containerFilterGUI; }
-    public CristalGUI getCristalGUI() { return cristalGUI; }
-    public ProfessionGUI getProfessionGUI() { return professionGUI; }
-    public ProfessionRewardsGUI getProfessionRewardsGUI() { return professionRewardsGUI; }
-    public PrestigeGUI getPrestigeGUI() { return prestigeGUI; }
-    public BoostGUI getBoostGUI() { return boostGUI; }
-    public AutominerGUI getAutominerGUI() { return autominerGUI; }
-    public AutominerEnchantGUI getAutominerEnchantGUI() { return autominerEnchantGUI; }
-    public AutominerCondHeadGUI getAutominerCondHeadGUI() { return autominerCondHeadGUI; }
-    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() { return autominerEnchantUpgradeGUI; }
-    public BankGUI getBankGUI() { return bankGUI; }
-    public CrateGUI getCrateGUI() { return crateGUI; }
-    public TankGUI getTankGUI() { return tankGUI; }
-    public GangGUI getGangGUI() { return gangGUI; }
-    public OutpostGUI getOutpostGUI() { return outpostGUI; }
-    public WarpGUI getWarpGUI() { return warpGUI; }
-    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() { return weaponArmorEnchantGUI; }
-    public HeadCollectionGUI getHeadCollectionGUI() { return headCollectionGUI; }
-    public QuestsGUI getQuestsGUI() { return questsGUI; }
-    public ForgeGUI getForgeGUI() { return forgeGUI; }
-    public ForgeRecipeGUI getForgeRecipeGUI() { return forgeRecipeGUI; }
+    public EnchantmentMenu getMainMenuGUI() {
+        return mainMenuGUI;
+    }
+
+    public MainMenuGUI getMainNavigationGUI() {
+        return mainNavigationGUI;
+    }
+
+    public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() {
+        return enchantmentUpgradeGUI;
+    }
+
+    public EnchantmentBookGUI getEnchantmentBookGUI() {
+        return enchantmentBookGUI;
+    }
+
+    public BookShopGUI getBookShopGUI() {
+        return bookShopGUI;
+    }
+
+    public PetsMenuGUI getPetsMenuGUI() {
+        return petsMenuGUI;
+    }
+
+    public PickaxeRepairGUI getPickaxeRepairMenu() {
+        return pickaxeRepairGUI;
+    }
+
+    public ContainerGUI getContainerGUI() {
+        return containerGUI;
+    }
+
+    public ContainerFilterGUI getContainerFilterGUI() {
+        return containerFilterGUI;
+    }
+
+    public CristalGUI getCristalGUI() {
+        return cristalGUI;
+    }
+
+    public ProfessionGUI getProfessionGUI() {
+        return professionGUI;
+    }
+
+    public ProfessionRewardsGUI getProfessionRewardsGUI() {
+        return professionRewardsGUI;
+    }
+
+    public PrestigeGUI getPrestigeGUI() {
+        return prestigeGUI;
+    }
+
+    public BoostGUI getBoostGUI() {
+        return boostGUI;
+    }
+
+    public AutominerGUI getAutominerGUI() {
+        return autominerGUI;
+    }
+
+    public AutominerEnchantGUI getAutominerEnchantGUI() {
+        return autominerEnchantGUI;
+    }
+
+    public AutominerCondHeadGUI getAutominerCondHeadGUI() {
+        return autominerCondHeadGUI;
+    }
+
+    public AutominerEnchantUpgradeGUI getAutominerEnchantUpgradeGUI() {
+        return autominerEnchantUpgradeGUI;
+    }
+
+    public BankGUI getBankGUI() {
+        return bankGUI;
+    }
+
+    public CrateGUI getCrateGUI() {
+        return crateGUI;
+    }
+
+    public TankGUI getTankGUI() {
+        return tankGUI;
+    }
+
+    public GangGUI getGangGUI() {
+        return gangGUI;
+    }
+
+    public OutpostGUI getOutpostGUI() {
+        return outpostGUI;
+    }
+
+    public WarpGUI getWarpGUI() {
+        return warpGUI;
+    }
+
+    public WeaponArmorEnchantGUI getWeaponArmorEnchantGUI() {
+        return weaponArmorEnchantGUI;
+    }
+
+    public HeadCollectionGUI getHeadCollectionGUI() {
+        return headCollectionGUI;
+    }
+
+    public QuestsGUI getQuestsGUI() {
+        return questsGUI;
+    }
+
+    public ForgeGUI getForgeGUI() {
+        return forgeGUI;
+    }
+
+    public ForgeRecipeGUI getForgeRecipeGUI() {
+        return forgeRecipeGUI;
+    }
 
     // --- Commandes ---
-    public RankupCommand getRankupCommand() { return rankupCommand; }
+    public RankupCommand getRankupCommand() {
+        return rankupCommand;
+    }
 
     // --- Listeners ---
-    public HeadCollectionListener getHeadCollectionListener() { return headCollectionListener; }
-    public QuestManager getQuestManager() { return questManager; }
-    public BlockCollectorManager getBlockCollectorManager() { return blockCollectorManager; }
+    public HeadCollectionListener getHeadCollectionListener() {
+        return headCollectionListener;
+    }
+
+    public QuestManager getQuestManager() {
+        return questManager;
+    }
+
+    public BlockCollectorManager getBlockCollectorManager() {
+        return blockCollectorManager;
+    }
 }

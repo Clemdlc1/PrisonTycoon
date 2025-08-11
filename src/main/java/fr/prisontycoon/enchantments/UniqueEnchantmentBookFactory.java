@@ -38,7 +38,7 @@ public class UniqueEnchantmentBookFactory {
 
         // Titre avec couleur selon le type
         String typeColor = getEnchantmentColor(enchantId);
-        plugin.getGUIManager().applyName(meta,typeColor + "⚡ §l" + enchant.getName());
+        plugin.getGUIManager().applyName(meta, typeColor + "⚡ §l" + enchant.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -93,7 +93,8 @@ public class UniqueEnchantmentBookFactory {
             case "behead" -> "Décapitation brutale";
             case "chasseur" -> "Bonus contre les joueurs";
             case "bete_traquee" -> "Augmente fortement vos dégâts contre les entités non joueurs (PvE)";
-            case "cuirasse_bestiale" -> "Après avoir touché une entité non joueur, réduis brièvement les dégâts subis (PvE)";
+            case "cuirasse_bestiale" ->
+                    "Après avoir touché une entité non joueur, réduis brièvement les dégâts subis (PvE)";
             default -> "Effet mystérieux";
         };
     }
@@ -115,7 +116,7 @@ public class UniqueEnchantmentBookFactory {
 
         // Titre avec couleur selon le type
         String typeColor = getEnchantmentColor(enchantId);
-        plugin.getGUIManager().applyName(meta,typeColor + "⚡ §l" + enchant.getName());
+        plugin.getGUIManager().applyName(meta, typeColor + "⚡ §l" + enchant.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");

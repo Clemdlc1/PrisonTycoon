@@ -32,11 +32,10 @@ public class ChatListener implements Listener {
 
     // Anti-spam
     private static final long SPAM_DELAY = 2000; // 2 secondes entre les messages
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]");
     private final PrisonTycoon plugin;
     private final Map<UUID, String> lastMessages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastMessageTimes = new ConcurrentHashMap<>();
-
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]");
 
     public ChatListener(PrisonTycoon plugin) {
         this.plugin = plugin;

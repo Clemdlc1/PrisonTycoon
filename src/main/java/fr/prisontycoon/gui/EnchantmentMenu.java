@@ -6,12 +6,14 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.CustomEnchantment;
 import fr.prisontycoon.enchantments.EnchantmentCategory;
 import fr.prisontycoon.utils.NumberFormatter;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
@@ -19,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.bukkit.inventory.meta.Damageable;
 
 /**
  * Menu principal du système d'enchantements et features
@@ -30,9 +31,9 @@ public class EnchantmentMenu {
     // Slots du menu principal (réorganisés)
     private static final int PLAYER_HEAD_SLOT = 4;      // Ligne du haut
     private static final int MAIN_MENU_SLOT = 45;       // Ligne du bas
-    private static final int CRYSTALS_SLOT = 47;        // Ligne du bas
+    private static final int CRYSTALS_SLOT = 48;        // Ligne du bas
     private static final int UNIQUE_ENCHANTS_SLOT = 49; // Ligne du bas
-    private static final int PETS_SLOT = 51;            // Ligne du bas
+    private static final int PETS_SLOT = 50;            // Ligne du bas
     private static final int REPAIR_PICKAXE_SLOT = 53;  // Ligne du bas
     private final PrisonTycoon plugin;
 
@@ -97,7 +98,7 @@ public class EnchantmentMenu {
                 // Gère le clic sur un enchantement
                 if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
                     String displayName = item.getItemMeta().displayName() != null ?
-                            net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName()) : "";
+                            LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName()) : "";
 
                     CustomEnchantment targetEnchantment = plugin.getEnchantmentManager().getAllEnchantments()
                             .stream()
@@ -459,7 +460,7 @@ public class EnchantmentMenu {
         ItemMeta meta = filler.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§7");
+            plugin.getGUIManager().applyName(meta, "§7");
             filler.setItemMeta(meta);
         }
 
@@ -499,13 +500,11 @@ public class EnchantmentMenu {
             // Prendre en compte l'enchantement durabilité
             int durabilityLevel = playerData.getEnchantmentLevel("durability");
             double durabilityBonus = durabilityLevel * 10.0;
-            int maxDurabilityWithBonus = (int) (maxDurability * (1.0 + durabilityBonus / 100.0));
 
-            double healthPercent = ((double) (maxDurabilityWithBonus - currentDurability) / maxDurabilityWithBonus) * 100;
+            double healthPercent = ((double) (maxDurability - currentDurability) / maxDurability) * 100;
 
             lore.add("§e⛏️ §lÉTAT ACTUEL");
             lore.add("§7│ §eDurabilité: " + getDurabilityColorForButton(healthPercent) + String.format("%.1f%%", healthPercent));
-            lore.add("§7│ §ePoints: §6" + (maxDurabilityWithBonus - currentDurability) + "§7/§6" + maxDurabilityWithBonus);
 
             if (durabilityLevel > 0) {
                 lore.add("§7│ §eBonus Solidité: §a+" + String.format("%.0f%%", durabilityBonus) + " §7(Niv." + durabilityLevel + ")");

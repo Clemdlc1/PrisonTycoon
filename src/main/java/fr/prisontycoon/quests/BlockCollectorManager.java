@@ -19,11 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Sauvegarde par joueur une map Material->count et calcule les paliers.
  */
 public class BlockCollectorManager {
+    private static final int MAX_TIERS = 100;
     private final PrisonTycoon plugin;
     private final Gson gson = new Gson();
     private final Map<UUID, Map<Material, Long>> cache = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Material, Integer>> claimedCache = new ConcurrentHashMap<>(); // palier réclamé par matériau
-    private static final int MAX_TIERS = 100;
 
     public BlockCollectorManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -50,7 +50,10 @@ public class BlockCollectorManager {
         long remaining = count;
         for (int i = 1; i <= MAX_TIERS; i++) {
             long req = base * (long) i * (long) i;
-            if (remaining >= req) { tier = i; remaining -= req; } else break;
+            if (remaining >= req) {
+                tier = i;
+                remaining -= req;
+            } else break;
         }
         return tier;
     }
@@ -101,7 +104,8 @@ public class BlockCollectorManager {
         Map<UUID, Long> totals = new HashMap<>();
         String sql = "SELECT uuid, stats_json FROM player_block_stats";
         try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            Type type = new TypeToken<Map<String, Long>>(){}.getType();
+            Type type = new TypeToken<Map<String, Long>>() {
+            }.getType();
             while (rs.next()) {
                 UUID id = UUID.fromString(rs.getString("uuid"));
                 Map<String, Long> map = gson.fromJson(rs.getString("stats_json"), type);
@@ -113,7 +117,7 @@ public class BlockCollectorManager {
             plugin.getLogger().warning("getTopFor error: " + e.getMessage());
         }
         List<Map.Entry<UUID, Long>> list = new ArrayList<>(totals.entrySet());
-        list.sort((a,b)->Long.compare(b.getValue(), a.getValue()));
+        list.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
         if (list.size() > top) return list.subList(0, top);
         return list;
     }
@@ -161,11 +165,15 @@ public class BlockCollectorManager {
             ps.setString(1, playerId.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Type type = new TypeToken<Map<String, Long>>(){}.getType();
+                    Type type = new TypeToken<Map<String, Long>>() {
+                    }.getType();
                     Map<String, Long> s = gson.fromJson(rs.getString("stats_json"), type);
                     Map<Material, Long> map = new ConcurrentHashMap<>();
                     if (s != null) for (var e : s.entrySet()) {
-                        try { map.put(Material.valueOf(e.getKey()), e.getValue()); } catch (Exception ignored) {}
+                        try {
+                            map.put(Material.valueOf(e.getKey()), e.getValue());
+                        } catch (Exception ignored) {
+                        }
                     }
                     // Précharge aussi les paliers réclamés
                     claimedCache.computeIfAbsent(playerId, this::loadClaimsMap);
@@ -184,11 +192,15 @@ public class BlockCollectorManager {
             ps.setString(1, playerId.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Type type = new TypeToken<Map<String, Integer>>(){}.getType();
+                    Type type = new TypeToken<Map<String, Integer>>() {
+                    }.getType();
                     Map<String, Integer> s = gson.fromJson(rs.getString("claims_json"), type);
                     Map<Material, Integer> map = new ConcurrentHashMap<>();
                     if (s != null) for (var e : s.entrySet()) {
-                        try { map.put(Material.valueOf(e.getKey()), e.getValue()); } catch (Exception ignored) {}
+                        try {
+                            map.put(Material.valueOf(e.getKey()), e.getValue());
+                        } catch (Exception ignored) {
+                        }
                     }
                     return map;
                 }

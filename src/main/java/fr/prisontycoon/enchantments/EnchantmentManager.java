@@ -775,9 +775,12 @@ public class EnchantmentManager {
             if (ThreadLocalRandom.current().nextDouble() < hChance) {
                 target.setMetadata("heritage_copying", new FixedMetadataValue(plugin, true));
                 switch (greedType) {
-                    case "token" -> processTokenGreed(target, td, blockValue, td.getEnchantmentLevel("token_greed"), 1.0, combustionMultiplier, abundanceMultiplier, false);
-                    case "money" -> processMoneyGreed(target, td, blockValue, td.getEnchantmentLevel("money_greed"), 1.0, combustionMultiplier, abundanceMultiplier);
-                    case "exp" -> processExpGreed(target, td, blockValue, td.getEnchantmentLevel("exp_greed"), 1.0, combustionMultiplier, abundanceMultiplier);
+                    case "token" ->
+                            processTokenGreed(target, td, blockValue, td.getEnchantmentLevel("token_greed"), 1.0, combustionMultiplier, abundanceMultiplier, false);
+                    case "money" ->
+                            processMoneyGreed(target, td, blockValue, td.getEnchantmentLevel("money_greed"), 1.0, combustionMultiplier, abundanceMultiplier);
+                    case "exp" ->
+                            processExpGreed(target, td, blockValue, td.getEnchantmentLevel("exp_greed"), 1.0, combustionMultiplier, abundanceMultiplier);
                 }
                 // Retire le flag après 1 tick
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> target.removeMetadata("heritage_copying", plugin), 1L);
@@ -858,7 +861,7 @@ public class EnchantmentManager {
         ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
         var meta = key.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,keyColor + "Clé " + keyType);
+        plugin.getGUIManager().applyName(meta, keyColor + "Clé " + keyType);
         meta.setLore(Arrays.asList(
                 "§7Clé de coffre " + keyColor + keyType,
                 "§7Utilise cette clé pour ouvrir des coffres!"
@@ -1673,55 +1676,190 @@ class ExplosionEnchantment implements CustomEnchantment {
 
 // Jackpot: chance de recevoir un voucher aléatoire
 class JackpotEnchantment implements CustomEnchantment {
-    @Override public String getName() { return "jackpot"; }
-    @Override public String getDisplayName() { return "§6Jackpot"; }
-    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
-    @Override public String getDescription() { return "Chance d'obtenir un coupon aléatoire en minant"; }
-    @Override public int getMaxLevel() { return 10000; }
-    @Override public long getUpgradeCost(int level) { return Math.max(10, Math.round(5 * Math.pow(1.02, level))); }
-    @Override public Material getDisplayMaterial() { return Material.PAPER; }
+    @Override
+    public String getName() {
+        return "jackpot";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Jackpot";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Chance d'obtenir un coupon aléatoire en minant";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 10000;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return Math.max(10, Math.round(5 * Math.pow(1.02, level)));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.PAPER;
+    }
 }
 
 // Cohésion: multiplicateur de greeds selon joueurs dans la mine
 class CohesionEnchantment implements CustomEnchantment {
-    @Override public String getName() { return "cohesion"; }
-    @Override public String getDisplayName() { return "§aCohésion"; }
-    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
-    @Override public String getDescription() { return "Augmente les greeds selon les joueurs présents dans la mine"; }
-    @Override public int getMaxLevel() { return 10000; }
-    @Override public long getUpgradeCost(int level) { return Math.max(10, Math.round(3 * Math.pow(1.015, level))); }
-    @Override public Material getDisplayMaterial() { return Material.PLAYER_HEAD; }
+    @Override
+    public String getName() {
+        return "cohesion";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Cohésion";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Augmente les greeds selon les joueurs présents dans la mine";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 10000;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return Math.max(10, Math.round(3 * Math.pow(1.015, level)));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.PLAYER_HEAD;
+    }
 }
 
 // Héritage: chance de copier le greed d'un autre joueur
 class HeritageEnchantment implements CustomEnchantment {
-    @Override public String getName() { return "heritage"; }
-    @Override public String getDisplayName() { return "§dHéritage"; }
-    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.SPECIAL; }
-    @Override public String getDescription() { return "Chance de déclencher un greed lorsqu'un autre joueur en déclenche un"; }
-    @Override public int getMaxLevel() { return 500; }
-    @Override public long getUpgradeCost(int level) { return Math.max(100, Math.round(250 * Math.pow(1.03, level))); }
-    @Override public Material getDisplayMaterial() { return Material.TOTEM_OF_UNDYING; }
+    @Override
+    public String getName() {
+        return "heritage";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Héritage";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.SPECIAL;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Chance de déclencher un greed lorsqu'un autre joueur en déclenche un";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 500;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return Math.max(100, Math.round(250 * Math.pow(1.03, level)));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.TOTEM_OF_UNDYING;
+    }
 }
 
 // Fièvre de l'Opportunité: fenêtre de 10s de greeds garantis sur un bloc
 class OpportunityFeverEnchantment implements CustomEnchantment {
-    @Override public String getName() { return "opportunity_fever"; }
-    @Override public String getDisplayName() { return "§eFièvre de l'Opportunité"; }
-    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.UTILITY; }
-    @Override public String getDescription() { return "Chance de 10s pendant lesquelles un bloc déclenche toujours un greed"; }
-    @Override public int getMaxLevel() { return 10000; }
-    @Override public long getUpgradeCost(int level) { return Math.max(25, Math.round(4 * Math.pow(1.02, level))); }
-    @Override public Material getDisplayMaterial() { return Material.CLOCK; }
+    @Override
+    public String getName() {
+        return "opportunity_fever";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Fièvre de l'Opportunité";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.UTILITY;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Chance de 10s pendant lesquelles un bloc déclenche toujours un greed";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 10000;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return Math.max(25, Math.round(4 * Math.pow(1.02, level)));
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.CLOCK;
+    }
 }
 
 // Planneur: Chute lente en tombant (annulable en sneak)
 class PlanneurEnchantment implements CustomEnchantment {
-    @Override public String getName() { return "planneur"; }
-    @Override public String getDisplayName() { return "§bPlanneur"; }
-    @Override public EnchantmentCategory getCategory() { return EnchantmentCategory.MOBILITY; }
-    @Override public String getDescription() { return "Applique chute lente en tombant; sneak pour l'annuler"; }
-    @Override public int getMaxLevel() { return 2; }
-    @Override public long getUpgradeCost(int level) { return level == 0 ? 1000 : 5000; }
-    @Override public Material getDisplayMaterial() { return Material.FEATHER; }
+    @Override
+    public String getName() {
+        return "planneur";
+    }
+
+    @Override
+    public String getDisplayName() {
+        return "Planneur";
+    }
+
+    @Override
+    public EnchantmentCategory getCategory() {
+        return EnchantmentCategory.MOBILITY;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Applique chute lente en tombant; sneak pour l'annuler";
+    }
+
+    @Override
+    public int getMaxLevel() {
+        return 2;
+    }
+
+    @Override
+    public long getUpgradeCost(int level) {
+        return level == 0 ? 1000 : 5000;
+    }
+
+    @Override
+    public Material getDisplayMaterial() {
+        return Material.FEATHER;
+    }
 }

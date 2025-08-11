@@ -52,7 +52,7 @@ public class AutominerManager {
         meta.getPersistentDataContainer().set(uuidKey, PersistentDataType.STRING, uniqueId);
 
         // Nom et lore de base
-        plugin.getGUIManager().applyName(meta,"§6⚡ Automineur " + type.getDisplayName() + " ⚡");
+        plugin.getGUIManager().applyName(meta, "§6⚡ Automineur " + type.getDisplayName() + " ⚡");
         List<String> lore = new ArrayList<>();
         lore.add("§7Type: §f" + type.getDisplayName());
         lore.add("§7Consommation: §e1 tête/" + formatTime(type.getBaseFuelConsumption()));
@@ -578,7 +578,7 @@ public class AutominerManager {
         ItemStack key = new ItemStack(Material.TRIPWIRE_HOOK);
         var meta = key.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,keyColor + "Clé " + keyType);
+        plugin.getGUIManager().applyName(meta, keyColor + "Clé " + keyType);
         plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Clé de coffre " + keyColor + keyType,
                 "§7Utilise cette clé pour ouvrir des coffres!"

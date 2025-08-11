@@ -108,14 +108,14 @@ public class Logger {
         }
     }
 
-    public enum LogLevel {
-        DEBUG, INFO, WARNING, SEVERE
-    }
-
     /**
      * Indique si le mode debug est activé (utile pour court-circuiter des calculs coûteux).
      */
     public boolean isDebugEnabled() {
         return debugEnabled;
+    }
+
+    public enum LogLevel {
+        DEBUG, INFO, WARNING, SEVERE
     }
 }

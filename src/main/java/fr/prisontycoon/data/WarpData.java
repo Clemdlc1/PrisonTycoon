@@ -13,60 +13,21 @@ import java.util.Objects;
  */
 public class WarpData {
 
-    /**
-     * Types de warps disponibles avec leurs icônes et noms d'affichage
-     */
-    public enum WarpType {
-        SPAWN("§e⭐", "Spawn", "Point de spawn principal"),
-        MINE("§6⛏", "Mine", "Mines de ressources"),
-        CRATE("§d📦", "Crates", "Caisses et récompenses"),
-        CAVE("§8🕳", "Caves", "Grottes et donjons"),
-        SHOP("§a🏪", "Magasins", "Zones commerciales"),
-        PVP("§c⚔", "PvP", "Zones de combat"),
-        EVENT("§5🎉", "Événement", "Zones d'événements"),
-        OTHER("§7🔗", "Autre", "Autres destinations");
-
-        private final String icon;
-        private final String displayName;
-        private final String description;
-
-        WarpType(String icon, String displayName, String description) {
-            this.icon = icon;
-            this.displayName = displayName;
-            this.description = description;
-        }
-
-        public String getIcon() { return icon; }
-        public String getDisplayName() { return displayName; }
-        public String getDescription() { return description; }
-
-        /**
-         * Obtient le nom formaté avec l'icône
-         */
-        public String getFormattedName() {
-            return icon + " §f" + displayName;
-        }
-    }
-
     // Identification
     private final String id;
     private final String displayName;
     private final WarpType type;
-
     // Position
     private final String worldName;
     private final double x, y, z;
     private final float yaw, pitch;
-
     // Permissions et accès
     private final String permission;
     private final boolean enabled;
-
     // Affichage dans le GUI
     private final Material headMaterial;
     private final String headTexture;
     private final String description;
-
     /**
      * Constructeur principal complet
      */
@@ -133,14 +94,14 @@ public class WarpData {
                 newEnabled, original.description);
     }
 
-    // ====== GETTERS PRINCIPAUX ======
-
     /**
      * Obtient l'ID unique du warp
      */
     public String getId() {
         return id;
     }
+
+    // ====== GETTERS PRINCIPAUX ======
 
     /**
      * Obtient le nom d'affichage du warp
@@ -233,8 +194,6 @@ public class WarpData {
         return description;
     }
 
-    // ====== MÉTHODES UTILITAIRES ======
-
     /**
      * Obtient la Location Bukkit de ce warp
      */
@@ -245,6 +204,8 @@ public class WarpData {
         }
         return new Location(world, x, y, z, yaw, pitch);
     }
+
+    // ====== MÉTHODES UTILITAIRES ======
 
     /**
      * Vérifie si ce warp est accessible (monde existant et activé)
@@ -288,7 +249,7 @@ public class WarpData {
      * Obtient les coordonnées sous forme de texte
      */
     public String getFormattedCoordinates() {
-        return String.format("§e%d, %d, %d", (int)x, (int)y, (int)z);
+        return String.format("§e%d, %d, %d", (int) x, (int) y, (int) z);
     }
 
     /**
@@ -371,8 +332,6 @@ public class WarpData {
                 permission, headMaterial, headTexture, enabled, newDescription);
     }
 
-    // ====== MÉTHODES STANDARD ======
-
     @Override
     public String toString() {
         return "WarpData{" +
@@ -386,6 +345,8 @@ public class WarpData {
                 ", enabled=" + enabled +
                 '}';
     }
+
+    // ====== MÉTHODES STANDARD ======
 
     @Override
     public boolean equals(Object obj) {
@@ -416,8 +377,6 @@ public class WarpData {
         return this.displayName.compareToIgnoreCase(other.displayName);
     }
 
-    // ====== MÉTHODES DE VALIDATION ======
-
     /**
      * Valide que toutes les données du warp sont cohérentes
      */
@@ -428,6 +387,8 @@ public class WarpData {
                 worldName != null && !worldName.trim().isEmpty() &&
                 headMaterial != null;
     }
+
+    // ====== MÉTHODES DE VALIDATION ======
 
     /**
      * Obtient une liste des problèmes de validation
@@ -455,5 +416,48 @@ public class WarpData {
         }
 
         return errors;
+    }
+
+    /**
+     * Types de warps disponibles avec leurs icônes et noms d'affichage
+     */
+    public enum WarpType {
+        SPAWN("§e⭐", "Spawn", "Point de spawn principal"),
+        MINE("§6⛏", "Mine", "Mines de ressources"),
+        CRATE("§d📦", "Crates", "Caisses et récompenses"),
+        CAVE("§8🕳", "Caves", "Grottes et donjons"),
+        SHOP("§a🏪", "Magasins", "Zones commerciales"),
+        PVP("§c⚔", "PvP", "Zones de combat"),
+        EVENT("§5🎉", "Événement", "Zones d'événements"),
+        OTHER("§7🔗", "Autre", "Autres destinations");
+
+        private final String icon;
+        private final String displayName;
+        private final String description;
+
+        WarpType(String icon, String displayName, String description) {
+            this.icon = icon;
+            this.displayName = displayName;
+            this.description = description;
+        }
+
+        public String getIcon() {
+            return icon;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         * Obtient le nom formaté avec l'icône
+         */
+        public String getFormattedName() {
+            return icon + " §f" + displayName;
+        }
     }
 }

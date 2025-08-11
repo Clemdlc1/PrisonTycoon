@@ -431,7 +431,7 @@ public class ContainerGUI {
     private ItemStack createGlassPane(Material material) {
         ItemStack pane = new ItemStack(material);
         ItemMeta meta = pane.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"");
+        plugin.getGUIManager().applyName(meta, "");
         pane.setItemMeta(meta);
         return pane;
     }

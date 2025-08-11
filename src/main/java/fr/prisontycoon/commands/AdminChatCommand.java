@@ -98,7 +98,7 @@ public class AdminChatCommand implements CommandExecutor, TabCompleter {
         }
 
         // Vérifie si c'est un admin
-        if (target.isOnline() && plugin.getPermissionManager().hasPermission(target.getPlayer(),"specialmine.admin")) {
+        if (target.isOnline() && plugin.getPermissionManager().hasPermission(target.getPlayer(), "specialmine.admin")) {
             sender.sendMessage("§c❌ Vous ne pouvez pas muter un administrateur!");
             return;
         }

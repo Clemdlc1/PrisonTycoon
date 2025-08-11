@@ -1,7 +1,6 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -134,6 +133,13 @@ public class HeadCollectionListener implements Listener {
     }
 
     /**
+     * Récupère l'état du mode setup
+     */
+    public boolean isSetupMode() {
+        return setupMode;
+    }
+
+    /**
      * Active/désactive le mode setup
      */
     public void setSetupMode(boolean setupMode) {
@@ -144,12 +150,5 @@ public class HeadCollectionListener implements Listener {
         } else {
             plugin.getPluginLogger().info("§cMode setup des têtes DÉSACTIVÉ");
         }
-    }
-
-    /**
-     * Récupère l'état du mode setup
-     */
-    public boolean isSetupMode() {
-        return setupMode;
     }
 }

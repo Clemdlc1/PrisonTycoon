@@ -24,14 +24,7 @@ import java.util.stream.Collectors;
  */
 public class WarpGUI {
 
-    private final PrisonTycoon plugin;
     private static final int ITEMS_PER_PAGE = 28;
-
-    // Clés pour stocker les données de manière sécurisée dans les items
-    private final NamespacedKey warpIdKey;
-    private final NamespacedKey pageNumberKey;
-    private final NamespacedKey actionKey;
-
     private static final Map<WarpData.WarpType, Material> WARP_TYPE_ICONS = Map.of(
             WarpData.WarpType.SPAWN, Material.NETHER_STAR,
             WarpData.WarpType.MINE, Material.DIAMOND_PICKAXE,
@@ -42,6 +35,11 @@ public class WarpGUI {
             WarpData.WarpType.EVENT, Material.FIREWORK_ROCKET,
             WarpData.WarpType.OTHER, Material.COMPASS
     );
+    private final PrisonTycoon plugin;
+    // Clés pour stocker les données de manière sécurisée dans les items
+    private final NamespacedKey warpIdKey;
+    private final NamespacedKey pageNumberKey;
+    private final NamespacedKey actionKey;
 
     public WarpGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -133,8 +131,14 @@ public class WarpGUI {
         String action = item.getItemMeta().getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
         if (action != null) {
             switch (action) {
-                case "close" -> { player.closeInventory(); return; }
-                case "back" -> { openWarpMenu(player); return; }
+                case "close" -> {
+                    player.closeInventory();
+                    return;
+                }
+                case "back" -> {
+                    openWarpMenu(player);
+                    return;
+                }
             }
         }
 
@@ -155,7 +159,10 @@ public class WarpGUI {
     private void handleMainMenuClick(Player player, ItemStack item) {
         // Clic pour ouvrir le sous-menu des mines via PDC action
         String action = item.getItemMeta().getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
-        if ("open_mines".equals(action)) { openMineWarpsMenu(player, 1); return; }
+        if ("open_mines".equals(action)) {
+            openMineWarpsMenu(player, 1);
+            return;
+        }
 
         // Clic sur un warp direct (Spawn, etc.)
         String warpId = getWarpIdFromItem(item);
@@ -331,12 +338,12 @@ public class WarpGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack blackGlass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta blackMeta = blackGlass.getItemMeta();
-        plugin.getGUIManager().applyName(blackMeta,"");
+        plugin.getGUIManager().applyName(blackMeta, "");
         blackGlass.setItemMeta(blackMeta);
 
         ItemStack grayGlass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta grayMeta = grayGlass.getItemMeta();
-        plugin.getGUIManager().applyName(grayMeta,"");
+        plugin.getGUIManager().applyName(grayMeta, "");
         grayGlass.setItemMeta(grayMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {

@@ -209,15 +209,41 @@ public class MineData {
 
     // ====== GETTERS EXISTANTS ======
 
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getWorldName() { return worldName; }
-    public int getMinX() { return minX; }
-    public int getMinY() { return minY; }
-    public int getMinZ() { return minZ; }
-    public int getMaxX() { return maxX; }
-    public int getMaxY() { return maxY; }
-    public int getMaxZ() { return maxZ; }
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getWorldName() {
+        return worldName;
+    }
+
+    public int getMinX() {
+        return minX;
+    }
+
+    public int getMinY() {
+        return minY;
+    }
+
+    public int getMinZ() {
+        return minZ;
+    }
+
+    public int getMaxX() {
+        return maxX;
+    }
+
+    public int getMaxY() {
+        return maxY;
+    }
+
+    public int getMaxZ() {
+        return maxZ;
+    }
 
     public Location getMinCorner() {
         return minCorner != null ? minCorner.clone() : null;
@@ -227,24 +253,61 @@ public class MineData {
         return maxCorner != null ? maxCorner.clone() : null;
     }
 
-    public BlockVector3 getMinPos() { return minPos; }
-    public BlockVector3 getMaxPos() { return maxPos; }
+    public BlockVector3 getMinPos() {
+        return minPos;
+    }
+
+    public BlockVector3 getMaxPos() {
+        return maxPos;
+    }
 
     public Map<Material, Double> getBlockComposition() {
         return new HashMap<>(blockComposition);
     }
 
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
-    public long getRankupPrice() { return rankupPrice; }
-    public double getBeaconRate() { return beaconRate; }
-    public MineType getType() { return type; }
-    public int getRequiredPrestige() { return requiredPrestige; }
-    public String getRequiredRank() { return requiredRank; }
-    public String getRequiredPermission() { return requiredPermission; }
-    public boolean isVipOnly() { return vipOnly; }
-    public int getVolume() { return volume; }
-    public int getResetIntervalMinutes() { return resetIntervalMinutes; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public long getRankupPrice() {
+        return rankupPrice;
+    }
+
+    public double getBeaconRate() {
+        return beaconRate;
+    }
+
+    public MineType getType() {
+        return type;
+    }
+
+    public int getRequiredPrestige() {
+        return requiredPrestige;
+    }
+
+    public String getRequiredRank() {
+        return requiredRank;
+    }
+
+    public String getRequiredPermission() {
+        return requiredPermission;
+    }
+
+    public boolean isVipOnly() {
+        return vipOnly;
+    }
+
+    public int getVolume() {
+        return volume;
+    }
+
+    public int getResetIntervalMinutes() {
+        return resetIntervalMinutes;
+    }
 
     public List<Material> getWeightedMaterials() {
         return new ArrayList<>(weightedMaterials);
@@ -255,11 +318,25 @@ public class MineData {
     /**
      * Obtient les coordonnées de téléportation personnalisées
      */
-    public double getTeleportX() { return teleportX; }
-    public double getTeleportY() { return teleportY; }
-    public double getTeleportZ() { return teleportZ; }
-    public float getTeleportYaw() { return teleportYaw; }
-    public float getTeleportPitch() { return teleportPitch; }
+    public double getTeleportX() {
+        return teleportX;
+    }
+
+    public double getTeleportY() {
+        return teleportY;
+    }
+
+    public double getTeleportZ() {
+        return teleportZ;
+    }
+
+    public float getTeleportYaw() {
+        return teleportYaw;
+    }
+
+    public float getTeleportPitch() {
+        return teleportPitch;
+    }
 
     /**
      * Obtient la location de téléportation personnalisée
@@ -357,8 +434,8 @@ public class MineData {
         info.append("§7Reset: §e").append(resetIntervalMinutes).append(" minutes\n");
 
         if (hasCustomTeleportLocation()) {
-            info.append("§7Téléportation: §e").append((int)teleportX).append(", ")
-                    .append((int)teleportY).append(", ").append((int)teleportZ).append("\n");
+            info.append("§7Téléportation: §e").append((int) teleportX).append(", ")
+                    .append((int) teleportY).append(", ").append((int) teleportZ).append("\n");
         } else {
             info.append("§7Téléportation: §7Centre de la mine\n");
         }

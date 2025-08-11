@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.autominers.AutominerType;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -177,7 +176,7 @@ public class AutominerEnchantUpgradeGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
+        plugin.getGUIManager().applyName(meta, color + "+" + requestedLevels + " Niveau" + (requestedLevels > 1 ? "x" : ""));
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -227,7 +226,7 @@ public class AutominerEnchantUpgradeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (maxAffordable > 0) {
-            plugin.getGUIManager().applyName(meta,"§b⭐ §lMAXIMUM POSSIBLE");
+            plugin.getGUIManager().applyName(meta, "§b⭐ §lMAXIMUM POSSIBLE");
 
             List<String> lore = new ArrayList<>();
             lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -249,7 +248,7 @@ public class AutominerEnchantUpgradeGUI {
 
             plugin.getGUIManager().applyLore(meta, lore);
         } else {
-            plugin.getGUIManager().applyName(meta,"§c❌ §lAUCUNE AMÉLIORATION POSSIBLE");
+            plugin.getGUIManager().applyName(meta, "§c❌ §lAUCUNE AMÉLIORATION POSSIBLE");
             plugin.getGUIManager().applyLore(meta, Arrays.asList(
                     "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                     "§c❌ §lPAS D'AMÉLIORATION POSSIBLE",
@@ -479,7 +478,7 @@ public class AutominerEnchantUpgradeGUI {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
 
         meta.setOwningPlayer(player);
-        plugin.getGUIManager().applyName(meta,"§6📊 " + getEnchantmentDisplayName(enchantmentName));
+        plugin.getGUIManager().applyName(meta, "§6📊 " + getEnchantmentDisplayName(enchantmentName));
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -501,7 +500,7 @@ public class AutominerEnchantUpgradeGUI {
     private ItemStack createBackButton() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§c« Retour");
+        plugin.getGUIManager().applyName(meta, "§c« Retour");
         plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu d'amélioration"));
         item.setItemMeta(meta);
         return item;
@@ -510,7 +509,7 @@ public class AutominerEnchantUpgradeGUI {
     private void fillBorders(Inventory gui) {
         ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta fillerMeta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(fillerMeta,"");
+        plugin.getGUIManager().applyName(fillerMeta, "");
         filler.setItemMeta(fillerMeta);
 
         // Remplir les bordures

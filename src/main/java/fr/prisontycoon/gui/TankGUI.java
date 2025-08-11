@@ -119,7 +119,7 @@ public class TankGUI implements Listener {
             // Aucun prix configuré
             ItemStack noPrice = new ItemStack(Material.BARRIER);
             ItemMeta meta = noPrice.getItemMeta();
-            plugin.getGUIManager().applyName(meta,"§c❌ Aucun prix configuré");
+            plugin.getGUIManager().applyName(meta, "§c❌ Aucun prix configuré");
             plugin.getGUIManager().applyLore(meta, Arrays.asList(
                     "§7Ce tank n'achète aucun item",
                     "§7pour le moment"
@@ -134,7 +134,7 @@ public class TankGUI implements Listener {
 
                 ItemStack priceItem = new ItemStack(entry.getKey());
                 ItemMeta meta = priceItem.getItemMeta();
-                plugin.getGUIManager().applyName(meta,"§f" + entry.getKey().name().toLowerCase());
+                plugin.getGUIManager().applyName(meta, "§f" + entry.getKey().name().toLowerCase());
                 plugin.getGUIManager().applyLore(meta, Arrays.asList(
                         "§7Prix d'achat: §a" + NumberFormatter.format(entry.getValue()) + "$ §7par item",
                         "§7Stock actuel: §b" + NumberFormatter.format(tankData.getContents().getOrDefault(entry.getKey(), 0)),
@@ -221,7 +221,7 @@ public class TankGUI implements Listener {
         ItemMeta meta = item.getItemMeta();
         String ownerName = plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName();
 
-        plugin.getGUIManager().applyName(meta,"§6⚡ Tank de " + ownerName);
+        plugin.getGUIManager().applyName(meta, "§6⚡ Tank de " + ownerName);
 
         List<String> lore = new ArrayList<>();
         if (tankData.hasCustomName()) {
@@ -249,7 +249,7 @@ public class TankGUI implements Listener {
     private ItemStack createCustomNameItem(TankData tankData) {
         ItemStack item = new ItemStack(Material.NAME_TAG);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§e✏ Nom personnalisé");
+        plugin.getGUIManager().applyName(meta, "§e✏ Nom personnalisé");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Nom actuel: " + (tankData.hasCustomName() ? "§f" + tankData.getCustomName() : "§cAucun"));
@@ -271,7 +271,7 @@ public class TankGUI implements Listener {
     private ItemStack createFiltersItem(TankData tankData) {
         ItemStack item = new ItemStack(Material.HOPPER);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§e🔧 Filtres actifs");
+        plugin.getGUIManager().applyName(meta, "§e🔧 Filtres actifs");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Nombre de filtres: §e" + tankData.getFilters().size());
@@ -305,7 +305,7 @@ public class TankGUI implements Listener {
     private ItemStack createContentsItem(TankData tankData) {
         ItemStack item = new ItemStack(Material.CHEST);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§b📦 Contenu stocké");
+        plugin.getGUIManager().applyName(meta, "§b📦 Contenu stocké");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Total: §b" + NumberFormatter.format(tankData.getTotalItems()) + " items");
@@ -343,7 +343,7 @@ public class TankGUI implements Listener {
     private ItemStack createPricesOverviewItem(TankData tankData) {
         ItemStack item = new ItemStack(Material.GOLD_NUGGET);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§6💰 Vue d'ensemble des prix");
+        plugin.getGUIManager().applyName(meta, "§6💰 Vue d'ensemble des prix");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Prix configurés: §e" + tankData.getPrices().size());
@@ -378,7 +378,7 @@ public class TankGUI implements Listener {
     private ItemStack createAddFilterItem() {
         ItemStack item = new ItemStack(Material.GREEN_WOOL);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§a+ Ajouter un filtre");
+        plugin.getGUIManager().applyName(meta, "§a+ Ajouter un filtre");
 
         List<String> lore = Arrays.asList(
                 "§7Ouvre la sélection de matériaux",
@@ -398,7 +398,7 @@ public class TankGUI implements Listener {
     private ItemStack createClearFiltersItem() {
         ItemStack item = new ItemStack(Material.RED_WOOL);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§c✗ Vider les filtres");
+        plugin.getGUIManager().applyName(meta, "§c✗ Vider les filtres");
 
         List<String> lore = Arrays.asList(
                 "§7Supprime tous les filtres",
@@ -417,7 +417,7 @@ public class TankGUI implements Listener {
     private ItemStack createClearPricesItem() {
         ItemStack item = new ItemStack(Material.ORANGE_WOOL);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§6✗ Réinitialiser les prix");
+        plugin.getGUIManager().applyName(meta, "§6✗ Réinitialiser les prix");
 
         List<String> lore = Arrays.asList(
                 "§7Remet tous les prix à zéro",
@@ -436,7 +436,7 @@ public class TankGUI implements Listener {
     private ItemStack createWithdrawAllItem() {
         ItemStack item = new ItemStack(Material.ENDER_CHEST);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§c📤 Récupérer le contenu");
+        plugin.getGUIManager().applyName(meta, "§c📤 Récupérer le contenu");
 
         List<String> lore = Arrays.asList(
                 "§7Transfère tout le contenu du tank",
@@ -459,7 +459,7 @@ public class TankGUI implements Listener {
         boolean isFiltered = tankData.getFilters().contains(material);
         long price = tankData.getPrice(material);
 
-        plugin.getGUIManager().applyName(meta,(isFiltered ? "§a✓ " : "§c✗ ") + "§f" + material.name().toLowerCase());
+        plugin.getGUIManager().applyName(meta, (isFiltered ? "§a✓ " : "§c✗ ") + "§f" + material.name().toLowerCase());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Statut: " + (isFiltered ? "§aAccepté" : "§cRefusé"));
@@ -491,7 +491,7 @@ public class TankGUI implements Listener {
     private ItemStack createMaterialSelectionItem(Material material) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§f" + material.name().toLowerCase());
+        plugin.getGUIManager().applyName(meta, "§f" + material.name().toLowerCase());
         plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Clic pour ajouter ce matériau",
                 "§7aux filtres du tank",
@@ -509,7 +509,7 @@ public class TankGUI implements Listener {
     private ItemStack createBackButton() {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§7← Retour");
+        plugin.getGUIManager().applyName(meta, "§7← Retour");
         plugin.getGUIManager().applyLore(meta, List.of("§7Retour au menu principal"));
         item.setItemMeta(meta);
         return item;
@@ -521,7 +521,7 @@ public class TankGUI implements Listener {
     private ItemStack createCloseButton() {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§c✗ Fermer");
+        plugin.getGUIManager().applyName(meta, "§c✗ Fermer");
         plugin.getGUIManager().applyLore(meta, List.of("§7Fermer cette interface"));
         item.setItemMeta(meta);
         return item;
@@ -533,7 +533,7 @@ public class TankGUI implements Listener {
     private void fillBorders(Inventory gui) {
         ItemStack border = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = border.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"");
+        plugin.getGUIManager().applyName(meta, "");
         border.setItemMeta(meta);
 
         // Bordures uniquement sur les côtés et coins

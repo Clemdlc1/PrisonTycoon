@@ -229,7 +229,8 @@ public class ContainerManager {
                         // Quêtes: conteneur cassé (côté manager)
                         try {
                             plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.BREAK_CONTAINER, 1);
-                        } catch (Throwable ignored) {}
+                        } catch (Throwable ignored) {
+                        }
                     }
                     updateContainerInInventory(player, uuid, data);
                 }
@@ -305,10 +306,10 @@ public class ContainerManager {
         lore.add("§7┃ Capacité: §a" + NumberFormatter.format(data.getMaxCapacity()) + " items");
         if (data.isBroken()) {
             lore.add("§7┃ État: §c💥 CASSÉ");
-            plugin.getGUIManager().applyName(meta,"§c💥 Conteneur Cassé - " + getTierName(data.getTier()));
+            plugin.getGUIManager().applyName(meta, "§c💥 Conteneur Cassé - " + getTierName(data.getTier()));
         } else {
             lore.add("§7┃ Durabilité: §2" + data.getDurability() + "§7/§2" + data.getMaxDurability());
-            plugin.getGUIManager().applyName(meta,"§6📦 Conteneur " + getTierName(data.getTier()));
+            plugin.getGUIManager().applyName(meta, "§6📦 Conteneur " + getTierName(data.getTier()));
         }
         lore.add("");
         lore.add("§e📦 Contenu actuel:");
@@ -702,7 +703,7 @@ public class ContainerManager {
      * UTILITAIRE : Trouve un conteneur par UUID dans l'inventaire du joueur
      *
      * @param player Le joueur
-     * @param uuid L'UUID du conteneur à trouver
+     * @param uuid   L'UUID du conteneur à trouver
      * @return L'ItemStack du conteneur ou null si non trouvé
      */
     public ItemStack findContainerByUUID(Player player, String uuid) {

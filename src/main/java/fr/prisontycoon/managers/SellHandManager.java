@@ -56,7 +56,7 @@ public class SellHandManager {
         meta.getPersistentDataContainer().set(sellHandDurabilityKey, PersistentDataType.INTEGER, type.getMaxDurability());
 
         // Apparence
-        plugin.getGUIManager().applyName(meta,type.getDisplayName());
+        plugin.getGUIManager().applyName(meta, type.getDisplayName());
         updateSellHandLore(meta, type, type.getMaxDurability());
 
         // Enchantement pour l'effet visuel
@@ -179,7 +179,8 @@ public class SellHandManager {
         // Quêtes: utilisation d'un SellHand (compte les utilisations réussies)
         try {
             plugin.getQuestManager().addProgress(player, fr.prisontycoon.quests.QuestType.USE_SELLHAND, 1);
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
 
         return true;
     }

@@ -18,22 +18,19 @@ import java.util.*;
  */
 public class QuestsGUI {
 
-    private final PrisonTycoon plugin;
-    private final GUIManager guiManager;
-
     // Slots de navigation principaux
     private static final int DAILY_QUESTS_SLOT = 11;
     private static final int WEEKLY_QUESTS_SLOT = 15;
     private static final int BLOCK_COLLECTOR_SLOT = 13;
     private static final int ADVANCEMENT_QUESTS_SLOT = 22;
-
     // Slots de récompenses bonus
     private static final int DAILY_BONUS_SLOT = 29;
     private static final int WEEKLY_BONUS_SLOT = 33;
-
     // Slots utilitaires
     private static final int REFRESH_SLOT = 40;
     private static final int CLOSE_SLOT = 44;
+    private final PrisonTycoon plugin;
+    private final GUIManager guiManager;
 
     public QuestsGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -586,7 +583,7 @@ public class QuestsGUI {
         if (tier < 100) {
             long nextReq = plugin.getBlockCollectorManager().getNextTierRequirement(tier + 1);
             lore.add("§7Prochain palier: §a" + (nextReq - toNext) + "§7/§a" + nextReq);
-            lore.add(createProgressBar((int)(nextReq - toNext), (int)nextReq, 15));
+            lore.add(createProgressBar((int) (nextReq - toNext), (int) nextReq, 15));
             lore.add("§7Restant: §c" + formatNumber(toNext));
         } else {
             lore.add("§a★ Palier maximum atteint !");
@@ -652,7 +649,7 @@ public class QuestsGUI {
 
                 // Vérifier les bonus
                 checkAndGrantCategoryBonus(player, category);
-                
+
                 // Rafraîchir l'interface
                 openQuestCategory(player, category);
             } else {

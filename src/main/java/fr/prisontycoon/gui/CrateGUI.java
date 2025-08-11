@@ -99,7 +99,7 @@ public class CrateGUI {
             case AUTOMINER -> displayItem = new ItemStack(Material.IRON_PICKAXE);
             case VOUCHER -> displayItem = new ItemStack(Material.PAPER);
             case BOOST -> displayItem = new ItemStack(Material.POTION);
-            case FORGE_BLUEPRINT ->  displayItem = new ItemStack(Material.PAPER);
+            case FORGE_BLUEPRINT -> displayItem = new ItemStack(Material.PAPER);
             default -> displayItem = new ItemStack(Material.BARRIER);
         }
 

@@ -57,7 +57,7 @@ public class BoostManager {
         ItemMeta meta = boost.getItemMeta();
 
         // Nom de l'item
-        plugin.getGUIManager().applyName(meta,type.getItemName());
+        plugin.getGUIManager().applyName(meta, type.getItemName());
 
         // Lore
         List<String> lore = Arrays.asList(

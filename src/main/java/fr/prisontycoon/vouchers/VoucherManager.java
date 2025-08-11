@@ -47,7 +47,7 @@ public class VoucherManager {
         ItemMeta meta = voucher.getItemMeta();
 
         // Nom de l'item
-        plugin.getGUIManager().applyName(meta,type.getFullName(tier));
+        plugin.getGUIManager().applyName(meta, type.getFullName(tier));
 
         // Lore
         List<String> lore = Arrays.asList(

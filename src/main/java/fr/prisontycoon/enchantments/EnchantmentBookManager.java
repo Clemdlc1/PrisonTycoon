@@ -171,7 +171,7 @@ public class EnchantmentBookManager {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
+        plugin.getGUIManager().applyName(meta, "§5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -643,7 +643,7 @@ public class EnchantmentBookManager {
             }
             if (blockLoc.getBlock().getType() != Material.AIR) {
                 plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "excavation");
-                blockLoc.getBlock().setType(Material.AIR,false);
+                blockLoc.getBlock().setType(Material.AIR, false);
             }
         }
     }
@@ -749,7 +749,7 @@ public class EnchantmentBookManager {
                                 }
                                 if (blockLoc.getBlock().getType() != Material.AIR) {
                                     plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "tunnel");
-                                    blockLoc.getBlock().setType(Material.AIR,false);
+                                    blockLoc.getBlock().setType(Material.AIR, false);
                                     blockLoc.getWorld().spawnParticle(Particle.BLOCK, blockLoc, 5, blockLoc.getBlock().getBlockData());
                                 }
                             }
@@ -867,7 +867,7 @@ public class EnchantmentBookManager {
                                             }
                                             if (blockLoc.getBlock().getType() != Material.AIR) {
                                                 plugin.getEnchantmentManager().processBlockDestroyed(player, blockLoc, blockLoc.getBlock().getType(), "tonnerre");
-                                                blockLoc.getBlock().setType(Material.AIR,false);
+                                                blockLoc.getBlock().setType(Material.AIR, false);
                                                 blockLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, blockLoc, 3);
                                             }
                                         }

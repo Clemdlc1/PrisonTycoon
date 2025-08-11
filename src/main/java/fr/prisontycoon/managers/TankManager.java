@@ -88,7 +88,7 @@ public class TankManager {
         ItemMeta meta = tank.getItemMeta();
         meta.getPersistentDataContainer().set(tankKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(tankIdKey, PersistentDataType.STRING, tankId);
-        plugin.getGUIManager().applyName(meta,"§6⚡ Tank Automatique");
+        plugin.getGUIManager().applyName(meta, "§6⚡ Tank Automatique");
         plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Propriétaire: §e" + owner.getName(),
                 "§7Capacité: §b" + NumberFormatter.format(TankData.MAX_CAPACITY) + " items",
@@ -230,7 +230,7 @@ public class TankManager {
     }
 
     private void updateTankItemDisplay(ItemMeta meta, TankData tankData) {
-        plugin.getGUIManager().applyName(meta,"§6⚡ Tank Automatique §7(ID: " + tankData.getId() + ")");
+        plugin.getGUIManager().applyName(meta, "§6⚡ Tank Automatique §7(ID: " + tankData.getId() + ")");
         List<String> lore = new ArrayList<>();
         lore.add("§7Propriétaire: §e" + plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName());
         if (tankData.hasCustomName()) {

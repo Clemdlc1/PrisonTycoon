@@ -35,7 +35,7 @@ public class ForgeGUI {
         inv.setItem(4, createInfoItem(player));
 
         // Casques progressifs sur la ligne du milieu (2x3)
-        int[] slots = { 10, 11, 12, 14, 15, 16 };
+        int[] slots = {10, 11, 12, 14, 15, 16};
         ArmorTier[] tiers = ArmorTier.values();
 
         for (int i = 0; i < 6; i++) {

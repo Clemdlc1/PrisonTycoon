@@ -1,5 +1,7 @@
 package fr.prisontycoon.utils;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
@@ -8,11 +10,10 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import com.destroystokyo.paper.profile.PlayerProfile;
-import com.destroystokyo.paper.profile.ProfileProperty;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Base64;
+import java.util.UUID;
 
 /**
  * Utilitaires modernes (Paper/Adventure) pour créer des têtes custom.
@@ -20,7 +21,8 @@ import java.util.*;
  */
 public final class HeadUtils {
 
-    private HeadUtils() {}
+    private HeadUtils() {
+    }
 
     /**
      * Crée une tête custom depuis une entrée du HeadEnum (Base64/URL/MHF).
@@ -99,8 +101,12 @@ public final class HeadUtils {
             PlayerProfile profile = null;
             try {
                 profile = Bukkit.createProfile(mhfName);
-                try { profile.complete(true); } catch (Throwable ignored) {}
-            } catch (Throwable ignored) {}
+                try {
+                    profile.complete(true);
+                } catch (Throwable ignored) {
+                }
+            } catch (Throwable ignored) {
+            }
 
             if (profile != null && !profile.getProperties().isEmpty()) {
                 meta.setPlayerProfile(profile);

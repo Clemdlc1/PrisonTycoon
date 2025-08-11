@@ -3,6 +3,8 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.utils.HeadEnum;
+import fr.prisontycoon.utils.HeadUtils;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -11,8 +13,6 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import fr.prisontycoon.utils.HeadEnum;
-import fr.prisontycoon.utils.HeadUtils;
 
 import java.util.ArrayList;
 import java.util.List;

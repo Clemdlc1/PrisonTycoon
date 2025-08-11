@@ -41,177 +41,6 @@ public class ForgeManager {
     // ENUM POUR LES EFFETS PAR TIER
     // ═══════════════════════════════════════════════════════════════
 
-    public enum ArmorEffects {
-        T1_PIECE(Map.of(
-                BonusCategory.EXPERIENCE_BONUS, 2.0,
-                BonusCategory.TOKEN_BONUS, 1.8,
-                BonusCategory.MONEY_BONUS, 1.5,
-                BonusCategory.SELL_BONUS, 1.0,
-                BonusCategory.FORTUNE_BONUS, 1.2
-        )),
-        T2_PIECE(Map.of(
-                BonusCategory.EXPERIENCE_BONUS, 3.0,
-                BonusCategory.TOKEN_BONUS, 2.7,
-                BonusCategory.MONEY_BONUS, 2.3,
-                BonusCategory.SELL_BONUS, 1.5,
-                BonusCategory.FORTUNE_BONUS, 1.8
-        )),
-        T3_PIECE(Map.of(
-                BonusCategory.EXPERIENCE_BONUS, 4.4,
-                BonusCategory.TOKEN_BONUS, 4.0,
-                BonusCategory.MONEY_BONUS, 3.3,
-                BonusCategory.SELL_BONUS, 2.2,
-                BonusCategory.FORTUNE_BONUS, 2.6
-        )),
-        T4_PIECE(Map.of(
-                BonusCategory.EXPERIENCE_BONUS, 6.0,
-                BonusCategory.TOKEN_BONUS, 5.4,
-                BonusCategory.MONEY_BONUS, 4.5,
-                BonusCategory.SELL_BONUS, 3.0,
-                BonusCategory.FORTUNE_BONUS, 3.6
-        )),
-        T5_PIECE(Map.of(
-                BonusCategory.EXPERIENCE_BONUS, 8.4,
-                BonusCategory.TOKEN_BONUS, 7.6,
-                BonusCategory.MONEY_BONUS, 6.3,
-                BonusCategory.SELL_BONUS, 4.2,
-                BonusCategory.FORTUNE_BONUS, 5.0
-        )),
-        T6_PIECE(Map.of(
-                BonusCategory.EXPERIENCE_BONUS, 12.0,
-                BonusCategory.TOKEN_BONUS, 10.8,
-                BonusCategory.MONEY_BONUS, 9.0,
-                BonusCategory.SELL_BONUS, 6.0,
-                BonusCategory.FORTUNE_BONUS, 7.2
-        ));
-
-        private final Map<BonusCategory, Double> bonuses;
-
-        ArmorEffects(Map<BonusCategory, Double> bonuses) {
-            this.bonuses = bonuses;
-        }
-
-        public Map<BonusCategory, Double> getBonuses() {
-            return bonuses;
-        }
-
-        public static ArmorEffects forTier(int tier) {
-            return switch (tier) {
-                case 1 -> T1_PIECE;
-                case 2 -> T2_PIECE;
-                case 3 -> T3_PIECE;
-                case 4 -> T4_PIECE;
-                case 5 -> T5_PIECE;
-                case 6 -> T6_PIECE;
-                default -> T1_PIECE;
-            };
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // TIERS AVEC COULEURS CORRIGÉES
-    // ═══════════════════════════════════════════════════════════════
-
-    public enum ArmorTier {
-        T1(1, "§7⚔ Garde Apprenti", Color.fromRGB(0x8C7853), "§7Novice"),      // Brun-gris
-        T2(2, "§6⚡ Forge-Guerre", Color.fromRGB(0xB87333), "§6Adepte"),        // Brun-cuivre
-        T3(3, "§6🔥 Maître-Forgeron", Color.fromRGB(0xCD7F32), "§6Expert"),     // Bronze
-        T4(4, "§e✦ Champion Doré", Color.fromRGB(0xF4C430), "§e§lMaître"),     // Or
-        T5(5, "§e☀ Seigneur Solaire", Color.fromRGB(0xFFD700), "§e§lLégendaire"), // Or brillant
-        T6(6, "§a👑 Archonte Éternel", Color.fromRGB(0x9AFF9A), "§a§lMythique"); // Vert pale
-
-        private final int level;
-        private final String displayName;
-        private final Color leatherColor;
-        private final String rankDisplay;
-
-        ArmorTier(int level, String displayName, Color leatherColor, String rankDisplay) {
-            this.level = level;
-            this.displayName = displayName;
-            this.leatherColor = leatherColor;
-            this.rankDisplay = rankDisplay;
-        }
-
-        public int getLevel() { return level; }
-        public String getDisplayName() { return displayName; }
-        public Color getLeatherColor() { return leatherColor; }
-        public String getRankDisplay() { return rankDisplay; }
-
-        public String getRPName() {
-            return switch (this.level) {
-                case 1 -> "Garde Apprenti";
-                case 2 -> "Forge-Guerre";
-                case 3 -> "Maître-Forgeron";
-                case 4 -> "Champion Doré";
-                case 5 -> "Seigneur Solaire";
-                case 6 -> "Archonte Éternel";
-                default -> "Armure Mystérieuse";
-            };
-        }
-
-        public String getIcon() {
-            return switch (this.level) {
-                case 1 -> "§7⚔";
-                case 2 -> "§6⚡";
-                case 3 -> "§6🔥";
-                case 4 -> "§e✦";
-                case 5 -> "§e☀";
-                case 6 -> "§a👑";
-                default -> "§7◆";
-            };
-        }
-
-        public static ArmorTier ofLevel(int lvl) {
-            for (ArmorTier t : values()) if (t.level == lvl) return t;
-            return T1;
-        }
-    }
-
-    public enum ArmorPiece {
-        HELMET("Casque", Material.LEATHER_HELMET, "⛑"),
-        CHESTPLATE("Plastron", Material.LEATHER_CHESTPLATE, "🛡"),
-        LEGGINGS("Jambières", Material.LEATHER_LEGGINGS, "👖"),
-        BOOTS("Bottes", Material.LEATHER_BOOTS, "👢");
-
-        private final String displayName;
-        private final Material material;
-        private final String icon;
-
-        ArmorPiece(String displayName, Material material, String icon) {
-            this.displayName = displayName;
-            this.material = material;
-            this.icon = icon;
-        }
-
-        public String getDisplayName() { return displayName; }
-        public Material getMaterial() { return material; }
-        public String getIcon() { return icon; }
-    }
-
-    public enum FragmentType {
-        COPPER("Fragment de Cuivre Pur", Material.COPPER_INGOT, "🔶"),
-        ALLOY("Fragment d'Alliage Mystique", Material.IRON_INGOT, "⚙"),
-        ESSENCE("Essence d'Armure Céleste", Material.LAPIS_LAZULI, "💠");
-
-        private final String display;
-        private final Material icon;
-        private final String emoji;
-
-        FragmentType(String display, Material icon, String emoji) {
-            this.display = display;
-            this.icon = icon;
-            this.emoji = emoji;
-        }
-
-        public String getDisplay() { return display; }
-        public Material getIcon() { return icon; }
-        public String getEmoji() { return emoji; }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // CRÉATION D'ITEMS
-    // ═══════════════════════════════════════════════════════════════
-
     public ItemStack createArmorPiece(ArmorTier tier, ArmorPiece piece) {
         ItemStack item = new ItemStack(piece.getMaterial());
         ItemMeta baseMeta = item.getItemMeta();
@@ -233,6 +62,10 @@ public class ForgeManager {
         }
         return item;
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TIERS AVEC COULEURS CORRIGÉES
+    // ═══════════════════════════════════════════════════════════════
 
     private List<String> buildPieceLore(ArmorTier tier, ArmorPiece piece) {
         Map<BonusCategory, Double> pieceBonus = getPerPieceBonus(tier);
@@ -289,7 +122,7 @@ public class ForgeManager {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // SYSTÈME DE BONUS
+    // CRÉATION D'ITEMS
     // ═══════════════════════════════════════════════════════════════
 
     public Map<BonusCategory, Double> getPerPieceBonus(ArmorTier tier) {
@@ -338,15 +171,6 @@ public class ForgeManager {
         return sum;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // SYSTÈME DE CRAFT
-    // ═══════════════════════════════════════════════════════════════
-
-    public record CraftCost(int blueprintTier,
-                            Map<FragmentType, Integer> fragments,
-                            boolean requirePreviousPiece,
-                            int experienceCost) { }
-
     public CraftCost getCraftCost(ArmorTier tier, ArmorPiece piece) {
         int t = tier.getLevel();
         Map<FragmentType, Integer> frags = new EnumMap<>(FragmentType.class);
@@ -384,10 +208,6 @@ public class ForgeManager {
         return new CraftCost(t, frags, t > 1, expCost);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // MÉTHODES DE DÉTECTION
-    // ═══════════════════════════════════════════════════════════════
-
     public boolean isArmorPiece(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
@@ -395,10 +215,18 @@ public class ForgeManager {
                 "legendary_forge".equals(meta.getPersistentDataContainer().get(keySetId, PersistentDataType.STRING));
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // SYSTÈME DE BONUS
+    // ═══════════════════════════════════════════════════════════════
+
     public ArmorPiece getPiece(ItemStack item) {
         if (!isArmorPiece(item)) return null;
         String p = item.getItemMeta().getPersistentDataContainer().get(keyPiece, PersistentDataType.STRING);
-        try { return ArmorPiece.valueOf(p); } catch (Exception e) { return null; }
+        try {
+            return ArmorPiece.valueOf(p);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public ArmorTier getTier(ItemStack item) {
@@ -407,6 +235,10 @@ public class ForgeManager {
         if (lvl == null) return null;
         return ArmorTier.ofLevel(lvl);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SYSTÈME DE CRAFT
+    // ═══════════════════════════════════════════════════════════════
 
     public boolean isBlueprint(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
@@ -419,6 +251,10 @@ public class ForgeManager {
         return lvl == null ? null : ArmorTier.ofLevel(lvl);
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // MÉTHODES DE DÉTECTION
+    // ═══════════════════════════════════════════════════════════════
+
     public boolean isFragment(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         return item.getItemMeta().getPersistentDataContainer().has(keyFragmentType, PersistentDataType.STRING);
@@ -427,7 +263,11 @@ public class ForgeManager {
     public FragmentType getFragmentType(ItemStack item) {
         if (!isFragment(item)) return null;
         String name = item.getItemMeta().getPersistentDataContainer().get(keyFragmentType, PersistentDataType.STRING);
-        try { return FragmentType.valueOf(name); } catch (Exception e) { return null; }
+        try {
+            return FragmentType.valueOf(name);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String getBonusIcon(BonusCategory category) {
@@ -469,7 +309,8 @@ public class ForgeManager {
         }
         if (cost.requirePreviousPiece) {
             ArmorTier prev = ArmorTier.ofLevel(tier.getLevel() - 1);
-            if (!hasPreviousPiece(player, prev, piece)) missing.add("§7" + piece.getDisplayName() + " §7(T" + prev.getLevel() + ")");
+            if (!hasPreviousPiece(player, prev, piece))
+                missing.add("§7" + piece.getDisplayName() + " §7(T" + prev.getLevel() + ")");
         }
         long exp = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()).getExperience();
         if (exp < cost.experienceCost) missing.add("§aXP §7(" + cost.experienceCost + ")");
@@ -503,10 +344,6 @@ public class ForgeManager {
         player.sendMessage("§a✓ §7Vous avez forgé: §6" + piece.getDisplayName() + " " + tier.getDisplayName());
         return true;
     }
-
-    // ============================
-    // Inventaire utils
-    // ============================
 
     private boolean hasBlueprint(Player player, int tier) {
         return findBlueprintSlot(player, tier) != -1;
@@ -547,6 +384,10 @@ public class ForgeManager {
         return countFragments(player, type) >= required;
     }
 
+    // ============================
+    // Inventaire utils
+    // ============================
+
     private void consumeFragments(Player player, FragmentType type, int amount) {
         int remaining = amount;
         ItemStack[] contents = player.getInventory().getContents();
@@ -585,6 +426,202 @@ public class ForgeManager {
             }
         }
         player.getInventory().setContents(contents);
+    }
+
+    public enum ArmorEffects {
+        T1_PIECE(Map.of(
+                BonusCategory.EXPERIENCE_BONUS, 2.0,
+                BonusCategory.TOKEN_BONUS, 1.8,
+                BonusCategory.MONEY_BONUS, 1.5,
+                BonusCategory.SELL_BONUS, 1.0,
+                BonusCategory.FORTUNE_BONUS, 1.2
+        )),
+        T2_PIECE(Map.of(
+                BonusCategory.EXPERIENCE_BONUS, 3.0,
+                BonusCategory.TOKEN_BONUS, 2.7,
+                BonusCategory.MONEY_BONUS, 2.3,
+                BonusCategory.SELL_BONUS, 1.5,
+                BonusCategory.FORTUNE_BONUS, 1.8
+        )),
+        T3_PIECE(Map.of(
+                BonusCategory.EXPERIENCE_BONUS, 4.4,
+                BonusCategory.TOKEN_BONUS, 4.0,
+                BonusCategory.MONEY_BONUS, 3.3,
+                BonusCategory.SELL_BONUS, 2.2,
+                BonusCategory.FORTUNE_BONUS, 2.6
+        )),
+        T4_PIECE(Map.of(
+                BonusCategory.EXPERIENCE_BONUS, 6.0,
+                BonusCategory.TOKEN_BONUS, 5.4,
+                BonusCategory.MONEY_BONUS, 4.5,
+                BonusCategory.SELL_BONUS, 3.0,
+                BonusCategory.FORTUNE_BONUS, 3.6
+        )),
+        T5_PIECE(Map.of(
+                BonusCategory.EXPERIENCE_BONUS, 8.4,
+                BonusCategory.TOKEN_BONUS, 7.6,
+                BonusCategory.MONEY_BONUS, 6.3,
+                BonusCategory.SELL_BONUS, 4.2,
+                BonusCategory.FORTUNE_BONUS, 5.0
+        )),
+        T6_PIECE(Map.of(
+                BonusCategory.EXPERIENCE_BONUS, 12.0,
+                BonusCategory.TOKEN_BONUS, 10.8,
+                BonusCategory.MONEY_BONUS, 9.0,
+                BonusCategory.SELL_BONUS, 6.0,
+                BonusCategory.FORTUNE_BONUS, 7.2
+        ));
+
+        private final Map<BonusCategory, Double> bonuses;
+
+        ArmorEffects(Map<BonusCategory, Double> bonuses) {
+            this.bonuses = bonuses;
+        }
+
+        public static ArmorEffects forTier(int tier) {
+            return switch (tier) {
+                case 1 -> T1_PIECE;
+                case 2 -> T2_PIECE;
+                case 3 -> T3_PIECE;
+                case 4 -> T4_PIECE;
+                case 5 -> T5_PIECE;
+                case 6 -> T6_PIECE;
+                default -> T1_PIECE;
+            };
+        }
+
+        public Map<BonusCategory, Double> getBonuses() {
+            return bonuses;
+        }
+    }
+
+    public enum ArmorTier {
+        T1(1, "§7⚔ Garde Apprenti", Color.fromRGB(0x8C7853), "§7Novice"),      // Brun-gris
+        T2(2, "§6⚡ Forge-Guerre", Color.fromRGB(0xB87333), "§6Adepte"),        // Brun-cuivre
+        T3(3, "§6🔥 Maître-Forgeron", Color.fromRGB(0xCD7F32), "§6Expert"),     // Bronze
+        T4(4, "§e✦ Champion Doré", Color.fromRGB(0xF4C430), "§e§lMaître"),     // Or
+        T5(5, "§e☀ Seigneur Solaire", Color.fromRGB(0xFFD700), "§e§lLégendaire"), // Or brillant
+        T6(6, "§a👑 Archonte Éternel", Color.fromRGB(0x9AFF9A), "§a§lMythique"); // Vert pale
+
+        private final int level;
+        private final String displayName;
+        private final Color leatherColor;
+        private final String rankDisplay;
+
+        ArmorTier(int level, String displayName, Color leatherColor, String rankDisplay) {
+            this.level = level;
+            this.displayName = displayName;
+            this.leatherColor = leatherColor;
+            this.rankDisplay = rankDisplay;
+        }
+
+        public static ArmorTier ofLevel(int lvl) {
+            for (ArmorTier t : values()) if (t.level == lvl) return t;
+            return T1;
+        }
+
+        public int getLevel() {
+            return level;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public Color getLeatherColor() {
+            return leatherColor;
+        }
+
+        public String getRankDisplay() {
+            return rankDisplay;
+        }
+
+        public String getRPName() {
+            return switch (this.level) {
+                case 1 -> "Garde Apprenti";
+                case 2 -> "Forge-Guerre";
+                case 3 -> "Maître-Forgeron";
+                case 4 -> "Champion Doré";
+                case 5 -> "Seigneur Solaire";
+                case 6 -> "Archonte Éternel";
+                default -> "Armure Mystérieuse";
+            };
+        }
+
+        public String getIcon() {
+            return switch (this.level) {
+                case 1 -> "§7⚔";
+                case 2 -> "§6⚡";
+                case 3 -> "§6🔥";
+                case 4 -> "§e✦";
+                case 5 -> "§e☀";
+                case 6 -> "§a👑";
+                default -> "§7◆";
+            };
+        }
+    }
+
+    public enum ArmorPiece {
+        HELMET("Casque", Material.LEATHER_HELMET, "⛑"),
+        CHESTPLATE("Plastron", Material.LEATHER_CHESTPLATE, "🛡"),
+        LEGGINGS("Jambières", Material.LEATHER_LEGGINGS, "👖"),
+        BOOTS("Bottes", Material.LEATHER_BOOTS, "👢");
+
+        private final String displayName;
+        private final Material material;
+        private final String icon;
+
+        ArmorPiece(String displayName, Material material, String icon) {
+            this.displayName = displayName;
+            this.material = material;
+            this.icon = icon;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+
+        public String getIcon() {
+            return icon;
+        }
+    }
+
+    public enum FragmentType {
+        COPPER("Fragment de Cuivre Pur", Material.COPPER_INGOT, "🔶"),
+        ALLOY("Fragment d'Alliage Mystique", Material.IRON_INGOT, "⚙"),
+        ESSENCE("Essence d'Armure Céleste", Material.LAPIS_LAZULI, "💠");
+
+        private final String display;
+        private final Material icon;
+        private final String emoji;
+
+        FragmentType(String display, Material icon, String emoji) {
+            this.display = display;
+            this.icon = icon;
+            this.emoji = emoji;
+        }
+
+        public String getDisplay() {
+            return display;
+        }
+
+        public Material getIcon() {
+            return icon;
+        }
+
+        public String getEmoji() {
+            return emoji;
+        }
+    }
+
+    public record CraftCost(int blueprintTier,
+                            Map<FragmentType, Integer> fragments,
+                            boolean requirePreviousPiece,
+                            int experienceCost) {
     }
 }
 

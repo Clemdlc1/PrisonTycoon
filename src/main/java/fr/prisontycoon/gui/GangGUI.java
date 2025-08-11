@@ -302,7 +302,7 @@ public class GangGUI {
         if (playerRole == GangRole.CHEF || playerRole == GangRole.OFFICIER) {
             ItemStack settings = new ItemStack(Material.COMPARATOR);
             ItemMeta settingsMeta = settings.getItemMeta();
-            plugin.getGUIManager().applyName(settingsMeta,"§c⚙️ §lParamètres");
+            plugin.getGUIManager().applyName(settingsMeta, "§c⚙️ §lParamètres");
             List<String> settingsLore = new ArrayList<>();
             settingsLore.add("");
             settingsLore.add("§7Gérez les paramètres du gang:");
@@ -323,7 +323,7 @@ public class GangGUI {
         if (playerRole != GangRole.CHEF) {
             ItemStack leave = new ItemStack(Material.BARRIER);
             ItemMeta leaveMeta = leave.getItemMeta();
-            plugin.getGUIManager().applyName(leaveMeta,"§c❌ §lQuitter le Gang");
+            plugin.getGUIManager().applyName(leaveMeta, "§c❌ §lQuitter le Gang");
             List<String> leaveLore = new ArrayList<>();
             leaveLore.add("");
             leaveLore.add("§cQuitte définitivement ce gang.");
@@ -721,7 +721,7 @@ public class GangGUI {
     private ItemStack createGangBanner(Gang gang) {
         ItemStack banner = new ItemStack(Material.WHITE_BANNER, 1, DyeColor.YELLOW.getWoolData());
         BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
-        plugin.getGUIManager().applyName(bannerMeta,"§6🏳️ §l" + gang.getName());
+        plugin.getGUIManager().applyName(bannerMeta, "§6🏳️ §l" + gang.getName());
 
         // Si le gang a une bannière personnalisée, l'utiliser
         if (gang.getBannerPatterns() != null && !gang.getBannerPatterns().isEmpty()) {
@@ -736,7 +736,7 @@ public class GangGUI {
         ItemStack item = new ItemStack(Material.WHITE_BANNER, 1, DyeColor.YELLOW.getWoolData());
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§6🏰 §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7]");
+        plugin.getGUIManager().applyName(meta, "§6🏰 §l" + gang.getName() + " §7[§e" + gang.getTag() + "§7]");
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -765,7 +765,7 @@ public class GangGUI {
         int[] durations = {30, 60, 180}; // minutes
         long[] costs = boostType.getCosts();
 
-        plugin.getGUIManager().applyName(meta,boostType.getColor() + "⚡ §l" + boostType.getDisplayName() + " " + multipliers[tier - 1]);
+        plugin.getGUIManager().applyName(meta, boostType.getColor() + "⚡ §l" + boostType.getDisplayName() + " " + multipliers[tier - 1]);
 
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -789,7 +789,7 @@ public class GangGUI {
     private ItemStack createCloseButton() {
         ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = close.getItemMeta();
-        plugin.getGUIManager().applyName(closeMeta,"§c❌ §lFermer");
+        plugin.getGUIManager().applyName(closeMeta, "§c❌ §lFermer");
         close.setItemMeta(closeMeta);
         return close;
     }
@@ -797,7 +797,7 @@ public class GangGUI {
     private ItemStack createBackButton() {
         ItemStack back = new ItemStack(Material.ARROW);
         ItemMeta backMeta = back.getItemMeta();
-        plugin.getGUIManager().applyName(backMeta,"§a⬅ §lRetour");
+        plugin.getGUIManager().applyName(backMeta, "§a⬅ §lRetour");
         back.setItemMeta(backMeta);
         return back;
     }
@@ -805,7 +805,7 @@ public class GangGUI {
     private void fillWithGlass(Inventory gui, DyeColor color) {
         ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE, 1, color.getWoolData());
         ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta,"§7");
+        plugin.getGUIManager().applyName(glassMeta, "§7");
         glass.setItemMeta(glassMeta);
 
         // Remplir les bordures
@@ -1039,11 +1039,11 @@ public class GangGUI {
         boolean levelSufficient = gang.getLevel() >= talent.getRequiredGangLevel();
 
         if (owned) {
-            plugin.getGUIManager().applyName(meta,"§a✅ §l" + talent.getName());
+            plugin.getGUIManager().applyName(meta, "§a✅ §l" + talent.getName());
         } else if (canAfford && levelSufficient && canBuy) {
-            plugin.getGUIManager().applyName(meta,"§e⭐ §l" + talent.getName());
+            plugin.getGUIManager().applyName(meta, "§e⭐ §l" + talent.getName());
         } else {
-            plugin.getGUIManager().applyName(meta,"§7❌ §l" + talent.getName());
+            plugin.getGUIManager().applyName(meta, "§7❌ §l" + talent.getName());
         }
 
         List<String> lore = new ArrayList<>();
@@ -1383,7 +1383,7 @@ public class GangGUI {
             BannerMeta bannerMeta = (BannerMeta) banner.getItemMeta();
 
             bannerMeta.setPatterns(gang.getBannerPatterns());
-            plugin.getGUIManager().applyName(bannerMeta,"§6🏳️ §lBannière Actuelle");
+            plugin.getGUIManager().applyName(bannerMeta, "§6🏳️ §lBannière Actuelle");
 
             List<String> lore = new ArrayList<>();
             lore.add("");
@@ -1398,7 +1398,7 @@ public class GangGUI {
             // Sinon, on affiche le placeholder par défaut
             ItemStack placeholder = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
             ItemMeta placeholderMeta = placeholder.getItemMeta();
-            plugin.getGUIManager().applyName(placeholderMeta,"§7Placez votre bannière ici");
+            plugin.getGUIManager().applyName(placeholderMeta, "§7Placez votre bannière ici");
 
             List<String> lore = new ArrayList<>();
             lore.add("");

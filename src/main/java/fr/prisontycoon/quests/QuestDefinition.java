@@ -23,12 +23,29 @@ public class QuestDefinition {
         this.rewards = rewards;
     }
 
-    public String getId() { return id; }
-    public QuestCategory getCategory() { return category; }
-    public QuestType getType() { return type; }
-    public int getTarget() { return target; }
-    public Map<String, Object> getParams() { return params; }
-    public QuestRewards getRewards() { return rewards; }
+    public String getId() {
+        return id;
+    }
+
+    public QuestCategory getCategory() {
+        return category;
+    }
+
+    public QuestType getType() {
+        return type;
+    }
+
+    public int getTarget() {
+        return target;
+    }
+
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public QuestRewards getRewards() {
+        return rewards;
+    }
 }
 
 

@@ -3,16 +3,15 @@ package fr.prisontycoon.enchantments;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.PlayerDataManager;
-import fr.prisontycoon.utils.NumberFormatter;
-import fr.prisontycoon.utils.HeadUtils;
 import fr.prisontycoon.utils.HeadEnum;
+import fr.prisontycoon.utils.HeadUtils;
+import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -399,9 +398,10 @@ public class WeaponArmorEnchantmentManager {
 
     /**
      * Gère la mort d'un joueur pour les enchantements Répercussion et Chasseur.
-     * @param dead Le joueur qui est mort.
+     *
+     * @param dead   Le joueur qui est mort.
      * @param killer Le joueur qui a tué.
-     * @param event L'événement de mort pour pouvoir le modifier (ex: garder l'inventaire).
+     * @param event  L'événement de mort pour pouvoir le modifier (ex: garder l'inventaire).
      */
     public void handlePlayerDeath(Player dead, Player killer, PlayerDeathEvent event) {
         ItemStack weapon = killer.getInventory().getItemInMainHand();
@@ -544,7 +544,7 @@ public class WeaponArmorEnchantmentManager {
                     case WITCH -> HeadEnum.WITCH;
                     case EVOKER -> HeadEnum.EVOKER;
                     case IRON_GOLEM -> HeadEnum.GOLEM;
-                    case SHULKER ->  HeadEnum.SHULKER;
+                    case SHULKER -> HeadEnum.SHULKER;
                     default -> null;
                 };
                 yield mhf != null ? HeadUtils.createHead(mhf) : null;
@@ -898,7 +898,9 @@ public class WeaponArmorEnchantmentManager {
         public BeteTraqueeEnchantment() {
             super("bete_traquee", "Bête Traquée", "Augmente les dégâts contre les entités non joueurs", 5, 4000, true, false);
         }
-        @Override public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
+
+        @Override
+        public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
             if (victim instanceof Player) return;
             // Effets visuels légers
             victim.getWorld().spawnParticle(org.bukkit.Particle.CRIT, victim.getLocation().add(0, 1, 0), 6, 0.2, 0.2, 0.2, 0);
@@ -915,7 +917,9 @@ public class WeaponArmorEnchantmentManager {
             // Épée uniquement, effet défensif converti en mitigation temporaire via l'attaque
             super("cuirasse_bestiale", "Cuirasse Bestiale", "Réduit brièvement les dégâts subis après avoir touché une entité non joueur", 5, 3500, true, false);
         }
-        @Override public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
+
+        @Override
+        public void onAttack(Player attacker, Entity victim, int level, PrisonTycoon plugin) {
             if (victim instanceof Player) return;
             // Indication visuelle discrète
             attacker.spawnParticle(org.bukkit.Particle.SCRAPE, attacker.getLocation().add(0, 1, 0), 6, 0.25, 0.25, 0.25, 0.02);

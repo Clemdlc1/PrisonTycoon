@@ -301,7 +301,7 @@ public class BankGUI {
      */
     public void openInvestmentMenu(Player player) {
         Inventory gui = plugin.getGUIManager().createInventory(54, "§b📈 Investissements");
-        plugin.getGUIManager().registerOpenGUI(player,GUIType.INVESTMENT_MENU,gui);
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.INVESTMENT_MENU, gui);
         fillWithGlass(gui);
         setupInvestmentMenu(gui, player);
 

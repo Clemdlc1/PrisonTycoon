@@ -322,16 +322,16 @@ public class Gang {
     }
 
     /**
-         * Classe interne pour représenter les données d'un boost actif
-         */
-        public record GangBoostData(GangBoostType type, double multiplier, long expirationTime, UUID activatorId) {
+     * Classe interne pour représenter les données d'un boost actif
+     */
+    public record GangBoostData(GangBoostType type, double multiplier, long expirationTime, UUID activatorId) {
 
         public long getRemainingTime() {
-                return Math.max(0, expirationTime - System.currentTimeMillis());
-            }
-
-            public boolean isExpired() {
-                return System.currentTimeMillis() > expirationTime;
-            }
+            return Math.max(0, expirationTime - System.currentTimeMillis());
         }
+
+        public boolean isExpired() {
+            return System.currentTimeMillis() > expirationTime;
+        }
+    }
 }

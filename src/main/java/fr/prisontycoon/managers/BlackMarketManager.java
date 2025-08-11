@@ -85,7 +85,7 @@ public class BlackMarketManager {
         if (blackMarketSection == null) {
             createDefaultConfiguration();
             blackMarketSection = plugin.getConfig().getConfigurationSection("black-market");
-            if(blackMarketSection == null) return;
+            if (blackMarketSection == null) return;
         }
         ConfigurationSection locationsSection = blackMarketSection.getConfigurationSection("locations");
         if (locationsSection == null) return;
@@ -201,7 +201,8 @@ public class BlackMarketManager {
     // Dans BlackMarketManager.java
 
     private void spawnBlackMarketNPC(BlackMarketLocation chosenLocation) {
-        if (chosenLocation == null || chosenLocation.location() == null || chosenLocation.location().getWorld() == null) return;
+        if (chosenLocation == null || chosenLocation.location() == null || chosenLocation.location().getWorld() == null)
+            return;
 
         final Location spawnLocation = chosenLocation.location(); // 'final' est nécessaire pour l'utiliser dans le Runnable
 
@@ -429,7 +430,7 @@ public class BlackMarketManager {
         plugin.getGUIManager().registerOpenGUI(player, GUIType.BLACK_MARKET, gui);
         ItemStack blackPane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta paneMeta = blackPane.getItemMeta();
-        plugin.getGUIManager().applyName(paneMeta,"");
+        plugin.getGUIManager().applyName(paneMeta, "");
         blackPane.setItemMeta(paneMeta);
         for (int i = 0; i < 54; i++) {
             gui.setItem(i, blackPane);
@@ -470,7 +471,7 @@ public class BlackMarketManager {
                 plugin.getGUIManager().applyLore(meta, lore);
                 if (alreadyPurchased) {
                     displayItem.withType(Material.BARRIER);
-                    plugin.getGUIManager().applyName(meta,"§c§l" + (meta.getDisplayName() != null ? meta.getDisplayName() : item.getType().name()) + " §7(Déjà acheté)");
+                    plugin.getGUIManager().applyName(meta, "§c§l" + (meta.getDisplayName() != null ? meta.getDisplayName() : item.getType().name()) + " §7(Déjà acheté)");
                 }
                 displayItem.setItemMeta(meta);
             }
@@ -482,7 +483,7 @@ public class BlackMarketManager {
     private void setupBlackMarketButtons(Inventory gui, Player player) {
         ItemStack infoItem = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = infoItem.getItemMeta();
-        plugin.getGUIManager().applyName(infoMeta,"§e§lINFORMATIONS");
+        plugin.getGUIManager().applyName(infoMeta, "§e§lINFORMATIONS");
         plugin.getGUIManager().applyLore(infoMeta, Arrays.asList(
                 "§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                 "§8⚫ Marché Noir ⚫",
@@ -497,7 +498,7 @@ public class BlackMarketManager {
         gui.setItem(49, infoItem);
         ItemStack closeItem = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = closeItem.getItemMeta();
-        plugin.getGUIManager().applyName(closeMeta,"§c§lFERMER");
+        plugin.getGUIManager().applyName(closeMeta, "§c§lFERMER");
         closeItem.setItemMeta(closeMeta);
         gui.setItem(53, closeItem);
     }
@@ -606,7 +607,7 @@ public class BlackMarketManager {
             } else {
                 ItemStack scamItem = new ItemStack(Material.ROTTEN_FLESH);
                 ItemMeta scamMeta = scamItem.getItemMeta();
-                plugin.getGUIManager().applyName(scamMeta,"§c§lArticle Défectueux");
+                plugin.getGUIManager().applyName(scamMeta, "§c§lArticle Défectueux");
                 plugin.getGUIManager().applyLore(scamMeta, Arrays.asList("§7Vous vous êtes fait arnaquer...", "§cLa prochaine fois, soyez plus prudent!"));
                 scamItem.setItemMeta(scamMeta);
                 if (player.getInventory().firstEmpty() == -1) {
@@ -723,6 +724,27 @@ public class BlackMarketManager {
         }
     }
 
+    public void shutdown() {
+        plugin.getPluginLogger().info("§7Fermeture du BlackMarketManager...");
+
+        try {
+            if (blackMarketNPC != null) {
+                npcUtils.removeNPC(blackMarketNPC);
+                blackMarketNPC = null;
+                plugin.getPluginLogger().debug("§7NPC du marché noir supprimé");
+            }
+
+            // Nettoyer le stock en mémoire
+            currentStock.clear();
+
+            plugin.getPluginLogger().info("§aBlackMarketManager fermé proprement");
+
+        } catch (Exception e) {
+            plugin.getPluginLogger().severe("§cErreur lors de la fermeture du BlackMarketManager:");
+            e.printStackTrace();
+        }
+    }
+
     public enum MarketState {
         AVAILABLE("§a✅ Disponible"),
         RAIDED("§c🚨 Raid en cours"),
@@ -740,7 +762,8 @@ public class BlackMarketManager {
         }
     }
 
-    private record BlackMarketLocation(Location location, String name, double dangerLevel, boolean isSitting, boolean turnToPlayer, int turnToPlayerDistance) {
+    private record BlackMarketLocation(Location location, String name, double dangerLevel, boolean isSitting,
+                                       boolean turnToPlayer, int turnToPlayerDistance) {
         @Override
         public Location location() {
             return location.clone();
@@ -767,27 +790,6 @@ public class BlackMarketManager {
         @Override
         public int hashCode() {
             return Objects.hash(itemId);
-        }
-    }
-
-    public void shutdown() {
-        plugin.getPluginLogger().info("§7Fermeture du BlackMarketManager...");
-
-        try {
-            if (blackMarketNPC != null) {
-                npcUtils.removeNPC(blackMarketNPC);
-                blackMarketNPC = null;
-                plugin.getPluginLogger().debug("§7NPC du marché noir supprimé");
-            }
-
-            // Nettoyer le stock en mémoire
-            currentStock.clear();
-
-            plugin.getPluginLogger().info("§aBlackMarketManager fermé proprement");
-
-        } catch (Exception e) {
-            plugin.getPluginLogger().severe("§cErreur lors de la fermeture du BlackMarketManager:");
-            e.printStackTrace();
         }
     }
 }

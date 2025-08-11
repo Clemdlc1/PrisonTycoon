@@ -5,7 +5,6 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -28,7 +27,7 @@ public class BookShopGUI {
 
     // ==================== OUVERTURES ====================
     public void openSelector(Player player) {
-        Inventory gui =  plugin.getGUIManager().createInventory(27, "§a💰 §lBoutique de Livres");
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§a💰 §lBoutique de Livres");
         fillWithGlass(gui);
 
         ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);

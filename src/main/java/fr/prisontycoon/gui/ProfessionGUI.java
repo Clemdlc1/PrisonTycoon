@@ -182,7 +182,7 @@ public class ProfessionGUI {
         // Nom avec couleur selon l'état
         String color = isActive ? "§a" : (canUpgrade ? "§e" : "§c");
         String status = isActive ? "✓" : (canUpgrade ? "⭘" : "✗");
-        plugin.getGUIManager().applyName(meta,color + status + " §f" + talent.displayName() + " §7Niv." + targetLevel);
+        plugin.getGUIManager().applyName(meta, color + status + " §f" + talent.displayName() + " §7Niv." + targetLevel);
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + talent.description());
@@ -243,7 +243,7 @@ public class ProfessionGUI {
         // Nom avec couleur selon l'état
         String color = isActive ? "§a" : (canUpgrade ? "§6" : "§c");
         String status = isActive ? "✓" : (canUpgrade ? "⭘" : "✗");
-        plugin.getGUIManager().applyName(meta,color + status + " §f📦 Kit Métier §7Niv." + targetLevel);
+        plugin.getGUIManager().applyName(meta, color + status + " §f📦 Kit Métier §7Niv." + targetLevel);
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Équipement et ressources améliorées");
@@ -288,7 +288,7 @@ public class ProfessionGUI {
         String displayName = direction.equals("prev") ? "§7← §lPage Précédente" : "§7→ §lPage Suivante";
         String pageInfo = direction.equals("prev") ? "§7Niveaux 1-5" : "§7Niveaux 6-10";
 
-        plugin.getGUIManager().applyName(meta,displayName);
+        plugin.getGUIManager().applyName(meta, displayName);
         plugin.getGUIManager().applyLore(meta, Arrays.asList(pageInfo, "", "§e▶ Cliquez pour changer de page"));
 
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, direction + "_page");
@@ -305,7 +305,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§5⭐ §lTalents & Kit");
+        plugin.getGUIManager().applyName(meta, "§5⭐ §lTalents & Kit");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Gérez vos talents et kit de métier");
@@ -332,7 +332,7 @@ public class ProfessionGUI {
         ItemMeta meta = item.getItemMeta();
 
         String pageInfo = page == 0 ? "Niveaux 1-5" : "Niveaux 6-10";
-        plugin.getGUIManager().applyName(meta,"§e📖 §lTalents & Kit §7(" + pageInfo + ")");
+        plugin.getGUIManager().applyName(meta, "§e📖 §lTalents & Kit §7(" + pageInfo + ")");
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
@@ -469,7 +469,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,profession.displayName() + " §7(Actif)");
+        plugin.getGUIManager().applyName(meta, profession.displayName() + " §7(Actif)");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + profession.description());
@@ -504,7 +504,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.COMPASS);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§e🔍 §lChoisir un Métier");
+        plugin.getGUIManager().applyName(meta, "§e🔍 §lChoisir un Métier");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Vous n'avez pas encore de métier actif");
@@ -522,7 +522,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.WRITABLE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§c🔄 §lChanger de Métier");
+        plugin.getGUIManager().applyName(meta, "§c🔄 §lChanger de Métier");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Changez votre métier actif");
@@ -549,7 +549,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.CHEST);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§6🎁 §lRécompenses");
+        plugin.getGUIManager().applyName(meta, "§6🎁 §lRécompenses");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Réclamez vos récompenses de niveau");
@@ -593,7 +593,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§e❓ §lAide");
+        plugin.getGUIManager().applyName(meta, "§e❓ §lAide");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Commandes utiles:");
@@ -613,7 +613,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§c✗ §lFermer");
+        plugin.getGUIManager().applyName(meta, "§c✗ §lFermer");
         plugin.getGUIManager().applyLore(meta, List.of("§7Ferme ce menu"));
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         item.setItemMeta(meta);
@@ -625,7 +625,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§7← §lRetour");
+        plugin.getGUIManager().applyName(meta, "§7← §lRetour");
         plugin.getGUIManager().applyLore(meta, List.of("§7Retour au menu métiers"));
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_to_main");
         item.setItemMeta(meta);
@@ -663,7 +663,7 @@ public class ProfessionGUI {
         // Info au centre
         ItemStack info = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta infoMeta = info.getItemMeta();
-        plugin.getGUIManager().applyName(infoMeta,"§e💡 §lInformations");
+        plugin.getGUIManager().applyName(infoMeta, "§e💡 §lInformations");
 
         List<String> infoLore = new ArrayList<>();
         infoLore.add("§7Métier actuel: §e" + (currentProfession != null ?
@@ -697,7 +697,7 @@ public class ProfessionGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,profession.displayName());
+        plugin.getGUIManager().applyName(meta, profession.displayName());
 
         List<String> lore = new ArrayList<>();
         lore.add("§7" + profession.description());
@@ -723,7 +723,7 @@ public class ProfessionGUI {
 
         boolean isCurrent = professionId.equals(currentProfession);
 
-        plugin.getGUIManager().applyName(meta,(isCurrent ? "§e" : "§a") + profession.displayName() +
+        plugin.getGUIManager().applyName(meta, (isCurrent ? "§e" : "§a") + profession.displayName() +
                 (isCurrent ? " §7(Actuel)" : ""));
 
         List<String> lore = new ArrayList<>();
@@ -752,7 +752,7 @@ public class ProfessionGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = filler.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§7");
+        plugin.getGUIManager().applyName(meta, "§7");
         filler.setItemMeta(meta);
 
         for (int i = 0; i < gui.getSize(); i++) {

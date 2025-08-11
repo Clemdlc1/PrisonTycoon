@@ -24,15 +24,14 @@ public class CristalManager {
 
     // Coûts pour appliquer les cristaux (en XP joueur)
     private static final long[] APPLICATION_COSTS = {1000, 2500, 5000, 5000}; // 1er, 2e, 3e, 4e cristal
+    private static final long CRISTALS_CACHE_TTL_MS = 10_000L;
     private final PrisonTycoon plugin;
     private final NamespacedKey cristalUuidKey;
     private final NamespacedKey cristalLevelKey;
     private final NamespacedKey cristalTypeKey;
     private final NamespacedKey cristalViergeKey;
-
     // Cache léger pour éviter de parser la map à chaque bloc miné
     private final java.util.Map<java.util.UUID, CachedCristals> cristalsCache = new java.util.HashMap<>();
-    private static final long CRISTALS_CACHE_TTL_MS = 10_000L;
 
     public CristalManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -43,8 +42,6 @@ public class CristalManager {
 
         plugin.getPluginLogger().info("§aCristalManager initialisé.");
     }
-
-    private record CachedCristals(java.util.List<Cristal> list, long tsMs) {}
 
     private void invalidateCristalCache(java.util.UUID playerId) {
         cristalsCache.remove(playerId);
@@ -368,5 +365,8 @@ public class CristalManager {
 
     public NamespacedKey getCristalViergeKey() {
         return cristalViergeKey;
+    }
+
+    private record CachedCristals(java.util.List<Cristal> list, long tsMs) {
     }
 }

@@ -129,7 +129,8 @@ public class GUIListener implements Listener {
             case ENCHANTMENT_BOOK ->
                     plugin.getEnchantmentBookGUI().handleEnchantmentBookMenuClick(player, slot, item, clickType);
 
-            case BOOK_SHOP_SELECTOR, BOOK_SHOP_PICKAXE, BOOK_SHOP_WEAPON_ARMOR -> plugin.getBookShopGUI().handleClick(player, guiType, slot, item);
+            case BOOK_SHOP_SELECTOR, BOOK_SHOP_PICKAXE, BOOK_SHOP_WEAPON_ARMOR ->
+                    plugin.getBookShopGUI().handleClick(player, guiType, slot, item);
 
             case PETS_MENU -> plugin.getPetsMenuGUI().handlePetsMenuClick(player, slot, item);
 
@@ -138,8 +139,7 @@ public class GUIListener implements Listener {
             case PROFESSION_MAIN, PROFESSION_TALENTS ->
                     plugin.getProfessionGUI().handleProfessionMenuClick(player, slot, item, clickType);
 
-            case PROFESSION_REWARDS ->
-                    plugin.getProfessionRewardsGUI().handleRewardsClick(player, item);
+            case PROFESSION_REWARDS -> plugin.getProfessionRewardsGUI().handleRewardsClick(player, item);
 
             case PRESTIGE_MENU -> plugin.getPrestigeGUI().handleClick(player, item, clickType);
 
@@ -174,7 +174,8 @@ public class GUIListener implements Listener {
             case WARP_MENU, WARP_MINES_MENU -> plugin.getWarpGUI().handleWarpMenuClick(player, item);
 
             case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
-            case QUESTS_MENU, QUESTS_DAILY,QUESTS_WEEKLY, ADVANCEMENT_QUESTS, QUEST_STATISTICS, QUEST_REWARDS_HISTORY, BLOCK_COLLECTOR -> plugin.getQuestsGUI().handleClick(player, slot, item);
+            case QUESTS_MENU, QUESTS_DAILY, QUESTS_WEEKLY, ADVANCEMENT_QUESTS, QUEST_STATISTICS, QUEST_REWARDS_HISTORY,
+                 BLOCK_COLLECTOR -> plugin.getQuestsGUI().handleClick(player, slot, item);
 
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
 

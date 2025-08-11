@@ -53,6 +53,38 @@ public class QuestRewards {
     }
 
     /**
+     * Créé un builder pour construire des récompenses
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Crée des récompenses basiques avec seulement beacons et XP
+     */
+    public static QuestRewards basic(long beacons, int jobXp) {
+        return new QuestRewards(beacons, jobXp);
+    }
+
+    /**
+     * Crée des récompenses avec voucher
+     */
+    public static QuestRewards withVoucher(long beacons, int jobXp, VoucherType voucherType, int voucherTier) {
+        return new QuestRewards(beacons, jobXp, voucherType, voucherTier);
+    }
+
+    /**
+     * Crée des récompenses avec boost
+     */
+    public static QuestRewards withBoost(long beacons, int jobXp, BoostType boostType, int minutes, double percent) {
+        return new QuestRewards(beacons, jobXp, boostType, minutes, percent);
+    }
+
+    // ================================================================================================
+    // GETTERS PRINCIPAUX
+    // ================================================================================================
+
+    /**
      * Octroie toutes les récompenses au joueur
      */
     public void grant(PrisonTycoon plugin, Player player) {
@@ -108,29 +140,33 @@ public class QuestRewards {
         }
 
         if (jobXp > 0) {
-            if (desc.length() > 0) desc.append("§7, ");
+            if (!desc.isEmpty()) desc.append("§7, ");
             desc.append("§d+").append(jobXp).append(" XP Métier");
         }
 
         if (voucherType != null && voucherTier > 0) {
-            if (desc.length() > 0) desc.append("§7, ");
+            if (!desc.isEmpty()) desc.append("§7, ");
             desc.append("§bVoucher ").append(voucherType.name()).append(" T").append(voucherTier);
         }
 
         if (boostType != null && boostMinutes > 0) {
-            if (desc.length() > 0) desc.append("§7, ");
+            if (!desc.isEmpty()) desc.append("§7, ");
             desc.append("§aBoost ").append(boostType.name())
                     .append(" ").append(String.format("%.0f", boostPercent))
                     .append("% (").append(boostMinutes).append("min)");
         }
 
         if (essenceFragments > 0) {
-            if (desc.length() > 0) desc.append("§7, ");
+            if (!desc.isEmpty()) desc.append("§7, ");
             desc.append("§bFragments Essence x").append(essenceFragments);
         }
 
         return desc.toString();
     }
+
+    // ================================================================================================
+    // GETTERS VOUCHER (MÉTHODES MANQUANTES)
+    // ================================================================================================
 
     /**
      * Vérifie si cette récompense a des éléments bonus (voucher ou boost)
@@ -162,10 +198,6 @@ public class QuestRewards {
         return totalValue;
     }
 
-    // ================================================================================================
-    // GETTERS PRINCIPAUX
-    // ================================================================================================
-
     /**
      * @return Le nombre de beacons à donner
      */
@@ -173,16 +205,16 @@ public class QuestRewards {
         return beacons;
     }
 
+    // ================================================================================================
+    // GETTERS BOOST (MÉTHODES MANQUANTES)
+    // ================================================================================================
+
     /**
      * @return Le nombre d'XP métier à donner
      */
     public int getJobXp() {
         return jobXp;
     }
-
-    // ================================================================================================
-    // GETTERS VOUCHER (MÉTHODES MANQUANTES)
-    // ================================================================================================
 
     /**
      * @return Le type de voucher à donner, ou null si aucun
@@ -206,7 +238,7 @@ public class QuestRewards {
     }
 
     // ================================================================================================
-    // GETTERS BOOST (MÉTHODES MANQUANTES)
+    // MÉTHODES UTILITAIRES
     // ================================================================================================
 
     /**
@@ -215,6 +247,10 @@ public class QuestRewards {
     public BoostType getBoostType() {
         return boostType;
     }
+
+    // ================================================================================================
+    // BUILDER PATTERN (OPTIONNEL POUR FACILITER LA CRÉATION)
+    // ================================================================================================
 
     /**
      * @return La durée du boost en minutes
@@ -230,16 +266,16 @@ public class QuestRewards {
         return boostPercent;
     }
 
+    // ================================================================================================
+    // MÉTHODES DE COMMODITÉ STATIQUES
+    // ================================================================================================
+
     /**
      * @return true si cette récompense inclut un boost
      */
     public boolean hasBoost() {
         return boostType != null && boostMinutes > 0 && boostPercent > 0;
     }
-
-    // ================================================================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================================================================
 
     /**
      * Formate un nombre avec des unités (K, M, G)
@@ -255,9 +291,45 @@ public class QuestRewards {
         return String.valueOf(number);
     }
 
+    @Override
+    public String toString() {
+        return "QuestRewards{" +
+                "beacons=" + beacons +
+                ", jobXp=" + jobXp +
+                ", voucherType=" + voucherType +
+                ", voucherTier=" + voucherTier +
+                ", boostType=" + boostType +
+                ", boostMinutes=" + boostMinutes +
+                ", boostPercent=" + boostPercent +
+                ", essenceFragments=" + essenceFragments +
+                '}';
+    }
+
     // ================================================================================================
-    // BUILDER PATTERN (OPTIONNEL POUR FACILITER LA CRÉATION)
+    // OVERRIDE POUR DÉBOGAGE
     // ================================================================================================
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
+        QuestRewards that = (QuestRewards) obj;
+
+        return beacons == that.beacons &&
+                jobXp == that.jobXp &&
+                voucherTier == that.voucherTier &&
+                boostMinutes == that.boostMinutes &&
+                Double.compare(that.boostPercent, boostPercent) == 0 &&
+                voucherType == that.voucherType &&
+                boostType == that.boostType;
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(beacons, jobXp, voucherType, voucherTier,
+                boostType, boostMinutes, boostPercent, essenceFragments);
+    }
 
     /**
      * Builder pour créer facilement des QuestRewards complexes
@@ -316,77 +388,5 @@ public class QuestRewards {
             }
             return r;
         }
-    }
-
-    /**
-     * Créé un builder pour construire des récompenses
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    // ================================================================================================
-    // MÉTHODES DE COMMODITÉ STATIQUES
-    // ================================================================================================
-
-    /**
-     * Crée des récompenses basiques avec seulement beacons et XP
-     */
-    public static QuestRewards basic(long beacons, int jobXp) {
-        return new QuestRewards(beacons, jobXp);
-    }
-
-    /**
-     * Crée des récompenses avec voucher
-     */
-    public static QuestRewards withVoucher(long beacons, int jobXp, VoucherType voucherType, int voucherTier) {
-        return new QuestRewards(beacons, jobXp, voucherType, voucherTier);
-    }
-
-    /**
-     * Crée des récompenses avec boost
-     */
-    public static QuestRewards withBoost(long beacons, int jobXp, BoostType boostType, int minutes, double percent) {
-        return new QuestRewards(beacons, jobXp, boostType, minutes, percent);
-    }
-
-    // ================================================================================================
-    // OVERRIDE POUR DÉBOGAGE
-    // ================================================================================================
-
-    @Override
-    public String toString() {
-        return "QuestRewards{" +
-                "beacons=" + beacons +
-                ", jobXp=" + jobXp +
-                ", voucherType=" + voucherType +
-                ", voucherTier=" + voucherTier +
-                ", boostType=" + boostType +
-                ", boostMinutes=" + boostMinutes +
-                ", boostPercent=" + boostPercent +
-                ", essenceFragments=" + essenceFragments +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-
-        QuestRewards that = (QuestRewards) obj;
-
-        return beacons == that.beacons &&
-                jobXp == that.jobXp &&
-                voucherTier == that.voucherTier &&
-                boostMinutes == that.boostMinutes &&
-                Double.compare(that.boostPercent, boostPercent) == 0 &&
-                voucherType == that.voucherType &&
-                boostType == that.boostType;
-    }
-
-    @Override
-    public int hashCode() {
-        return java.util.Objects.hash(beacons, jobXp, voucherType, voucherTier,
-                boostType, boostMinutes, boostPercent, essenceFragments);
     }
 }

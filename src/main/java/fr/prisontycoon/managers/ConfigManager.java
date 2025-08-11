@@ -31,7 +31,6 @@ public class ConfigManager {
     private Map<String, WarpData> warpsData;
 
 
-
     public ConfigManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         loadConfiguration();
@@ -68,7 +67,6 @@ public class ConfigManager {
             plugin.getPluginLogger().info("§7- " + blockValues.size() + " types de blocs valorisés");
             plugin.getPluginLogger().info("§7- " + sellPrices.size() + " prix de vente configurés");
             plugin.getPluginLogger().info("§7- " + warpsData.size() + " warps configurés");
-
 
 
         } catch (Exception e) {

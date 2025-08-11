@@ -201,7 +201,7 @@ public class PickaxeRepairGUI {
         ItemStack item = new ItemStack(Material.EMERALD);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§a⚡ §lRÉPARATION MAXIMALE");
+        plugin.getGUIManager().applyName(meta, "§a⚡ §lRÉPARATION MAXIMALE");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -326,7 +326,7 @@ public class PickaxeRepairGUI {
     private void fillBorders(Inventory gui) {
         ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = borderItem.getItemMeta();
-        plugin.getGUIManager().applyName(meta," ");
+        plugin.getGUIManager().applyName(meta, " ");
         borderItem.setItemMeta(meta);
 
         // Remplir les bordures

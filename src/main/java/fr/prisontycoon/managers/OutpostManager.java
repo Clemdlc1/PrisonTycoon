@@ -41,24 +41,20 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class OutpostManager {
 
-    private final PrisonTycoon plugin;
-    private final Location outpostCenter;
-    private final World caveWorld;
-
-    // Données de l'avant-poste
-    private OutpostData outpostData;
-
-    // Systèmes de capture
-    private final Map<UUID, Long> captureStartTimes = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> captureProgress = new ConcurrentHashMap<>();
-
-    // Cache des skins disponibles
-    private final Map<String, File> availableSkins = new HashMap<>();
-
     // Constantes
     private static final int CAPTURE_TIME_SECONDS = 30;
     private static final int OUTPOST_SIZE = 7; // 7x7x7
     private static final int REWARD_INTERVAL_TICKS = 20 * 60; // 1 minute
+    private final PrisonTycoon plugin;
+    private final Location outpostCenter;
+    private final World caveWorld;
+    // Systèmes de capture
+    private final Map<UUID, Long> captureStartTimes = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> captureProgress = new ConcurrentHashMap<>();
+    // Cache des skins disponibles
+    private final Map<String, File> availableSkins = new HashMap<>();
+    // Données de l'avant-poste
+    private OutpostData outpostData;
 
     public OutpostManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -89,14 +85,14 @@ public class OutpostManager {
 
     private void createOutpostTable() {
         String query = """
-        CREATE TABLE IF NOT EXISTS outpost_data (
-            id SERIAL PRIMARY KEY,
-            controller VARCHAR(36),
-            controller_name VARCHAR(16),
-            capture_time BIGINT DEFAULT 0,
-            current_skin VARCHAR(255) DEFAULT 'default'
-        );
-    """;
+                    CREATE TABLE IF NOT EXISTS outpost_data (
+                        id SERIAL PRIMARY KEY,
+                        controller VARCHAR(36),
+                        controller_name VARCHAR(16),
+                        capture_time BIGINT DEFAULT 0,
+                        current_skin VARCHAR(255) DEFAULT 'default'
+                    );
+                """;
 
         try (Connection conn = plugin.getDatabaseManager().getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -108,9 +104,9 @@ public class OutpostManager {
                  ResultSet rs = checkPs.executeQuery()) {
                 if (rs.next() && rs.getInt(1) == 0) {
                     String insertQuery = """
-                    INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
-                    VALUES (NULL, NULL, 0, 'default')
-                """;
+                                INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
+                                VALUES (NULL, NULL, 0, 'default')
+                            """;
                     try (PreparedStatement insertPs = conn.prepareStatement(insertQuery)) {
                         insertPs.execute();
                     }
@@ -132,11 +128,11 @@ public class OutpostManager {
         createOutpostTable();
 
         String query = """
-        SELECT controller, controller_name, capture_time, current_skin
-        FROM outpost_data 
-        ORDER BY id 
-        LIMIT 1
-    """;
+                    SELECT controller, controller_name, capture_time, current_skin
+                    FROM outpost_data 
+                    ORDER BY id 
+                    LIMIT 1
+                """;
 
         try (Connection conn = plugin.getDatabaseManager().getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
@@ -181,24 +177,24 @@ public class OutpostManager {
         }
 
         String query = """
-        INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT (id) DO UPDATE SET
-            controller = EXCLUDED.controller,
-            controller_name = EXCLUDED.controller_name,
-            capture_time = EXCLUDED.capture_time,
-            current_skin = EXCLUDED.current_skin,
-    """;
+                    INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET
+                        controller = EXCLUDED.controller,
+                        controller_name = EXCLUDED.controller_name,
+                        capture_time = EXCLUDED.capture_time,
+                        current_skin = EXCLUDED.current_skin,
+                """;
 
         // Pour PostgreSQL, nous devons d'abord vérifier s'il y a des données et faire UPDATE ou INSERT
         String updateQuery = """
-        UPDATE outpost_data SET 
-            controller = ?, 
-            controller_name = ?, 
-            capture_time = ?, 
-            current_skin = ?
-        WHERE id = (SELECT MIN(id) FROM outpost_data)
-    """;
+                    UPDATE outpost_data SET 
+                        controller = ?, 
+                        controller_name = ?, 
+                        capture_time = ?, 
+                        current_skin = ?
+                    WHERE id = (SELECT MIN(id) FROM outpost_data)
+                """;
 
         try (Connection conn = plugin.getDatabaseManager().getConnection()) {
             // Essayer d'abord un UPDATE
@@ -213,9 +209,9 @@ public class OutpostManager {
                 // Si aucune ligne n'a été mise à jour, faire un INSERT
                 if (rowsUpdated == 0) {
                     String insertQuery = """
-                    INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
-                    VALUES (?, ?, ?, ?)
-                """;
+                                INSERT INTO outpost_data (controller, controller_name, capture_time, current_skin)
+                                VALUES (?, ?, ?, ?)
+                            """;
                     try (PreparedStatement insertPs = conn.prepareStatement(insertQuery)) {
                         insertPs.setString(1, outpostData.getController() != null ? outpostData.getController().toString() : null);
                         insertPs.setString(2, outpostData.getControllerName());
@@ -379,7 +375,7 @@ public class OutpostManager {
         // Mettre à jour les bannières
         updateOutpostBanners(player);
 
-        plugin.getQuestManager().addProgress(player, QuestType.CAPTURE_OUTPOST,1);
+        plugin.getQuestManager().addProgress(player, QuestType.CAPTURE_OUTPOST, 1);
 
         // Notifier
         broadcastToCaveWorld("§a🏰 §l" + player.getName() + " §aa capturé l'avant-poste!");

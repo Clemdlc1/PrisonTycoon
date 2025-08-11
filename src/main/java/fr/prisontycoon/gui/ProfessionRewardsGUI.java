@@ -192,16 +192,59 @@ public class ProfessionRewardsGUI {
     private void addRewardContentLore(List<String> lore, int level) {
         // Cette méthode reste identique à l'originale
         switch (level) {
-            case 1 -> { lore.add("§e• 10 000 Coins"); lore.add("§b• 1 000 Tokens"); }
-            case 2 -> { lore.add("§e• 25 000 Coins"); lore.add("§b• 2 500 Tokens"); lore.add("§d• 1 Cristal Niveau 3"); }
-            case 3 -> { lore.add("§e• 50 000 Coins"); lore.add("§b• 5 000 Tokens"); lore.add("§6• 100 Beacons"); }
-            case 4 -> { lore.add("§e• 100 000 Coins"); lore.add("§b• 10 000 Tokens"); lore.add("§d• 1 Cristal Niveau 5"); }
-            case 5 -> { lore.add("§e• 200 000 Coins"); lore.add("§b• 20 000 Tokens"); lore.add("§6• 250 Beacons"); lore.add("§c• 1 Clé Rare"); }
-            case 6 -> { lore.add("§e• 400 000 Coins"); lore.add("§b• 40 000 Tokens"); lore.add("§d• 1 Cristal Niveau 7"); }
-            case 7 -> { lore.add("§e• 800 000 Coins"); lore.add("§b• 80 000 Tokens"); lore.add("§6• 500 Beacons"); }
-            case 8 -> { lore.add("§e• 1 500 000 Coins"); lore.add("§b• 150 000 Tokens"); lore.add("§d• 1 Cristal Niveau 10"); lore.add("§c• 1 Clé Épique"); }
-            case 9 -> { lore.add("§e• 3 000 000 Coins"); lore.add("§b• 300 000 Tokens"); lore.add("§6• 1 000 Beacons"); }
-            case 10 -> { lore.add("§e• 5 000 000 Coins"); lore.add("§b• 500 000 Tokens"); lore.add("§d• 1 Cristal Niveau 15"); lore.add("§c• 1 Clé Légendaire"); lore.add("§6• 2 000 Beacons"); }
+            case 1 -> {
+                lore.add("§e• 10 000 Coins");
+                lore.add("§b• 1 000 Tokens");
+            }
+            case 2 -> {
+                lore.add("§e• 25 000 Coins");
+                lore.add("§b• 2 500 Tokens");
+                lore.add("§d• 1 Cristal Niveau 3");
+            }
+            case 3 -> {
+                lore.add("§e• 50 000 Coins");
+                lore.add("§b• 5 000 Tokens");
+                lore.add("§6• 100 Beacons");
+            }
+            case 4 -> {
+                lore.add("§e• 100 000 Coins");
+                lore.add("§b• 10 000 Tokens");
+                lore.add("§d• 1 Cristal Niveau 5");
+            }
+            case 5 -> {
+                lore.add("§e• 200 000 Coins");
+                lore.add("§b• 20 000 Tokens");
+                lore.add("§6• 250 Beacons");
+                lore.add("§c• 1 Clé Rare");
+            }
+            case 6 -> {
+                lore.add("§e• 400 000 Coins");
+                lore.add("§b• 40 000 Tokens");
+                lore.add("§d• 1 Cristal Niveau 7");
+            }
+            case 7 -> {
+                lore.add("§e• 800 000 Coins");
+                lore.add("§b• 80 000 Tokens");
+                lore.add("§6• 500 Beacons");
+            }
+            case 8 -> {
+                lore.add("§e• 1 500 000 Coins");
+                lore.add("§b• 150 000 Tokens");
+                lore.add("§d• 1 Cristal Niveau 10");
+                lore.add("§c• 1 Clé Épique");
+            }
+            case 9 -> {
+                lore.add("§e• 3 000 000 Coins");
+                lore.add("§b• 300 000 Tokens");
+                lore.add("§6• 1 000 Beacons");
+            }
+            case 10 -> {
+                lore.add("§e• 5 000 000 Coins");
+                lore.add("§b• 500 000 Tokens");
+                lore.add("§d• 1 Cristal Niveau 15");
+                lore.add("§c• 1 Clé Légendaire");
+                lore.add("§6• 2 000 Beacons");
+            }
         }
     }
 
@@ -236,16 +279,51 @@ public class ProfessionRewardsGUI {
         // Distribution des récompenses (anciennement giveRewardItems)
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         switch (level) {
-            case 1 -> { data.addCoins(10000); data.addTokens(1000); }
-            case 2 -> { data.addCoins(25000); data.addTokens(2500); /* donner cristal */ }
-            case 3 -> { data.addCoins(50000); data.addTokens(5000); data.addBeacons(100); }
-            case 4 -> { data.addCoins(100000); data.addTokens(10000); /* donner cristal */ }
-            case 5 -> { data.addCoins(200000); data.addTokens(20000); data.addBeacons(250); /* donner clé */ }
-            case 6 -> { data.addCoins(400000); data.addTokens(40000); /* donner cristal */ }
-            case 7 -> { data.addCoins(800000); data.addTokens(80000); data.addBeacons(500); }
-            case 8 -> { data.addCoins(1500000); data.addTokens(150000); /* donner cristal, clé */ }
-            case 9 -> { data.addCoins(3000000); data.addTokens(300000); data.addBeacons(1000); }
-            case 10 -> { data.addCoins(5000000); data.addTokens(500000); data.addBeacons(2000); /* donner cristal, clé */ }
+            case 1 -> {
+                data.addCoins(10000);
+                data.addTokens(1000);
+            }
+            case 2 -> {
+                data.addCoins(25000);
+                data.addTokens(2500); /* donner cristal */
+            }
+            case 3 -> {
+                data.addCoins(50000);
+                data.addTokens(5000);
+                data.addBeacons(100);
+            }
+            case 4 -> {
+                data.addCoins(100000);
+                data.addTokens(10000); /* donner cristal */
+            }
+            case 5 -> {
+                data.addCoins(200000);
+                data.addTokens(20000);
+                data.addBeacons(250); /* donner clé */
+            }
+            case 6 -> {
+                data.addCoins(400000);
+                data.addTokens(40000); /* donner cristal */
+            }
+            case 7 -> {
+                data.addCoins(800000);
+                data.addTokens(80000);
+                data.addBeacons(500);
+            }
+            case 8 -> {
+                data.addCoins(1500000);
+                data.addTokens(150000); /* donner cristal, clé */
+            }
+            case 9 -> {
+                data.addCoins(3000000);
+                data.addTokens(300000);
+                data.addBeacons(1000);
+            }
+            case 10 -> {
+                data.addCoins(5000000);
+                data.addTokens(500000);
+                data.addBeacons(2000); /* donner cristal, clé */
+            }
         }
 
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());

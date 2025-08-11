@@ -33,7 +33,8 @@ public class GangManager {
     private final Map<UUID, String> pendingInvitations = new ConcurrentHashMap<>(); // playerId -> gangId
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Pattern.class, new PatternAdapter())
-            .create();    private final Map<String, GangTalent> talents = new ConcurrentHashMap<>();
+            .create();
+    private final Map<String, GangTalent> talents = new ConcurrentHashMap<>();
 
     // Coûts des niveaux de gang (index 0 = création, index 1 = niveau 2, etc.)
     private final long[] LEVEL_COSTS = {

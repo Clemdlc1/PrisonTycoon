@@ -21,10 +21,9 @@ import java.util.stream.Stream;
  */
 public class OutpostCommand implements CommandExecutor, TabCompleter {
 
-    private final PrisonTycoon plugin;
-
     private static final String PERMISSION_BASIC = "specialmine.basic";
     private static final String PERMISSION_ADMIN = "specialmine.admin";
+    private final PrisonTycoon plugin;
 
     public OutpostCommand(PrisonTycoon plugin) {
         this.plugin = plugin;

@@ -2,11 +2,7 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -17,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * Gestionnaire de surcharge des mines (Mine Overload)
- *
+ * <p>
  * - Calcule un multiplicateur de Greed par mine selon une jauge de surcharge
  * - La jauge augmente avec le nombre de mineurs actifs et décroit automatiquement
  * - À chaque palier atteint: notification aux joueurs présents
@@ -301,13 +297,14 @@ public class MineOverloadManager {
     // Hologrammes: toute la logique déplacée dans MineManager
 
     private static class OverloadState {
+        final Map<UUID, Long> blocksMinedDuringCycle = new HashMap<>();
         double gauge = 0.0; // 0..1
         int currentTier = 0; // index dans TIER_*
         long lastActivityMs = System.currentTimeMillis();
-        final Map<UUID, Long> blocksMinedDuringCycle = new HashMap<>();
     }
 
-    private record RecentMining(String mineId, long timestampMs) { }
+    private record RecentMining(String mineId, long timestampMs) {
+    }
 }
 
 

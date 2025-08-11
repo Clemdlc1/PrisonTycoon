@@ -158,7 +158,7 @@ public class MiningListener implements Listener {
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (blockLocation.getBlock().getType() == Material.BEDROCK) {
-                blockLocation.getBlock().setType(Material.BEACON,false);
+                blockLocation.getBlock().setType(Material.BEACON, false);
             }
         }, respawnDelayTicks);
 
@@ -178,7 +178,7 @@ public class MiningListener implements Listener {
         int xpGained = 0;
         if ("guerrier".equals(playerData.getActiveProfession())) {
             xpGained = 1 + enemyPlayerCount;
-            plugin.getProfessionManager().addProfessionXP(player,"guerrier", xpGained);
+            plugin.getProfessionManager().addProfessionXP(player, "guerrier", xpGained);
         }
 
         if (playerGangId != null && enemyPlayerCount > 0) {
@@ -380,7 +380,7 @@ public class MiningListener implements Listener {
         if (material == Material.BEACON) {
             double beaconBonus = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.BEACON_MULTIPLIER);
             int finalBeaconGain = (int) (1 * beaconBonus);
-            playerData.addBeacons(finalBeaconGain);            
+            playerData.addBeacons(finalBeaconGain);
             plugin.getBlockCollectorManager().add(player, material, 1);
             return;
         }

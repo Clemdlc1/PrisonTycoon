@@ -27,7 +27,7 @@ public class GUIManager {
 
     private final PrisonTycoon plugin;
     private final NamespacedKey guiTypeKey;
-        private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacySection();
+    private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacySection();
 
     // Cache des GUIs ouverts par joueur avec l'inventaire associé
     private final Map<UUID, GUIInfo> openGUIs = new ConcurrentHashMap<>();

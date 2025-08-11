@@ -28,24 +28,21 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HeadCollectionManager {
 
+    // Valeur de la tête spéciale
+    private static final String HEAD_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWIwZTA3NjMyMmZjOWFmNzk1OTJlYjg1MmNhOGM3YzQ1YmIyYzNjZWFiYzNjMGU4YTZhMWUwNGI0Y2UzZDM0YiJ9fX0=";
     private final PrisonTycoon plugin;
     private final Gson gson = new Gson();
-    private final Type stringSetType = new TypeToken<Set<String>>(){}.getType();
-
+    private final Type stringSetType = new TypeToken<Set<String>>() {
+    }.getType();
+    // Cache des têtes placées
+    private final Map<String, HeadData> placedHeads = new ConcurrentHashMap<>();
+    // Configuration des récompenses par nombre de têtes collectées
+    private final Map<Integer, HeadReward> rewards = new LinkedHashMap<>();
     // Fichier de sauvegarde des positions des têtes
     private File headsFile;
     private FileConfiguration headsConfig;
-
-    // Cache des têtes placées
-    private final Map<String, HeadData> placedHeads = new ConcurrentHashMap<>();
-
     // Tâche pour les particules
     private BukkitTask particleTask;
-
-    // Valeur de la tête spéciale
-    private static final String HEAD_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWIwZTA3NjMyMmZjOWFmNzk1OTJlYjg1MmNhOGM3YzQ1YmIyYzNjZWFiYzNjMGU4YTZhMWUwNGI0Y2UzZDM0YiJ9fX0=";
-    // Configuration des récompenses par nombre de têtes collectées
-    private final Map<Integer, HeadReward> rewards = new LinkedHashMap<>();
 
     public HeadCollectionManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -252,7 +249,7 @@ public class HeadCollectionManager {
      * Génère un ID unique pour une tête
      */
     private String generateHeadId() {
-        return "head_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000);
+        return "head_" + System.currentTimeMillis() + "_" + (int) (Math.random() * 1000);
     }
 
     /**
@@ -378,6 +375,17 @@ public class HeadCollectionManager {
         saveHeadsToFile();
     }
 
+    /**
+     * Types de récompenses - tu peux en ajouter d'autres
+     */
+    public enum HeadRewardType {
+        BASIC,
+        INTERMEDIATE,
+        ADVANCED,
+        RARE,
+        LEGENDARY
+    }
+
     // Classes de données internes
     public static class HeadData {
         private final String id;
@@ -388,8 +396,13 @@ public class HeadCollectionManager {
             this.location = location;
         }
 
-        public String getId() { return id; }
-        public Location getLocation() { return location; }
+        public String getId() {
+            return id;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
     }
 
     /**
@@ -406,19 +419,16 @@ public class HeadCollectionManager {
             this.description = description;
         }
 
-        public int getRequiredHeads() { return requiredHeads; }
-        public HeadRewardType getType() { return type; }
-        public String getDescription() { return description; }
-    }
+        public int getRequiredHeads() {
+            return requiredHeads;
+        }
 
-    /**
-     * Types de récompenses - tu peux en ajouter d'autres
-     */
-    public enum HeadRewardType {
-        BASIC,
-        INTERMEDIATE,
-        ADVANCED,
-        RARE,
-        LEGENDARY
+        public HeadRewardType getType() {
+            return type;
+        }
+
+        public String getDescription() {
+            return description;
+        }
     }
 }

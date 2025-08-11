@@ -20,9 +20,9 @@ import java.util.UUID;
  */
 public class GlobalBonusManager {
 
+    private static final long BONUS_CACHE_TTL_MS = 2_000L;
     private final PrisonTycoon plugin;
     private final Map<UUID, Map<BonusCategory, CachedMultiplier>> bonusCache = new HashMap<>();
-    private static final long BONUS_CACHE_TTL_MS = 2_000L;
 
     public GlobalBonusManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -51,8 +51,6 @@ public class GlobalBonusManager {
         perPlayer.put(category, new CachedMultiplier(mult, now));
         return mult;
     }
-
-    private record CachedMultiplier(double multiplier, long timestampMs) { }
 
     /**
      * MÉTHODE UTILITAIRE : Obtient les détails complets des sources d'un bonus
@@ -163,11 +161,6 @@ public class GlobalBonusManager {
         return Math.round(baseMoney * multiplier);
     }
 
-
-    // ========================================
-    // MÉTHODES D'APPLICATION DES BONUS
-    // ========================================
-
     /**
      * Applique le bonus Experience sur une valeur de base
      */
@@ -176,6 +169,11 @@ public class GlobalBonusManager {
         double multiplier = getTotalBonusMultiplier(player, BonusCategory.EXPERIENCE_BONUS);
         return Math.round(baseExp * multiplier);
     }
+
+
+    // ========================================
+    // MÉTHODES D'APPLICATION DES BONUS
+    // ========================================
 
     /**
      * Applique le bonus Sell sur un prix de vente
@@ -212,10 +210,6 @@ public class GlobalBonusManager {
         return baseEfficiency * multiplier;
     }
 
-    // ========================================
-    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
-    // ========================================
-
     /**
      * Calcule le bonus des cristaux pour une catégorie
      */
@@ -227,6 +221,10 @@ public class GlobalBonusManager {
 
         return plugin.getCristalManager().getTotalCristalBonus(player, cristalType);
     }
+
+    // ========================================
+    // MÉTHODES PRIVÉES DE CALCUL DES SOURCES
+    // ========================================
 
     /**
      * Calcule le bonus des talents de métiers pour une catégorie
@@ -266,7 +264,8 @@ public class GlobalBonusManager {
                             bonus += talent.getValueAtLevel(talentLevel);
                         }
                     }
-                    default -> {}
+                    default -> {
+                    }
                 }
             }
             case "commercant" -> {
@@ -287,7 +286,8 @@ public class GlobalBonusManager {
                             bonus += talent.getValueAtLevel(talentLevel);
                         }
                     }
-                    default -> {}
+                    default -> {
+                    }
                 }
             }
             case "guerrier" -> {
@@ -464,10 +464,6 @@ public class GlobalBonusManager {
         }
     }
 
-    // ========================================
-    // MÉTHODES UTILITAIRES DE MAPPING
-    // ========================================
-
     /**
      * Mappe une catégorie de bonus vers un type de cristal
      */
@@ -481,6 +477,10 @@ public class GlobalBonusManager {
             default -> null;
         };
     }
+
+    // ========================================
+    // MÉTHODES UTILITAIRES DE MAPPING
+    // ========================================
 
     /**
      * Mappe une catégorie de bonus vers un type de boost
@@ -510,7 +510,6 @@ public class GlobalBonusManager {
         };
     }
 
-
     /**
      * Obtient le nom du type de cristal pour l'affichage
      */
@@ -528,10 +527,6 @@ public class GlobalBonusManager {
 
         return plugin.getGangManager().getGang(playerData.getGangId());
     }
-
-    // ========================================
-    // MÉTHODES DE DEBUG
-    // ========================================
 
     /**
      * Debug: Affiche tous les bonus actifs pour un joueur
@@ -576,7 +571,7 @@ public class GlobalBonusManager {
     }
 
     // ========================================
-    // MÉTHODES UTILITAIRES MIGRÉES DE PLAYERDATA
+    // MÉTHODES DE DEBUG
     // ========================================
 
     /**
@@ -585,6 +580,10 @@ public class GlobalBonusManager {
     public double getPrestigeBonus(Player player, BonusCategory category) {
         return getPrestigeTalentBonus(player, category);
     }
+
+    // ========================================
+    // MÉTHODES UTILITAIRES MIGRÉES DE PLAYERDATA
+    // ========================================
 
     /**
      * MIGRÉ: Calcule le bonus Money Greed total du prestige
@@ -643,7 +642,6 @@ public class GlobalBonusManager {
         return bonuses;
     }
 
-
     /**
      * Types de bonus unifiés - Un seul type par finalité
      */
@@ -696,6 +694,9 @@ public class GlobalBonusManager {
         }
     }
 
+    private record CachedMultiplier(double multiplier, long timestampMs) {
+    }
+
     /**
      * Détails des sources d'un bonus
      */
@@ -709,10 +710,10 @@ public class GlobalBonusManager {
         private double temporaryGangBoostBonus = 0.0;
         private double enchantmentBonus = 0.0;
         private double overloadBonus = 0.0;
-            private double armorBonus = 0.0;
+        private double armorBonus = 0.0;
 
         public double getTotalBonus() {
-                return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus;
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus;
         }
 
         public double getTotalMultiplier() {
@@ -735,13 +736,13 @@ public class GlobalBonusManager {
             this.overloadBonus = overloadBonus;
         }
 
-            public double getArmorBonus() {
-                return armorBonus;
-            }
+        public double getArmorBonus() {
+            return armorBonus;
+        }
 
-            public void setArmorBonus(double armorBonus) {
-                this.armorBonus = armorBonus;
-            }
+        public void setArmorBonus(double armorBonus) {
+            this.armorBonus = armorBonus;
+        }
 
         // Getters
         public double getCristalBonus() {
@@ -773,7 +774,9 @@ public class GlobalBonusManager {
             return temporaryBoostBonus;
         }
 
-        public void setTemporaryBoostBonus(double temporaryBoostBonus) { this.temporaryBoostBonus = temporaryBoostBonus; }
+        public void setTemporaryBoostBonus(double temporaryBoostBonus) {
+            this.temporaryBoostBonus = temporaryBoostBonus;
+        }
 
         public double getGangBonus() {
             return gangBonus;
@@ -787,7 +790,9 @@ public class GlobalBonusManager {
             return temporaryGangBoostBonus;
         }
 
-        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) { this.temporaryGangBoostBonus = temporaryGangBoostBonus; }
+        public void setTemporaryGangBoostBonus(double temporaryGangBoostBonus) {
+            this.temporaryGangBoostBonus = temporaryGangBoostBonus;
+        }
 
         public Map<String, Double> getDetailedSources() {
             return detailedSources;

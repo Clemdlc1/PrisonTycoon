@@ -55,14 +55,10 @@ public enum HeadEnum {
     VILLAGER("MHF_Villager", SourceType.MHF),
     WITCH("MHF_Witch", SourceType.MHF),
     WITHER("MHF_Wither", SourceType.MHF),
-    ZOMBIE("MHF_Zombie", SourceType.MHF),
-    SHULKER("MHF_Shulker", SourceType.MHF);
-
-    public enum SourceType { BASE64, URL, MHF }
+    ZOMBIE("MHF_Zombie", SourceType.MHF);
 
     private final String value;
     private final SourceType sourceType;
-
     HeadEnum(String base64OrUrl) {
         this.value = base64OrUrl;
         // Heuristique: si la valeur commence par "eyJ" c'est très probablement du Base64 JSON
@@ -88,4 +84,6 @@ public enum HeadEnum {
     public SourceType getSourceType() {
         return sourceType;
     }
+
+    public enum SourceType {BASE64, URL, MHF}
 }

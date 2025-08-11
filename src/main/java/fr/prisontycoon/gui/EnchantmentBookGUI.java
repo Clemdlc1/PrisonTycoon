@@ -3,9 +3,6 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
-import fr.prisontycoon.enchantments.WeaponArmorEnchantmentManager;
-import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -87,7 +84,7 @@ public class EnchantmentBookGUI {
 
         // Titre avec état - UNIFORMISÉ
         String statusIcon = owned ? (isActive ? "§a✅" : "§c⭕") : "§8❌";
-        plugin.getGUIManager().applyName(meta,statusIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
+        plugin.getGUIManager().applyName(meta, statusIcon + " §5⚡ §l" + book.getName()); // UNIFORMISÉ avec ⚡
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -187,7 +184,7 @@ public class EnchantmentBookGUI {
         // Bouton boutique -> redirige vers un GUI dédié (sélecteur)
         ItemStack shopButton = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shopButton.getItemMeta();
-        plugin.getGUIManager().applyName(shopMeta,"§a💰 §lBoutique de Livres");
+        plugin.getGUIManager().applyName(shopMeta, "§a💰 §lBoutique de Livres");
         plugin.getGUIManager().applyLore(shopMeta, List.of(
                 "§7Accédez à la boutique dédiée",
                 "§7Pioches ou Épées/Armures"
@@ -199,7 +196,7 @@ public class EnchantmentBookGUI {
         ItemStack item = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta meta = item.getItemMeta();
 
-        plugin.getGUIManager().applyName(meta,"§5⚡ §lRÉSUMÉ DES ENCHANTS ACTIFS");
+        plugin.getGUIManager().applyName(meta, "§5⚡ §lRÉSUMÉ DES ENCHANTS ACTIFS");
 
         List<String> lore = new ArrayList<>();
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
@@ -221,7 +218,7 @@ public class EnchantmentBookGUI {
     private void fillWithGlass(Inventory gui) {
         ItemStack glass = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        plugin.getGUIManager().applyName(glassMeta," ");
+        plugin.getGUIManager().applyName(glassMeta, " ");
         glass.setItemMeta(glassMeta);
 
         for (int i = 0; i < gui.getSize(); i++) {
@@ -358,7 +355,7 @@ public class EnchantmentBookGUI {
         // Créer l'item d'erreur rouge
         ItemStack errorItem = new ItemStack(Material.RED_CONCRETE);
         ItemMeta meta = errorItem.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§c⚠️ §lERREUR");
+        plugin.getGUIManager().applyName(meta, "§c⚠️ §lERREUR");
 
         List<String> errorLore = new ArrayList<>();
         errorLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");

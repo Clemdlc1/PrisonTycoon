@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Interface graphique REFONTE pour le système de prestige
@@ -262,7 +261,7 @@ public class PrestigeGUI {
                 statusLore.add("§c▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             }
 
-            plugin.getGUIManager().applyName(meta,prefix + nameColor + reward.getDisplayName() + " §7(P" + prestigeLevel + ")");
+            plugin.getGUIManager().applyName(meta, prefix + nameColor + reward.getDisplayName() + " §7(P" + prestigeLevel + ")");
 
             // Construire la lore complète
             List<String> lore = new ArrayList<>();
@@ -386,7 +385,7 @@ public class PrestigeGUI {
             }
 
             // Nom du bonus
-            plugin.getGUIManager().applyName(meta,prefix + nameColor + talent.getDisplayName() + " §7(P" + prestigeLevel + ")");
+            plugin.getGUIManager().applyName(meta, prefix + nameColor + talent.getDisplayName() + " §7(P" + prestigeLevel + ")");
 
             // Construire la lore complète
             List<String> lore = new ArrayList<>();
@@ -708,7 +707,7 @@ public class PrestigeGUI {
         ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
         if (glassMeta != null) {
-            plugin.getGUIManager().applyName(glassMeta," ");
+            plugin.getGUIManager().applyName(glassMeta, " ");
             glass.setItemMeta(glassMeta);
         }
 
@@ -728,7 +727,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§6🏆 Votre Prestige");
+            plugin.getGUIManager().applyName(meta, "§6🏆 Votre Prestige");
 
             List<String> lore = new ArrayList<>();
             lore.add("§7Niveau actuel: " + playerData.getPrestigeDisplayName());
@@ -840,7 +839,7 @@ public class PrestigeGUI {
             } else {
                 title = "§7📚 §lTalents & Récompenses";
             }
-            plugin.getGUIManager().applyName(meta,title);
+            plugin.getGUIManager().applyName(meta, title);
 
             List<String> lore = new ArrayList<>();
             lore.add("§7Gérez vos talents et récompenses");
@@ -973,7 +972,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§c🔄 Réinitialiser Talents");
+            plugin.getGUIManager().applyName(meta, "§c🔄 Réinitialiser Talents");
 
             List<String> lore = new ArrayList<>();
             lore.add("§7Remet à zéro tous vos talents");
@@ -1011,7 +1010,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§6🚀 Effectuer Prestige " + nextLevel);
+            plugin.getGUIManager().applyName(meta, "§6🚀 Effectuer Prestige " + nextLevel);
             plugin.getGUIManager().applyLore(meta, List.of(
                     "§7Passez au niveau de prestige suivant",
                     "§7et débloquez de nouveaux bonus!",
@@ -1034,7 +1033,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§c🔒 Prestige Verrouillé");
+            plugin.getGUIManager().applyName(meta, "§c🔒 Prestige Verrouillé");
             plugin.getGUIManager().applyLore(meta, List.of(
                     "§7Vous devez remplir les conditions",
                     "§7pour effectuer un prestige",
@@ -1054,7 +1053,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,displayName);
+            plugin.getGUIManager().applyName(meta, displayName);
 
             List<String> lore = new ArrayList<>();
             lore.add("§7Aller à la page " + (targetPage + 1));
@@ -1076,7 +1075,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§c← Retour au menu principal");
+            plugin.getGUIManager().applyName(meta, "§c← Retour au menu principal");
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_to_main");
             item.setItemMeta(meta);
         }
@@ -1089,7 +1088,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§e❓ Aide");
+            plugin.getGUIManager().applyName(meta, "§e❓ Aide");
             plugin.getGUIManager().applyLore(meta, List.of(
                     "§7Le système de prestige vous permet",
                     "§7de recommencer avec des bonus permanents",
@@ -1111,7 +1110,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§c✗ Fermer");
+            plugin.getGUIManager().applyName(meta, "§c✗ Fermer");
             item.setItemMeta(meta);
         }
 
@@ -1130,7 +1129,7 @@ public class PrestigeGUI {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            plugin.getGUIManager().applyName(meta,"§6📋 §lRésumé de Progression §6📋");
+            plugin.getGUIManager().applyName(meta, "§6📋 §lRésumé de Progression §6📋");
 
             List<String> lore = new ArrayList<>();
             lore.add("§7Votre progression complète en prestige:");

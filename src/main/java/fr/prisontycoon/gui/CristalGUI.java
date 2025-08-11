@@ -139,7 +139,7 @@ public class CristalGUI {
                 );
 
                 ItemMeta meta = cristalItem.getItemMeta();
-        List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
+                List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
                 assert lore != null;
                 lore.add("");
                 lore.add("§c▸ Clic-gauche pour retirer (50% destruction)");

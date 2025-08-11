@@ -178,19 +178,19 @@ public class BoostGUI {
 
             // Affiche une carte récap des bonus d'armure en bas (toutes catégories condensées)
             double armorTokens = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.TOKEN_BONUS).getArmorBonus();
-            double armorMoney  = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.MONEY_BONUS).getArmorBonus();
-            double armorXp     = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.EXPERIENCE_BONUS).getArmorBonus();
-            double armorSell   = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.SELL_BONUS).getArmorBonus();
-            double armorFort   = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.FORTUNE_BONUS).getArmorBonus();
+            double armorMoney = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.MONEY_BONUS).getArmorBonus();
+            double armorXp = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.EXPERIENCE_BONUS).getArmorBonus();
+            double armorSell = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.SELL_BONUS).getArmorBonus();
+            double armorFort = globalBonusManager.getBonusSourcesDetails(player, GlobalBonusManager.BonusCategory.FORTUNE_BONUS).getArmorBonus();
 
             if (armorTokens > 0 || armorMoney > 0 || armorXp > 0 || armorSell > 0 || armorFort > 0) {
                 lore.add("");
                 lore.add("§6⚔ Bonus d'Armure (Forge)");
                 if (armorTokens > 0) lore.add("§b• Tokens: §a+" + String.format("%.1f", armorTokens) + "%");
-                if (armorMoney  > 0) lore.add("§6• Coins: §a+" + String.format("%.1f", armorMoney) + "%");
-                if (armorXp     > 0) lore.add("§a• Expérience: §a+" + String.format("%.1f", armorXp) + "%");
-                if (armorSell   > 0) lore.add("§e• Vente: §a+" + String.format("%.1f", armorSell) + "%");
-                if (armorFort   > 0) lore.add("§9• Fortune: §a+" + String.format("%.1f", armorFort) + "%");
+                if (armorMoney > 0) lore.add("§6• Coins: §a+" + String.format("%.1f", armorMoney) + "%");
+                if (armorXp > 0) lore.add("§a• Expérience: §a+" + String.format("%.1f", armorXp) + "%");
+                if (armorSell > 0) lore.add("§e• Vente: §a+" + String.format("%.1f", armorSell) + "%");
+                if (armorFort > 0) lore.add("§9• Fortune: §a+" + String.format("%.1f", armorFort) + "%");
             }
 
             if (lore.size() == 3) { // rien ajouté après l'en-tête
@@ -419,20 +419,28 @@ public class BoostGUI {
         sb.append("§e§lSources du bonus ").append(category.getDisplayName()).append(":");
         sb.append("\n§7").append(category.getDescription());
         sb.append("\n");
-        if (details.getCristalBonus() > 0) sb.append("\n§e⚡ Cristaux§7: ").append(details.getCristalBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getCristalBonus())).append("%");
-        if (details.getProfessionBonus() > 0) sb.append("\n§d🔨 Talents Métiers§7: ").append(details.getProfessionBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getProfessionBonus())).append("%");
-        if (details.getPrestigeBonus() > 0) sb.append("\n§5👑 Talents Prestige§7: ").append(details.getPrestigeBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getPrestigeBonus())).append("%");
-        if (details.getTemporaryBoostBonus() > 0) sb.append("\n§b⚡ Boosts Temporaires§7: ").append(details.getTemporaryBoostBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getTemporaryBoostBonus())).append("%");
-        if (details.getGangBonus() > 0) sb.append("\n§6🏰 Gang (Perm)§7: ").append(details.getGangBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getGangBonus())).append("%");
-        if (details.getTemporaryGangBoostBonus() > 0) sb.append("\n§6🏰 Gang (Temp)§7: ").append(details.getTemporaryGangBoostBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getTemporaryGangBoostBonus())).append("%");
-        if (details.getEnchantmentBonus() > 0) sb.append("\n§9✦ Enchantements§7: ").append(details.getEnchantmentBonus() >= 0 ? "+" : "").append(String.format("%.2f", details.getEnchantmentBonus())).append("%");
-        if (details.getOverloadBonus() > 0) sb.append("\n§c🔥 Surcharge de Mine§7: ").append(details.getOverloadBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getOverloadBonus())).append("%");
+        if (details.getCristalBonus() > 0)
+            sb.append("\n§e⚡ Cristaux§7: ").append(details.getCristalBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getCristalBonus())).append("%");
+        if (details.getProfessionBonus() > 0)
+            sb.append("\n§d🔨 Talents Métiers§7: ").append(details.getProfessionBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getProfessionBonus())).append("%");
+        if (details.getPrestigeBonus() > 0)
+            sb.append("\n§5👑 Talents Prestige§7: ").append(details.getPrestigeBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getPrestigeBonus())).append("%");
+        if (details.getTemporaryBoostBonus() > 0)
+            sb.append("\n§b⚡ Boosts Temporaires§7: ").append(details.getTemporaryBoostBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getTemporaryBoostBonus())).append("%");
+        if (details.getGangBonus() > 0)
+            sb.append("\n§6🏰 Gang (Perm)§7: ").append(details.getGangBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getGangBonus())).append("%");
+        if (details.getTemporaryGangBoostBonus() > 0)
+            sb.append("\n§6🏰 Gang (Temp)§7: ").append(details.getTemporaryGangBoostBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getTemporaryGangBoostBonus())).append("%");
+        if (details.getEnchantmentBonus() > 0)
+            sb.append("\n§9✦ Enchantements§7: ").append(details.getEnchantmentBonus() >= 0 ? "+" : "").append(String.format("%.2f", details.getEnchantmentBonus())).append("%");
+        if (details.getOverloadBonus() > 0)
+            sb.append("\n§c🔥 Surcharge de Mine§7: ").append(details.getOverloadBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getOverloadBonus())).append("%");
         if (!details.getDetailedSources().isEmpty()) {
             sb.append("\n\n§8Détails:");
             for (var source : details.getDetailedSources().entrySet()) {
                 sb.append("\n§8• ").append(source.getKey()).append(": ")
-                  .append(source.getValue() >= 0 ? "+" : "")
-                  .append(String.format("%.1f", source.getValue())).append("%");
+                        .append(source.getValue() >= 0 ? "+" : "")
+                        .append(String.format("%.1f", source.getValue())).append("%");
             }
         }
         sb.append("\n\n§8Total: ").append(details.getTotalBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getTotalBonus())).append("%");

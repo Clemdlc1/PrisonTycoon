@@ -66,7 +66,7 @@ public class PickaxeManager {
         ItemMeta meta = pickaxe.getItemMeta();
 
         // Nom et protection
-        plugin.getGUIManager().applyName(meta,"§6✨ Pioche Légendaire ✨");
+        plugin.getGUIManager().applyName(meta, "§6✨ Pioche Légendaire ✨");
         meta.getPersistentDataContainer().set(legendaryPickaxeKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(pickaxeOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
 
@@ -539,7 +539,7 @@ public class PickaxeManager {
             return;
         }
 
-            if (playerData.getEnchantmentLevel("escalator") > 0 &&
+        if (playerData.getEnchantmentLevel("escalator") > 0 &&
                 playerData.isMobilityEnchantmentEnabled("escalator")) {
             Location location = player.getLocation();
             World world = location.getWorld();

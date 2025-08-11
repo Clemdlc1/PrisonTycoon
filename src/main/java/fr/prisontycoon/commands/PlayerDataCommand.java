@@ -1,7 +1,6 @@
 package fr.prisontycoon.commands;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.data.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -36,7 +35,8 @@ public class PlayerDataCommand implements CommandExecutor, TabCompleter {
                 if (!cols.isEmpty()) {
                     sender.sendMessage("§7Colonnes: §f" + String.join(", ", cols));
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             return true;
         }
 

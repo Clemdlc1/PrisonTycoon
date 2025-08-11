@@ -306,6 +306,7 @@ public class PickaxeProtectionListener implements Listener {
             // Vérifie que la pioche est au bon endroit
             if (!plugin.getPickaxeManager().isPickaxeInCorrectSlot(player)) {
                 event.setCancelled(true);
+                player.sendMessage("1");
                 player.sendMessage("§c❌ La pioche légendaire doit être dans le slot 1 pour fonctionner!");
                 plugin.getPickaxeManager().enforcePickaxeSlot(player);
                 return;

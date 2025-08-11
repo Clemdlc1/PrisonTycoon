@@ -68,7 +68,8 @@ public class PlayerDataManager {
     }.getType();
     private final Type stringSetIntegerMapType = new TypeToken<Map<String, Set<Integer>>>() {
     }.getType();
-    private final Type integerSetType = new TypeToken<Set<Integer>>(){}.getType();
+    private final Type integerSetType = new TypeToken<Set<Integer>>() {
+    }.getType();
 
 
     public PlayerDataManager(PrisonTycoon plugin) {
@@ -871,7 +872,8 @@ public class PlayerDataManager {
                     case "bank_investments" -> {
                         String json = rs.getString("col");
                         if (isNullJson(json)) break;
-                        Map<String, Long> inv = gson.fromJson(json, new TypeToken<Map<String, Long>>(){}.getType());
+                        Map<String, Long> inv = gson.fromJson(json, new TypeToken<Map<String, Long>>() {
+                        }.getType());
                         if (inv != null) {
                             for (Map.Entry<String, Long> entry : inv.entrySet()) {
                                 data.setBankInvestment(entry.getKey(), entry.getValue());
@@ -946,7 +948,8 @@ public class PlayerDataManager {
                 case "custom_permissions" -> ps.setString(1, gson.toJson(data.getCustomPermissions()));
                 case "sanctions" -> ps.setString(1, gson.toJson(data.getSanctionHistory()));
                 case "active_enchantments" -> ps.setString(1, gson.toJson(data.getActiveEnchantmentBooks()));
-                case "pickaxe_enchantment_book_levels" -> ps.setString(1, gson.toJson(data.getPickaxeEnchantmentBookLevels()));
+                case "pickaxe_enchantment_book_levels" ->
+                        ps.setString(1, gson.toJson(data.getPickaxeEnchantmentBookLevels()));
                 case "profession_levels" -> ps.setString(1, gson.toJson(data.getAllProfessionLevels()));
                 case "profession_xp" -> ps.setString(1, gson.toJson(data.getAllProfessionXP()));
                 case "talent_levels" -> ps.setString(1, gson.toJson(data.getAllTalentLevels()));
@@ -982,7 +985,9 @@ public class PlayerDataManager {
                 case "unlocked_outpost_skins" -> ps.setString(1, gson.toJson(data.getUnlockedOutpostSkins()));
                 case "collected_heads" -> ps.setString(1, gson.toJson(data.getCollectedHeads()));
                 case "claimed_head_rewards" -> ps.setString(1, gson.toJson(data.getClaimedHeadRewards()));
-                default -> { return false; }
+                default -> {
+                    return false;
+                }
             }
             ps.setString(2, playerId.toString());
             ps.executeUpdate();
@@ -1004,7 +1009,8 @@ public class PlayerDataManager {
     private ItemStack deserializeItemStack(String json) {
         try {
             if (json == null || json.isBlank() || json.equals("null")) return null;
-            Map<String, Object> itemData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
+            Map<String, Object> itemData = gson.fromJson(json, new TypeToken<Map<String, Object>>() {
+            }.getType());
             if (itemData == null) return null;
             return ItemStack.deserialize(itemData);
         } catch (Exception e) {

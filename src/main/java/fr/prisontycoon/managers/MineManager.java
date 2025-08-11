@@ -34,26 +34,23 @@ import java.util.stream.Collectors;
  */
 public class MineManager {
 
+    private static final int TPS_SAMPLE_SIZE = 100;
+    private static final long TPS_MONITOR_PERIOD_TICKS = 20L; // 1 seconde à 20 TPS
+    private static final long NANOS_PER_TICK_TARGET = 50_000_000L; // 50ms
     private final PrisonTycoon plugin;
     private final Map<String, MineData> mines = new ConcurrentHashMap<>();
     private final Map<String, Long> mineResetTimes = new ConcurrentHashMap<>();
     private final Map<String, AtomicBoolean> mineGenerating = new ConcurrentHashMap<>();
     private final Map<String, AtomicBoolean> mineBeingChecked = new ConcurrentHashMap<>();
     private final Random random = new Random();
-
     // Système de queue pour éviter les générations simultanées
     private final PriorityBlockingQueue<MineResetTask> resetQueue = new PriorityBlockingQueue<>();
     private final ExecutorService asyncExecutor = Executors.newFixedThreadPool(2);
-
-
-
+    private final LinkedList<Long> tickTimes = new LinkedList<>();
+    // ==================== HOLOGRAMMES DE MINE (SECTION MODIFIÉE) ====================
+    private final Map<String, List<ArmorStand>> mineHolograms = new ConcurrentHashMap<>();
     // Monitoring TPS
     private double currentTPS = 20.0;
-    private final LinkedList<Long> tickTimes = new LinkedList<>();
-    private static final int TPS_SAMPLE_SIZE = 100;
-    private static final long TPS_MONITOR_PERIOD_TICKS = 20L; // 1 seconde à 20 TPS
-    private static final long NANOS_PER_TICK_TARGET = 50_000_000L; // 50ms
-
     // Paramètres adaptatifs
     private int currentChunkSize = 50000; // Nombre de blocs par batch
     private long currentDelay = 1L; // Délai entre les batches en ticks
@@ -209,11 +206,9 @@ public class MineManager {
         plugin.getPluginLogger().info("§aMines chargées: " + mines.size());
     }
 
-    // ==================== HOLOGRAMMES DE MINE (SECTION MODIFIÉE) ====================
-    private final Map<String, List<ArmorStand>> mineHolograms = new ConcurrentHashMap<>();
-
     /**
      * Met en majuscule la première lettre de chaque mot dans une chaîne.
+     *
      * @param text Le texte à transformer.
      * @return Le texte formaté.
      */
@@ -408,6 +403,7 @@ public class MineManager {
     // ... Le reste du code est inchangé ...
 
 //<editor-fold desc="Le reste du code reste inchangé">
+
     /**
      * Ajoute une mine à la queue de régénération avec priorité
      */
@@ -754,8 +750,8 @@ public class MineManager {
         safeLoc.setY(safeLoc.getY() + 2);
 
         // S'assurer que la zone est safe
-        safeLoc.getBlock().setType(Material.AIR,false);
-        safeLoc.clone().add(0, 1, 0).getBlock().setType(Material.AIR,false);
+        safeLoc.getBlock().setType(Material.AIR, false);
+        safeLoc.clone().add(0, 1, 0).getBlock().setType(Material.AIR, false);
 
         player.teleport(safeLoc);
     }
@@ -926,7 +922,8 @@ public class MineManager {
                     if (level > playerPrestige) {
                         playerPrestige = level;
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
         return playerPrestige;
@@ -1326,42 +1323,6 @@ public class MineManager {
         return false;
     }
 
-
-    /**
-     * Énumération des priorités de reset
-     */
-    public enum MineResetPriority {
-        URGENT(0),
-        HIGH(1),
-        NORMAL(2),
-        LOW(3);
-
-        private final int priority;
-
-        MineResetPriority(int priority) {
-            this.priority = priority;
-        }
-
-        public int getPriority() {
-            return priority;
-        }
-    }
-
-    /**
-     * Tâche de reset de mine avec priorité
-     */
-    private record MineResetTask(String mineId, MineResetPriority priority,
-                                 long timestamp) implements Comparable<MineResetTask> {
-
-        @Override
-        public int compareTo(MineResetTask other) {
-            int priorityCompare = Integer.compare(this.priority.getPriority(), other.priority.getPriority());
-            if (priorityCompare != 0) {
-                return priorityCompare;
-            }
-            return Long.compare(this.timestamp, other.timestamp);
-        }
-    }
     /**
      * Fallback mine generation using the Bukkit API.
      * This is slower and more resource-intensive than FAWE but provides a failsafe.
@@ -1462,5 +1423,41 @@ public class MineManager {
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L); // Runs every tick
+    }
+
+    /**
+     * Énumération des priorités de reset
+     */
+    public enum MineResetPriority {
+        URGENT(0),
+        HIGH(1),
+        NORMAL(2),
+        LOW(3);
+
+        private final int priority;
+
+        MineResetPriority(int priority) {
+            this.priority = priority;
+        }
+
+        public int getPriority() {
+            return priority;
+        }
+    }
+
+    /**
+     * Tâche de reset de mine avec priorité
+     */
+    private record MineResetTask(String mineId, MineResetPriority priority,
+                                 long timestamp) implements Comparable<MineResetTask> {
+
+        @Override
+        public int compareTo(MineResetTask other) {
+            int priorityCompare = Integer.compare(this.priority.getPriority(), other.priority.getPriority());
+            if (priorityCompare != 0) {
+                return priorityCompare;
+            }
+            return Long.compare(this.timestamp, other.timestamp);
+        }
     }
 }

@@ -29,9 +29,9 @@ public class QuestManager {
     private final PrisonTycoon plugin;
     private final Map<String, QuestDefinition> quests = new HashMap<>();
     private final Map<UUID, PlayerQuestProgress> cache = new ConcurrentHashMap<>();
+    private final Gson gson = new Gson();
     private File questsFile;
     private FileConfiguration questsConfig;
-    private final Gson gson = new Gson();
 
     public QuestManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -78,7 +78,11 @@ public class QuestManager {
                 plugin.saveResource("quests.yml", false);
             } catch (IllegalArgumentException ignored) {
                 // fallback: create empty
-                try { questsFile.createNewFile(); } catch (IOException e) { plugin.getLogger().warning("Impossible de créer quests.yml"); }
+                try {
+                    questsFile.createNewFile();
+                } catch (IOException e) {
+                    plugin.getLogger().warning("Impossible de créer quests.yml");
+                }
             }
         }
         questsConfig = YamlConfiguration.loadConfiguration(questsFile);
@@ -110,17 +114,26 @@ public class QuestManager {
             ConfigurationSection r = q.getConfigurationSection("rewards");
             long beacons = r != null ? r.getLong("beacons", 0) : 0;
             int jobXp = r != null ? r.getInt("job_xp", 0) : 0;
-            VoucherType voucherType = null; int voucherTier = 0;
-            BoostType boostType = null; int boostMinutes = 0; double boostPercent = 0;
+            VoucherType voucherType = null;
+            int voucherTier = 0;
+            BoostType boostType = null;
+            int boostMinutes = 0;
+            double boostPercent = 0;
             if (r != null) {
                 String vType = r.getString("voucher.type", null);
                 if (vType != null) {
-                    try { voucherType = VoucherType.valueOf(vType.toUpperCase()); } catch (Exception ignored) {}
+                    try {
+                        voucherType = VoucherType.valueOf(vType.toUpperCase());
+                    } catch (Exception ignored) {
+                    }
                     voucherTier = r.getInt("voucher.tier", 1);
                 }
                 String bType = r.getString("boost.type", null);
                 if (bType != null) {
-                    try { boostType = BoostType.valueOf(bType.toUpperCase()); } catch (Exception ignored) {}
+                    try {
+                        boostType = BoostType.valueOf(bType.toUpperCase());
+                    } catch (Exception ignored) {
+                    }
                     boostMinutes = r.getInt("boost.minutes", 30);
                     boostPercent = r.getDouble("boost.percent", 50.0);
                 }
@@ -146,13 +159,19 @@ public class QuestManager {
         }
     }
 
-    public Collection<QuestDefinition> getAllQuests() { return quests.values(); }
+    public Collection<QuestDefinition> getAllQuests() {
+        return quests.values();
+    }
+
     public List<QuestDefinition> getQuestsByCategory(QuestCategory cat) {
         List<QuestDefinition> list = new ArrayList<>();
         for (var q : quests.values()) if (q.getCategory() == cat) list.add(q);
         return list;
     }
-    public QuestDefinition get(String id) { return quests.get(id); }
+
+    public QuestDefinition get(String id) {
+        return quests.get(id);
+    }
 
     public PlayerQuestProgress getProgress(UUID playerId) {
         return cache.computeIfAbsent(playerId, this::loadProgress);
@@ -165,11 +184,15 @@ public class QuestManager {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     PlayerQuestProgress p = new PlayerQuestProgress(playerId);
-                    Type mapType = new TypeToken<Map<String,Integer>>(){}.getType();
-                    Map<String,Integer> progress = gson.fromJson(rs.getString("progress_json"), mapType);
-                    Map<String,Boolean> claimed = gson.fromJson(rs.getString("claimed_json"), new TypeToken<Map<String,Boolean>>(){}.getType());
+                    Type mapType = new TypeToken<Map<String, Integer>>() {
+                    }.getType();
+                    Map<String, Integer> progress = gson.fromJson(rs.getString("progress_json"), mapType);
+                    Map<String, Boolean> claimed = gson.fromJson(rs.getString("claimed_json"), new TypeToken<Map<String, Boolean>>() {
+                    }.getType());
                     if (progress != null) progress.forEach(p::set);
-                    if (claimed != null) claimed.forEach((k,v)->{ if(Boolean.TRUE.equals(v)) p.setClaimed(k); });
+                    if (claimed != null) claimed.forEach((k, v) -> {
+                        if (Boolean.TRUE.equals(v)) p.setClaimed(k);
+                    });
                     String daily = rs.getString("daily_date");
                     if (daily != null) {
                         // Force reset si date différente
@@ -177,7 +200,8 @@ public class QuestManager {
                     }
                     String start = rs.getString("weekly_start");
                     if (start != null) {
-                        if (!LocalDate.parse(start).equals(LocalDate.now().with(java.time.DayOfWeek.MONDAY))) p.resetWeeklyIfNeeded();
+                        if (!LocalDate.parse(start).equals(LocalDate.now().with(java.time.DayOfWeek.MONDAY)))
+                            p.resetWeeklyIfNeeded();
                     }
                     return p;
                 }
@@ -202,8 +226,8 @@ public class QuestManager {
                         weekly_completed = EXCLUDED.weekly_completed
                     """;
             try (PreparedStatement ps = c.prepareStatement(sql)) {
-                Map<String,Integer> progress = p.getAllProgress();
-                Map<String,Boolean> claimed = p.getAllClaimed();
+                Map<String, Integer> progress = p.getAllProgress();
+                Map<String, Boolean> claimed = p.getAllClaimed();
                 ps.setString(1, p.getPlayerId().toString());
                 ps.setString(2, gson.toJson(progress));
                 ps.setString(3, gson.toJson(claimed));

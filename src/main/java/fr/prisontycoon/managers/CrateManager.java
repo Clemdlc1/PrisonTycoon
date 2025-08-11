@@ -125,6 +125,7 @@ public class CrateManager {
     }
 
     // ... (Les méthodes isKey, getKeyType, countKeys, consumeKey, etc. restent inchangées)
+
     /**
      * Vérifie si un item est une clé
      */
@@ -381,6 +382,7 @@ public class CrateManager {
     }
 
     // ... (Les méthodes getRewardDisplayText et giveRewardToPlayer restent inchangées)
+
     /**
      * Génère du texte d'affichage pour une récompense
      */
@@ -422,7 +424,7 @@ public class CrateManager {
         if (world == null) return;
 
         Particle particle = switch (crateType) {
-            case VOTE ->   Particle.EGG_CRACK;
+            case VOTE -> Particle.EGG_CRACK;
             case COMMUNE -> Particle.HAPPY_VILLAGER;
             case PEU_COMMUNE -> Particle.ENCHANT;
             case RARE -> Particle.PORTAL;

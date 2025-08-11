@@ -152,7 +152,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     private ItemStack createSeparatorItem() {
         ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§8▬▬▬");
+        plugin.getGUIManager().applyName(meta, "§8▬▬▬");
         item.setItemMeta(meta);
         return item;
     }
@@ -160,7 +160,7 @@ public class InvseeCommand implements CommandExecutor, TabCompleter, Listener {
     private ItemStack createAdminActionsItem() {
         ItemStack item = new ItemStack(Material.COMMAND_BLOCK);
         ItemMeta meta = item.getItemMeta();
-        plugin.getGUIManager().applyName(meta,"§c§l⚙ Actions Admin");
+        plugin.getGUIManager().applyName(meta, "§c§l⚙ Actions Admin");
         meta.setLore(Arrays.asList(
                 "§7Vous êtes en mode administrateur",
                 "§7Vous pouvez modifier cet inventaire",

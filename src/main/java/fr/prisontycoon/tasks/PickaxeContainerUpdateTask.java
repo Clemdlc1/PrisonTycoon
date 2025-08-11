@@ -24,12 +24,11 @@ public class PickaxeContainerUpdateTask extends BukkitRunnable {
     private final PrisonTycoon plugin;
     private final ConcurrentHashMap<String, Long> lastUpdateTimes = new ConcurrentHashMap<>();
     private final AtomicBoolean isRunning = new AtomicBoolean(false); // Verrou pour éviter la superposition
-
-    // Métriques de performance
-    private long cycleCount = 0;
     private final AtomicInteger totalPickaxeUpdates = new AtomicInteger(0);
     private final AtomicInteger totalContainerUpdates = new AtomicInteger(0);
     private final AtomicInteger errors = new AtomicInteger(0);
+    // Métriques de performance
+    private long cycleCount = 0;
 
     public PickaxeContainerUpdateTask(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -77,6 +76,7 @@ public class PickaxeContainerUpdateTask extends BukkitRunnable {
     /**
      * Traite une liste de joueurs de manière séquentielle, avec un délai de 1 tick entre chaque joueur.
      * C'est une méthode récursive qui utilise le scheduler de Bukkit.
+     *
      * @param playerIterator L'itérateur des joueurs à traiter.
      */
     private void processPlayersSequentially(Iterator<Player> playerIterator) {
@@ -110,6 +110,7 @@ public class PickaxeContainerUpdateTask extends BukkitRunnable {
 
     /**
      * Planifie l'appel à processPlayersSequentially pour le prochain tick.
+     *
      * @param playerIterator L'itérateur à passer au prochain appel.
      */
     private void scheduleNextPlayer(Iterator<Player> playerIterator) {
@@ -182,9 +183,23 @@ public class PickaxeContainerUpdateTask extends BukkitRunnable {
         super.cancel();
     }
 
-    public long getCycleCount() { return cycleCount; }
-    public int getTotalPickaxeUpdates() { return totalPickaxeUpdates.get(); }
-    public int getTotalContainerUpdates() { return totalContainerUpdates.get(); }
-    public int getErrors() { return errors.get(); }
-    public int getCachedPlayersCount() { return lastUpdateTimes.size(); }
+    public long getCycleCount() {
+        return cycleCount;
+    }
+
+    public int getTotalPickaxeUpdates() {
+        return totalPickaxeUpdates.get();
+    }
+
+    public int getTotalContainerUpdates() {
+        return totalContainerUpdates.get();
+    }
+
+    public int getErrors() {
+        return errors.get();
+    }
+
+    public int getCachedPlayersCount() {
+        return lastUpdateTimes.size();
+    }
 }

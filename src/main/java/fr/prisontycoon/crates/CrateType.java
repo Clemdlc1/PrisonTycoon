@@ -22,7 +22,7 @@ import static fr.prisontycoon.crates.CrateType.RewardType.*;
  */
 public enum CrateType {
 
-    VOTE("Vote","§f", 0),
+    VOTE("Vote", "§f", 0),
     COMMUNE("Commune", "§a", 1),          // Vert (LIME)
     PEU_COMMUNE("Peu Commune", "§9", 2),  // Bleu (BLUE)
     RARE("Rare", "§5", 3),                // Violet (PURPLE)
@@ -222,7 +222,9 @@ public enum CrateType {
             return cristalLevel;
         }
 
-        public Integer getBlueprintTier() { return blueprintTier; }
+        public Integer getBlueprintTier() {
+            return blueprintTier;
+        }
 
         public static class Builder {
             private final RewardType type;

@@ -25,14 +25,29 @@ public class PlayerQuestProgress {
         this.weeklyWeekStart = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
     }
 
-    public UUID getPlayerId() { return playerId; }
+    public UUID getPlayerId() {
+        return playerId;
+    }
 
-    public int get(String questId) { return progressByQuest.getOrDefault(questId, 0); }
-    public void add(String questId, int amount) { progressByQuest.merge(questId, amount, Integer::sum); }
-    public void set(String questId, int amount) { progressByQuest.put(questId, Math.max(0, amount)); }
+    public int get(String questId) {
+        return progressByQuest.getOrDefault(questId, 0);
+    }
 
-    public boolean isClaimed(String questId) { return claimedByQuest.getOrDefault(questId, false); }
-    public void setClaimed(String questId) { claimedByQuest.put(questId, true); }
+    public void add(String questId, int amount) {
+        progressByQuest.merge(questId, amount, Integer::sum);
+    }
+
+    public void set(String questId, int amount) {
+        progressByQuest.put(questId, Math.max(0, amount));
+    }
+
+    public boolean isClaimed(String questId) {
+        return claimedByQuest.getOrDefault(questId, false);
+    }
+
+    public void setClaimed(String questId) {
+        claimedByQuest.put(questId, true);
+    }
 
     public void resetDailyIfNeeded() {
         LocalDate today = LocalDate.now();
@@ -51,24 +66,35 @@ public class PlayerQuestProgress {
         }
     }
 
-    public void incDailyCompleted() { dailyCompletedCount++; }
-    public void incWeeklyCompleted() { weeklyCompletedCount++; }
-    public int getDailyCompletedCount() { return dailyCompletedCount; }
-    public int getWeeklyCompletedCount() { return weeklyCompletedCount; }
+    public void incDailyCompleted() {
+        dailyCompletedCount++;
+    }
 
-        /**
-         * Retourne une copie immuable de la progression par quête pour persistance
-         */
-        public Map<String, Integer> getAllProgress() {
-            return new HashMap<>(progressByQuest);
-        }
+    public void incWeeklyCompleted() {
+        weeklyCompletedCount++;
+    }
 
-        /**
-         * Retourne une copie immuable des quêtes réclamées pour persistance
-         */
-        public Map<String, Boolean> getAllClaimed() {
-            return new HashMap<>(claimedByQuest);
-        }
+    public int getDailyCompletedCount() {
+        return dailyCompletedCount;
+    }
+
+    public int getWeeklyCompletedCount() {
+        return weeklyCompletedCount;
+    }
+
+    /**
+     * Retourne une copie immuable de la progression par quête pour persistance
+     */
+    public Map<String, Integer> getAllProgress() {
+        return new HashMap<>(progressByQuest);
+    }
+
+    /**
+     * Retourne une copie immuable des quêtes réclamées pour persistance
+     */
+    public Map<String, Boolean> getAllClaimed() {
+        return new HashMap<>(claimedByQuest);
+    }
 }
 
 

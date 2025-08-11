@@ -19,13 +19,12 @@ import java.util.stream.Collectors;
  */
 public class WarpManager {
 
-    private final PrisonTycoon plugin;
-    private final Map<String, WarpData> warps = new ConcurrentHashMap<>();
-    private final Map<String, Long> teleportCooldowns = new ConcurrentHashMap<>();
-
     // Configuration
     private static final int TELEPORT_COOLDOWN = 3; // secondes
     private static final String BYPASS_COOLDOWN_PERMISSION = "specialmine.warp.nocooldown";
+    private final PrisonTycoon plugin;
+    private final Map<String, WarpData> warps = new ConcurrentHashMap<>();
+    private final Map<String, Long> teleportCooldowns = new ConcurrentHashMap<>();
 
     public WarpManager(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -169,7 +168,7 @@ public class WarpManager {
                     plugin.getPluginLogger().warning("§cCoordonnées de téléportation invalides pour la mine " + mineId);
                 }
             }
-        } else if(warp.getType() == WarpData.WarpType.CAVE) {
+        } else if (warp.getType() == WarpData.WarpType.CAVE) {
             player.sendMessage("§6Enchantements mobilités désactivés dans la cave");
             plugin.getPickaxeManager().updateMobilityEffects(player);
         }
@@ -250,60 +249,6 @@ public class WarpManager {
     }
 
     /**
-     * MODIFIÉ : Comparateur de warps de mines entièrement réécrit.
-     * Priorise Normal < VIP < Prestige, puis trie alphabétiquement ou numériquement.
-     */
-    private static class MineWarpComparator implements Comparator<WarpData> {
-
-        // Pattern pour extraire les nombres des IDs de mines
-        private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)$");
-
-        // Fonction pour extraire le numéro d'un ID de mine (ex: "mine-prestige11" -> 11)
-        private int extractNumber(String id) {
-            Matcher matcher = NUMBER_PATTERN.matcher(id);
-            if (matcher.find()) {
-                return Integer.parseInt(matcher.group(1));
-            }
-            return 0; // Fallback
-        }
-
-        // Attribue une priorité en fonction du type de mine
-        private int getPriority(String id) {
-            if (id.startsWith("mine-prestige")) return 2; // Priorité la plus haute
-            if (id.startsWith("mine-vip")) return 1;      // Priorité intermédiaire
-            if (id.matches("mine-[a-z]")) return 0;       // Priorité la plus basse pour A-Z
-            return 3; // Fallback pour les autres cas
-        }
-
-        @Override
-        public int compare(WarpData w1, WarpData w2) {
-            // 1. Comparer par priorité (Normal < VIP < Prestige)
-            int priority1 = getPriority(w1.getId());
-            int priority2 = getPriority(w2.getId());
-
-            if (priority1 != priority2) {
-                return Integer.compare(priority1, priority2);
-            }
-
-            // 2. Si la priorité est la même, appliquer un tri secondaire
-            // Cas des mines normales (A-Z)
-            if (priority1 == 0) {
-                return w1.getId().compareTo(w2.getId()); // Tri alphabétique simple
-            }
-
-            // Cas des mines VIP et Prestige
-            if (priority1 == 1 || priority1 == 2) {
-                int num1 = extractNumber(w1.getId());
-                int num2 = extractNumber(w2.getId());
-                return Integer.compare(num1, num2); // Tri numérique
-            }
-
-            // Fallback
-            return w1.getId().compareTo(w2.getId());
-        }
-    }
-
-    /**
      * Obtient tous les warps accessibles par un joueur
      */
     public List<WarpData> getAccessibleWarps(Player player) {
@@ -378,5 +323,59 @@ public class WarpManager {
         loadWarpsFromConfig();
         generateMineWarps();
         plugin.getPluginLogger().info("§aWarps rechargés!");
+    }
+
+    /**
+     * MODIFIÉ : Comparateur de warps de mines entièrement réécrit.
+     * Priorise Normal < VIP < Prestige, puis trie alphabétiquement ou numériquement.
+     */
+    private static class MineWarpComparator implements Comparator<WarpData> {
+
+        // Pattern pour extraire les nombres des IDs de mines
+        private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)$");
+
+        // Fonction pour extraire le numéro d'un ID de mine (ex: "mine-prestige11" -> 11)
+        private int extractNumber(String id) {
+            Matcher matcher = NUMBER_PATTERN.matcher(id);
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+            return 0; // Fallback
+        }
+
+        // Attribue une priorité en fonction du type de mine
+        private int getPriority(String id) {
+            if (id.startsWith("mine-prestige")) return 2; // Priorité la plus haute
+            if (id.startsWith("mine-vip")) return 1;      // Priorité intermédiaire
+            if (id.matches("mine-[a-z]")) return 0;       // Priorité la plus basse pour A-Z
+            return 3; // Fallback pour les autres cas
+        }
+
+        @Override
+        public int compare(WarpData w1, WarpData w2) {
+            // 1. Comparer par priorité (Normal < VIP < Prestige)
+            int priority1 = getPriority(w1.getId());
+            int priority2 = getPriority(w2.getId());
+
+            if (priority1 != priority2) {
+                return Integer.compare(priority1, priority2);
+            }
+
+            // 2. Si la priorité est la même, appliquer un tri secondaire
+            // Cas des mines normales (A-Z)
+            if (priority1 == 0) {
+                return w1.getId().compareTo(w2.getId()); // Tri alphabétique simple
+            }
+
+            // Cas des mines VIP et Prestige
+            if (priority1 == 1 || priority1 == 2) {
+                int num1 = extractNumber(w1.getId());
+                int num2 = extractNumber(w2.getId());
+                return Integer.compare(num1, num2); // Tri numérique
+            }
+
+            // Fallback
+            return w1.getId().compareTo(w2.getId());
+        }
     }
 }

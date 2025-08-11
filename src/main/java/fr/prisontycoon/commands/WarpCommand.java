@@ -191,7 +191,7 @@ public class WarpCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§7ID: §e" + warp.getId());
         player.sendMessage("§7Type: " + warp.getType().getIcon() + " §e" + warp.getType().getDisplayName());
         player.sendMessage("§7Monde: §e" + warp.getWorldName());
-        player.sendMessage("§7Position: §e" + (int)warp.getX() + ", " + (int)warp.getY() + ", " + (int)warp.getZ());
+        player.sendMessage("§7Position: §e" + (int) warp.getX() + ", " + (int) warp.getY() + ", " + (int) warp.getZ());
 
         if (warp.getPermission() != null && !warp.getPermission().isEmpty()) {
             player.sendMessage("§7Permission: §e" + warp.getPermission());

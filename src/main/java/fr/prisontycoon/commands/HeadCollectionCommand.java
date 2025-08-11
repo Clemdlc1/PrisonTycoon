@@ -190,7 +190,7 @@ public class HeadCollectionCommand implements CommandExecutor, TabCompleter {
         headMeta.setPlayerProfile(profile);
 
         // Définir le nom et la description
-        plugin.getGUIManager().applyName(headMeta,"§6Tête de Collection");
+        plugin.getGUIManager().applyName(headMeta, "§6Tête de Collection");
         headMeta.setLore(Arrays.asList(
                 "§7Posez cette tête pour l'enregistrer",
                 "§7dans la collection du serveur."
