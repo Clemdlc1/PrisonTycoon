@@ -28,6 +28,7 @@ public class WarpData {
     private final Material headMaterial;
     private final String headTexture;
     private final String description;
+
     /**
      * Constructeur principal complet
      */

@@ -3,7 +3,7 @@ package fr.prisontycoon.utils;
 /**
  * Enum listant des textures de têtes utiles pour les GUIs.
  * Les entrées peuvent être fournies soit sous forme d'URL de texture Minecraft
- * (https://textures.minecraft.net/texture/...), soit de valeur Base64 complète,
+ * (<a href="https://textures.minecraft.net/texture/...">...</a>), soit de valeur Base64 complète,
  * soit d'un nom de compte MHF (ex: MHF_ArrowLeft).
  */
 public enum HeadEnum {
@@ -59,6 +59,7 @@ public enum HeadEnum {
 
     private final String value;
     private final SourceType sourceType;
+
     HeadEnum(String base64OrUrl) {
         this.value = base64OrUrl;
         // Heuristique: si la valeur commence par "eyJ" c'est très probablement du Base64 JSON

@@ -1,6 +1,7 @@
 package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -46,8 +47,8 @@ public class NotificationManager {
         TemporaryNotification tempNotif = new TemporaryNotification(message, now + durationMs);
         activeTemporaryNotifications.put(playerId, tempNotif);
 
-        // Envoie immédiatement la notification
-        player.sendActionBar(message);
+        // Envoie immédiatement la notification (Adventure)
+        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(message));
 
         plugin.getPluginLogger().debug("Notification temporaire de durabilité envoyée à " + player.getName() +
                 " pour " + durationMs + "ms: " + message);

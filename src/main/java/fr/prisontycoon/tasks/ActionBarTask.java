@@ -2,6 +2,8 @@ package fr.prisontycoon.tasks;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -39,7 +41,8 @@ public class ActionBarTask extends BukkitRunnable {
                 // on laisse le NotificationManager s'en occuper
                 String tempMessage = plugin.getNotificationManager().getActiveTemporaryNotificationMessage(player);
                 if (tempMessage != null) {
-                    player.sendActionBar(tempMessage);
+                    Component component = LegacyComponentSerializer.legacySection().deserialize(tempMessage);
+                    player.sendActionBar(component);
                 }
                 continue; // Passe au joueur suivant
             }
@@ -47,7 +50,8 @@ public class ActionBarTask extends BukkitRunnable {
             // Aucune notification temporaire, on peut afficher nos messages normaux
             String statusMessage = generateStatusMessage(player);
             if (statusMessage != null && !statusMessage.isEmpty()) {
-                player.sendActionBar(statusMessage);
+                Component component = LegacyComponentSerializer.legacySection().deserialize(statusMessage);
+                player.sendActionBar(component);
             }
         }
     }

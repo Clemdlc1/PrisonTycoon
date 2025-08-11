@@ -15,6 +15,8 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Listener pour la protection de la pioche légendaire
@@ -239,7 +241,10 @@ public class PickaxeProtectionListener implements Listener {
     private void applyDeathDurabilityPenalty(ItemStack pickaxe, Player player) {
         if (!plugin.getPickaxeManager().isLegendaryPickaxe(pickaxe)) return;
 
-        short currentDurability = pickaxe.getDurability();
+        short currentDurability = 0;
+        if (pickaxe.getItemMeta() instanceof Damageable damageable) {
+            currentDurability = (short) damageable.getDamage();
+        }
         short maxDurability = pickaxe.getType().getMaxDurability();
 
         // Calcule 5% de la durabilité maximale
@@ -247,7 +252,11 @@ public class PickaxeProtectionListener implements Listener {
 
         // Applique la pénalité
         int newDurability = Math.min(currentDurability + durabilityPenalty, maxDurability - 1);
-        pickaxe.setDurability((short) newDurability);
+        ItemMeta meta = pickaxe.getItemMeta();
+        if (meta instanceof Damageable damageable) {
+            damageable.setDamage(newDurability);
+            pickaxe.setItemMeta(damageable);
+        }
 
         // Vérifie les enchantements de solidité pour ajuster la durabilité
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -261,7 +270,11 @@ public class PickaxeProtectionListener implements Listener {
 
             // S'assure que la durabilité ne dépasse pas la limite avec bonus
             if (newDurability >= maxDurabilityWithBonus) {
-                pickaxe.setDurability((short) (maxDurabilityWithBonus - 1));
+                ItemMeta meta2 = pickaxe.getItemMeta();
+                if (meta2 instanceof org.bukkit.inventory.meta.Damageable damageable2) {
+                    damageable2.setDamage(maxDurabilityWithBonus - 1);
+                    pickaxe.setItemMeta(damageable2);
+                }
             }
         }
 

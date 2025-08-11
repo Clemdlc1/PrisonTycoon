@@ -6,10 +6,9 @@ import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.EnchantmentBookManager;
 import fr.prisontycoon.enchantments.EnchantmentCategory;
 import fr.prisontycoon.utils.NumberFormatter;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -17,6 +16,7 @@ import org.bukkit.World;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataType;
@@ -49,13 +49,6 @@ public class PickaxeManager {
      */
     public static boolean isPickaxeBroken(Player player) {
         return player.hasMetadata("pickaxe_broken");
-    }
-
-    /**
-     * Retourne le multiplicateur de pénalité (90% de malus = 10% d'efficacité)
-     */
-    public static double getPickaxePenaltyMultiplier(Player player) {
-        return isPickaxeBroken(player) ? 0.10 : 1.0;
     }
 
     /**
@@ -190,7 +183,7 @@ public class PickaxeManager {
 
         // NOUVEAU: Vérification null pour éviter la NullPointerException
         if (currentPickaxe != null) {
-            currentDurability = currentPickaxe.getDurability();
+            currentDurability = getItemDamage(currentPickaxe);
             maxDurability = currentPickaxe.getType().getMaxDurability();
             isBroken = currentDurability >= maxDurability - 1;
         }
@@ -244,7 +237,7 @@ public class PickaxeManager {
             isBroken = false;
             currentPickaxe = findPlayerPickaxe(player);
             if (currentPickaxe != null) {
-                currentDurability = currentPickaxe.getDurability();
+                currentDurability = getItemDamage(currentPickaxe);
                 maxDurability = currentPickaxe.getType().getMaxDurability();
                 isBroken = currentDurability >= maxDurability - 1;
             }
@@ -377,6 +370,7 @@ public class PickaxeManager {
         int efficiencyLevel = playerData.getEnchantmentLevel("efficiency");
         Player player = plugin.getServer().getPlayer(playerData.getPlayerId());
         if (efficiencyLevel > 0) {
+            assert player != null;
             if (!isPickaxeBroken(player)) {
                 meta.addEnchant(Enchantment.EFFICIENCY, efficiencyLevel, true);
             } else {
@@ -457,7 +451,7 @@ public class PickaxeManager {
     public void updateMobilityEffects(Player player) {
         ItemStack handItem = player.getInventory().getItemInMainHand();
 
-        if (!plugin.getPickaxeManager().isLegendaryPickaxe(handItem) || isPickaxeBroken(player)) {
+        if (!isLegendaryPickaxe(handItem) || isPickaxeBroken(player)) {
             removeMobilityEffects(player);
             return;
         }
@@ -605,10 +599,10 @@ public class PickaxeManager {
 
                 // Message spécial pour pioche cassée (une seule fois)
                 if (!player.hasMetadata("durability_notif_broken")) {
-                    TextComponent message = new TextComponent("§c💀 PIOCHE CASSÉE! Tous enchantements désactivés! §e[RÉPARER IMMÉDIATEMENT]");
-                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§cRéparation critique requise!")));
-                    player.spigot().sendMessage(message);
+                    Component message = Component.text("§c💀 PIOCHE CASSÉE! Tous enchantements désactivés! §e[RÉPARER IMMÉDIATEMENT]")
+                            .clickEvent(ClickEvent.runCommand("/repair"))
+                            .hoverEvent(HoverEvent.showText(Component.text("§cRéparation critique requise!")));
+                    player.sendMessage(message);
 
                     player.setMetadata("durability_notif_broken", new FixedMetadataValue(plugin, true));
                 }
@@ -623,19 +617,19 @@ public class PickaxeManager {
             // NOTIFICATIONS PAR SEUILS (une seule fois par niveau)
             if (durabilityPercent <= 0.10) { // Moins de 10% restant
                 if (!player.hasMetadata("durability_notif_10")) {
-                    TextComponent message = new TextComponent("§6⚠️ Votre pioche est très endommagée ! §e[CLIQUEZ POUR RÉPARER]");
-                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
-                    player.spigot().sendMessage(message);
+                    Component message = Component.text("§6⚠️ Votre pioche est très endommagée ! §e[CLIQUEZ POUR RÉPARER]")
+                            .clickEvent(ClickEvent.runCommand("/repair"))
+                            .hoverEvent(HoverEvent.showText(Component.text("§aOuvrir le menu de réparation")));
+                    player.sendMessage(message);
 
                     player.setMetadata("durability_notif_10", new FixedMetadataValue(plugin, true));
                 }
             } else if (durabilityPercent <= 0.25) { // Moins de 25% restant
                 if (!player.hasMetadata("durability_notif_25")) {
-                    TextComponent message = new TextComponent("§e⚠️ Votre pioche commence à être endommagée. §e[RÉPARER]");
-                    message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/repair"));
-                    message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aOuvrir le menu de réparation")));
-                    player.spigot().sendMessage(message);
+                    Component message = Component.text("§e⚠️ Votre pioche commence à être endommagée. §e[RÉPARER]")
+                            .clickEvent(ClickEvent.runCommand("/repair"))
+                            .hoverEvent(HoverEvent.showText(Component.text("§aOuvrir le menu de réparation")));
+                    player.sendMessage(message);
 
                     player.setMetadata("durability_notif_25", new FixedMetadataValue(plugin, true));
                 }
@@ -695,5 +689,13 @@ public class PickaxeManager {
             }
         }
         return null;
+    }
+
+    private short getItemDamage(ItemStack itemStack) {
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta instanceof Damageable damageable) {
+            return (short) damageable.getDamage();
+        }
+        return 0;
     }
 }

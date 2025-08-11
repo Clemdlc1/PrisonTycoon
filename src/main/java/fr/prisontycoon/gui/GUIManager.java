@@ -234,31 +234,6 @@ public class GUIManager {
                 .get(key, PersistentDataType.STRING);
     }
 
-    // Structure pour stocker les infos du GUI
-    private static class GUIInfo {
-        private final GUIType type;
-        private final Inventory inventory;
-        private final long openTime;
-
-        public GUIInfo(GUIType type, Inventory inventory) {
-            this.type = type;
-            this.inventory = inventory;
-            this.openTime = System.currentTimeMillis();
-        }
-
-        public GUIType getType() {
-            return type;
-        }
-
-        public Inventory getInventory() {
-            return inventory;
-        }
-
-        public long getOpenTime() {
-            return openTime;
-        }
-    }
-
     public void fillBorders(Inventory gui) {
         ItemStack glass1 = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta m1 = glass1.getItemMeta();
@@ -280,10 +255,6 @@ public class GUIManager {
         }
     }
 
-    // ===============================================================================================
-    // ITEM MENU PRINCIPAL (TÊTE GLOBE EN SLOT 9)
-    // ===============================================================================================
-
     /**
      * Crée l'item tête Globe ouvrant le menu principal.
      */
@@ -301,6 +272,10 @@ public class GUIManager {
         }
         return head;
     }
+
+    // ===============================================================================================
+    // ITEM MENU PRINCIPAL (TÊTE GLOBE EN SLOT 9)
+    // ===============================================================================================
 
     /**
      * Vérifie si l'item est la tête de menu principal.
@@ -344,5 +319,30 @@ public class GUIManager {
         inv.setItem(targetSlot, menuHead);
         player.getWorld().dropItemNaturally(player.getLocation(), current);
         player.sendMessage("§eVotre inventaire était plein, l'item du slot 9 a été déposé au sol.");
+    }
+
+    // Structure pour stocker les infos du GUI
+    private static class GUIInfo {
+        private final GUIType type;
+        private final Inventory inventory;
+        private final long openTime;
+
+        public GUIInfo(GUIType type, Inventory inventory) {
+            this.type = type;
+            this.inventory = inventory;
+            this.openTime = System.currentTimeMillis();
+        }
+
+        public GUIType getType() {
+            return type;
+        }
+
+        public Inventory getInventory() {
+            return inventory;
+        }
+
+        public long getOpenTime() {
+            return openTime;
+        }
     }
 }

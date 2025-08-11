@@ -1159,6 +1159,14 @@ public class PrisonTycoonAPI {
         return playerData.getProfessionLevel(playerData.getActiveProfession());
     }
 
+    /**
+     * Ajoute de l'XP métier (offline-friendly) au métier actif si correspond à professionId
+     */
+    public void addProfessionXP(UUID playerId, String professionId, int xp) {
+        if (professionId == null || xp <= 0) return;
+        plugin.getProfessionManager().addProfessionXP(playerId, professionId, xp);
+    }
+
     public double getTotalBonusMultiplier(Player player, GlobalBonusManager.BonusCategory category) {
         return plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, category);
     }
@@ -1173,6 +1181,10 @@ public class PrisonTycoonAPI {
 
     public boolean isLegendaryPickaxe(ItemStack item) {
         return plugin.getPickaxeManager().isLegendaryPickaxe(item);
+    }
+
+    public boolean isMainMenuHead(ItemStack item) {
+        return plugin.getGUIManager().isMainMenuHead(item);
     }
 
     public ItemStack createKey(String keyType) {

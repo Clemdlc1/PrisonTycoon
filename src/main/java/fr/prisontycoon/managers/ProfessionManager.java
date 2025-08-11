@@ -191,6 +191,34 @@ public class ProfessionManager {
     }
 
     /**
+     * Ajoute de l'XP métier à un joueur en utilisant uniquement l'UUID (compatible hors-ligne)
+     */
+    public void addProfessionXP(UUID playerId, String professionId, int xp) {
+        if (xp <= 0 || professionId == null) return;
+
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(playerId);
+        String activeProfession = playerData.getActiveProfession();
+
+        if (activeProfession == null || !activeProfession.equals(professionId)) {
+            return; // XP uniquement pour le métier actif
+        }
+
+        int currentXP = playerData.getProfessionXP(professionId);
+        int currentLevel = playerData.getProfessionLevel(professionId);
+        int newXP = currentXP + xp;
+
+        playerData.setProfessionXP(professionId, newXP);
+
+        // Vérification de montée de niveau (sans messages si le joueur est hors-ligne)
+        int newLevel = calculateLevelFromXP(newXP);
+        if (newLevel > currentLevel) {
+            playerData.setProfessionLevel(professionId, newLevel);
+        }
+
+        plugin.getPlayerDataManager().markDirty(playerId);
+    }
+
+    /**
      * Calcule le niveau basé sur l'XP (progression exponentielle)
      */
     private int calculateLevelFromXP(int xp) {

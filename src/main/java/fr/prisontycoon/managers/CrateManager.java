@@ -3,6 +3,7 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.crates.CrateType;
 import fr.prisontycoon.data.ContainerData;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
@@ -364,7 +365,7 @@ public class CrateManager {
                     CrateType.CrateReward displayReward = allRewards.get(ticks / 10 % allRewards.size());
 
                     // Action bar avec la récompense actuelle
-                    player.sendActionBar("§6➤ " + getRewardDisplayText(displayReward));
+                    player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize("§6➤ " + getRewardDisplayText(displayReward)));
 
                     // Particules colorées
                     spawnOpeningParticles(location, crateType);

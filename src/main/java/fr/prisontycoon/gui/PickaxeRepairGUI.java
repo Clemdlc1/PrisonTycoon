@@ -4,11 +4,13 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.enchantments.CustomEnchantment;
 import fr.prisontycoon.utils.NumberFormatter;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
@@ -96,8 +98,11 @@ public class PickaxeRepairGUI {
             return;
         }
 
-        // CORRIGÉ : Calcul précis de l'état actuel
-        short currentDurability = pickaxe.getDurability();
+        // CORRIGÉ : Calcul précis de l'état actuel (Damageable)
+        short currentDurability = 0;
+        if (pickaxe.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable damageable) {
+            currentDurability = (short) damageable.getDamage();
+        }
         short maxDurability = pickaxe.getType().getMaxDurability();
 
         // CORRIGÉ : Si déjà à 100% (durabilité = 0), désactive la réparation
@@ -256,16 +261,19 @@ public class PickaxeRepairGUI {
         // Vérification des conditions de base
         ItemStack pickaxe = plugin.getPickaxeManager().findPlayerPickaxe(player);
         if (pickaxe == null) {
-            player.sendActionBar("§c❌ Pioche légendaire introuvable!");
+            player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize("§c❌ Pioche légendaire introuvable!"));
             return;
         }
 
-        short currentDurability = pickaxe.getDurability();
+        short currentDurability = 0;
+        if (pickaxe.getItemMeta() instanceof Damageable damageable) {
+            currentDurability = (short) damageable.getDamage();
+        }
         short maxDurability = pickaxe.getType().getMaxDurability();
 
         // CORRIGÉ : Empêche la réparation si déjà à 100%
         if (currentDurability == 0) {
-            player.sendActionBar("§e⚠️ Votre pioche est déjà entièrement réparée!");
+            player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize("§e⚠️ Votre pioche est déjà entièrement réparée!"));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -274,21 +282,25 @@ public class PickaxeRepairGUI {
         MaxRepairResult maxRepair = calculateMaxRepair(currentDurability, maxDurability, playerData.getTokens(), playerData);
 
         if (maxRepair.repairPoints == 0) {
-            player.sendActionBar("§c❌ Tokens insuffisants pour toute réparation!");
+            player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize("§c❌ Tokens insuffisants pour toute réparation!"));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         // Vérification finale des tokens (sécurité)
         if (playerData.getTokens() < maxRepair.cost) {
-            player.sendActionBar("§c❌ Erreur: tokens insuffisants!");
+            player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize("§c❌ Erreur: tokens insuffisants!"));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         // Application de la réparation
         int newDurability = Math.max(0, currentDurability - maxRepair.repairPoints);
-        pickaxe.setDurability((short) newDurability);
+        ItemMeta meta = pickaxe.getItemMeta();
+        if (meta instanceof Damageable damageable) {
+            damageable.setDamage(newDurability);
+            pickaxe.setItemMeta(damageable);
+        }
 
         // Déduction des tokens
         playerData.removeTokens(maxRepair.cost);
@@ -304,8 +316,9 @@ public class PickaxeRepairGUI {
         player.removeMetadata("durability_notif_10", plugin);
 
         // Messages de succès
-        player.sendActionBar("§a✅ Pioche réparée: +" + String.format("%.1f%%", maxRepair.repairPercent) +
-                " (-" + NumberFormatter.format(maxRepair.cost) + " tokens)");
+        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(
+                "§a✅ Pioche réparée: +" + String.format("%.1f%%", maxRepair.repairPercent) +
+                        " (-" + NumberFormatter.format(maxRepair.cost) + " tokens)"));
 
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
         plugin.getActionBarTask().updateActionBarStatus();
@@ -408,7 +421,10 @@ public class PickaxeRepairGUI {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
 
         if (pickaxe != null) {
-            short currentDurability = pickaxe.getDurability();
+            short currentDurability = 0;
+            if (pickaxe.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable damageable) {
+                currentDurability = (short) damageable.getDamage();
+            }
             short maxDurability = pickaxe.getType().getMaxDurability();
 
             // CORRIGÉ : Calcul précis du pourcentage de santé

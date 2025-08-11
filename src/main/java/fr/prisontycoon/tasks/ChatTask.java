@@ -252,6 +252,7 @@ public class ChatTask extends BukkitRunnable {
             }
         }
 
+        assert player != null;
         if (plugin.getEnchantmentBookManager().isEnchantmentActive(player, "autosell") && autosellGained > 0) {
             summary.append("\n§7┃ §c§lAutoSell:§r ").append(NumberFormatter.format(autosellGained));
         }

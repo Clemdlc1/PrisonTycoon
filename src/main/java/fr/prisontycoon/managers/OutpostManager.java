@@ -16,6 +16,7 @@ import fr.prisontycoon.data.Gang;
 import fr.prisontycoon.data.OutpostData;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.quests.QuestType;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -664,7 +665,7 @@ public class OutpostManager {
                 } else {
                     // Afficher le progrès
                     int remaining = CAPTURE_TIME_SECONDS - (int) elapsed;
-                    player.sendActionBar("§6🏰 Capture: §a" + progress + "% §7(" + remaining + "s restantes)");
+                    player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize("§6🏰 Capture: §a" + progress + "% §7(" + remaining + "s restantes)"));
                 }
             }
         }, 20L, 20L); // Toutes les secondes

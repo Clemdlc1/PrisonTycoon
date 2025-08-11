@@ -3,15 +3,15 @@ package fr.prisontycoon.tasks;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
+import org.bukkit.scoreboard.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +28,8 @@ public class ScoreboardTask extends BukkitRunnable {
     // Gestion complète des scoreboards intégrée
     private final Map<Player, Scoreboard> playerScoreboards;
     private final Map<Player, Long> lastScoreboardUpdate;
+    // NOUVEAU : Formatter pour la date et l'heure
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private long tickCount = 0;
     private int updateCycles = 0;
 
@@ -107,9 +109,9 @@ public class ScoreboardTask extends BukkitRunnable {
         try {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 
-            // Objective principal
-            Objective objective = scoreboard.registerNewObjective("prison_stats", "dummy",
-                    ChatColor.GOLD + "✨ " + ChatColor.BOLD + "PRISON TYCOON" + ChatColor.GOLD + " ✨");
+            // Objective principal (API moderne)
+            Component displayName = LegacyComponentSerializer.legacySection().deserialize("§6✨ §lPRISON TYCOON§6 ✨");
+            Objective objective = scoreboard.registerNewObjective("prison_stats", Criteria.DUMMY, displayName);
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
             // Teams pour les lignes colorées
@@ -143,8 +145,8 @@ public class ScoreboardTask extends BukkitRunnable {
 
         for (String teamName : teamNames) {
             Team team = scoreboard.registerNewTeam(teamName);
-            team.addEntry(ChatColor.values()[teamNames.length - 1 -
-                    java.util.Arrays.asList(teamNames).indexOf(teamName)] + "");
+            int score = Integer.parseInt(teamName.replace("line", ""));
+            team.addEntry(entryKeyForScore(score));
         }
     }
 
@@ -200,35 +202,47 @@ public class ScoreboardTask extends BukkitRunnable {
         setScoreboardLine(scoreboard, objective, line--, " ");
 
         // Section économie
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.GOLD + "💰 " + ChatColor.BOLD + "ÉCONOMIE");
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Coins: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(coins));
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Tokens: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(tokens));
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Expérience: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(experience));
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.YELLOW + "Beacons: " +
-                ChatColor.WHITE + NumberFormatter.formatWithColor(beacons));
+        setScoreboardLine(scoreboard, objective, line--, "§6💰 §lÉCONOMIE");
+        setScoreboardLine(scoreboard, objective, line--, "§eCoins: §f" + NumberFormatter.formatWithColor(coins));
+        setScoreboardLine(scoreboard, objective, line--, "§eTokens: §f" + NumberFormatter.formatWithColor(tokens));
+        setScoreboardLine(scoreboard, objective, line--, "§eExpérience: §f" + NumberFormatter.formatWithColor(experience));
+        setScoreboardLine(scoreboard, objective, line--, "§eBeacons: §f" + NumberFormatter.formatWithColor(beacons));
 
         // Ligne vide
         setScoreboardLine(scoreboard, objective, line--, "  ");
 
         // Section statistiques avec distinction blocs minés/cassés
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.AQUA + "📊 " + ChatColor.BOLD + "STATISTIQUES");
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs minés: " +
-                ChatColor.BLUE + NumberFormatter.format(blocksMined));
+        setScoreboardLine(scoreboard, objective, line--, "§b📊 §lSTATISTIQUES");
+        setScoreboardLine(scoreboard, objective, line--, "§7Blocs minés: §9" + NumberFormatter.format(blocksMined));
 
         // Affiche les blocs cassés seulement si différent des blocs minés
         if (blocksDestroyed > blocksMined) {
-            setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "Blocs cassés: " +
-                    ChatColor.LIGHT_PURPLE + NumberFormatter.format(blocksDestroyed));
+            setScoreboardLine(scoreboard, objective, line--, "§7Blocs cassés: §d" + NumberFormatter.format(blocksDestroyed));
         }
 
-        // Ligne vide finale
-        setScoreboardLine(scoreboard, objective, line--, "     ");
+        // Ligne vide
+        setScoreboardLine(scoreboard, objective, line--, "   ");
+
+        // AJOUT : Date et heure
+        setScoreboardLine(scoreboard, objective, line--, "§7" + dateTimeFormatter.format(LocalDateTime.now()));
+
+        // AJOUT : Version du plugin (API moderne)
+        String pluginVersion;
+        try {
+            var pluginInstance = plugin.getServer().getPluginManager().getPlugin(plugin.getName());
+            pluginVersion = pluginInstance != null
+                    ? pluginInstance.getPluginMeta().getVersion()
+                    : "?";
+        } catch (Throwable ignored) {
+            pluginVersion = "?";
+        }
+        setScoreboardLine(scoreboard, objective, line--, "§7v" + pluginVersion);
+
+        // Ligne vide
+        setScoreboardLine(scoreboard, objective, line--, "    ");
 
         // Footer
-        setScoreboardLine(scoreboard, objective, line--, ChatColor.GRAY + "play.prisoncore.fr");
+        setScoreboardLine(scoreboard, objective, line--, "§6play.prisoncore.fr");
     }
 
     /**
@@ -255,15 +269,13 @@ public class ScoreboardTask extends BukkitRunnable {
             text = text.substring(0, 37) + "...";
         }
 
-        // Utilise un caractère invisible unique pour chaque ligne
-        String entry = ChatColor.values()[score % ChatColor.values().length] + "";
+        // Utilise une entrée unique et invisible par ligne
+        String entry = entryKeyForScore(score);
         Team team = scoreboard.getTeam("line" + score);
 
         if (team != null) {
-            String currentPrefix = team.getPrefix();
-            if (currentPrefix == null || !currentPrefix.equals(text)) {
-                team.setPrefix(text);
-            }
+            // prefix en Adventure (API moderne)
+            team.prefix(LegacyComponentSerializer.legacySection().deserialize(text));
 
             if (!team.hasEntry(entry)) {
                 team.addEntry(entry);
@@ -271,6 +283,11 @@ public class ScoreboardTask extends BukkitRunnable {
         }
 
         objective.getScore(entry).setScore(score);
+    }
+
+    private String entryKeyForScore(int score) {
+        // Utilise un format unique par score pour éviter conflits, caractères invisibles
+        return "§" + Integer.toHexString((score % 15) + 1);
     }
 
     /**

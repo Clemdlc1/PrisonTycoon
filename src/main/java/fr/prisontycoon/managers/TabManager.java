@@ -3,13 +3,13 @@ package fr.prisontycoon.managers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Gestionnaire pour le système de tab personnalisé avec teams de scoreboard
@@ -21,7 +21,6 @@ public class TabManager {
     private static final String ADMIN_TEAM = "01_admin";
     private static final String VIP_TEAM = "02_vip";
     private static final String PLAYER_TEAM = "03_joueur";
-    private static final DateTimeFormatter FOOTER_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     private final PrisonTycoon plugin;
     private BukkitRunnable tabUpdateTask;
 
@@ -47,7 +46,7 @@ public class TabManager {
         // Met à jour toutes les 20 ticks (1 seconde)
         tabUpdateTask.runTaskTimer(plugin, 0L, 20L);
 
-        plugin.getPluginLogger().info(ChatColor.GREEN + "TabManager démarré - Mise à jour toutes les secondes");
+        plugin.getPluginLogger().info("TabManager démarré - Mise à jour toutes les secondes");
     }
 
     /**
@@ -57,7 +56,7 @@ public class TabManager {
         if (tabUpdateTask != null) {
             tabUpdateTask.cancel();
             tabUpdateTask = null;
-            plugin.getPluginLogger().info(ChatColor.RED + "TabManager arrêté");
+            plugin.getPluginLogger().info("TabManager arrêté");
         }
     }
 
@@ -75,14 +74,10 @@ public class TabManager {
      */
     public void updatePlayerTab(Player player) {
         try {
-            // Header (en-tête du tab)
-            String header = buildTabHeader();
+            Component header = buildTabHeader();
+            Component footer = buildTabFooter(player);
 
-            // Footer (pied de page du tab)
-            String footer = buildTabFooter(player);
-
-            // Applique le header et footer
-            player.setPlayerListHeaderFooter(header, footer);
+            player.sendPlayerListHeaderAndFooter(header, footer);
 
             // Met à jour les teams pour le tri
             updatePlayerTeams(player);
@@ -92,42 +87,31 @@ public class TabManager {
         }
     }
 
-    /**
-     * Construit l'en-tête du tab
-     */
-    private String buildTabHeader() {
+    private Component buildTabHeader() {
         int onlinePlayers = plugin.getServer().getOnlinePlayers().size();
         int maxPlayers = plugin.getServer().getMaxPlayers();
-        String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
-
-        return separator + "\n" +
-                ChatColor.GOLD + ChatColor.BOLD + "⛏ PRISON TYCOON ⛏\n" +
-                ChatColor.GRAY + "Serveur de minage et de progression\n" +
-                ChatColor.YELLOW + "📊 Joueurs connectés: " + ChatColor.GREEN + onlinePlayers + ChatColor.GRAY + "/" + ChatColor.GREEN + maxPlayers + "\n" +
+        String separator = "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
+        String legacy = separator + "\n" +
+                "§6§l⛏ PRISON TYCOON ⛏\n" +
+                "§7Serveur de minage et de progression\n" +
+                "§e📊 Joueurs connectés: §a" + onlinePlayers + "§7/§a" + maxPlayers + "\n" +
                 separator;
+        return LegacyComponentSerializer.legacySection().deserialize(legacy);
     }
 
-    /**
-     * Construit le pied de page du tab avec les stats du joueur
-     */
-    private String buildTabFooter(Player player) {
+    private Component buildTabFooter(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
-        String version = plugin.getDescription().getVersion();
-        String now = LocalDateTime.now().format(FOOTER_TIME_FORMATTER);
-
-        return separator + "\n" +
-                ChatColor.GRAY + "Votre progression:\n" +
-                ChatColor.YELLOW + "💰 Coins: " + ChatColor.GOLD + NumberFormatter.format(playerData.getCoins()) + "\n" +
-                ChatColor.AQUA + "🎟 Tokens: " + ChatColor.DARK_AQUA + NumberFormatter.format(playerData.getTokens()) + "\n" +
-                ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
-                ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
-                ChatColor.DARK_PURPLE + "🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
+        String separator = "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
+        String legacy = separator + "\n" +
+                "§7Votre progression:\n" +
+                "§e💰 Coins: §6" + NumberFormatter.format(playerData.getCoins()) + "\n" +
+                "§b🎟 Tokens: §3" + NumberFormatter.format(playerData.getTokens()) + "\n" +
+                "§a⭐ Expérience: §2" + NumberFormatter.format(playerData.getExperience()) + "\n" +
+                "§d🏆 Rang: §f" + getCurrentRankDisplay(player) + "\n" +
+                "§5🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
                 separator + "\n" +
-                ChatColor.GRAY + "" + now + "\n" +
-                ChatColor.GRAY + "  •  v" + version + "\n" +
-                ChatColor.GOLD + "play.prisontycoon.fr";
-
+                "§6play.prisontycoon.fr";
+        return LegacyComponentSerializer.legacySection().deserialize(legacy);
     }
 
     /**
@@ -198,7 +182,7 @@ public class TabManager {
             team = scoreboard.registerNewTeam(teamName);
         }
 
-        team.setPrefix(prefix + " ");
+        team.prefix(LegacyComponentSerializer.legacySection().deserialize(prefix + " "));
         team.addEntry(player.getName());
     }
 
@@ -318,8 +302,18 @@ public class TabManager {
         if (scoreboard.getTeam(teamName) == null) {
             Team team = scoreboard.registerNewTeam(teamName);
             char colorChar = nameColorCode.charAt(1);
-            team.setColor(ChatColor.getByChar(colorChar));
+            team.color(toNamedTextColor(colorChar));
         }
+    }
+
+    private NamedTextColor toNamedTextColor(char legacyCode) {
+        return switch (legacyCode) {
+            case 'c' -> NamedTextColor.RED;
+            case '6' -> NamedTextColor.GOLD;
+            case '7' -> NamedTextColor.GRAY;
+            case 'a' -> NamedTextColor.GREEN;
+            default -> NamedTextColor.WHITE;
+        };
     }
 
     /**
