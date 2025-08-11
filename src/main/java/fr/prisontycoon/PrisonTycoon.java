@@ -312,6 +312,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new TankListener(this), this);
         pluginManager.registerEvents(new OutpostListener(this), this);
         pluginManager.registerEvents(new PluginLoadListener(this), this);
+        pluginManager.registerEvents(new MenuHeadProtectionListener(this), this);
         this.headCollectionListener = new HeadCollectionListener(this);
         pluginManager.registerEvents(this.headCollectionListener, this);
         logger.info("§aÉvénements enregistrés.");

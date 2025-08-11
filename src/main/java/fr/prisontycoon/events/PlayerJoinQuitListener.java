@@ -25,7 +25,7 @@ public class PlayerJoinQuitListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
-        event.setJoinMessage(null);
+        event.joinMessage(null);
         Player player = event.getPlayer();
         if (plugin.getModerationManager().isBanned(player.getUniqueId())) {
             var banData = plugin.getModerationManager().getBanData(player.getUniqueId());
@@ -94,7 +94,8 @@ public class PlayerJoinQuitListener implements Listener {
                 plugin.getAutoUpgradeTask().refreshPlayerPermissions(player.getUniqueId());
             }
 
-            // NOUVEAU : Force une mise à jour immédiate du scoreboard après tout
+            plugin.getGUIManager().giveMainMenuHead(player);
+
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (plugin.getScoreboardTask() != null) {
                     plugin.getScoreboardTask().forceUpdatePlayer(player);

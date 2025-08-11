@@ -63,7 +63,7 @@ public class MineManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                initializeMineHolograms();
+                resetAllMineHolograms();
                 // Reset toutes les mines au démarrage
                 resetAllMines();
             }
@@ -240,14 +240,49 @@ public class MineManager {
         }
     }
 
-    private List<ArmorStand> spawnHologramStack(Location base, int lines) {
+    /**
+     * Réinitialise complètement tous les hologrammes de mines.
+     * - Supprime les ArmorStands suivis
+     * - Nettoie les éventuels hologrammes orphelins proches
+     * - Recrée et met à jour les piles d'hologrammes
+     */
+    public void resetAllMineHolograms() {
+        // 1) Supprime les hologrammes suivis
+        for (List<ArmorStand> stands : mineHolograms.values()) {
+            for (ArmorStand s : stands) {
+                if (s != null && !s.isDead()) {
+                    s.remove();
+                }
+            }
+        }
+        mineHolograms.clear();
+
+        // 2) Nettoie les éventuels ArmorStands orphelins autour des bases d'hologrammes
+        for (String mineId : mines.keySet()) {
+            Location base = getMineHologramBase(mineId);
+            if (base == null || base.getWorld() == null) continue;
+
+            base.getWorld().getNearbyEntities(base, 2.0, 6.0, 2.0).forEach(entity -> {
+                if (entity instanceof ArmorStand as) {
+                    if (as.isMarker() && as.isCustomNameVisible()) {
+                        as.remove();
+                    }
+                }
+            });
+        }
+
+        // 3) Recrée et met à jour
+        initializeMineHolograms();
+    }
+
+    private List<ArmorStand> spawnHologramStack(Location base) {
         if (base == null || base.getWorld() == null) return List.of();
-        List<ArmorStand> list = new ArrayList<>(lines);
+        List<ArmorStand> list = new ArrayList<>(14);
         // Espacement ajusté pour la lisibilité
         double step = 0.45;
         // Inverser la création pour que la ligne 0 soit la plus haute
         Location currentLoc = base.clone();
-        for (int i = 0; i < lines; i++) {
+        for (int i = 0; i < 14; i++) {
             ArmorStand stand = base.getWorld().spawn(currentLoc, ArmorStand.class, s -> {
                 s.setInvisible(true);
                 s.setMarker(true);
@@ -266,7 +301,7 @@ public class MineManager {
         Location base = getMineHologramBase(mineId);
         if (base == null) return;
         // 8 lignes pour le nouvel affichage : Titre, Comp, Surcharge, Header Top, Top1, Top2, Top3, Vide
-        mineHolograms.put(mineId, spawnHologramStack(base, 14));
+        mineHolograms.put(mineId, spawnHologramStack(base));
     }
 
     /**
@@ -665,7 +700,7 @@ public class MineManager {
 
         int height = Math.max(1, max.y() - min.y() + 1);
         int maxYStep = Math.max(1, maxBlocksPerChunk / (stepX * stepZ)); // garantir volume <= maxBlocksPerChunk
-        int stepY = Math.min(height, Math.max(1, maxYStep));
+        int stepY = Math.min(height, maxYStep);
 
         for (int x = min.x(); x <= max.x(); x += stepX) {
             int maxX = Math.min(x + stepX - 1, max.x());

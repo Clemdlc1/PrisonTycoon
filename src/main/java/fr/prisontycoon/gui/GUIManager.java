@@ -1,6 +1,8 @@
 package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
+import fr.prisontycoon.utils.HeadEnum;
+import fr.prisontycoon.utils.HeadUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -28,6 +30,7 @@ public class GUIManager {
 
     private final PrisonTycoon plugin;
     private final NamespacedKey guiTypeKey;
+    private final NamespacedKey mainMenuHeadKey;
     private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacySection();
 
     // Cache des GUIs ouverts par joueur avec l'inventaire associé
@@ -39,6 +42,7 @@ public class GUIManager {
     public GUIManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.guiTypeKey = new NamespacedKey(plugin, "gui_type");
+        this.mainMenuHeadKey = new NamespacedKey(plugin, "main_menu_head");
     }
 
     // ===============================================================================================
@@ -274,5 +278,71 @@ public class GUIManager {
                 gui.setItem(i, (i % 2 == 0) ? glass1 : glass2);
             }
         }
+    }
+
+    // ===============================================================================================
+    // ITEM MENU PRINCIPAL (TÊTE GLOBE EN SLOT 9)
+    // ===============================================================================================
+
+    /**
+     * Crée l'item tête Globe ouvrant le menu principal.
+     */
+    public ItemStack createMainMenuHead() {
+        ItemStack head = HeadUtils.createHead(HeadEnum.GLOBE);
+        ItemMeta meta = head.getItemMeta();
+        if (meta != null) {
+            applyName(meta, "§6☰ §lMenu Principal");
+            applyLore(meta, java.util.List.of(
+                    "§7Clique droit pour ouvrir le menu.",
+                    "§8Protégé contre la perte/déplacement"
+            ));
+            meta.getPersistentDataContainer().set(mainMenuHeadKey, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+            head.setItemMeta(meta);
+        }
+        return head;
+    }
+
+    /**
+     * Vérifie si l'item est la tête de menu principal.
+     */
+    public boolean isMainMenuHead(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        Byte flag = item.getItemMeta().getPersistentDataContainer()
+                .get(mainMenuHeadKey, org.bukkit.persistence.PersistentDataType.BYTE);
+        return flag != null && flag == (byte) 1;
+    }
+
+    /**
+     * Donne/force la tête de menu dans le slot 8 (9e slot) du joueur avec gestion de remplacement.
+     */
+    public void giveMainMenuHead(org.bukkit.entity.Player player) {
+        if (player == null) return;
+        var inv = player.getInventory();
+        int targetSlot = 8; // 9e slot affiché
+        ItemStack current = inv.getItem(targetSlot);
+
+        // Si déjà la bonne tête, rien à faire
+        if (isMainMenuHead(current)) return;
+
+        ItemStack menuHead = createMainMenuHead();
+
+        // Si le slot est vide, place directement
+        if (current == null || current.getType() == Material.AIR) {
+            inv.setItem(targetSlot, menuHead);
+            return;
+        }
+
+        // Tente de déplacer l'item occupant vers un autre slot libre
+        int free = inv.firstEmpty();
+        if (free != -1) {
+            inv.setItem(free, current);
+            inv.setItem(targetSlot, menuHead);
+            return;
+        }
+
+        // Inventaire plein: remplace et dépose l'ancien au sol pour éviter la perte
+        inv.setItem(targetSlot, menuHead);
+        player.getWorld().dropItemNaturally(player.getLocation(), current);
+        player.sendMessage("§eVotre inventaire était plein, l'item du slot 9 a été déposé au sol.");
     }
 }

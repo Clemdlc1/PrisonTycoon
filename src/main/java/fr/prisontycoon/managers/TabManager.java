@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Gestionnaire pour le système de tab personnalisé avec teams de scoreboard
@@ -19,6 +21,7 @@ public class TabManager {
     private static final String ADMIN_TEAM = "01_admin";
     private static final String VIP_TEAM = "02_vip";
     private static final String PLAYER_TEAM = "03_joueur";
+    private static final DateTimeFormatter FOOTER_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     private final PrisonTycoon plugin;
     private BukkitRunnable tabUpdateTask;
 
@@ -110,6 +113,8 @@ public class TabManager {
     private String buildTabFooter(Player player) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String separator = ChatColor.DARK_GRAY + "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
+        String version = plugin.getDescription().getVersion();
+        String now = LocalDateTime.now().format(FOOTER_TIME_FORMATTER);
 
         return separator + "\n" +
                 ChatColor.GRAY + "Votre progression:\n" +
@@ -118,7 +123,11 @@ public class TabManager {
                 ChatColor.GREEN + "⭐ Expérience: " + ChatColor.DARK_GREEN + NumberFormatter.format(playerData.getExperience()) + "\n" +
                 ChatColor.LIGHT_PURPLE + "🏆 Rang: " + ChatColor.WHITE + getCurrentRankDisplay(player) + "\n" +
                 ChatColor.DARK_PURPLE + "🌟 Prestige: " + getPrestigeDisplay(player) + "\n" +
-                separator;
+                separator + "\n" +
+                ChatColor.GRAY + "" + now + "\n" +
+                ChatColor.GRAY + "  •  v" + version + "\n" +
+                ChatColor.GOLD + "play.prisontycoon.fr";
+
     }
 
     /**
