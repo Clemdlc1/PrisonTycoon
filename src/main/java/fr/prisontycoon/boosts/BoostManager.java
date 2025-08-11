@@ -71,7 +71,7 @@ public class BoostManager {
                 "",
                 "§8Boost Temporaire"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Ajoute les données persistantes
         meta.getPersistentDataContainer().set(boostTypeKey, PersistentDataType.STRING, type.name());

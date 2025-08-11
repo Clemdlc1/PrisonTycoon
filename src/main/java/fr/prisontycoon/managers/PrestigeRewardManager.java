@@ -258,7 +258,7 @@ public class PrestigeRewardManager {
             lore.add("§7Armure légendaire de prestige");
             lore.add("§6Niveau: P" + prestigeLevel);
             lore.add("§eEnchantements bonus selon le niveau");
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             armor.setItemMeta(meta);
         }
 
@@ -279,7 +279,7 @@ public class PrestigeRewardManager {
             lore.add("§7Épée légendaire de prestige");
             lore.add("§6Niveau: P" + prestigeLevel);
             lore.add("§eEnchantements bonus selon le niveau");
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             sword.setItemMeta(meta);
         }
 

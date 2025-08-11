@@ -360,7 +360,7 @@ public class PickaxeManager {
         lore.add("§6✨ §lPrisonTycoon §6✨");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
     }
 
     /**

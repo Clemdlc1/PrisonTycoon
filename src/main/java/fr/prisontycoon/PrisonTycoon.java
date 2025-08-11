@@ -89,7 +89,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutominerGUI autominerGUI;
     private BankGUI bankGUI;
     private BoostGUI boostGUI;
-    private CategoryMenuGUI categoryMenuGUI;
     private ContainerFilterGUI containerFilterGUI;
     private ContainerGUI containerGUI;
     private CrateGUI crateGUI;
@@ -266,7 +265,6 @@ public final class PrisonTycoon extends JavaPlugin {
 
         mainMenuGUI = new EnchantmentMenu(this);
         mainNavigationGUI = new MainMenuGUI(this);
-        categoryMenuGUI = new CategoryMenuGUI(this);
         enchantmentUpgradeGUI = new EnchantmentUpgradeGUI(this);
         cristalGUI = new CristalGUI(this);
         enchantmentBookGUI = new EnchantmentBookGUI(this);
@@ -527,7 +525,6 @@ public final class PrisonTycoon extends JavaPlugin {
     // --- GUIs ---
     public EnchantmentMenu getMainMenuGUI() { return mainMenuGUI; }
     public MainMenuGUI getMainNavigationGUI() { return mainNavigationGUI; }
-    public CategoryMenuGUI getCategoryMenuGUI() { return categoryMenuGUI; }
     public EnchantmentUpgradeGUI getEnchantmentUpgradeGUI() { return enchantmentUpgradeGUI; }
     public EnchantmentBookGUI getEnchantmentBookGUI() { return enchantmentBookGUI; }
     public BookShopGUI getBookShopGUI() { return bookShopGUI; }

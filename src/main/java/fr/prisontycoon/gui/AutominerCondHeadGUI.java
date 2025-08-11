@@ -210,7 +210,7 @@ public class AutominerCondHeadGUI {
                 lore.add("§cPas de valeur de vente");
             }
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             displayItem.setItemMeta(meta);
 
             inv.setItem(slot++, displayItem);

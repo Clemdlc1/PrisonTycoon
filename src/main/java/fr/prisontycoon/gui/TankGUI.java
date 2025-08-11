@@ -120,7 +120,7 @@ public class TankGUI implements Listener {
             ItemStack noPrice = new ItemStack(Material.BARRIER);
             ItemMeta meta = noPrice.getItemMeta();
             plugin.getGUIManager().applyName(meta,"§c❌ Aucun prix configuré");
-            meta.setLore(Arrays.asList(
+            plugin.getGUIManager().applyLore(meta, Arrays.asList(
                     "§7Ce tank n'achète aucun item",
                     "§7pour le moment"
             ));
@@ -135,7 +135,7 @@ public class TankGUI implements Listener {
                 ItemStack priceItem = new ItemStack(entry.getKey());
                 ItemMeta meta = priceItem.getItemMeta();
                 plugin.getGUIManager().applyName(meta,"§f" + entry.getKey().name().toLowerCase());
-                meta.setLore(Arrays.asList(
+                plugin.getGUIManager().applyLore(meta, Arrays.asList(
                         "§7Prix d'achat: §a" + NumberFormatter.format(entry.getValue()) + "$ §7par item",
                         "§7Stock actuel: §b" + NumberFormatter.format(tankData.getContents().getOrDefault(entry.getKey(), 0)),
                         "",
@@ -208,7 +208,7 @@ public class TankGUI implements Listener {
                 "§7Ce tank achète automatiquement les items",
                 "§7avec de l'argent prélevé sur votre compte"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -238,7 +238,7 @@ public class TankGUI implements Listener {
                 "§7vos items aux prix affichés!"
         ));
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -260,7 +260,7 @@ public class TankGUI implements Listener {
         lore.add("§7Le nom apparaîtra au-dessus du tank");
         lore.add("§7en plus des informations techniques");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -294,7 +294,7 @@ public class TankGUI implements Listener {
             }
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -332,7 +332,7 @@ public class TankGUI implements Listener {
         lore.add("");
         lore.add("§7Clic: §bRécupérer tout le contenu");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -367,7 +367,7 @@ public class TankGUI implements Listener {
             }
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -387,7 +387,7 @@ public class TankGUI implements Listener {
                 "§7Vous pouvez filtrer n'importe",
                 "§7quel matériau ou bloc du jeu"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -406,7 +406,7 @@ public class TankGUI implements Listener {
                 "",
                 "§c⚠ Action irréversible!"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -425,7 +425,7 @@ public class TankGUI implements Listener {
                 "",
                 "§6⚠ Action irréversible!"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -444,7 +444,7 @@ public class TankGUI implements Listener {
                 "",
                 "§c⚠ Vérifiez que vous avez assez de place!"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -480,7 +480,7 @@ public class TankGUI implements Listener {
             lore.add("§7Clic droit: §eConfigurer le prix");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -492,7 +492,7 @@ public class TankGUI implements Listener {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         plugin.getGUIManager().applyName(meta,"§f" + material.name().toLowerCase());
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Clic pour ajouter ce matériau",
                 "§7aux filtres du tank",
                 "",
@@ -510,7 +510,7 @@ public class TankGUI implements Listener {
         ItemStack item = new ItemStack(Material.ARROW);
         ItemMeta meta = item.getItemMeta();
         plugin.getGUIManager().applyName(meta,"§7← Retour");
-        meta.setLore(List.of("§7Retour au menu principal"));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retour au menu principal"));
         item.setItemMeta(meta);
         return item;
     }
@@ -522,7 +522,7 @@ public class TankGUI implements Listener {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         plugin.getGUIManager().applyName(meta,"§c✗ Fermer");
-        meta.setLore(List.of("§7Fermer cette interface"));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Fermer cette interface"));
         item.setItemMeta(meta);
         return item;
     }

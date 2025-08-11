@@ -201,7 +201,7 @@ public class SellHandManager {
                 "",
                 "§7Multiplicateur appliqué aux prix de vente"
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
     }
 
     /**

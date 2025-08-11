@@ -156,7 +156,7 @@ public class EnchantmentBookGUI {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -188,7 +188,7 @@ public class EnchantmentBookGUI {
         ItemStack shopButton = new ItemStack(Material.EMERALD);
         ItemMeta shopMeta = shopButton.getItemMeta();
         plugin.getGUIManager().applyName(shopMeta,"§a💰 §lBoutique de Livres");
-        shopMeta.setLore(List.of(
+        plugin.getGUIManager().applyLore(shopMeta, List.of(
                 "§7Accédez à la boutique dédiée",
                 "§7Pioches ou Épées/Armures"
         ));
@@ -210,7 +210,7 @@ public class EnchantmentBookGUI {
         lore.add("§e➤ Cliquez pour voir le résumé!");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         gui.setItem(SUMMARY_SLOT, item);
     }
@@ -372,7 +372,7 @@ public class EnchantmentBookGUI {
         errorLore.add("§7Vérifiez vos ressources et réessayez.");
         errorLore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(errorLore);
+        plugin.getGUIManager().applyLore(meta, errorLore);
         errorItem.setItemMeta(meta);
 
         // Afficher l'erreur temporairement

@@ -328,7 +328,7 @@ public class ContainerManager {
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         lore.add("§e⚙️ §aShift + Clic droit §7pour configurer");
         lore.add("§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
     }
 
     public ItemStack createContainer(int tier) {

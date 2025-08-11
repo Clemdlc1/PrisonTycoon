@@ -204,7 +204,7 @@ public class EnchantmentBookManager {
         lore.add("§e⚡ Pouvoir: §d" + getEnchantmentPowerDescription(book.getId())); // UNIFORMISÉ
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Marquer l'item comme livre d'enchantement physique
         meta.getPersistentDataContainer().set(

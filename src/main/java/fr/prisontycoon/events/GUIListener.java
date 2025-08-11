@@ -119,9 +119,7 @@ public class GUIListener implements Listener {
     private void handleGUIClick(Player player, GUIType guiType, int slot, ItemStack item, org.bukkit.event.inventory.ClickType clickType) {
         switch (guiType) {
             case MAIN_MENU -> plugin.getMainNavigationGUI().handleClick(player, item);
-            case ENCHANTMENT_MENU -> plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item);
-
-            case CATEGORY_ENCHANT -> plugin.getCategoryMenuGUI().handleCategoryMenuClick(player, slot, item, clickType);
+            case ENCHANTMENT_MENU -> plugin.getMainMenuGUI().handleEnchantmentMenuClick(player, slot, item, clickType);
 
             case ENCHANTMENT_UPGRADE ->
                     plugin.getEnchantmentUpgradeGUI().handleUpgradeMenuClick(player, slot, item, guiManager.getGUIData(player, "enchantment"));

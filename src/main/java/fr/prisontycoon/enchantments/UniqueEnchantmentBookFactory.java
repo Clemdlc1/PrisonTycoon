@@ -75,7 +75,7 @@ public class UniqueEnchantmentBookFactory {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Marquer comme livre d'enchantement unique
         meta.getPersistentDataContainer().set(uniqueBookKey, PersistentDataType.STRING, enchantId);
@@ -139,7 +139,7 @@ public class UniqueEnchantmentBookFactory {
         lore.add("§e➤ Cliquez pour acheter le livre!");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Marquer comme item de boutique
         meta.getPersistentDataContainer().set(

@@ -147,7 +147,7 @@ public class CristalGUI {
                 // Marque pour l'action de retrait
                 meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "remove");
                 meta.getPersistentDataContainer().set(cristalUuidKey, PersistentDataType.STRING, cristal.getUuid());
-                meta.setLore(lore);
+                plugin.getGUIManager().applyLore(meta, lore);
                 cristalItem.setItemMeta(meta);
 
                 inv.setItem(slots[i], cristalItem);

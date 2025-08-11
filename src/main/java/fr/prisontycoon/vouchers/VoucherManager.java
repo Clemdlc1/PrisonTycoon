@@ -59,7 +59,7 @@ public class VoucherManager {
                 "",
                 "§8Voucher Tier " + tier
         );
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Ajoute les données persistantes
         meta.getPersistentDataContainer().set(voucherTypeKey, PersistentDataType.STRING, type.name());

@@ -270,7 +270,7 @@ public class PrestigeGUI {
             lore.add("");
             lore.addAll(statusLore);
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             item.setItemMeta(meta);
         }
 
@@ -394,7 +394,7 @@ public class PrestigeGUI {
             lore.add("");
             lore.addAll(statusLore);
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             item.setItemMeta(meta);
         }
 
@@ -762,7 +762,7 @@ public class PrestigeGUI {
                 lore.add("§7Atteignez le prestige 1 pour débloquer des bonus!");
             }
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             item.setItemMeta(meta);
         }
 
@@ -952,7 +952,7 @@ public class PrestigeGUI {
                 lore.add("§e➤ Cliquez pour voir les prestiges");
             }
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
 
             // Action pour ouvrir le menu combiné
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_combined");
@@ -994,7 +994,7 @@ public class PrestigeGUI {
                 lore.add("§eCliquez pour réinitialiser");
             }
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
 
             if (hasEnoughBeacons && hasTalents) {
                 meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "reset_talents");
@@ -1012,7 +1012,7 @@ public class PrestigeGUI {
 
         if (meta != null) {
             plugin.getGUIManager().applyName(meta,"§6🚀 Effectuer Prestige " + nextLevel);
-            meta.setLore(List.of(
+            plugin.getGUIManager().applyLore(meta, List.of(
                     "§7Passez au niveau de prestige suivant",
                     "§7et débloquez de nouveaux bonus!",
                     "",
@@ -1035,7 +1035,7 @@ public class PrestigeGUI {
 
         if (meta != null) {
             plugin.getGUIManager().applyName(meta,"§c🔒 Prestige Verrouillé");
-            meta.setLore(List.of(
+            plugin.getGUIManager().applyLore(meta, List.of(
                     "§7Vous devez remplir les conditions",
                     "§7pour effectuer un prestige",
                     "",
@@ -1059,7 +1059,7 @@ public class PrestigeGUI {
             List<String> lore = new ArrayList<>();
             lore.add("§7Aller à la page " + (targetPage + 1));
             lore.add("§e➤ Cliquez pour naviguer");
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
 
             // CORRECTION: Utiliser la bonne action et clé
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "page_navigation");
@@ -1090,7 +1090,7 @@ public class PrestigeGUI {
 
         if (meta != null) {
             plugin.getGUIManager().applyName(meta,"§e❓ Aide");
-            meta.setLore(List.of(
+            plugin.getGUIManager().applyLore(meta, List.of(
                     "§7Le système de prestige vous permet",
                     "§7de recommencer avec des bonus permanents",
                     "",
@@ -1211,7 +1211,7 @@ public class PrestigeGUI {
             lore.add("");
             lore.add("§e➤ Cliquez pour voir la progression détaillée");
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 

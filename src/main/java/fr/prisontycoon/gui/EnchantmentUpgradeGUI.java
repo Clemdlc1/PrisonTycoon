@@ -68,11 +68,7 @@ public class EnchantmentUpgradeGUI {
      */
     public void handleUpgradeMenuClick(Player player, int slot, ItemStack item, String title) {
         if (slot == 18) { // Bouton retour
-            String enchantmentName = extractEnchantmentNameFromTitle(title);
-            CustomEnchantment enchantment = plugin.getEnchantmentManager().getEnchantment(enchantmentName);
-            if (enchantment != null) {
-                plugin.getCategoryMenuGUI().openCategoryMenu(player, enchantment.getCategory());
-            }
+            plugin.getMainMenuGUI().openEnchantmentMenu(player);
             return;
         }
 
@@ -95,7 +91,8 @@ public class EnchantmentUpgradeGUI {
 
         // Boutons d'amélioration fixes
         if (item != null && item.hasItemMeta()) {
-            String displayName = item.getItemMeta().getDisplayName();
+            String displayName = item.getItemMeta().displayName() != null ?
+                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(item.getItemMeta().displayName()) : "";
             String enchantmentName = extractEnchantmentNameFromTitle(title);
 
             // On teste les plus grands nombres en premier.
@@ -234,7 +231,7 @@ public class EnchantmentUpgradeGUI {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -420,7 +417,7 @@ public class EnchantmentUpgradeGUI {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -498,7 +495,7 @@ public class EnchantmentUpgradeGUI {
         lore.add("§e✨ Cliquez pour " + (autoEnabled ? "désactiver" : "activer"));
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -525,7 +522,7 @@ public class EnchantmentUpgradeGUI {
         lore.add("§7intervention manuelle.");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -555,7 +552,7 @@ public class EnchantmentUpgradeGUI {
                 playerData.setAutoUpgrade(enchantmentName, false);
                 if (!silent) {
                     player.sendMessage("§2🏆 " + enchantment.getDisplayName() + " §2niveau maximum atteint!");
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.getCategoryMenuGUI().openCategoryMenu(player, enchantment.getCategory()), 10L);
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.getMainMenuGUI().openEnchantmentMenu(player), 10L);
                 }
             } else if (!silent) {
                 openEnchantmentUpgradeMenu(player, enchantmentName);
@@ -675,7 +672,7 @@ public class EnchantmentUpgradeGUI {
         lore.add("§7│ §aExpérience: §2" + NumberFormatter.format(playerData.getExperience()));
         lore.add("§7└ §7Enchantements actifs: §b" + playerData.getEnchantmentLevels().size());
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         head.setItemMeta(meta);
 
         return head;
@@ -686,7 +683,7 @@ public class EnchantmentUpgradeGUI {
         ItemMeta meta = arrow.getItemMeta();
 
         plugin.getGUIManager().applyName(meta,"§7← §lRetour");
-        meta.setLore(List.of("§7Retourner au menu précédent"));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu précédent"));
 
         arrow.setItemMeta(meta);
         return arrow;

@@ -206,7 +206,7 @@ public class AutominerEnchantUpgradeGUI {
 
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(enchantKey, PersistentDataType.STRING, enchantmentName);
         meta.getPersistentDataContainer().set(slotKey, PersistentDataType.INTEGER, autominerSlot);
         meta.getPersistentDataContainer().set(amountKey, PersistentDataType.INTEGER, requestedLevels);
@@ -247,10 +247,10 @@ public class AutominerEnchantUpgradeGUI {
             addEffectDescription(lore, enchantmentName, currentLevel, currentLevel + maxAffordable);
             lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
         } else {
             plugin.getGUIManager().applyName(meta,"§c❌ §lAUCUNE AMÉLIORATION POSSIBLE");
-            meta.setLore(Arrays.asList(
+            plugin.getGUIManager().applyLore(meta, Arrays.asList(
                     "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                     "§c❌ §lPAS D'AMÉLIORATION POSSIBLE",
                     "§7▸ §cNiveau maximum atteint ou pas assez de tokens",
@@ -492,7 +492,7 @@ public class AutominerEnchantUpgradeGUI {
                 (maxLevel == Integer.MAX_VALUE ? "∞" : maxLevel));
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         head.setItemMeta(meta);
 
         return head;
@@ -502,7 +502,7 @@ public class AutominerEnchantUpgradeGUI {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         plugin.getGUIManager().applyName(meta,"§c« Retour");
-        meta.setLore(List.of("§7Retourner au menu d'amélioration"));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retourner au menu d'amélioration"));
         item.setItemMeta(meta);
         return item;
     }

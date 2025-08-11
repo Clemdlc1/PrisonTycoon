@@ -89,7 +89,7 @@ public class TankManager {
         meta.getPersistentDataContainer().set(tankKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(tankIdKey, PersistentDataType.STRING, tankId);
         plugin.getGUIManager().applyName(meta,"§6⚡ Tank Automatique");
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Propriétaire: §e" + owner.getName(),
                 "§7Capacité: §b" + NumberFormatter.format(TankData.MAX_CAPACITY) + " items",
                 "§7Filtres: §cAucun",
@@ -246,7 +246,7 @@ public class TankManager {
                 "§7▸ Shift + Clic (placé) pour vendre avec Sell Hand",
                 "§7▸ Clic droit (placé) pour vendre ou voir les prix"
         ));
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
     }
 
     public boolean sellToTank(Location tankLocation, Player seller, ItemStack itemToSell) {

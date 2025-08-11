@@ -90,7 +90,7 @@ public class GangGUI {
                 createLore.add("§c  - Beacons insuffisants");
             }
         }
-        createMeta.setLore(createLore);
+        plugin.getGUIManager().applyLore(createMeta, createLore);
         createGang.setItemMeta(createMeta);
         gui.setItem(11, createGang);
 
@@ -104,7 +104,7 @@ public class GangGUI {
         listLore.add("§7les gangs du serveur.");
         listLore.add("");
         listLore.add("§a▶ Cliquez pour voir!");
-        listMeta.setLore(listLore);
+        plugin.getGUIManager().applyLore(createMeta, listLore);
         listGangs.setItemMeta(listMeta);
         gui.setItem(13, listGangs);
 
@@ -134,7 +134,7 @@ public class GangGUI {
             inviteLore.add("§8Les invitations apparaîtront ici");
         }
 
-        inviteMeta.setLore(inviteLore);
+        plugin.getGUIManager().applyLore(inviteMeta, inviteLore);
         invitations.setItemMeta(inviteMeta);
         gui.setItem(15, invitations);
 
@@ -178,7 +178,7 @@ public class GangGUI {
             infoLore.add("§7Votre rôle: " + playerRole.getDisplayName());
             infoLore.add("");
             infoLore.add("§a▶ Cliquez pour plus d'infos!");
-            bannerMeta.setLore(infoLore);
+            plugin.getGUIManager().applyLore(bannerMeta, infoLore);
 
             // Appliquer les motifs de la bannière UNIQUEMENT s'ils existent
             List<org.bukkit.block.banner.Pattern> patterns = gang.getBannerPatterns();
@@ -204,7 +204,7 @@ public class GangGUI {
         membersLore.add("§7Membres: §a" + gang.getMembers().size() + "§7/§a" + gang.getMaxMembers());
         membersLore.add("");
         membersLore.add("§a▶ Cliquez pour voir!");
-        membersMeta.setLore(membersLore);
+        plugin.getGUIManager().applyLore(membersMeta, membersLore);
         members.setItemMeta(membersMeta);
         gui.setItem(10, members);
 
@@ -222,7 +222,7 @@ public class GangGUI {
         bankLore.add("§7• Boosts temporaires");
         bankLore.add("");
         bankLore.add("§a▶ Cliquez pour déposer!");
-        bankMeta.setLore(bankLore);
+        plugin.getGUIManager().applyLore(bankMeta, bankLore);
         bank.setItemMeta(bankMeta);
         gui.setItem(12, bank);
 
@@ -247,7 +247,7 @@ public class GangGUI {
                 upgradeLore.add("§a✅ Niveau maximum atteint!");
             }
 
-            upgradeMeta.setLore(upgradeLore);
+            plugin.getGUIManager().applyLore(upgradeMeta, upgradeLore);
             upgrade.setItemMeta(upgradeMeta);
             gui.setItem(14, upgrade);
         }
@@ -264,7 +264,7 @@ public class GangGUI {
         talentsLore.add("§7Talents actifs: §a" + gang.getTalents().size());
         talentsLore.add("");
         talentsLore.add("§a▶ Cliquez pour voir!");
-        talentsMeta.setLore(talentsLore);
+        plugin.getGUIManager().applyLore(talentsMeta, talentsLore);
         talents.setItemMeta(talentsMeta);
         gui.setItem(16, talents);
 
@@ -278,7 +278,7 @@ public class GangGUI {
         shopLore.add("§7et autres objets pour le gang.");
         shopLore.add("");
         shopLore.add("§a▶ Cliquez pour acheter!");
-        shopMeta.setLore(shopLore);
+        plugin.getGUIManager().applyLore(shopMeta, shopLore);
         shop.setItemMeta(shopMeta);
         gui.setItem(28, shop);
 
@@ -294,7 +294,7 @@ public class GangGUI {
         chatLore.add("§7Commande: §e/g <message>");
         chatLore.add("");
         chatLore.add("§8Cliquez pour fermer le menu");
-        chatMeta.setLore(chatLore);
+        plugin.getGUIManager().applyLore(chatMeta, chatLore);
         chat.setItemMeta(chatMeta);
         gui.setItem(30, chat);
 
@@ -314,7 +314,7 @@ public class GangGUI {
             }
             settingsLore.add("");
             settingsLore.add("§a▶ Cliquez pour gérer!");
-            settingsMeta.setLore(settingsLore);
+            plugin.getGUIManager().applyLore(settingsMeta, settingsLore);
             settings.setItemMeta(settingsMeta);
             gui.setItem(32, settings);
         }
@@ -329,7 +329,7 @@ public class GangGUI {
             leaveLore.add("§cQuitte définitivement ce gang.");
             leaveLore.add("");
             leaveLore.add("§c▶ Cliquez pour quitter!");
-            leaveMeta.setLore(leaveLore);
+            plugin.getGUIManager().applyLore(leaveMeta, leaveLore);
             leave.setItemMeta(leaveMeta);
             gui.setItem(34, leave);
         }
@@ -371,7 +371,7 @@ public class GangGUI {
             infoLore.add("");
         }
         infoLore.add("§7Chef: §6" + getPlayerName(gang.getLeader()));
-        infoMeta.setLore(infoLore);
+        plugin.getGUIManager().applyLore(infoMeta, infoLore);
         info.setItemMeta(infoMeta);
         gui.setItem(10, info);
 
@@ -406,7 +406,7 @@ public class GangGUI {
         membersLore.addAll(officers);
         membersLore.addAll(regularMembers);
 
-        membersMeta.setLore(membersLore);
+        plugin.getGUIManager().applyLore(membersMeta, membersLore);
         members.setItemMeta(membersMeta);
         gui.setItem(12, members);
 
@@ -439,7 +439,7 @@ public class GangGUI {
             statsLore.add("§7Cosmétiques: §a✅");
         }
 
-        statsMeta.setLore(statsLore);
+        plugin.getGUIManager().applyLore(statsMeta, statsLore);
         stats.setItemMeta(statsMeta);
         gui.setItem(14, stats);
 
@@ -461,7 +461,7 @@ public class GangGUI {
             }
         }
 
-        talentsMeta.setLore(talentsLore);
+        plugin.getGUIManager().applyLore(membersMeta, membersLore);
         talents.setItemMeta(talentsMeta);
         gui.setItem(16, talents);
 
@@ -499,7 +499,7 @@ public class GangGUI {
         currentLore.add("");
         currentLore.add("§7Avantages actuels:");
         currentLore.addAll(plugin.getGangManager().getLevelBenefits(gang.getLevel()));
-        currentMeta.setLore(currentLore);
+        plugin.getGUIManager().applyLore(currentMeta, currentLore);
         currentLevel.setItemMeta(currentMeta);
         gui.setItem(11, currentLevel);
 
@@ -528,7 +528,7 @@ public class GangGUI {
                 nextLore.add("§7Manque: §c" + NumberFormatter.format(cost - gang.getBankBalance()) + " coins");
             }
 
-            nextMeta.setLore(nextLore);
+            plugin.getGUIManager().applyLore(nextMeta, nextLore);
             nextLevel.setItemMeta(nextMeta);
             gui.setItem(15, nextLevel);
         } else {
@@ -543,7 +543,7 @@ public class GangGUI {
             maxLore.add("");
             maxLore.add("§7Tous les avantages sont débloqués:");
             maxLore.addAll(plugin.getGangManager().getLevelBenefits(10));
-            maxMeta.setLore(maxLore);
+            plugin.getGUIManager().applyLore(maxMeta, maxLore);
             maxLevel.setItemMeta(maxMeta);
             gui.setItem(13, maxLevel);
         }
@@ -595,7 +595,7 @@ public class GangGUI {
             bannerLore.add("§7Prix: §e1,000 beacons");
             bannerLore.add("");
             bannerLore.add("§a▶ Cliquez pour acheter!");
-            bannerMeta.setLore(bannerLore);
+            plugin.getGUIManager().applyLore(bannerMeta, bannerLore);
             banner.setItemMeta(bannerMeta);
             gui.setItem(49, banner);
         }
@@ -630,7 +630,7 @@ public class GangGUI {
         instructionsLore.add("§73. Cliquez sur 'Confirmer' pour l'enregistrer");
         instructionsLore.add("");
         instructionsLore.add("§aCette bannière représentera votre gang!");
-        instructionsMeta.setLore(instructionsLore);
+        plugin.getGUIManager().applyLore(instructionsMeta, instructionsLore);
         instructions.setItemMeta(instructionsMeta);
         gui.setItem(4, instructions);
 
@@ -647,7 +647,7 @@ public class GangGUI {
         confirmLore.add("§7comme bannière officielle du gang.");
         confirmLore.add("");
         confirmLore.add("§a▶ Cliquez pour confirmer!");
-        confirmMeta.setLore(confirmLore);
+        plugin.getGUIManager().applyLore(confirmMeta, confirmLore);
         confirm.setItemMeta(confirmMeta);
         gui.setItem(20, confirm);
 
@@ -752,7 +752,7 @@ public class GangGUI {
         lore.add("");
         lore.add("§a▶ Cliquez pour plus d'infos!");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -781,7 +781,7 @@ public class GangGUI {
             lore.add("§c❌ Beacons insuffisants");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -923,7 +923,7 @@ public class GangGUI {
                 lore.add("§c🗙 Shift+Clic: Expulser");
             }
 
-            meta.setLore(lore);
+            plugin.getGUIManager().applyLore(meta, lore);
             memberItem.setItemMeta(meta);
             gui.setItem(slot, memberItem);
 
@@ -944,7 +944,7 @@ public class GangGUI {
             inviteLore.add("§7dans votre gang.");
             inviteLore.add("");
             inviteLore.add("§a▶ Cliquez pour fermer et utiliser /gang invite <joueur>");
-            inviteMeta.setLore(inviteLore);
+            plugin.getGUIManager().applyLore(inviteMeta, inviteLore);
             invite.setItemMeta(inviteMeta);
             gui.setItem(49, invite);
         }
@@ -1015,7 +1015,7 @@ public class GangGUI {
         infoLore.add("");
         infoLore.add("§7Les talents améliorent tous les");
         infoLore.add("§7membres du gang de façon permanente.");
-        infoMeta.setLore(infoLore);
+        plugin.getGUIManager().applyLore(infoMeta, infoLore);
         info.setItemMeta(infoMeta);
         gui.setItem(4, info);
 
@@ -1066,7 +1066,7 @@ public class GangGUI {
             lore.add("§a▶ Cliquez pour acheter!");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }
@@ -1103,7 +1103,7 @@ public class GangGUI {
             descLore.add("§c❌ Réservé au chef");
         }
 
-        descMeta.setLore(descLore);
+        plugin.getGUIManager().applyLore(descMeta, descLore);
         description.setItemMeta(descMeta);
         gui.setItem(10, description);
 
@@ -1119,7 +1119,7 @@ public class GangGUI {
             renameLore.add("§7Coût: §65,000 beacons");
             renameLore.add("");
             renameLore.add("§a▶ Cliquez pour fermer et utiliser /gang rename <nom>");
-            renameMeta.setLore(renameLore);
+            plugin.getGUIManager().applyLore(renameMeta, renameLore);
             rename.setItemMeta(renameMeta);
             gui.setItem(12, rename);
         }
@@ -1134,7 +1134,7 @@ public class GangGUI {
             bannerLore.add("§7pour représenter votre gang.");
             bannerLore.add("");
             bannerLore.add("§a▶ Cliquez pour ouvrir!");
-            bannerMeta.setLore(bannerLore);
+            plugin.getGUIManager().applyLore(bannerMeta, bannerLore);
             bannerCreator.setItemMeta(bannerMeta);
             gui.setItem(14, bannerCreator);
         } else {
@@ -1147,7 +1147,7 @@ public class GangGUI {
             bannerLore.add("§7pour représenter votre gang.");
             bannerLore.add("");
             bannerLore.add("§a▶ Déblocable à partir du niveau 2");
-            bannerMeta.setLore(bannerLore);
+            plugin.getGUIManager().applyLore(bannerMeta, bannerLore);
             bannerCreator.setItemMeta(bannerMeta);
             gui.setItem(14, bannerCreator);
         }
@@ -1164,7 +1164,7 @@ public class GangGUI {
             dissolveLore.add("§cdéfinitivement le gang!");
             dissolveLore.add("");
             dissolveLore.add("§c▶ Cliquez pour fermer et utiliser /gang disband");
-            dissolveMeta.setLore(dissolveLore);
+            plugin.getGUIManager().applyLore(dissolveMeta, dissolveLore);
             dissolve.setItemMeta(dissolveMeta);
             gui.setItem(32, dissolve);
         }
@@ -1180,7 +1180,7 @@ public class GangGUI {
             transferLore.add("§7à un autre membre.");
             transferLore.add("");
             transferLore.add("§a▶ Cliquez pour fermer et utiliser /gang transfer <joueur>");
-            transferMeta.setLore(transferLore);
+            plugin.getGUIManager().applyLore(transferMeta, transferLore);
             transfer.setItemMeta(transferMeta);
             gui.setItem(16, transfer);
         }
@@ -1390,7 +1390,7 @@ public class GangGUI {
             lore.add("§7Voici la bannière actuelle de votre gang.");
             lore.add("§e▶ Clic-gauche pour la retirer et travailler sur une nouvelle.");
             lore.add("§e▶ Placez une autre bannière pour commencer à la modifier.");
-            bannerMeta.setLore(lore);
+            plugin.getGUIManager().applyLore(bannerMeta, lore);
 
             banner.setItemMeta(bannerMeta);
             return banner;
@@ -1404,7 +1404,7 @@ public class GangGUI {
             lore.add("");
             lore.add("§7Cliquez sur une bannière dans votre inventaire");
             lore.add("§7pour commencer à la personnaliser.");
-            placeholderMeta.setLore(lore);
+            plugin.getGUIManager().applyLore(placeholderMeta, lore);
 
             placeholder.setItemMeta(placeholderMeta);
             return placeholder;

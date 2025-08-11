@@ -467,9 +467,9 @@ public class BlackMarketManager {
                     lore.add("§a§l➤ CLIC pour acheter");
                 }
                 lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-                meta.setLore(lore);
+                plugin.getGUIManager().applyLore(meta, lore);
                 if (alreadyPurchased) {
-                    displayItem.setType(Material.BARRIER);
+                    displayItem.withType(Material.BARRIER);
                     plugin.getGUIManager().applyName(meta,"§c§l" + (meta.getDisplayName() != null ? meta.getDisplayName() : item.getType().name()) + " §7(Déjà acheté)");
                 }
                 displayItem.setItemMeta(meta);
@@ -483,7 +483,7 @@ public class BlackMarketManager {
         ItemStack infoItem = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = infoItem.getItemMeta();
         plugin.getGUIManager().applyName(infoMeta,"§e§lINFORMATIONS");
-        infoMeta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(infoMeta, Arrays.asList(
                 "§7▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
                 "§8⚫ Marché Noir ⚫",
                 "§7Commerce d'objets rares et dangereux",
@@ -607,7 +607,7 @@ public class BlackMarketManager {
                 ItemStack scamItem = new ItemStack(Material.ROTTEN_FLESH);
                 ItemMeta scamMeta = scamItem.getItemMeta();
                 plugin.getGUIManager().applyName(scamMeta,"§c§lArticle Défectueux");
-                scamMeta.setLore(Arrays.asList("§7Vous vous êtes fait arnaquer...", "§cLa prochaine fois, soyez plus prudent!"));
+                plugin.getGUIManager().applyLore(scamMeta, Arrays.asList("§7Vous vous êtes fait arnaquer...", "§cLa prochaine fois, soyez plus prudent!"));
                 scamItem.setItemMeta(scamMeta);
                 if (player.getInventory().firstEmpty() == -1) {
                     player.getWorld().dropItemNaturally(player.getLocation(), scamItem);
@@ -629,7 +629,7 @@ public class BlackMarketManager {
         if (meta != null && meta.getLore() != null) {
             List<String> lore = new ArrayList<>(meta.getLore());
             lore.removeIf(line -> line.contains("Prix:") || line.contains("Catégorie:") || line.contains("▬") || line.contains("CLIC pour acheter") || line.contains("DÉJÀ ACHETÉ"));
-            meta.setLore(lore.isEmpty() ? null : lore);
+            plugin.getGUIManager().applyLore(meta, (lore.isEmpty() ? null : lore));
             cleanItem.setItemMeta(meta);
         }
         if (player.getInventory().firstEmpty() == -1) {

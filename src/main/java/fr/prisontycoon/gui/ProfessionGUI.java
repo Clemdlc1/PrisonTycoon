@@ -4,7 +4,6 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.ProfessionManager;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -211,7 +210,7 @@ public class ProfessionGUI {
             lore.add("§cTalent déjà au maximum");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         if (canUpgrade && !isActive) {
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "upgrade_talent_level");
@@ -266,7 +265,7 @@ public class ProfessionGUI {
             lore.add("§cKit niveau " + (targetLevel - 1) + " requis d'abord");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         if (canUpgrade) {
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "upgrade_kit_level");
@@ -290,7 +289,7 @@ public class ProfessionGUI {
         String pageInfo = direction.equals("prev") ? "§7Niveaux 1-5" : "§7Niveaux 6-10";
 
         plugin.getGUIManager().applyName(meta,displayName);
-        meta.setLore(Arrays.asList(pageInfo, "", "§e▶ Cliquez pour changer de page"));
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(pageInfo, "", "§e▶ Cliquez pour changer de page"));
 
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, direction + "_page");
         meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, professionId);
@@ -317,7 +316,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour ouvrir !");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "view_talents_kits");
         meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, professionId);
         item.setItemMeta(meta);
@@ -349,7 +348,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§7Votre XP: §e" + NumberFormatter.format(playerData.getExperience()));
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -495,7 +494,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§7Votre métier principal");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -512,7 +511,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour choisir !");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "choose_profession");
         item.setItemMeta(meta);
 
@@ -533,7 +532,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour changer !");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "change_profession");
         item.setItemMeta(meta);
 
@@ -559,7 +558,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§e▶ Cliquez pour ouvrir !");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_rewards");
         meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, professionId);
 
@@ -604,7 +603,7 @@ public class ProfessionGUI {
         lore.add("");
         lore.add("§7Débloquage: §eRang F §7requis");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
         return item;
@@ -615,7 +614,7 @@ public class ProfessionGUI {
         ItemMeta meta = item.getItemMeta();
 
         plugin.getGUIManager().applyName(meta,"§c✗ §lFermer");
-        meta.setLore(List.of("§7Ferme ce menu"));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Ferme ce menu"));
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "close");
         item.setItemMeta(meta);
 
@@ -627,7 +626,7 @@ public class ProfessionGUI {
         ItemMeta meta = item.getItemMeta();
 
         plugin.getGUIManager().applyName(meta,"§7← §lRetour");
-        meta.setLore(List.of("§7Retour au menu métiers"));
+        plugin.getGUIManager().applyLore(meta, List.of("§7Retour au menu métiers"));
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "back_to_main");
         item.setItemMeta(meta);
 
@@ -675,7 +674,7 @@ public class ProfessionGUI {
         infoLore.add("");
         infoLore.add("§e💡 Votre progression est conservée !");
 
-        infoMeta.setLore(infoLore);
+        plugin.getGUIManager().applyLore(infoMeta, infoLore);
         info.setItemMeta(infoMeta);
         gui.setItem(11, info);
 
@@ -706,7 +705,7 @@ public class ProfessionGUI {
         lore.add("§e▶ Cliquez pour choisir !");
         lore.add("§7(Premier choix gratuit)");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "select_profession");
         meta.getPersistentDataContainer().set(professionKey, PersistentDataType.STRING, professionId);
         item.setItemMeta(meta);
@@ -738,7 +737,7 @@ public class ProfessionGUI {
             lore.add("§c💸 Coût: 5000 beacons");
         }
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         if (!isCurrent) {
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "confirm_change");

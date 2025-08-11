@@ -244,7 +244,7 @@ public class BookShopGUI {
         lore.add(canAfford ? "§e➤ Cliquez pour acheter le livre!" : "§c❌ Pas assez de beacons!");
         lore.add("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
     }

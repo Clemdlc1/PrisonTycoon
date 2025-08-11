@@ -76,7 +76,7 @@ public class AutominerManager {
         lore.add("§ePlacez dans un slot d'automineur");
         lore.add("§epour commencer à miner!");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
 
         // Données NBT
         meta.getPersistentDataContainer().set(typeKey, PersistentDataType.STRING, type.getDisplayName());
@@ -216,7 +216,7 @@ public class AutominerManager {
         lore.add("§ePlacez dans un slot d'automineur");
         lore.add("§epour commencer à miner!");
 
-        meta.setLore(lore);
+        plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
     }
 
@@ -579,7 +579,7 @@ public class AutominerManager {
         var meta = key.getItemMeta();
 
         plugin.getGUIManager().applyName(meta,keyColor + "Clé " + keyType);
-        meta.setLore(Arrays.asList(
+        plugin.getGUIManager().applyLore(meta, Arrays.asList(
                 "§7Clé de coffre " + keyColor + keyType,
                 "§7Utilise cette clé pour ouvrir des coffres!"
         ));
