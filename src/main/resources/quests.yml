@@ -41,7 +41,94 @@ daily:
       beacons: 25
       job_xp: 30
 
+  use_sellhand_daily:
+    type: USE_SELLHAND
+    target: 3
+    rewards:
+      beacons: 12
+      job_xp: 15
+
+  break_container_daily:
+    type: BREAK_CONTAINER
+    target: 1
+    rewards:
+      beacons: 15
+      job_xp: 15
+
 weekly:
+  week_kill_players:
+    type: KILL_PLAYERS
+    target: 50
+    rewards:
+      beacons: 150
+      job_xp: 200
+
+  week_kill_monsters:
+    type: KILL_MONSTERS
+    target: 300
+    rewards:
+      beacons: 120
+      job_xp: 150
+
+  week_mine_beacons:
+    type: MINE_BEACONS
+    target: 120
+    rewards:
+      beacons: 200
+      job_xp: 150
+
+  week_upgrade_enchants:
+    type: UPGRADE_ENCHANTMENTS
+    target: 25
+    rewards:
+      beacons: 180
+      job_xp: 150
+      boost:
+        type: TOKEN_BOOST
+        minutes: 60
+        percent: 50.0
+
+  week_capture_outpost:
+    type: CAPTURE_OUTPOST
+    target: 3
+    rewards:
+      beacons: 180
+      job_xp: 200
+
+  week_hold_outpost:
+    type: HOLD_OUTPOST_MINUTES
+    target: 60
+    rewards:
+      beacons: 220
+      job_xp: 250
+
+  week_win_spontaneous:
+    type: WIN_SPONTANEOUS_EVENT
+    target: 3
+    rewards:
+      beacons: 200
+      job_xp: 250
+
+  week_participate_boss:
+    type: PARTICIPATE_BOSS
+    target: 2
+    rewards:
+      beacons: 220
+      job_xp: 300
+
+  week_use_sellhand:
+    type: USE_SELLHAND
+    target: 20
+    rewards:
+      beacons: 160
+      job_xp: 150
+
+  week_break_container:
+    type: BREAK_CONTAINER
+    target: 3
+    rewards:
+      beacons: 150
+      job_xp: 180
 pass:
   playtime_1:
     type: PLAYTIME_MINUTES

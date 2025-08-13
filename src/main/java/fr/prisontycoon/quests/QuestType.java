@@ -12,7 +12,7 @@ public enum QuestType {
 
     // Quêtes de minage existantes
     MINE_BLOCKS("Miner des blocs", "bloc(s) miné(s)"),
-    MINE_BEACONS("Miner des beacons", "Miner des beacon(s)"),
+    MINE_BEACONS("Miner des beacons", "beacon(s) miné(s)"),
     MINE_SPECIFIC_BLOCKS("Miner des blocs spécifiques", "bloc(s) spécifique(s) miné(s)"),
     BREAK_PICKAXE("User des pioches", "pioche(s) usée(s)"),
 
@@ -21,7 +21,7 @@ public enum QuestType {
     EARN_TOKENS("Gagner des tokens", "token(s) gagné(s)"),
     SPEND_MONEY("Dépenser de l'argent", "coin(s) dépensé(s)"),
     SELL_ITEMS("Vendre des objets", "objet(s) vendu(s)"),
-    UPGRADE_ENCHANTMENTS("up","ench"),
+    UPGRADE_ENCHANTMENTS("Améliorer des enchantements","enchantement(s) amélioré(s)"),
 
     // Quêtes sociales existantes
     CHAT_MESSAGES("Envoyer des messages", "message(s) envoyé(s)"),
@@ -29,16 +29,16 @@ public enum QuestType {
     HELP_PLAYERS("Aider des joueurs", "joueur(s) aidé(s)"),
 
     // Avant-poste
-    CAPTURE_OUTPOST("",""),
-    HOLD_OUTPOST_MINUTES("",""),
+    CAPTURE_OUTPOST("Capturer l'avant-poste","capture(s) réalisée(s)"),
+    HOLD_OUTPOST_MINUTES("Occuper l'avant-poste (minutes)","minute(s) en contrôle"),
 
     // Evénements CustomMobs
-    WIN_SPONTANEOUS_EVENT("",""),
-    PARTICIPATE_BOSS("",""),
+    WIN_SPONTANEOUS_EVENT("Gagner un événement spontané","victoire(s) en événement"),
+    PARTICIPATE_BOSS("Participer à un boss","participation(s) à un boss"),
 
     // Economie/Objets
-    USE_SELLHAND("",""),
-    BREAK_CONTAINER("",""),
+    USE_SELLHAND("Utiliser /sellhand","sellhand(s) utilisé(s)"),
+    BREAK_CONTAINER("Casser des conteneurs","conteneur(s) cassé(s)"),
 
     // ========================================
     // NOUVELLES QUÊTES DE TEMPS DE JEU
@@ -119,136 +119,5 @@ public enum QuestType {
 
     public String formatProgress(int current, int target) {
         return current + "/" + target + " " + unitDescription;
-    }
-
-    /**
-     * Vérifie si ce type de quête est lié au temps de jeu
-     */
-    public boolean isPlayTimeQuest() {
-        return this == PLAYTIME_MINUTES || this == PLAYTIME_HOURS ||
-                this == PLAYTIME_DAILY || this == PLAYTIME_WEEKLY ||
-                this == PLAYTIME_SESSION;
-    }
-
-    /**
-     * Vérifie si ce type de quête est spécifique au Battle Pass
-     */
-    public boolean isBattlePassQuest() {
-        return this == COMPLETE_DAILY_QUESTS || this == COMPLETE_WEEKLY_QUESTS ||
-                this == EARN_BATTLE_PASS_XP || this == REACH_TIER ||
-                this == MINE_MARATHON || this == COMBAT_STREAK ||
-                this == EARNINGS_BURST || this == GANG_ACTIVITIES ||
-                this == HELP_NEWBIES || this == SOCIAL_INTERACTION ||
-                this == VISIT_WARPS || this == DISCOVER_AREAS ||
-                this == USE_FEATURES || this == COLLECT_ITEMS ||
-                this == CRAFT_ITEMS || this == ENCHANT_ITEMS ||
-                this == LUCKY_EVENTS || this == SKILL_MASTERY ||
-                this == RESOURCE_MANAGEMENT || this == SEASONAL_ACTIVITY ||
-                this == EVENT_PARTICIPATION || this == CELEBRATION_TASKS ||
-                this == EFFICIENCY_CHALLENGE || this == CONSISTENCY_REWARD ||
-                this == MASTERY_DEMONSTRATION;
-    }
-
-    /**
-     * Vérifie si ce type de quête peut être quotidien
-     */
-    public boolean canBeDaily() {
-        return this != REACH_TIER && this != JOIN_GANG &&
-                this != HELP_NEWBIES && !this.name().contains("WEEKLY");
-    }
-
-    /**
-     * Vérifie si ce type de quête peut être hebdomadaire
-     */
-    public boolean canBeWeekly() {
-        return this != PLAYTIME_DAILY && this != PLAYTIME_SESSION;
-    }
-
-    /**
-     * Obtient les valeurs cibles recommandées selon la catégorie de quête
-     */
-    public int getRecommendedTarget(QuestCategory category) {
-        return switch (this) {
-            // Temps de jeu
-            case PLAYTIME_MINUTES -> category == QuestCategory.DAILY ? 30 : 180;
-            case PLAYTIME_HOURS -> category == QuestCategory.WEEKLY ? 5 : 2;
-            case PLAYTIME_DAILY -> 60; // 1 heure par jour
-            case PLAYTIME_WEEKLY -> 10; // 10 heures par semaine
-            case PLAYTIME_SESSION -> 45; // 45 minutes consécutives
-
-            // Combat
-            case KILL_PLAYERS -> category == QuestCategory.DAILY ? 5 : 25;
-            case KILL_MONSTERS -> category == QuestCategory.DAILY ? 20 : 100;
-            case DEAL_DAMAGE -> category == QuestCategory.DAILY ? 1000 : 5000;
-
-            // Minage
-            case MINE_BLOCKS -> category == QuestCategory.DAILY ? 500 : 2500;
-            case MINE_SPECIFIC_BLOCKS -> category == QuestCategory.DAILY ? 100 : 500;
-            case MINE_MARATHON -> 1000; // Session intensive
-
-            // Économie
-            case EARN_MONEY -> category == QuestCategory.DAILY ? 10000 : 50000;
-            case EARN_TOKENS -> category == QuestCategory.DAILY ? 500 : 2500;
-            case SPEND_MONEY -> category == QuestCategory.DAILY ? 5000 : 25000;
-
-            // Social
-            case CHAT_MESSAGES -> category == QuestCategory.DAILY ? 10 : 50;
-            case HELP_NEWBIES -> 1;
-            case SOCIAL_INTERACTION -> category == QuestCategory.DAILY ? 5 : 20;
-
-            // Battle Pass spécifiques
-            case COMPLETE_DAILY_QUESTS -> category == QuestCategory.WEEKLY ? 5 : 3;
-            case COMPLETE_WEEKLY_QUESTS -> 1;
-            case EARN_BATTLE_PASS_XP -> category == QuestCategory.DAILY ? 100 : 500;
-            case REACH_TIER -> 1;
-
-            // Activités diverses
-            case VISIT_WARPS -> category == QuestCategory.DAILY ? 3 : 10;
-            case COLLECT_ITEMS -> category == QuestCategory.DAILY ? 50 : 200;
-            case CRAFT_ITEMS -> category == QuestCategory.DAILY ? 10 : 50;
-            case ENCHANT_ITEMS -> category == QuestCategory.DAILY ? 3 : 15;
-
-            // Défis
-            case COMBAT_STREAK -> 5;
-            case EARNINGS_BURST -> 25000;
-            case EFFICIENCY_CHALLENGE -> category == QuestCategory.DAILY ? 1 : 5;
-            case CONSISTENCY_REWARD -> 7; // 7 jours consécutifs
-
-            // Par défaut
-            default -> category == QuestCategory.DAILY ? 10 : 50;
-        };
-    }
-
-    /**
-     * Obtient les points Battle Pass recommandés pour ce type de quête
-     */
-    public int getBattlePassPoints(QuestCategory category) {
-        if (category == QuestCategory.PASS) {
-            return switch (this) {
-                // Quêtes spéciales Pass = plus de points
-                case MINE_MARATHON, COMBAT_STREAK, EARNINGS_BURST -> 100;
-                case PLAYTIME_SESSION, EFFICIENCY_CHALLENGE -> 75;
-                case REACH_TIER, MASTERY_DEMONSTRATION -> 150;
-                case CONSISTENCY_REWARD -> 200;
-
-                // Quêtes longues
-                case PLAYTIME_WEEKLY -> 80;
-                case COMPLETE_WEEKLY_QUESTS -> 120;
-
-                // Quêtes moyennes
-                case PLAYTIME_DAILY, EARN_BATTLE_PASS_XP -> 50;
-                case GANG_ACTIVITIES, SOCIAL_INTERACTION -> 40;
-
-                // Quêtes courtes
-                default -> 30;
-            };
-        }
-
-        // Quêtes normales (daily/weekly)
-        return switch (category) {
-            case DAILY -> isPlayTimeQuest() ? 25 : 20;
-            case WEEKLY -> isPlayTimeQuest() ? 60 : 50;
-            default -> 10;
-        };
     }
 }

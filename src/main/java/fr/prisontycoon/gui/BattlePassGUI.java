@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * GUI Pass de combat amélioré: 5 pages, 6 paliers/page, affichage double ligne avec barres de progression
@@ -82,36 +83,40 @@ public class BattlePassGUI {
      */
     public void openPass(Player player, int page) {
         if (page < 1) page = 1;
-        if (page > 5) page = 5;
+        if (page > 9) page = 9; // 9 pages pour 50 paliers
 
-        Inventory inv = guiManager.createInventory(54, "§6⚔ §lPass de Combat §8(Page " + page + "/5)");
-
-        // Bordures décoratives mais pas complètes (laisser place aux paliers)
-        fillDecorativeBorders(inv);
+        Inventory inv = guiManager.createInventory(54, "§6⚔ §lPass de Combat §8(Page " + page + "/9)");
+        guiManager.fillBorders(inv);
 
         // Header avec barre de progression générale
         inv.setItem(4, createProgressHeader(player, page));
 
         // Navigation
         inv.setItem(45, createBackToMainMenuButton());
-        inv.setItem(47, createPrevPageButton(page));
-        inv.setItem(51, createNextPageButton(page));
-        inv.setItem(49, createQuickBuyButton(player));
-        inv.setItem(53, createPageIndicator(page));
+
+        // Flèche précédente seulement si pas première page
+        if (page > 1) {
+            inv.setItem(47, createPrevPageButton(page));
+        }
+
+        // Flèche suivante seulement si pas dernière page
+        if (page < 9) {
+            inv.setItem(51, createNextPageButton(page));
+        }
 
         // Affichage des 6 paliers de cette page
         renderTierPage(inv, player, page);
 
-		Map<String, String> data = new HashMap<>();
-		data.put("view", "pass");
-		data.put("page", String.valueOf(page));
-		guiManager.registerOpenGUI(player, GUIType.BATTLE_PASS_MENU, inv, data);
+        Map<String, String> data = new HashMap<>();
+        data.put("view", "pass");
+        data.put("page", String.valueOf(page));
+        guiManager.registerOpenGUI(player, GUIType.BATTLE_PASS_MENU, inv, data);
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.UI_TOAST_IN, 0.8f, 1.2f);
     }
 
     // ========================================
-    // RENDERING DES PALIERS
+    // RENDERING DES PALIERS (CORRIGÉ)
     // ========================================
 
     private void renderTierPage(Inventory inv, Player player, int page) {
@@ -120,47 +125,33 @@ public class BattlePassGUI {
         var playerData = bpm.getPlayerData(player.getUniqueId());
         int currentTier = bpm.getTier(player.getUniqueId());
 
-        // Colonnes pour les 6 paliers: slots 10, 12, 14, 16, 28, 30
-        int[] columns = {10, 12, 14, 16, 28, 30};
+        // Slots pour les 6 colonnes (on saute les slots du milieu)
+        // Ligne 2 (Premium): slots 10, 11, 12, 14, 15, 16
+        int[] premiumSlots = {10, 11, 12, 14, 15, 16};
+        // Ligne 3 (barre de progression): slots 19, 20, 21, 23, 24, 25
+        int[] progressSlots = {19, 20, 21, 23, 24, 25};
+        // Ligne 4 (Gratuit): slots 28, 29, 30, 32, 33, 34
+        int[] freeSlots = {28, 29, 30, 32, 33, 34};
 
         for (int i = 0; i < 6; i++) {
             int tier = startTier + i;
             if (tier > 50) continue; // Au-delà du palier 50
 
-            int column = columns[i];
-            renderTierColumn(inv, player, tier, column, currentTier, playerData);
+            var rewards = bpm.getRewardsForTier(tier);
+
+            // Ligne Premium (ligne 2)
+            inv.setItem(premiumSlots[i], createTierItem(player, tier, true, rewards, currentTier, playerData));
+
+            // Ligne Gratuite (ligne 4)
+            inv.setItem(freeSlots[i], createTierItem(player, tier, false, rewards, currentTier, playerData));
+
+            // Barre de progression (ligne 3)
+            inv.setItem(progressSlots[i], createProgressBar(tier, currentTier, bpm.getProgressInTier(player.getUniqueId()), tier == currentTier));
         }
 
-        // Barres de progression au centre (ligne 3)
-        renderProgressBars(inv, player, startTier, currentTier);
-    }
-
-    private void renderTierColumn(Inventory inv, Player player, int tier, int column, int currentTier, BattlePassManager.PlayerPassData playerData) {
-        BattlePassManager bpm = plugin.getBattlePassManager();
-        var rewards = bpm.getRewardsForTier(tier);
-
-        // Ligne Premium (ligne 2)
-        inv.setItem(column, createTierItem(player, tier, true, rewards, currentTier, playerData));
-
-        // Ligne Gratuite (ligne 4)
-        inv.setItem(column + 18, createTierItem(player, tier, false, rewards, currentTier, playerData));
-
-        // Indicateur de palier (entre les deux)
-        inv.setItem(column + 9, createTierIndicator(tier, currentTier));
-    }
-
-    private void renderProgressBars(Inventory inv, Player player, int startTier, int currentTier) {
-        BattlePassManager bpm = plugin.getBattlePassManager();
-        int progressInTier = bpm.getProgressInTier(player.getUniqueId());
-
-        // Slots 19, 20, 21, 22, 23, 24 pour les barres de progression
-        int[] barSlots = {19, 20, 21, 22, 23, 24};
-
-        for (int i = 0; i < 6; i++) {
-            int tier = startTier + i;
-            if (tier > 50) continue;
-
-            inv.setItem(barSlots[i], createProgressBar(tier, currentTier, progressInTier, tier == currentTier));
+        // Item spécial pour la dernière page (page 9) au slot 27
+        if (page == 9) {
+            inv.setItem(21, createInfiniteRewardsInfo(player));
         }
     }
 
@@ -221,6 +212,36 @@ public class BattlePassGUI {
         }
 
         return item;
+    }
+
+    private ItemStack createInfiniteRewardsInfo(Player player) {
+        BattlePassManager bpm = plugin.getBattlePassManager();
+        var playerData = bpm.getPlayerData(player.getUniqueId());
+
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemMeta meta = item.getItemMeta();
+        guiManager.applyName(meta, "§6✨ §lRécompenses Infinies");
+
+        List<String> lore = Arrays.asList(
+                "",
+                "§7Au-delà du palier §650§7, vous obtenez",
+                "§7des récompenses pour chaque palier :",
+                "",
+                "§7⚪ §fGratuit §8- §7Chaque palier :",
+                "§f  • §61 Clé Rare",
+                "",
+                "§6⭐ §6Premium §8- §7Chaque palier :",
+                "§f  • §62 Clés Rares",
+                "",
+                playerData.premium() ?
+                        "§a✓ Vous avez le Premium !" :
+                        "§7Achetez le Premium pour doubler vos gains !",
+                "",
+                "§e⚡ Progression infinie garantie !"
+        );
+        guiManager.applyLore(meta, lore);
+        item.setItemMeta(meta);
+        return guiManager.addGlowEffect(item);
     }
 
     private ItemStack createBuyPremiumButton(Player player, BattlePassManager.PlayerPassData playerData) {
@@ -352,10 +373,10 @@ public class BattlePassGUI {
 
         ItemStack item = new ItemStack(Material.DIAMOND);
         ItemMeta meta = item.getItemMeta();
-        guiManager.applyName(meta, "§6⚔ Season " + bpm.getCurrentSeasonId() + " §8(Page " + page + "/5)");
+        guiManager.applyName(meta, "§6⚔ Season " + bpm.getCurrentSeasonId() + " §8(Page " + page + "/9)");
 
         // Barre de progression visuelle
-        String progressBar = createProgressBarString(progressInTier, BattlePassManager.POINTS_PER_TIER);
+        String progressBar = createProgressBarString(progressInTier);
 
         List<String> lore = Arrays.asList(
                 "",
@@ -382,18 +403,15 @@ public class BattlePassGUI {
                 playerData.claimedPremium().contains(tier) :
                 playerData.claimedFree().contains(tier);
         boolean canClaim = reachable && !alreadyClaimed && (!premiumRow || playerData.premium());
-        boolean premiumRequired = premiumRow && !playerData.premium();
 
-        // Matériau selon l'état
+        // Matériau selon l'état (NOUVEAU SYSTÈME)
         Material material;
         if (alreadyClaimed) {
-            material = premiumRow ? Material.GOLD_BLOCK : Material.IRON_BLOCK;
+            material = Material.ENDER_CHEST; // Déjà récupéré
         } else if (canClaim) {
-            material = premiumRow ? Material.GLOWSTONE : Material.QUARTZ_BLOCK;
-        } else if (reachable && premiumRequired) {
-            material = Material.BARRIER;
+            material = Material.CHEST_MINECART; // Récompenses disponibles
         } else {
-            material = premiumRow ? Material.ORANGE_CONCRETE : Material.GRAY_CONCRETE;
+            material = Material.FURNACE_MINECART; // Récompenses non disponibles
         }
 
         ItemStack item = new ItemStack(material);
@@ -416,7 +434,7 @@ public class BattlePassGUI {
         } else if (canClaim) {
             lore.add("§e⚡ Prêt à réclamer !");
             lore.add("§e▶ Cliquez pour récupérer");
-        } else if (reachable && premiumRequired) {
+        } else if (reachable && premiumRow && !playerData.premium()) {
             lore.add("§c🔒 Premium requis");
             lore.add("§7Achetez le Pass Premium");
         } else {
@@ -434,22 +452,6 @@ public class BattlePassGUI {
             item = guiManager.addGlowEffect(item);
         }
 
-        return item;
-    }
-
-    private ItemStack createTierIndicator(int tier, int currentTier) {
-        boolean unlocked = currentTier >= tier;
-        ItemStack item = new ItemStack(unlocked ? Material.LIME_DYE : Material.GRAY_DYE);
-        ItemMeta meta = item.getItemMeta();
-        guiManager.applyName(meta, (unlocked ? "§a" : "§7") + "Palier " + tier);
-
-        List<String> lore = Arrays.asList(
-                "",
-                unlocked ? "§a✓ Palier débloqué" : "§7○ Palier verrouillé",
-                "§7Requis: §e" + (tier * BattlePassManager.POINTS_PER_TIER) + " XP"
-        );
-        guiManager.applyLore(meta, lore);
-        item.setItemMeta(meta);
         return item;
     }
 
@@ -475,7 +477,7 @@ public class BattlePassGUI {
             List<String> lore = Arrays.asList(
                     "",
                     "§7Progression: §e" + progressInTier + "§7/§e" + BattlePassManager.POINTS_PER_TIER,
-                    createProgressBarString(progressInTier, BattlePassManager.POINTS_PER_TIER),
+                    createProgressBarString(progressInTier),
                     "",
                     "§7Manquant: §c" + (BattlePassManager.POINTS_PER_TIER - progressInTier) + " XP"
             );
@@ -489,52 +491,52 @@ public class BattlePassGUI {
     }
 
     // ========================================
-    // GESTION DES CLICS
+    // GESTION DES CLICS (VOTRE VERSION AMÉLIORÉE)
     // ========================================
 
-	public void handleClick(Player player, int slot, ItemStack item) {
-		if (item == null || item.getType() == Material.AIR) return;
+    public void handleClick(Player player, int slot, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
 
-		GUIType openType = guiManager.getOpenGUIType(player);
-		if (openType == null) return;
+        GUIType openType = guiManager.getOpenGUIType(player);
+        if (openType == null) return;
 
-		if (openType == GUIType.BATTLE_PASS_MAIN_MENU) {
-			handleMainMenuClick(player, slot);
-			return;
-		}
+        if (openType == GUIType.BATTLE_PASS_MAIN_MENU) {
+            handleMainMenuClick(player, slot);
+            return;
+        }
 
-		if (openType == GUIType.BATTLE_PASS_MENU) {
-			String view = guiManager.getGUIData(player, "view");
-			if ("help".equals(view)) {
-				if (slot == 40) {
-					openMainMenu(player);
-				} else {
-					player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
-				}
-				return;
-			}
+        if (openType == GUIType.BATTLE_PASS_MENU) {
+            String view = guiManager.getGUIData(player, "view");
+            if ("help".equals(view)) {
+                if (slot == 40) {
+                    openMainMenu(player);
+                } else {
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
+                }
+                return;
+            }
 
-			int page = 1;
-			try {
-				String pageStr = guiManager.getGUIData(player, "page");
-				if (pageStr != null) page = Integer.parseInt(pageStr);
-			} catch (NumberFormatException ignored) {}
+            int page = 1;
+            try {
+                String pageStr = guiManager.getGUIData(player, "page");
+                if (pageStr != null) page = Integer.parseInt(pageStr);
+            } catch (NumberFormatException ignored) {}
 
-			// Fallback: si pas de data, essaie de lire depuis le titre
-			if (page == 1) {
-				String title = plugin.getGUIManager().getLegacyTitle(player.getOpenInventory());
-				if (title.contains("Page ")) {
-					try {
-						int start = title.indexOf("Page ") + 5;
-						int end = title.indexOf("/5)", start);
-						if (start > 4 && end > start) page = Integer.parseInt(title.substring(start, end));
-					} catch (Exception ignored) {}
-				}
-			}
+            // Fallback: si pas de data, essaie de lire depuis le titre
+            if (page == 1) {
+                String title = plugin.getGUIManager().getLegacyTitle(player.getOpenInventory());
+                if (title.contains("Page ")) {
+                    try {
+                        int start = title.indexOf("Page ") + 5;
+                        int end = title.indexOf("/9)", start);
+                        if (start > 4 && end > start) page = Integer.parseInt(title.substring(start, end));
+                    } catch (Exception ignored) {}
+                }
+            }
 
-			handlePassClick(player, slot, item, page);
-		}
-	}
+            handlePassClick(player, slot, item, page);
+        }
+    }
 
     private void handleMainMenuClick(Player player, int slot) {
         switch (slot) {
@@ -556,16 +558,20 @@ public class BattlePassGUI {
         }
     }
 
-	private void handlePassClick(Player player, int slot, ItemStack item, int page) {
-		switch (slot) {
+    private void handlePassClick(Player player, int slot, ItemStack item, int page) {
+        switch (slot) {
             case 45: // Retour menu principal
                 openMainMenu(player);
                 break;
-            case 47: // Page précédente
-                openPass(player, Math.max(1, page - 1));
+            case 47: // Page précédente (seulement si pas première page)
+                if (page > 1) {
+                    openPass(player, Math.max(1, page - 1));
+                }
                 break;
-            case 51: // Page suivante
-                openPass(player, Math.min(5, page + 1));
+            case 51: // Page suivante (seulement si pas dernière page)
+                if (page < 9) {
+                    openPass(player, Math.min(9, page + 1));
+                }
                 break;
             case 49: // Achat rapide Premium
                 handlePremiumPurchase(player);
@@ -582,6 +588,7 @@ public class BattlePassGUI {
 
         List<String> lore = item.getItemMeta().lore().stream()
                 .map(c -> LegacyComponentSerializer.legacySection().serialize(c))
+                .filter(Objects::nonNull)
                 .toList();
 
         // Parsing amélioré et sécurisé
@@ -651,31 +658,8 @@ public class BattlePassGUI {
     // MÉTHODES UTILITAIRES
     // ========================================
 
-    private void fillDecorativeBorders(Inventory inv) {
-        ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta meta = border.getItemMeta();
-        guiManager.applyName(meta, "§8");
-        border.setItemMeta(meta);
-
-        // Bordures partielles pour laisser place aux paliers
-        for (int i = 0; i < 9; i++) {
-            if (i != 4) inv.setItem(i, border); // Top sauf header
-        }
-        for (int i = 45; i < 54; i++) {
-            inv.setItem(i, border.clone()); // Bottom
-        }
-        // Côtés sélectifs
-        inv.setItem(9, border.clone());
-        inv.setItem(17, border.clone());
-        inv.setItem(18, border.clone());
-        inv.setItem(26, border.clone());
-        inv.setItem(27, border.clone());
-        inv.setItem(35, border.clone());
-        inv.setItem(36, border.clone());
-        inv.setItem(44, border.clone());
-    }
-
-    private String createProgressBarString(int current, int max) {
+    private String createProgressBarString(int current) {
+        int max = BattlePassManager.POINTS_PER_TIER;
         int bars = 10;
         int filled = (int) ((double) current / max * bars);
         StringBuilder sb = new StringBuilder("§7[");
@@ -758,9 +742,9 @@ public class BattlePassGUI {
         inv.setItem(13, createDetailedHelpItem());
         inv.setItem(40, createBackToMainMenuButton());
 
-		Map<String, String> data = new HashMap<>();
-		data.put("view", "help");
-		guiManager.registerOpenGUI(player, GUIType.BATTLE_PASS_MENU, inv, data);
+        Map<String, String> data = new HashMap<>();
+        data.put("view", "help");
+        guiManager.registerOpenGUI(player, GUIType.BATTLE_PASS_MENU, inv, data);
         player.openInventory(inv);
     }
 
@@ -815,7 +799,7 @@ public class BattlePassGUI {
         ItemStack item = new ItemStack(Material.SPECTRAL_ARROW);
         ItemMeta meta = item.getItemMeta();
         guiManager.applyName(meta, "§7← Page Précédente");
-        guiManager.applyLore(meta, Arrays.asList("", "§7Page actuelle: §e" + currentPage + "§7/§e5",
+        guiManager.applyLore(meta, Arrays.asList("", "§7Page actuelle: §e" + currentPage + "§7/§e9",
                 currentPage > 1 ? "§e▶ Page " + (currentPage - 1) : "§cDéjà à la première page"));
         item.setItemMeta(meta);
         return item;
@@ -825,29 +809,8 @@ public class BattlePassGUI {
         ItemStack item = new ItemStack(Material.TIPPED_ARROW);
         ItemMeta meta = item.getItemMeta();
         guiManager.applyName(meta, "§7Page Suivante →");
-        guiManager.applyLore(meta, Arrays.asList("", "§7Page actuelle: §e" + currentPage + "§7/§e5",
-                currentPage < 5 ? "§e▶ Page " + (currentPage + 1) : "§cDéjà à la dernière page"));
-        item.setItemMeta(meta);
-        return item;
-    }
-
-    private ItemStack createQuickBuyButton(Player player) {
-        boolean hasPremium = plugin.getBattlePassManager().hasPremium(player.getUniqueId());
-        ItemStack item = new ItemStack(hasPremium ? Material.EMERALD_BLOCK : Material.EMERALD);
-        ItemMeta meta = item.getItemMeta();
-        guiManager.applyName(meta, hasPremium ? "§a💎 Premium Actif" : "§6💎 Achat Rapide Premium");
-        guiManager.applyLore(meta, Arrays.asList("", hasPremium ? "§7Vous avez déjà le Premium !" : "§7Achetez le Premium rapidement",
-                "", hasPremium ? "§a✓ Profitez de vos avantages" : "§e▶ Cliquez pour acheter"));
-        item.setItemMeta(meta);
-        return item;
-    }
-
-    private ItemStack createPageIndicator(int page) {
-        ItemStack item = new ItemStack(Material.MAP);
-        ItemMeta meta = item.getItemMeta();
-        guiManager.applyName(meta, "§6📍 Page " + page + "/5");
-        guiManager.applyLore(meta, Arrays.asList("", "§7Vous consultez la page §e" + page,
-                "§7Paliers §6" + ((page-1)*6+1) + " §7à §6" + Math.min(50, page*6)));
+        guiManager.applyLore(meta, Arrays.asList("", "§7Page actuelle: §e" + currentPage + "§7/§e9",
+                currentPage < 9 ? "§e▶ Page " + (currentPage + 1) : "§cDéjà à la dernière page"));
         item.setItemMeta(meta);
         return item;
     }

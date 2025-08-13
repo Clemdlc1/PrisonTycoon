@@ -44,16 +44,17 @@ public class DailyRewardGUI {
 
         for (int i = 0; i < 14; i++) {
             int day = i + 1;
-            boolean isClaimed = (day <= progress) || (day == claimableDay && alreadyClaimed);
+            boolean isClaimed = day <= progress;
             boolean isClaimable = (day == claimableDay && !alreadyClaimed);
-            ItemStack head = buildDayItem(day, isClaimable, isClaimed);
+            boolean showTomorrow = (!isClaimable && !isClaimed && alreadyClaimed && day == claimableDay);
+            ItemStack head = buildDayItem(day, isClaimable, isClaimed, showTomorrow);
             inv.setItem(slots[i], head);
         }
 
         // Dernier jour (15) au centre d'une rangée dédiée (rangée 4 -> slot 31)
-        boolean lastClaimed = (15 <= progress) || (15 == claimableDay && alreadyClaimed);
+        boolean lastClaimed = 15 <= progress;
         boolean lastClaimable = (15 == claimableDay && !alreadyClaimed);
-        ItemStack last = buildDayItem(15, lastClaimable, lastClaimed);
+        ItemStack last = buildDayItem(15, lastClaimable, lastClaimed, false);
         inv.setItem(31, last);
 
         // Placeholder d'information (slot 4)
@@ -64,7 +65,7 @@ public class DailyRewardGUI {
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.2f);
     }
 
-    private ItemStack buildDayItem(int day, boolean isClaimable, boolean isClaimed) {
+    private ItemStack buildDayItem(int day, boolean isClaimable, boolean isClaimed, boolean showTomorrowHint) {
         // Règle d'affichage:
         // - OPEN_BOX = jour déjà récupéré
         // - CLOSED_BOX = jour non récupéré
@@ -76,20 +77,22 @@ public class DailyRewardGUI {
             plugin.getGUIManager().applyName(meta, titleColor + "Jour " + day);
 
             List<String> lore = new ArrayList<>();
-            // Récompense visible seulement pour le jour J (réclamable) et le dernier jour
+            // Lore
+            if (isClaimed) {
+                lore.add("§aDéjà récupéré");
+            }
+
+            // Récompense visible pour le jour réclamable et le dernier jour
             if (isClaimable || day == 15) {
                 lore.add("§7Récompense: §f" + daily.getRewardDescription(day));
                 if (isClaimable) {
                     lore.add("");
                     lore.add("§e▶ Cliquez pour réclamer");
                 }
-            } else {
-                // Claimed ou futur
-                if (isClaimed) {
-                    lore.add("§aDéjà récupéré");
-                } else {
-                    lore.add("§8Récompense cachée");
-                }
+            }
+            if (showTomorrowHint) {
+                lore.add("");
+                lore.add("§7Revenez demain pour la récompense");
             }
             plugin.getGUIManager().applyLore(meta, lore);
             skull.setItemMeta(meta);

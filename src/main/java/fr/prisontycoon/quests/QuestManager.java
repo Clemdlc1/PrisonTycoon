@@ -184,7 +184,15 @@ public class QuestManager {
     }
 
     public PlayerQuestProgress getProgress(UUID playerId) {
-        return cache.computeIfAbsent(playerId, this::loadProgress);
+        PlayerQuestProgress p = cache.computeIfAbsent(playerId, this::loadProgress);
+        boolean changed = false;
+        // Garantit qu'un set actif est présent (résilience si passage de jour/semaine sans rechargement)
+        changed |= ensureActiveQuestsForCategory(p, QuestCategory.DAILY, 7);
+        changed |= ensureActiveQuestsForCategory(p, QuestCategory.WEEKLY, 10);
+        if (changed) {
+            saveProgress(p);
+        }
+        return p;
     }
 
     private PlayerQuestProgress loadProgress(UUID playerId) {
@@ -204,14 +212,38 @@ public class QuestManager {
                         if (Boolean.TRUE.equals(v)) p.setClaimed(k);
                     });
                     String daily = rs.getString("daily_date");
+                    boolean needDailySelection = false;
                     if (daily != null) {
-                        // Force reset si date différente
-                        if (!LocalDate.parse(daily).equals(LocalDate.now())) p.resetDailyIfNeeded();
+                        // Reset et re-sélection si date différente
+                        if (!LocalDate.parse(daily).equals(LocalDate.now())) {
+                            p.resetDailyIfNeeded();
+                            needDailySelection = true;
+                        }
+                    } else {
+                        // Première initialisation
+                        needDailySelection = true;
                     }
                     String start = rs.getString("weekly_start");
+                    boolean needWeeklySelection = false;
                     if (start != null) {
-                        if (!LocalDate.parse(start).equals(LocalDate.now().with(java.time.DayOfWeek.MONDAY)))
+                        if (!LocalDate.parse(start).equals(LocalDate.now().with(java.time.DayOfWeek.MONDAY))) {
                             p.resetWeeklyIfNeeded();
+                            needWeeklySelection = true;
+                        }
+                    } else {
+                        needWeeklySelection = true;
+                    }
+
+                    boolean changed = false;
+                    if (needDailySelection) {
+                        changed |= selectActiveQuestsForCategory(p, QuestCategory.DAILY, 7);
+                    }
+                    if (needWeeklySelection) {
+                        changed |= selectActiveQuestsForCategory(p, QuestCategory.WEEKLY, 10);
+                    }
+                    if (changed) {
+                        // Persiste immédiatement la sélection (même à 0 de progression)
+                        saveProgress(p);
                     }
                     return p;
                 }
@@ -219,7 +251,15 @@ public class QuestManager {
         } catch (SQLException e) {
             plugin.getLogger().warning("loadProgress error: " + e.getMessage());
         }
-        return new PlayerQuestProgress(playerId);
+        // Aucune ligne trouvée: créer progression et sélectionner des quêtes
+        PlayerQuestProgress p = new PlayerQuestProgress(playerId);
+        boolean changed = false;
+        changed |= selectActiveQuestsForCategory(p, QuestCategory.DAILY, 7);
+        changed |= selectActiveQuestsForCategory(p, QuestCategory.WEEKLY, 10);
+        if (changed) {
+            saveProgress(p);
+        }
+        return p;
     }
 
     public void saveProgress(PlayerQuestProgress p) {
@@ -260,14 +300,24 @@ public class QuestManager {
         p.resetDailyIfNeeded();
         p.resetWeeklyIfNeeded();
 
+        boolean changed = false;
+        // Si un reset vient d'être fait, s'assurer que des quêtes actives existent
+        changed |= ensureActiveQuestsForCategory(p, QuestCategory.DAILY, 7);
+        changed |= ensureActiveQuestsForCategory(p, QuestCategory.WEEKLY, 10);
+
         for (QuestDefinition q : quests.values()) {
             if (q.getType() != type) continue;
             String qid = q.getId();
+            // Restreindre aux quêtes actives (présentes dans la map de progression)
+            if (!p.getAllProgress().containsKey(qid)) continue;
             int current = p.get(qid);
             if (current >= q.getTarget()) continue; // déjà suffisant
             p.set(qid, Math.min(q.getTarget(), current + amount));
         }
         cache.put(id, p);
+        if (changed) {
+            saveProgress(p);
+        }
     }
 
     public boolean claim(Player player, String questId) {
@@ -296,6 +346,84 @@ public class QuestManager {
         var key = plugin.getEnchantmentManager().createKey(keyType);
         boolean added = plugin.getContainerManager().addItemToContainers(player, key);
         if (!added) player.getInventory().addItem(key);
+    }
+
+    /**
+     * Sélectionne aléatoirement un sous-ensemble de quêtes pour une catégorie,
+     * les enregistre dans la progression du joueur (même à 0),
+     * et purge les autres quêtes de cette catégorie de la progression.
+     */
+    private boolean selectActiveQuestsForCategory(PlayerQuestProgress progress, QuestCategory category, int desiredCount) {
+        // Récupère toutes les quêtes de la catégorie
+        List<QuestDefinition> all = getQuestsByCategory(category);
+        if (all.isEmpty()) return false;
+
+        // Mélange et sélection
+        List<QuestDefinition> pool = new ArrayList<>(all);
+        Collections.shuffle(pool, new Random());
+        int count = Math.min(desiredCount, pool.size());
+        Set<String> selected = new HashSet<>();
+        for (int i = 0; i < count; i++) {
+            selected.add(pool.get(i).getId());
+        }
+
+        // Supprimer de la progression toutes les quêtes de cette catégorie qui ne sont pas sélectionnées
+        // et s'assurer que les sélectionnées existent au moins à 0
+        // Construire l'ensemble des IDs de cette catégorie
+        Set<String> categoryIds = new HashSet<>();
+        for (QuestDefinition q : all) categoryIds.add(q.getId());
+
+        boolean changed = false;
+        // Purge
+        Map<String, Integer> currentProgress = progress.getAllProgress();
+        for (String qid : categoryIds) {
+            if (!selected.contains(qid) && currentProgress.containsKey(qid)) {
+                progress.remove(qid);
+                changed = true;
+            }
+        }
+
+        // Ensure entries for selected
+        for (String qid : selected) {
+            Integer before = progress.getAllProgress().get(qid);
+            progress.ensureEntry(qid);
+            // Réinitialise l'état réclamé au cas où
+            progress.clearClaimed(qid);
+            if (before == null) changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * Garantit un nombre minimum de quêtes actives pour la catégorie.
+     * Retourne true si une sélection a été (ré)effectuée.
+     */
+    private boolean ensureActiveQuestsForCategory(PlayerQuestProgress progress, QuestCategory category, int desiredCount) {
+        Set<String> categoryIds = new HashSet<>();
+        for (QuestDefinition q : getQuestsByCategory(category)) categoryIds.add(q.getId());
+        int active = 0;
+        for (String qid : progress.getAllProgress().keySet()) {
+            if (categoryIds.contains(qid)) active++;
+        }
+        if (active < Math.min(desiredCount, categoryIds.size())) {
+            return selectActiveQuestsForCategory(progress, category, desiredCount);
+        }
+        return false;
+    }
+
+    /**
+     * Liste des quêtes actives d'un joueur pour une catégorie (celles présentes dans progress_json)
+     */
+    public List<QuestDefinition> getActiveQuestsForPlayer(UUID playerId, QuestCategory category) {
+        PlayerQuestProgress p = getProgress(playerId);
+        Set<String> activeIds = p.getAllProgress().keySet();
+        List<QuestDefinition> result = new ArrayList<>();
+        for (QuestDefinition q : getQuestsByCategory(category)) {
+            if (activeIds.contains(q.getId())) result.add(q);
+        }
+        // Optionnel: ordre stable
+        result.sort(Comparator.comparing(QuestDefinition::getId));
+        return result;
     }
 }
 

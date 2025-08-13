@@ -41,6 +41,21 @@ public class PlayerQuestProgress {
         progressByQuest.put(questId, Math.max(0, amount));
     }
 
+	/**
+	 * S'assure qu'une entrée existe pour cette quête (par exemple pour la persistance à 0)
+	 */
+	public void ensureEntry(String questId) {
+		progressByQuest.putIfAbsent(questId, 0);
+	}
+
+	/**
+	 * Supprime toute trace d'une quête (progression et statut réclamé)
+	 */
+	public void remove(String questId) {
+		progressByQuest.remove(questId);
+		claimedByQuest.remove(questId);
+	}
+
     public boolean isClaimed(String questId) {
         return claimedByQuest.getOrDefault(questId, false);
     }
@@ -48,6 +63,13 @@ public class PlayerQuestProgress {
     public void setClaimed(String questId) {
         claimedByQuest.put(questId, true);
     }
+
+	/**
+	 * Efface l'état "réclamé" d'une quête
+	 */
+	public void clearClaimed(String questId) {
+		claimedByQuest.remove(questId);
+	}
 
     public void resetDailyIfNeeded() {
         LocalDate today = LocalDate.now();

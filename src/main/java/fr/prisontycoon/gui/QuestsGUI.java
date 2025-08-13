@@ -22,11 +22,8 @@ public class QuestsGUI {
     private static final int DAILY_QUESTS_SLOT = 11;
     private static final int WEEKLY_QUESTS_SLOT = 15;
     private static final int BLOCK_COLLECTOR_SLOT = 13;
-    private static final int BATTLE_PASS_SLOT = 31;
-    private static final int ADVANCEMENT_QUESTS_SLOT = 22;
-    // Slots de récompenses bonus
-    private static final int DAILY_BONUS_SLOT = 29;
-    private static final int WEEKLY_BONUS_SLOT = 33;
+    private static final int BATTLE_PASS_SLOT = 33;
+    private static final int ADVANCEMENT_QUESTS_SLOT = 29;
     // Slots utilitaires
     private static final int REFRESH_SLOT = 40;
     private static final int CLOSE_SLOT = 44;
@@ -56,10 +53,6 @@ public class QuestsGUI {
         gui.setItem(BLOCK_COLLECTOR_SLOT, createBlockCollectorButton(player));
         gui.setItem(BATTLE_PASS_SLOT, createBattlePassButton(player));
         gui.setItem(ADVANCEMENT_QUESTS_SLOT, createAdvancementQuestsButton(player));
-        
-        // Récompenses bonus
-        gui.setItem(DAILY_BONUS_SLOT, createDailyBonusReward(player));
-        gui.setItem(WEEKLY_BONUS_SLOT, createWeeklyBonusReward(player));
 
         // Utilitaires
         gui.setItem(REFRESH_SLOT, createRefreshButton());
@@ -186,20 +179,22 @@ public class QuestsGUI {
             return;
         }
 
-        // Gestion des clics sur les quêtes
-        if (categoryData != null) {
-            handleQuestClick(player, slot, item, QuestCategory.valueOf(categoryData));
-            return;
-        }
+		// Gestion des clics sur les quêtes et bonus dans une catégorie
+		if (categoryData != null) {
+			QuestCategory category = QuestCategory.valueOf(categoryData);
+			if (slot == 49) {
+				claimBonusReward(player, category);
+				return;
+			}
+			handleQuestClick(player, slot, item, category);
+			return;
+		}
 
         // Gestion du collectionneur de blocs
         if ("main".equals(viewData)) {
             handleBlockCollectorClick(player, slot, item);
             return;
         }
-
-        // Gestion des récompenses bonus
-        handleBonusRewardClick(player, slot, item);
     }
 
     // ================================================================================================
@@ -226,7 +221,7 @@ public class QuestsGUI {
 
     private ItemStack createDailyQuestsButton(Player player) {
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
-        List<QuestDefinition> dailyQuests = plugin.getQuestManager().getQuestsByCategory(QuestCategory.DAILY);
+        List<QuestDefinition> dailyQuests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), QuestCategory.DAILY);
 
         int completed = 0;
         int total = dailyQuests.size();
@@ -271,7 +266,7 @@ public class QuestsGUI {
 
     private ItemStack createWeeklyQuestsButton(Player player) {
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
-        List<QuestDefinition> weeklyQuests = plugin.getQuestManager().getQuestsByCategory(QuestCategory.WEEKLY);
+        List<QuestDefinition> weeklyQuests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), QuestCategory.WEEKLY);
 
         int completed = 0;
         int total = weeklyQuests.size();
@@ -393,7 +388,7 @@ public class QuestsGUI {
 
     private ItemStack createDailyBonusReward(Player player) {
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
-        List<QuestDefinition> dailyQuests = plugin.getQuestManager().getQuestsByCategory(QuestCategory.DAILY);
+        List<QuestDefinition> dailyQuests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), QuestCategory.DAILY);
 
         boolean allCompleted = dailyQuests.stream()
                 .allMatch(quest -> progress.get(quest.getId()) >= quest.getTarget());
@@ -437,7 +432,7 @@ public class QuestsGUI {
 
     private ItemStack createWeeklyBonusReward(Player player) {
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
-        List<QuestDefinition> weeklyQuests = plugin.getQuestManager().getQuestsByCategory(QuestCategory.WEEKLY);
+        List<QuestDefinition> weeklyQuests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), QuestCategory.WEEKLY);
 
         boolean allCompleted = weeklyQuests.stream()
                 .allMatch(quest -> progress.get(quest.getId()) >= quest.getTarget());
@@ -484,7 +479,7 @@ public class QuestsGUI {
     // ================================================================================================
 
     private void fillQuestSlots(Inventory gui, Player player, QuestCategory category) {
-        List<QuestDefinition> quests = plugin.getQuestManager().getQuestsByCategory(category);
+        List<QuestDefinition> quests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), category);
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
 
         int[] questSlots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
@@ -535,7 +530,7 @@ public class QuestsGUI {
         ItemStack item = new ItemStack(material);
 
         if (claimed) {
-            item.setType(Material.LIME_STAINED_GLASS_PANE);
+            item.withType(Material.LIME_STAINED_GLASS_PANE);
         } else if (completed) {
             item = guiManager.addGlowEffect(item);
         }
@@ -705,16 +700,8 @@ public class QuestsGUI {
         }
     }
 
-    private void handleBonusRewardClick(Player player, int slot, ItemStack item) {
-        if (slot == DAILY_BONUS_SLOT) {
-            claimBonusReward(player, QuestCategory.DAILY);
-        } else if (slot == WEEKLY_BONUS_SLOT) {
-            claimBonusReward(player, QuestCategory.WEEKLY);
-        }
-    }
-
     private void claimBonusReward(Player player, QuestCategory category) {
-        List<QuestDefinition> quests = plugin.getQuestManager().getQuestsByCategory(category);
+        List<QuestDefinition> quests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), category);
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
 
         boolean allCompleted = quests.stream()
@@ -791,35 +778,27 @@ public class QuestsGUI {
     }
 
     private String getQuestDisplayName(QuestDefinition quest) {
-        return switch (quest.getType()) {
-            case KILL_PLAYERS -> "Éliminer des joueurs";
-            case KILL_MONSTERS -> "Tuer des monstres";
-            case MINE_BEACONS -> "Miner des beacons";
-            case UPGRADE_ENCHANTMENTS -> "Améliorer des enchantements";
-            case CAPTURE_OUTPOST -> "Capturer l'avant-poste";
-            case HOLD_OUTPOST_MINUTES -> "Occuper l'avant-poste";
-            case WIN_SPONTANEOUS_EVENT -> "Gagner un événement spontané";
-            case PARTICIPATE_BOSS -> "Participer à des combats de boss";
-            case USE_SELLHAND -> "Utiliser des sellhands";
-            case BREAK_CONTAINER -> "Casser des conteneurs";
-            default -> "Quête inconnue";
-        };
+        return quest.getType().getDescription();
     }
 
     private String getQuestDescription(QuestDefinition quest) {
-        return switch (quest.getType()) {
-            case KILL_PLAYERS -> "Éliminez " + quest.getTarget() + " joueurs en PvP";
-            case KILL_MONSTERS -> "Tuez " + quest.getTarget() + " monstres";
-            case MINE_BEACONS -> "Minez " + quest.getTarget() + " beacons en mine";
-            case UPGRADE_ENCHANTMENTS -> "Améliorez " + quest.getTarget() + " enchantements";
-            case CAPTURE_OUTPOST -> "Capturez l'avant-poste " + quest.getTarget() + " fois";
-            case HOLD_OUTPOST_MINUTES -> "Occupez l'avant-poste pendant " + quest.getTarget() + " minutes";
-            case WIN_SPONTANEOUS_EVENT -> "Gagnez " + quest.getTarget() + " événements spontanés";
-            case PARTICIPATE_BOSS -> "Participez à " + quest.getTarget() + " combats de boss";
-            case USE_SELLHAND -> "Utilisez " + quest.getTarget() + " sellhands";
-            case BREAK_CONTAINER -> "Cassez " + quest.getTarget() + " conteneurs";
-            default -> "Objectif personnalisé";
-        };
+        String base = quest.getType().getDescription();
+        String units = quest.getType().getUnitDescription();
+        StringBuilder details = new StringBuilder();
+        // Ajout d'éventuels paramètres contextuels pour enrichir la description
+        if (quest.getParams() != null && !quest.getParams().isEmpty()) {
+            Object material = quest.getParams().get("material");
+            Object mine = quest.getParams().get("mine");
+            Object category = quest.getParams().get("category");
+            List<String> parts = new ArrayList<>();
+            if (material != null) parts.add("Bloc: " + String.valueOf(material));
+            if (mine != null) parts.add("Mine: " + String.valueOf(mine));
+            if (category != null) parts.add("Catégorie: " + String.valueOf(category));
+            if (!parts.isEmpty()) {
+                details.append(" – ").append(String.join(", ", parts));
+            }
+        }
+        return base + " (cible: " + quest.getTarget() + " " + units + ")" + details;
     }
 
     // ================================================================================================
@@ -980,7 +959,7 @@ public class QuestsGUI {
     }
 
     private void checkAndGrantCategoryBonus(Player player, QuestCategory category) {
-        List<QuestDefinition> quests = plugin.getQuestManager().getQuestsByCategory(category);
+        List<QuestDefinition> quests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), category);
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
 
         boolean allCompleted = quests.stream()
