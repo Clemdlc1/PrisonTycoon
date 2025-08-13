@@ -186,11 +186,24 @@ public class QuestManager {
     public PlayerQuestProgress getProgress(UUID playerId) {
         PlayerQuestProgress p = cache.computeIfAbsent(playerId, this::loadProgress);
         boolean changed = false;
-        // Garantit qu'un set actif est présent (résilience si passage de jour/semaine sans rechargement)
+        // Garantit qu'un set actif est présent (résilience si passage de jour/semaine)
         changed |= ensureActiveQuestsForCategory(p, QuestCategory.DAILY, 7);
         changed |= ensureActiveQuestsForCategory(p, QuestCategory.WEEKLY, 10);
         if (changed) {
             saveProgress(p);
+        }
+        return p;
+    }
+
+    /**
+     * Variante interne qui ne déclenche jamais de (re-)sélection.
+     * Utilisée pour les ajouts de progression afin de ne pas commencer une quête automatiquement.
+     */
+    private PlayerQuestProgress getProgressNoAutoselect(UUID playerId) {
+        PlayerQuestProgress p = cache.get(playerId);
+        if (p == null) {
+            p = loadProgress(playerId);
+            cache.put(playerId, p);
         }
         return p;
     }
@@ -296,14 +309,9 @@ public class QuestManager {
     public void addProgress(Player player, QuestType type, int amount) {
         if (amount <= 0) return;
         UUID id = player.getUniqueId();
-        PlayerQuestProgress p = getProgress(id);
+        PlayerQuestProgress p = getProgressNoAutoselect(id);
         p.resetDailyIfNeeded();
         p.resetWeeklyIfNeeded();
-
-        boolean changed = false;
-        // Si un reset vient d'être fait, s'assurer que des quêtes actives existent
-        changed |= ensureActiveQuestsForCategory(p, QuestCategory.DAILY, 7);
-        changed |= ensureActiveQuestsForCategory(p, QuestCategory.WEEKLY, 10);
 
         for (QuestDefinition q : quests.values()) {
             if (q.getType() != type) continue;
@@ -315,9 +323,6 @@ public class QuestManager {
             p.set(qid, Math.min(q.getTarget(), current + amount));
         }
         cache.put(id, p);
-        if (changed) {
-            saveProgress(p);
-        }
     }
 
     public boolean claim(Player player, String questId) {

@@ -406,7 +406,7 @@ commands:
 
   quetes:
     description: "Ouvre le menu des quêtes (quotidiennes/hebdomadaires)"
-    usage: /quetes
+    usage: /quetes [reset]
     permission: specialmine.basic
 
   battlepassadmin:
