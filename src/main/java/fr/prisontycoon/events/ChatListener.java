@@ -1,6 +1,7 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
+import org.bukkit.Bukkit;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -32,10 +33,12 @@ public class ChatListener implements Listener {
 
     // Anti-spam
     private static final long SPAM_DELAY = 2000; // 2 secondes entre les messages
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]");
+	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]|\\[shop\\]");
+	private static final long SHOP_TAG_COOLDOWN = 5 * 60 * 1000L; // 5 minutes
     private final PrisonTycoon plugin;
     private final Map<UUID, String> lastMessages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastMessageTimes = new ConcurrentHashMap<>();
+	private final Map<UUID, Long> lastShopTagTimes = new ConcurrentHashMap<>();
 
     public ChatListener(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -242,15 +245,17 @@ public class ChatListener implements Listener {
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(processedMessage);
         int lastEnd = 0;
 
-        while (matcher.find()) {
+		while (matcher.find()) {
             String beforeText = processedMessage.substring(lastEnd, matcher.start());
             if (!beforeText.isEmpty()) {
                 finalMessage.append(LegacyComponentSerializer.legacySection().deserialize(beforeText));
             }
             String placeholder = matcher.group();
-            if (!canUseSpecialPlaceholders) {
-                finalMessage.append(Component.text("[PERMISSION REQUISE]", NamedTextColor.RED));
-            } else if (placeholder.equals("[hand]")) {
+			if (placeholder.equals("[shop]")) {
+				finalMessage.append(createShopComponent(player));
+			} else if (!canUseSpecialPlaceholders) {
+				finalMessage.append(Component.text("[PERMISSION REQUISE]", NamedTextColor.RED));
+			} else if (placeholder.equals("[hand]")) {
                 finalMessage.append(createHandComponent(player.getInventory().getItemInMainHand()));
             } else if (placeholder.equals("[inv]")) {
                 finalMessage.append(createInventoryComponent(player));
@@ -308,6 +313,84 @@ public class ChatListener implements Listener {
     }
 
     /**
+     * Crée le composant pour [shop]
+     */
+    private Component createShopComponent(Player player) {
+        // Cooldown par joueur
+        long now = System.currentTimeMillis();
+        Long last = lastShopTagTimes.get(player.getUniqueId());
+        boolean onCooldown = last != null && (now - last) < SHOP_TAG_COOLDOWN;
+
+        TextComponent.Builder shopText = Component.text()
+                .color(NamedTextColor.GOLD)
+                .decorate(TextDecoration.BOLD)
+                .append(Component.text("[SHOP]"));
+
+        String hover = buildShopHover(player);
+        if (hover == null || hover.isEmpty()) {
+            hover = "Clique pour te téléporter au shop";
+        }
+
+        // Hover toujours présent
+        shopText.hoverEvent(HoverEvent.showText(Component.text(hover, NamedTextColor.YELLOW)));
+
+        // Si le plugin PlayerShops est actif et pas de cooldown, on rend cliquable
+        boolean playerShopsEnabled = plugin.isPlayerShopsAvailable();
+
+        if (playerShopsEnabled && !onCooldown) {
+            shopText.clickEvent(ClickEvent.runCommand("/shop tp " + player.getName()));
+            lastShopTagTimes.put(player.getUniqueId(), now);
+        } else if (onCooldown) {
+            long remaining = (SHOP_TAG_COOLDOWN - (now - last)) / 1000;
+            player.sendMessage(Component.text("⏳ Tu pourras renvoyer ton [SHOP] dans " + (remaining) + "s", NamedTextColor.RED));
+        }
+
+        return shopText.build();
+    }
+
+    private String buildShopHover(Player player) {
+        try {
+            var ps = this.plugin.getPlayerShopsPlugin();
+            if (ps == null) return null;
+
+            Class<?> pluginClass = ps.getClass();
+            var getShopManager = pluginClass.getMethod("getShopManager");
+            Object shopManager = getShopManager.invoke(ps);
+            if (shopManager == null) return null;
+
+            Class<?> shopManagerClass = shopManager.getClass();
+            var getPlayerShop = shopManagerClass.getMethod("getPlayerShop", UUID.class);
+            Object shop = getPlayerShop.invoke(shopManager, player.getUniqueId());
+            if (shop == null) return "Aucun shop trouvé";
+
+            String ownerName = (String) shop.getClass().getMethod("getOwnerName").invoke(shop);
+            Object ad = null;
+            try { ad = shop.getClass().getMethod("getAdvertisement").invoke(shop); } catch (NoSuchMethodException ignored) {}
+            String customMsg = null;
+            try { customMsg = (String) shop.getClass().getMethod("getCustomMessage").invoke(shop); } catch (NoSuchMethodException ignored) {}
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("Shop de ").append(ownerName != null ? ownerName : player.getName());
+            if (ad != null) {
+                try {
+                    Boolean active = (Boolean) ad.getClass().getMethod("isActive").invoke(ad);
+                    String title = (String) ad.getClass().getMethod("getTitle").invoke(ad);
+                    String desc = (String) ad.getClass().getMethod("getDescription").invoke(ad);
+                    sb.append("\n");
+                    if (title != null && !title.isEmpty()) sb.append(title).append("\n");
+                    if (desc != null && !desc.isEmpty()) sb.append(desc).append("\n");
+                    if (active != null && active) sb.append("(Annonce active)");
+                } catch (Throwable ignored) {}
+            } else if (customMsg != null && !customMsg.isEmpty()) {
+                sb.append("\n").append(customMsg);
+            }
+            return sb.toString();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
      * Vérifie si un joueur peut envoyer un message (anti-spam)
      */
     private boolean canPlayerChat(Player player, String message) {
@@ -340,7 +423,7 @@ public class ChatListener implements Listener {
         lastMessageTimes.put(uuid, System.currentTimeMillis());
     }
 
-    private String processMessage(Player player, String message) {
+	private String processMessage(Player player, String message) {
         boolean canUseColors = player.hasPermission("specialmine.chat.colors") ||
                 player.hasPermission("specialmine.vip") ||
                 player.hasPermission("specialmine.admin");
@@ -348,19 +431,6 @@ public class ChatListener implements Listener {
         if (canUseColors) {
             // Garde la compatibilité avec les codes couleur legacy pour le traitement
             message = message.replace('&', '§');
-        }
-
-        // Retire les couleurs pour la vérification du contenu
-        String stripped = PlainTextComponentSerializer.plainText()
-                .serialize(LegacyComponentSerializer.legacySection().deserialize(message)).trim();
-
-        if (stripped.equals("[hand]") || stripped.equals("[inv]") ||
-                (stripped.contains("[hand]") && stripped.contains("[inv]") &&
-                        stripped.replace("[hand]", "").replace("[inv]", "").trim().isEmpty())) {
-            message = "Mon stuff: [hand] [inv]";
-            if (canUseColors) {
-                message = message.replace('&', '§');
-            }
         }
         return message;
     }

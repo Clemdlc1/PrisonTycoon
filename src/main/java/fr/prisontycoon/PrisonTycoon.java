@@ -1,6 +1,7 @@
 package fr.prisontycoon;
 
 import fr.custommobs.CustomMobsPlugin;
+import fr.shop.PlayerShops;
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
@@ -20,6 +21,7 @@ import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
 import fr.prisontycoon.utils.StartupBedrockReplacer;
 import fr.prisontycoon.vouchers.VoucherManager;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -33,6 +35,7 @@ public final class PrisonTycoon extends JavaPlugin {
     // --- Champs Statiques & Instances ---
     private static PrisonTycoon instance;
     private CustomMobsPlugin customMobsPlugin = null;
+    private PlayerShops playerShopsPlugin = null;
 
     // --- Utilitaires Core ---
     private Logger logger;
@@ -507,6 +510,19 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public void setCustomMobsPlugin(CustomMobsPlugin customMobsPlugin) {
         this.customMobsPlugin = customMobsPlugin;
+    }
+
+    // --- PlayerShops Hook ---
+    public PlayerShops getPlayerShopsPlugin() {
+        return this.playerShopsPlugin;
+    }
+
+    public void setPlayerShopsPlugin(PlayerShops playerShopsPlugin) {
+        this.playerShopsPlugin = playerShopsPlugin;
+    }
+
+    public boolean isPlayerShopsAvailable() {
+        return this.playerShopsPlugin != null && this.playerShopsPlugin.isEnabled();
     }
 
     // --- Managers ---

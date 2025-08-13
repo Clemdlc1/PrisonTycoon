@@ -216,6 +216,7 @@ public class ProfessionManager {
         }
 
         plugin.getPlayerDataManager().markDirty(playerId);
+        plugin.getPlayerDataManager().savePlayerData(playerId); // Sauvegarde
     }
 
     /**

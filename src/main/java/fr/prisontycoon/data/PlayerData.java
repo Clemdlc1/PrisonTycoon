@@ -189,7 +189,6 @@ public class PlayerData {
         this.selectedOutpostSkin = "default";
         this.unlockedOutpostSkins = new HashSet<>();
 
-
         // Récompense journalière par défaut
         this.dailyProgress = 0;
         this.dailyLastClaim = 0L;

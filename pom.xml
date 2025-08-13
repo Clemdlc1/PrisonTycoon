@@ -119,6 +119,13 @@
         </dependency>
 
         <dependency>
+            <groupId>fr.shop</groupId>
+            <artifactId>PlayerShops</artifactId>
+            <version>0.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>de.oliver</groupId>
             <artifactId>FancyNpcs</artifactId>
             <version>2.7.0</version>
