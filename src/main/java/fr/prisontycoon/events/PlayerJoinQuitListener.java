@@ -96,6 +96,9 @@ public class PlayerJoinQuitListener implements Listener {
 
             plugin.getGUIManager().giveMainMenuHead(player);
 
+            // Notification récompense quotidienne
+            plugin.getDailyRewardManager().notifyIfClaimAvailable(player);
+
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (plugin.getScoreboardTask() != null) {
                     plugin.getScoreboardTask().forceUpdatePlayer(player);

@@ -60,6 +60,7 @@ public enum GUIType {
     ADVANCEMENT_QUESTS("advancement_quests"),
     QUEST_STATISTICS("quest_statistics"),
     QUEST_REWARDS_HISTORY("quest_rewards_history"),
+    DAILY_REWARD("daily_reward"),
     FORGE_MAIN("forge_main"),
     FORGE_RECIPE("forge_recipe");
 

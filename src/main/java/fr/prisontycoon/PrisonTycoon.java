@@ -78,6 +78,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private QuestManager questManager;
     private BlockCollectorManager blockCollectorManager;
     private ForgeManager forgeManager;
+    private DailyRewardManager dailyRewardManager;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -109,6 +110,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private QuestsGUI questsGUI;
     private ForgeGUI forgeGUI;
     private ForgeRecipeGUI forgeRecipeGUI;
+    private DailyRewardGUI dailyRewardGUI;
 
     // --- Tâches ---
     private ActionBarTask actionBarTask;
@@ -218,6 +220,7 @@ public final class PrisonTycoon extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         playerDataManager = new PlayerDataManager(this);
         guiManager = new GUIManager(this);
+        dailyRewardManager = new DailyRewardManager(this);
         economyManager = new EconomyManager(this);
         enchantmentManager = new EnchantmentManager(this);
         pickaxeManager = new PickaxeManager(this);
@@ -289,6 +292,7 @@ public final class PrisonTycoon extends JavaPlugin {
         questsGUI = new QuestsGUI(this);
         forgeGUI = new ForgeGUI(this);
         forgeRecipeGUI = new ForgeRecipeGUI(this);
+        dailyRewardGUI = new DailyRewardGUI(this);
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -392,6 +396,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new OutpostCommand(this), "ap");
         registerCommand(new PlayerDataCommand(this), "playerdata");
         registerCommand(new QuestCommand(this), "quetes");
+        registerCommand(new DailyCommand(this), "daily", "jour");
         registerCommand(new ForgeCommand(this), "forge");
 
         logger.info("§aCommandes enregistrées.");
@@ -633,6 +638,14 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public ForgeManager getForgeManager() {
         return forgeManager;
+    }
+
+    public DailyRewardManager getDailyRewardManager() {
+        return dailyRewardManager;
+    }
+
+    public DailyRewardGUI getDailyRewardGUI() {
+        return dailyRewardGUI;
     }
 
     // --- Tâches ---

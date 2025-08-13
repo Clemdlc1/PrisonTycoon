@@ -138,7 +138,10 @@ public class PlayerDataManager {
                     selected_outpost_skin VARCHAR(255) DEFAULT 'default',
                     unlocked_outpost_skins TEXT DEFAULT '["default"]',
                     collected_heads TEXT DEFAULT '[]',
-                    claimed_head_rewards TEXT DEFAULT '[]'
+                    claimed_head_rewards TEXT DEFAULT '[]',
+                    daily_progress INT DEFAULT 0,
+                    daily_last_claim BIGINT DEFAULT 0,
+                    total_playtime BIGINT DEFAULT 0
                 );
                 """;
 
@@ -389,6 +392,11 @@ public class PlayerDataManager {
                     data.setClaimedHeadRewards(new HashSet<>());
                 }
 
+                // Daily reward
+                data.setDailyProgress(Math.max(0, Math.min(14, rs.getInt("daily_progress"))));
+                data.setDailyLastClaim(Math.max(0L, rs.getLong("daily_last_claim")));
+                data.setTotalPlaytimeMillis(Math.max(0L, rs.getLong("total_playtime")));
+
                 plugin.getPluginLogger().debug("§aDonnées chargées avec succès pour " + playerName + " (" + playerId + ")");
                 return data;
             }
@@ -480,8 +488,9 @@ public class PlayerDataManager {
                         autominer_pending_beacons, bank_savings_balance, bank_safe_balance, bank_level, 
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
-                        gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)
+                        gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
+                        daily_progress, daily_last_claim, total_playtime
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?, ?, ?, ?)
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
                         coins = EXCLUDED.coins,
@@ -535,7 +544,10 @@ public class PlayerDataManager {
                         selected_outpost_skin =  EXCLUDED.selected_outpost_skin,
                         unlocked_outpost_skins =  EXCLUDED.unlocked_outpost_skins,
                         collected_heads = EXCLUDED.collected_heads,
-                        claimed_head_rewards = EXCLUDED.claimed_head_rewards
+                        claimed_head_rewards = EXCLUDED.claimed_head_rewards,
+                        daily_progress = EXCLUDED.daily_progress,
+                        daily_last_claim = EXCLUDED.daily_last_claim,
+                        total_playtime = EXCLUDED.total_playtime
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -599,6 +611,9 @@ public class PlayerDataManager {
                     ps.setString(52, gson.toJson(data.getUnlockedOutpostSkins()));
                     ps.setString(53, gson.toJson(data.getCollectedHeads()));
                     ps.setString(54, gson.toJson(data.getClaimedHeadRewards()));
+                    ps.setInt(55, data.getDailyProgress());
+                    ps.setLong(56, data.getDailyLastClaim());
+                    ps.setLong(57, data.getTotalPlaytimeMillis());
 
                     ps.executeUpdate();
                     conn.commit();

@@ -413,6 +413,12 @@ commands:
     usage: /forge
     permission: specialmine.basic
 
+  daily:
+    description: "Ouvre le menu des récompenses journalières"
+    usage: /daily
+    permission: specialmine.basic
+    aliases: [ jour ]
+
 # Compatibilité
 depend-bootstrap: false
 

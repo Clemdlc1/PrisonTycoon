@@ -172,6 +172,7 @@ public class GUIListener implements Listener {
             case BANNER_CREATOR -> plugin.getGangGUI().handleBannerCreatorClick(player, slot, item, clickType);
 
             case WARP_MENU, WARP_MINES_MENU -> plugin.getWarpGUI().handleWarpMenuClick(player, item);
+            case DAILY_REWARD -> plugin.getDailyRewardGUI().handleClick(player, slot);
 
             case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
             case QUESTS_MENU, QUESTS_DAILY, QUESTS_WEEKLY, ADVANCEMENT_QUESTS, QUEST_STATISTICS, QUEST_REWARDS_HISTORY,

@@ -116,6 +116,14 @@ public class PlayerData {
     private Set<String> collectedHeads = new HashSet<>();
     private Set<Integer> claimedHeadRewards = new HashSet<>();
 
+    // Récompense journalière
+    private int dailyProgress = 0; // 0..14 ; jour réclamable = dailyProgress + 1
+    private long dailyLastClaim = 0L; // epoch millis
+
+    // Temps de jeu total (ms) et début de session (ms, non persisté)
+    private long totalPlaytimeMillis = 0L;
+    private long sessionStartMillis = 0L;
+
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -150,6 +158,10 @@ public class PlayerData {
         this.sanctionHistory = new ArrayList<>();
         this.customPermissions = new HashSet<>(); // NOUVEAU
 
+        // Récompense journalière par défaut
+        this.dailyProgress = 0;
+        this.dailyLastClaim = 0L;
+
         // Dans le constructeur existant de PlayerData, ajouter:
         this.activeProfession = null;
         this.lastProfessionChange = 0;
@@ -178,8 +190,71 @@ public class PlayerData {
         this.unlockedOutpostSkins = new HashSet<>();
 
 
+        // Récompense journalière par défaut
+        this.dailyProgress = 0;
+        this.dailyLastClaim = 0L;
+
+        // Playtime par défaut
+        this.totalPlaytimeMillis = 0L;
+        this.sessionStartMillis = 0L;
+
         // Reset stats dernière minute
         resetLastMinuteStats();
+    }
+
+    // --- Daily reward getters/setters ---
+    public int getDailyProgress() {
+        return dailyProgress;
+    }
+
+    public void setDailyProgress(int dailyProgress) {
+        this.dailyProgress = Math.max(0, Math.min(14, dailyProgress));
+    }
+
+    public long getDailyLastClaim() {
+        return dailyLastClaim;
+    }
+
+    public void setDailyLastClaim(long dailyLastClaim) {
+        this.dailyLastClaim = Math.max(0L, dailyLastClaim);
+    }
+
+    public int getDailyClaimableDay() {
+        return (dailyProgress % 15) + 1;
+    }
+
+    public boolean hasClaimedToday(java.time.LocalDate today) {
+        if (dailyLastClaim <= 0) return false;
+        java.time.LocalDate then = java.time.Instant.ofEpochMilli(dailyLastClaim)
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        return today.equals(then);
+    }
+
+    public void advanceDailyProgress() {
+        this.dailyProgress = (this.dailyProgress + 1) % 15;
+    }
+
+    // --- Playtime ---
+    public long getTotalPlaytimeMillis() {
+        return totalPlaytimeMillis;
+    }
+
+    public void setTotalPlaytimeMillis(long totalPlaytimeMillis) {
+        this.totalPlaytimeMillis = Math.max(0L, totalPlaytimeMillis);
+    }
+
+    public long getSessionStartMillis() {
+        return sessionStartMillis;
+    }
+
+    public void setSessionStartMillis(long sessionStartMillis) {
+        this.sessionStartMillis = Math.max(0L, sessionStartMillis);
+    }
+
+    public void addPlaytimeMillis(long delta) {
+        if (delta > 0) {
+            this.totalPlaytimeMillis += delta;
+        }
     }
 
     // Méthodes économiques - TOTAL (toutes sources)
