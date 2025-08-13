@@ -8,6 +8,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 /**
  * Tâche de récapitulatif minute dans le chat
@@ -33,6 +40,11 @@ public class ChatTask extends BukkitRunnable {
 
             // NOUVEAU : Reset des stats minute après envoi
             resetAllMinuteStats();
+
+            // NOUVEAU : toutes les 10 minutes, envoyer une annonce (boutique/discord/avance)
+            if (summaryCycles % 10 == 0) {
+                sendPeriodicAnnouncement();
+            }
 
         } catch (Exception e) {
             plugin.getPluginLogger().severe("Erreur dans ChatTask:");
@@ -272,6 +284,67 @@ public class ChatTask extends BukkitRunnable {
             plugin.getPluginLogger().debug("Tentative d'auto-rankup pour " + player.getName());
             rankupCommand.performAutoRankup(player);
         }
+    }
+
+    /**
+     * NOUVEAU : Envoie toutes les 10 minutes une annonce parmi 3 options avec hover + clic
+     */
+    private void sendPeriodicAnnouncement() {
+        if (plugin.getServer().getOnlinePlayers().isEmpty()) return;
+
+        // Récupération des URLs depuis la config (avec valeurs par défaut)
+        String storeUrl = plugin.getConfig().getString("server-links.store", "https://example.com/store");
+        String discordUrl = plugin.getConfig().getString("server-links.discord", "https://discord.gg/yourInvite");
+
+        int choice = ThreadLocalRandom.current().nextInt(3);
+
+        Component message;
+        switch (choice) {
+            case 0 -> {
+                // Boutique
+                message = Component.text()
+                        .append(Component.text("[", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Annonce", NamedTextColor.GOLD, TextDecoration.BOLD))
+                        .append(Component.text("] ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Boutique: ", NamedTextColor.YELLOW))
+                        .append(Component.text("Cliquez ici pour soutenir le serveur et obtenir des avantages!", NamedTextColor.WHITE))
+                        .build()
+                        .hoverEvent(HoverEvent.showText(Component.text("Ouvrir la boutique", NamedTextColor.GREEN)))
+                        .clickEvent(ClickEvent.openUrl(storeUrl));
+            }
+            case 1 -> {
+                // Discord
+                message = Component.text()
+                        .append(Component.text("[", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Annonce", NamedTextColor.GOLD, TextDecoration.BOLD))
+                        .append(Component.text("] ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Discord: ", NamedTextColor.AQUA))
+                        .append(Component.text("Rejoignez la communauté et ne ratez aucune info!", NamedTextColor.WHITE))
+                        .build()
+                        .hoverEvent(HoverEvent.showText(Component.text("Rejoindre le Discord", NamedTextColor.GREEN)))
+                        .clickEvent(ClickEvent.openUrl(discordUrl));
+            }
+            default -> {
+                // Aide /avance
+                message = Component.text()
+                        .append(Component.text("[", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Astuce", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
+                        .append(Component.text("] ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("Bloqué ? ", NamedTextColor.YELLOW))
+                        .append(Component.text("Faites ", NamedTextColor.WHITE))
+                        .append(Component.text("/avance", NamedTextColor.GOLD, TextDecoration.BOLD))
+                        .append(Component.text(" pour vous guider dans votre progression.", NamedTextColor.WHITE))
+                        .build()
+                        .hoverEvent(HoverEvent.showText(Component.text("Cliquez pour exécuter /avance", NamedTextColor.GREEN)))
+                        .clickEvent(ClickEvent.runCommand("/avance"));
+            }
+        }
+
+        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
+            onlinePlayer.sendMessage(message);
+        }
+
+        plugin.getPluginLogger().debug("Annonce périodique envoyée (cycle=" + summaryCycles + ")");
     }
 
     /**
