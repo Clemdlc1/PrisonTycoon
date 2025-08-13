@@ -64,6 +64,7 @@ public enum GUIType {
     QUEST_REWARDS_HISTORY("quest_rewards_history"),
     DAILY_REWARD("daily_reward"),
     FORGE_MAIN("forge_main"),
+    BATTLE_PASS_MAIN_MENU("battle_pass_main_menu"),
     FORGE_RECIPE("forge_recipe");
 
     private final String id;

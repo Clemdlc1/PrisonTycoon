@@ -32,7 +32,8 @@ public class DailyRewardGUI {
         Inventory inv = plugin.getGUIManager().createInventory(45, "§8• §6Récompenses Journalières §8•");
         plugin.getGUIManager().fillBorders(inv);
 
-        int claimableDay = daily.getClaimableDay(player.getUniqueId());
+        int progress = daily.getProgress(player.getUniqueId()); // jours déjà récupérés dans le cycle (0..14)
+        int claimableDay = progress + 1;
         boolean alreadyClaimed = daily.hasClaimedToday(player.getUniqueId());
 
         // Positions pour 14 premiers jours (2 rangées de 7) centrées: colonnes 1..7 sur rangées 2 et 3
@@ -43,73 +44,118 @@ public class DailyRewardGUI {
 
         for (int i = 0; i < 14; i++) {
             int day = i + 1;
-            boolean isToday = (day == claimableDay && !alreadyClaimed);
-            boolean isClaimedToday = (day == claimableDay && alreadyClaimed);
-            ItemStack head = buildDayItem(day, isToday, isClaimedToday);
+            boolean isClaimed = (day <= progress) || (day == claimableDay && alreadyClaimed);
+            boolean isClaimable = (day == claimableDay && !alreadyClaimed);
+            ItemStack head = buildDayItem(day, isClaimable, isClaimed);
             inv.setItem(slots[i], head);
         }
 
         // Dernier jour (15) au centre d'une rangée dédiée (rangée 4 -> slot 31)
-        ItemStack last = buildDayItem(15, claimableDay == 15 && !alreadyClaimed, claimableDay == 15 && alreadyClaimed);
+        boolean lastClaimed = (15 <= progress) || (15 == claimableDay && alreadyClaimed);
+        boolean lastClaimable = (15 == claimableDay && !alreadyClaimed);
+        ItemStack last = buildDayItem(15, lastClaimable, lastClaimed);
         inv.setItem(31, last);
+
+        // Placeholder d'information (slot 4)
+        inv.setItem(4, buildInfoItem(progress));
 
         plugin.getGUIManager().registerOpenGUI(player, GUIType.DAILY_REWARD, inv);
         player.openInventory(inv);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.2f);
     }
 
-    private ItemStack buildDayItem(int day, boolean isToday, boolean isClaimedToday) {
-        // Box head: ouverte si réclamable aujourd'hui, fermée sinon
-        ItemStack skull = HeadUtils.createHead(isToday ? HeadEnum.OPEN_BOX : HeadEnum.CLOSED_BOX);
+    private ItemStack buildDayItem(int day, boolean isClaimable, boolean isClaimed) {
+        // Règle d'affichage:
+        // - OPEN_BOX = jour déjà récupéré
+        // - CLOSED_BOX = jour non récupéré
+        // - CLOSED_BOX avec glow = jour du J récupérable aujourd'hui
+        ItemStack skull = HeadUtils.createHead(isClaimed ? HeadEnum.OPEN_BOX : HeadEnum.CLOSED_BOX);
         ItemMeta meta = skull.getItemMeta();
         if (meta != null) {
-            String titleColor = isToday ? "§a" : (isClaimedToday ? "§7" : "§e");
+            String titleColor = isClaimable ? "§a" : (isClaimed ? "§7" : "§e");
             plugin.getGUIManager().applyName(meta, titleColor + "Jour " + day);
 
             List<String> lore = new ArrayList<>();
-            // Récompense visible seulement pour le jour J et le dernier jour
-            if (isToday || day == 15) {
+            // Récompense visible seulement pour le jour J (réclamable) et le dernier jour
+            if (isClaimable || day == 15) {
                 lore.add("§7Récompense: §f" + daily.getRewardDescription(day));
-                if (isToday) lore.add("");
-                if (isToday) lore.add("§e▶ Cliquez pour réclamer");
+                if (isClaimable) {
+                    lore.add("");
+                    lore.add("§e▶ Cliquez pour réclamer");
+                }
             } else {
-                lore.add("§8Récompense cachée");
+                // Claimed ou futur
+                if (isClaimed) {
+                    lore.add("§aDéjà récupéré");
+                } else {
+                    lore.add("§8Récompense cachée");
+                }
             }
             plugin.getGUIManager().applyLore(meta, lore);
             skull.setItemMeta(meta);
         }
 
         // Effet glowing si la récompense du jour est réclamable
-        if (isToday) {
+        if (!isClaimed && isClaimable) {
             ItemStack glow = plugin.getGUIManager().addGlowEffect(skull);
             if (glow != null) skull = glow;
         }
         return skull;
     }
 
+    private ItemStack buildInfoItem(int progress) {
+        ItemStack head = HeadUtils.createHead(HeadEnum.QUESTION);
+        ItemMeta meta = head.getItemMeta();
+        if (meta != null) {
+            plugin.getGUIManager().applyName(meta, "§eInformations");
+            List<String> lore = new ArrayList<>();
+            lore.add("§7- §f15 paliers, puis retour au Jour 1");
+            lore.add("§7- §fRécompense cachée sauf §eJour J§f et §eJour 15");
+            lore.add("§7- §fProgession actuelle: §e" + progress + "§7/§e15");
+            plugin.getGUIManager().applyLore(meta, lore);
+            head.setItemMeta(meta);
+        }
+        return head;
+    }
+
     public void handleClick(Player player, int slot) {
         // Autoriser clic uniquement si c'est le slot du jour réclamable
-        int claimableDay = daily.getClaimableDay(player.getUniqueId());
+        int progress = daily.getProgress(player.getUniqueId());
+        int claimableDay = progress + 1;
+        boolean alreadyClaimed = daily.hasClaimedToday(player.getUniqueId());
 
         int[] slots = new int[]{10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
-        int expectedSlot = -1;
-        if (claimableDay >= 1 && claimableDay <= 14) {
-            expectedSlot = slots[claimableDay - 1];
-        } else if (claimableDay == 15) {
-            expectedSlot = 31;
+        // on n'utilise plus expectedSlot, on calcule directement le jour cliqué
+
+        int clickedDay = -1;
+        for (int i = 0; i < slots.length; i++) {
+            if (slot == slots[i]) { clickedDay = i + 1; break; }
+        }
+        if (slot == 31) clickedDay = 15;
+
+        if (clickedDay != -1) {
+            boolean isClaimed = (clickedDay <= progress) || (clickedDay == claimableDay && alreadyClaimed);
+            boolean isClaimable = (clickedDay == claimableDay && !alreadyClaimed);
+
+            if (isClaimed) {
+                player.sendMessage("§cVous avez déjà récupéré la récompense de ce jour.");
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.0f);
+                return;
+            }
+            if (isClaimable) {
+                boolean ok = daily.tryClaim(player);
+                if (ok) {
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> open(player), 2L);
+                }
+                return;
+            }
+            // Futur
+            player.sendMessage("§cVous ne pouvez pas récupérer cette récompense pour le moment.");
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.0f);
+            return;
         }
 
-        if (slot == expectedSlot) {
-            boolean ok = daily.tryClaim(player);
-            if (ok) {
-                // Refresh
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> open(player), 2L);
-            } else {
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
-            }
-        } else {
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
-        }
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
     }
 }
 

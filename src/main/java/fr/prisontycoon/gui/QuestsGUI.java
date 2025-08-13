@@ -166,7 +166,7 @@ public class QuestsGUI {
         }
 
         if (slot == BATTLE_PASS_SLOT) {
-            openBattlePass(player, 1);
+            openBattlePass(player);
             return;
         }
 
@@ -969,8 +969,8 @@ public class QuestsGUI {
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.2f);
     }
 
-    private void openBattlePass(Player player, int page) {
-        plugin.getBattlePassGUI().open(player, page);
+    private void openBattlePass(Player player) {
+        plugin.getBattlePassGUI().openMainMenu(player);
     }
 
     private void openAdvancementQuests(Player player) {

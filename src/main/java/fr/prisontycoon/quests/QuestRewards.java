@@ -4,6 +4,10 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.boosts.BoostType;
 import fr.prisontycoon.vouchers.VoucherType;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Récompenses d'une quête (beacons, xp métier actif, vouchers/boosters).
@@ -18,6 +22,8 @@ public class QuestRewards {
     private int boostMinutes;        // optionnel
     private double boostPercent;     // optionnel
     private int essenceFragments;
+    private long tokens;
+    private Map<String, Integer> crateKeys;
 
     // Constructeur principal simple pour beacons + jobXp
     public QuestRewards(long beacons, int jobXp) {
@@ -29,6 +35,8 @@ public class QuestRewards {
         this.boostMinutes = 0;
         this.boostPercent = 0.0;
         this.essenceFragments = 0;
+            this.tokens = 0;
+            this.crateKeys = new HashMap<>();
     }
 
     // Constructeur pratique avec voucher
@@ -125,6 +133,30 @@ public class QuestRewards {
             if (!plugin.getContainerManager().addItemToContainers(player, it)) player.getInventory().addItem(it);
         }
 
+        // Ajoute des tokens
+        if (tokens > 0) {
+            plugin.getEconomyManager().addTokens(player, tokens);
+        }
+
+        // Don des clés de crate
+        if (crateKeys != null && !crateKeys.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : crateKeys.entrySet()) {
+                String mappedKeyType = mapKeyLabel(entry.getKey());
+                int remaining = Math.max(0, entry.getValue());
+                while (remaining > 0) {
+                    int give = Math.min(remaining, 64);
+                    ItemStack key = plugin.getEnchantmentManager().createKey(mappedKeyType);
+                    key.setAmount(give);
+                    boolean added = plugin.getContainerManager().addItemToContainers(player, key);
+                    if (!added) {
+                        player.getInventory().addItem(key);
+                    }
+                    remaining -= give;
+                }
+                data.addKeyObtained();
+            }
+        }
+
         // Marque les données comme modifiées pour sauvegarde
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
     }
@@ -144,6 +176,11 @@ public class QuestRewards {
             desc.append("§d+").append(jobXp).append(" XP Métier");
         }
 
+        if (tokens > 0) {
+            if (!desc.isEmpty()) desc.append("§7, ");
+            desc.append("§e").append(formatNumber(tokens)).append(" Tokens");
+        }
+
         if (voucherType != null && voucherTier > 0) {
             if (!desc.isEmpty()) desc.append("§7, ");
             desc.append("§bVoucher ").append(voucherType.name()).append(" T").append(voucherTier);
@@ -159,6 +196,17 @@ public class QuestRewards {
         if (essenceFragments > 0) {
             if (!desc.isEmpty()) desc.append("§7, ");
             desc.append("§bFragments Essence x").append(essenceFragments);
+        }
+
+        if (crateKeys != null && !crateKeys.isEmpty()) {
+            if (!desc.isEmpty()) desc.append("§7, ");
+            desc.append("§dClés: ");
+            boolean first = true;
+            for (Map.Entry<String, Integer> e : crateKeys.entrySet()) {
+                if (!first) desc.append("§7, ");
+                first = false;
+                desc.append("§f").append(mapKeyLabel(e.getKey())).append(" x").append(e.getValue());
+            }
         }
 
         return desc.toString();
@@ -193,6 +241,18 @@ public class QuestRewards {
         // Ajoute une valeur approximative pour les boosts selon durée et pourcentage
         if (boostType != null && boostMinutes > 0 && boostPercent > 0) {
             totalValue += (long) (boostMinutes * boostPercent * 10); // Valeur arbitraire
+        }
+
+        // Valeur approximative des tokens (1 token = 1)
+        if (tokens > 0) {
+            totalValue += tokens;
+        }
+
+        // Valeur approximative des clés (par clé = 1000)
+        if (crateKeys != null) {
+            for (Integer count : crateKeys.values()) {
+                if (count != null && count > 0) totalValue += count * 1000L;
+            }
         }
 
         return totalValue;
@@ -237,6 +297,20 @@ public class QuestRewards {
         return voucherType != null && voucherTier > 0;
     }
 
+    /**
+     * @return Le nombre de tokens
+     */
+    public long getTokens() {
+        return tokens;
+    }
+
+    /**
+     * @return Les clés de crates à donner (type -> quantité)
+     */
+    public Map<String, Integer> getCrateKeys() {
+        return crateKeys != null ? new HashMap<>(crateKeys) : Map.of();
+    }
+
     // ================================================================================================
     // MÉTHODES UTILITAIRES
     // ================================================================================================
@@ -277,6 +351,24 @@ public class QuestRewards {
         return boostType != null && boostMinutes > 0 && boostPercent > 0;
     }
 
+    // ================================================================================================
+    // UTILITAIRES INTERNES
+    // ================================================================================================
+
+    private static String mapKeyLabel(String label) {
+        if (label == null) return "Commune";
+        String l = label.trim().toLowerCase();
+        return switch (l) {
+            case "common", "commune" -> "Commune";
+            case "uncommon", "peu_commune", "peu commune", "peu-commune" -> "Peu Commune";
+            case "rare" -> "Rare";
+            case "epic", "epique", "épique" -> "Rare"; // approximation
+            case "legendary", "legendaire", "légendaire" -> "Légendaire";
+            case "cristal", "crystal" -> "Cristal";
+            default -> Character.toUpperCase(l.charAt(0)) + l.substring(1);
+        };
+    }
+
     /**
      * Formate un nombre avec des unités (K, M, G)
      */
@@ -302,6 +394,8 @@ public class QuestRewards {
                 ", boostMinutes=" + boostMinutes +
                 ", boostPercent=" + boostPercent +
                 ", essenceFragments=" + essenceFragments +
+                ", tokens=" + tokens +
+                ", crateKeys=" + crateKeys +
                 '}';
     }
 
@@ -343,6 +437,8 @@ public class QuestRewards {
         private int boostMinutes = 0;
         private double boostPercent = 0.0;
         private int essenceFragments = 0;
+        private long tokens = 0;
+        private Map<String, Integer> crateKeys = new HashMap<>();
 
         public Builder beacons(long beacons) {
             this.beacons = beacons;
@@ -351,6 +447,11 @@ public class QuestRewards {
 
         public Builder jobXp(int jobXp) {
             this.jobXp = jobXp;
+            return this;
+        }
+
+        public Builder tokens(long tokens) {
+            this.tokens = Math.max(0, tokens);
             return this;
         }
 
@@ -372,6 +473,17 @@ public class QuestRewards {
             return this;
         }
 
+        public Builder keys(Map<String, Integer> keys) {
+            if (keys != null) {
+                for (Map.Entry<String, Integer> e : keys.entrySet()) {
+                    if (e.getValue() != null && e.getValue() > 0) {
+                        this.crateKeys.merge(e.getKey(), e.getValue(), Integer::sum);
+                    }
+                }
+            }
+            return this;
+        }
+
         public QuestRewards build() {
             QuestRewards r = new QuestRewards(beacons, jobXp);
             if (voucherType != null && voucherTier > 0) {
@@ -385,6 +497,12 @@ public class QuestRewards {
             }
             if (essenceFragments > 0) {
                 r.essenceFragments = Math.max(0, essenceFragments);
+            }
+            if (tokens > 0) {
+                r.tokens = tokens;
+            }
+            if (crateKeys != null && !crateKeys.isEmpty()) {
+                r.crateKeys = new HashMap<>(crateKeys);
             }
             return r;
         }
