@@ -42,6 +42,21 @@ daily:
       job_xp: 30
 
 weekly:
+pass:
+  playtime_1:
+    type: PLAYTIME_MINUTES
+    target: 120
+    params: {}
+    rewards:
+      beacons: 250
+    bp_points: 40
+  playtime_2:
+    type: PLAYTIME_MINUTES
+    target: 600
+    params: {}
+    rewards:
+      beacons: 1000
+    bp_points: 100
   kill_players_week:
     type: KILL_PLAYERS
     target: 50

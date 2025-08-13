@@ -177,6 +177,7 @@ public class GUIListener implements Listener {
             case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
             case QUESTS_MENU, QUESTS_DAILY, QUESTS_WEEKLY, ADVANCEMENT_QUESTS, QUEST_STATISTICS, QUEST_REWARDS_HISTORY,
                  BLOCK_COLLECTOR -> plugin.getQuestsGUI().handleClick(player, slot, item);
+            case BATTLE_PASS_MENU -> plugin.getBattlePassGUI().handleClick(player, slot, item);
 
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
 

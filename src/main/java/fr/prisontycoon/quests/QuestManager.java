@@ -49,7 +49,12 @@ public class QuestManager {
                     daily_date VARCHAR(20),
                     daily_completed INT,
                     weekly_start VARCHAR(20),
-                    weekly_completed INT
+                    weekly_completed INT,
+                    bp_season_id VARCHAR(32),
+                    bp_points INT DEFAULT 0,
+                    bp_premium BOOLEAN DEFAULT FALSE,
+                    bp_claimed_free TEXT DEFAULT '[]',
+                    bp_claimed_premium TEXT DEFAULT '[]'
                 );
                 """;
         try (Connection c = plugin.getDatabaseManager().getConnection(); PreparedStatement ps = c.prepareStatement(q1)) {
@@ -92,11 +97,15 @@ public class QuestManager {
         quests.clear();
         ConfigurationSection daily = questsConfig.getConfigurationSection("daily");
         ConfigurationSection weekly = questsConfig.getConfigurationSection("weekly");
+        ConfigurationSection pass = questsConfig.getConfigurationSection("pass");
         if (daily != null) {
             loadCategory(daily, QuestCategory.DAILY);
         }
         if (weekly != null) {
             loadCategory(weekly, QuestCategory.WEEKLY);
+        }
+        if (pass != null) {
+            loadCategory(pass, QuestCategory.PASS);
         }
     }
 
@@ -155,7 +164,8 @@ public class QuestManager {
                 builder.boost(boostType, boostMinutes, boostPercent);
             }
             QuestRewards rewards = builder.build();
-            quests.put(id, new QuestDefinition(id, category, type, target, params, rewards));
+            int battlePassPoints = q.getInt("bp_points", category == QuestCategory.DAILY ? 20 : (category == QuestCategory.WEEKLY ? 200 : 0));
+            quests.put(id, new QuestDefinition(id, category, type, target, params, rewards, battlePassPoints));
         }
     }
 
@@ -272,6 +282,11 @@ public class QuestManager {
         cache.put(player.getUniqueId(), p);
         // Sauvegarde immédiate après claim pour résilience (crash/déconnexion)
         saveProgress(p);
+        // Ajouter des points de Pass
+        int bp = q.getBattlePassPoints();
+        if (bp > 0) {
+            plugin.getBattlePassManager().addPoints(player, bp);
+        }
         return true;
     }
 

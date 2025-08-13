@@ -12,15 +12,17 @@ public class QuestDefinition {
     private final int target;
     private final Map<String, Object> params;
     private final QuestRewards rewards;
+    private final int battlePassPoints;
 
     public QuestDefinition(String id, QuestCategory category, QuestType type, int target,
-                           Map<String, Object> params, QuestRewards rewards) {
+                           Map<String, Object> params, QuestRewards rewards, int battlePassPoints) {
         this.id = id;
         this.category = category;
         this.type = type;
         this.target = Math.max(1, target);
         this.params = params;
         this.rewards = rewards;
+        this.battlePassPoints = Math.max(0, battlePassPoints);
     }
 
     public String getId() {
@@ -45,6 +47,10 @@ public class QuestDefinition {
 
     public QuestRewards getRewards() {
         return rewards;
+    }
+
+    public int getBattlePassPoints() {
+        return battlePassPoints;
     }
 }
 

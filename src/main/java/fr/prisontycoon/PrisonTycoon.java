@@ -79,6 +79,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private BlockCollectorManager blockCollectorManager;
     private ForgeManager forgeManager;
     private DailyRewardManager dailyRewardManager;
+    private BattlePassManager battlePassManager;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -108,6 +109,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private WeaponArmorEnchantGUI weaponArmorEnchantGUI;
     private HeadCollectionGUI headCollectionGUI;
     private QuestsGUI questsGUI;
+    private BattlePassGUI battlePassGUI;
     private ForgeGUI forgeGUI;
     private ForgeRecipeGUI forgeRecipeGUI;
     private DailyRewardGUI dailyRewardGUI;
@@ -121,6 +123,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private AutoUpgradeTask autoUpgradeTask;
     private AutominerTask autominerTask;
     private PickaxeContainerUpdateTask pickaxeContainerTask;
+    private PlaytimeTrackerTask playtimeTrackerTask;
 
     //listeners
     private HeadCollectionListener headCollectionListener;
@@ -256,6 +259,7 @@ public final class PrisonTycoon extends JavaPlugin {
         questManager = new QuestManager(this);
         blockCollectorManager = new BlockCollectorManager(this);
         forgeManager = new ForgeManager(this);
+        battlePassManager = new BattlePassManager(this);
 
         logger.info("§aTous les managers ont été initialisés.");
     }
@@ -290,6 +294,7 @@ public final class PrisonTycoon extends JavaPlugin {
         weaponArmorEnchantGUI = new WeaponArmorEnchantGUI(this);
         headCollectionGUI = new HeadCollectionGUI(this);
         questsGUI = new QuestsGUI(this);
+        battlePassGUI = new BattlePassGUI(this);
         forgeGUI = new ForgeGUI(this);
         forgeRecipeGUI = new ForgeRecipeGUI(this);
         dailyRewardGUI = new DailyRewardGUI(this);
@@ -398,6 +403,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new QuestCommand(this), "quetes");
         registerCommand(new DailyCommand(this), "daily", "jour");
         registerCommand(new ForgeCommand(this), "forge");
+        registerCommand(new BattlePassAdminCommand(this), "battlepassadmin", "bpadmin");
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -447,6 +453,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
         pickaxeContainerTask = new PickaxeContainerUpdateTask(this);
         pickaxeContainerTask.runTaskTimerAsynchronously(this, 20L, 60L);
+
+        // 1 seconde pour accumuler le temps de jeu
+        playtimeTrackerTask = new PlaytimeTrackerTask(this);
+        playtimeTrackerTask.runTaskTimerAsynchronously(this, 20L, 20L);
 
         getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
             if (moderationManager != null) moderationManager.cleanupExpiredSanctions();
@@ -644,6 +654,10 @@ public final class PrisonTycoon extends JavaPlugin {
         return dailyRewardManager;
     }
 
+    public BattlePassManager getBattlePassManager() {
+        return battlePassManager;
+    }
+
     public DailyRewardGUI getDailyRewardGUI() {
         return dailyRewardGUI;
     }
@@ -768,6 +782,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public QuestsGUI getQuestsGUI() {
         return questsGUI;
+    }
+
+    public BattlePassGUI getBattlePassGUI() {
+        return battlePassGUI;
     }
 
     public ForgeGUI getForgeGUI() {

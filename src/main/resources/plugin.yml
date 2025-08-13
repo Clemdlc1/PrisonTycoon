@@ -408,6 +408,11 @@ commands:
     usage: /quetes
     permission: specialmine.basic
 
+  battlepassadmin:
+    description: "Administration du Pass de combat"
+    usage: /bpadmin <start|season|givepremium <joueur>>
+    permission: specialmine.admin
+
   forge:
     description: "Ouvre la Forge"
     usage: /forge

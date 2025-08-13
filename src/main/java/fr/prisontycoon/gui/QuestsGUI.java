@@ -22,6 +22,7 @@ public class QuestsGUI {
     private static final int DAILY_QUESTS_SLOT = 11;
     private static final int WEEKLY_QUESTS_SLOT = 15;
     private static final int BLOCK_COLLECTOR_SLOT = 13;
+    private static final int BATTLE_PASS_SLOT = 31;
     private static final int ADVANCEMENT_QUESTS_SLOT = 22;
     // Slots de récompenses bonus
     private static final int DAILY_BONUS_SLOT = 29;
@@ -53,8 +54,9 @@ public class QuestsGUI {
         gui.setItem(DAILY_QUESTS_SLOT, createDailyQuestsButton(player));
         gui.setItem(WEEKLY_QUESTS_SLOT, createWeeklyQuestsButton(player));
         gui.setItem(BLOCK_COLLECTOR_SLOT, createBlockCollectorButton(player));
+        gui.setItem(BATTLE_PASS_SLOT, createBattlePassButton(player));
         gui.setItem(ADVANCEMENT_QUESTS_SLOT, createAdvancementQuestsButton(player));
-
+        
         // Récompenses bonus
         gui.setItem(DAILY_BONUS_SLOT, createDailyBonusReward(player));
         gui.setItem(WEEKLY_BONUS_SLOT, createWeeklyBonusReward(player));
@@ -157,9 +159,14 @@ public class QuestsGUI {
             openBlockCollector(player);
             return;
         }
-
+        
         if (slot == ADVANCEMENT_QUESTS_SLOT) {
             openAdvancementQuests(player);
+            return;
+        }
+
+        if (slot == BATTLE_PASS_SLOT) {
+            openBattlePass(player, 1);
             return;
         }
 
@@ -253,7 +260,7 @@ public class QuestsGUI {
 
         // Enchantement si toutes terminées
         if (completed == total && total > 0) {
-            item.withType(Material.GOLDEN_APPLE);
+            item = new ItemStack(Material.GOLDEN_APPLE);
             item = guiManager.addGlowEffect(item);
         }
 
@@ -298,7 +305,7 @@ public class QuestsGUI {
 
         // Enchantement si toutes terminées
         if (completed == total && total > 0) {
-            item.withType(Material.GOLDEN_APPLE);
+            item = new ItemStack(Material.GOLDEN_APPLE);
             item = guiManager.addGlowEffect(item);
         }
 
@@ -332,6 +339,29 @@ public class QuestsGUI {
                 "",
                 "§a▶ Cliquez pour voir vos statistiques"
         );
+
+        guiManager.applyLore(meta, lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createBattlePassButton(Player player) {
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemMeta meta = item.getItemMeta();
+        guiManager.applyName(meta, "§6⚔ §lPass de Combat");
+
+        var bpm = plugin.getBattlePassManager();
+        int tier = bpm.getTier(player.getUniqueId());
+        int points = bpm.getPoints(player.getUniqueId());
+        boolean premium = bpm.hasPremium(player.getUniqueId());
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add("§7Saison: §f" + bpm.getCurrentSeasonId());
+        lore.add("§7Statut: " + (premium ? "§aPremium" : "§7Gratuit"));
+        lore.add("§7Palier actuel: §e" + tier + " §7(§e" + (points % fr.prisontycoon.managers.BattlePassManager.POINTS_PER_TIER) + "§7/§e" + fr.prisontycoon.managers.BattlePassManager.POINTS_PER_TIER + ")");
+        lore.add("");
+        lore.add("§e▶ Cliquez pour ouvrir");
 
         guiManager.applyLore(meta, lore);
         item.setItemMeta(meta);
@@ -937,6 +967,10 @@ public class QuestsGUI {
         }
 
         player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.5f, 1.2f);
+    }
+
+    private void openBattlePass(Player player, int page) {
+        plugin.getBattlePassGUI().open(player, page);
     }
 
     private void openAdvancementQuests(Player player) {

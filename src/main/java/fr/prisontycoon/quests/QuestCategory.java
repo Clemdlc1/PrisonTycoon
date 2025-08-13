@@ -5,7 +5,8 @@ package fr.prisontycoon.quests;
  */
 public enum QuestCategory {
     DAILY,
-    WEEKLY
+    WEEKLY,
+    PASS
 }
 
 

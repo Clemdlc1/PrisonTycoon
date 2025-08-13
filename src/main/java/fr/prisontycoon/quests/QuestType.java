@@ -24,7 +24,10 @@ public enum QuestType {
 
     // Economie/Objets
     USE_SELLHAND,
-    BREAK_CONTAINER
+    BREAK_CONTAINER,
+
+    // Temps de jeu (minutes)
+    PLAYTIME_MINUTES
 }
 
 

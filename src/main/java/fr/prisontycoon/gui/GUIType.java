@@ -52,6 +52,8 @@ public enum GUIType {
     BOOK_SHOP_PICKAXE("book_shop_pickaxe"),
     BOOK_SHOP_WEAPON_ARMOR("book_shop_weapon_armor"),
     QUESTS_MENU("quests_menu"),
+    BATTLE_PASS_MENU("battle_pass_menu"),
+    BATTLE_PASS_REWARDS("battle_pass_rewards"),
     QUESTS_DAILY("quests_daily"),
     QUESTS_WEEKLY("quests_weekly"),
     BLOCK_COLLECTOR("block_collector"),
