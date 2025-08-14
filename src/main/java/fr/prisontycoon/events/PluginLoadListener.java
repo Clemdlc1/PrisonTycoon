@@ -1,6 +1,7 @@
 package fr.prisontycoon.events; // Assurez-vous que le package est correct
 
 import fr.custommobs.CustomMobsPlugin;
+import fr.skyblock.CustomSkyblock;
 import fr.prisontycoon.PrisonTycoon;
 import fr.shop.PlayerShops;
 import org.bukkit.Bukkit;
@@ -39,6 +40,17 @@ public class PluginLoadListener implements Listener {
                 prisonTycoon.getLogger().info("Successfully hooked into PlayerShops!");
             } else {
                 prisonTycoon.getLogger().warning("PlayerShops was enabled, but the hook failed.");
+            }
+            return;
+        }
+
+        if ("CustomSkyblock".equals(name)) {
+            Plugin sky = Bukkit.getPluginManager().getPlugin("CustomSkyblock");
+            if (sky != null && sky.isEnabled()) {
+                prisonTycoon.setCustomSkyblock((CustomSkyblock) sky);
+                prisonTycoon.getLogger().info("Successfully soft-hooked into CustomSkyblock!");
+            } else {
+                prisonTycoon.getLogger().warning("CustomSkyblock was enabled, but the hook failed.");
             }
         }
     }

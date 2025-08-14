@@ -106,6 +106,9 @@ public class PlayerData {
     private int bankLevel = 1;
     private long totalBankDeposits = 0;
     private long lastInterestTime = System.currentTimeMillis();
+    // Type de banque choisi et cooldown de changement
+    private BankType bankType = BankType.NONE;
+    private long lastBankTypeChange = 0L;
 
     private String gangId;
     private String gangInvitation; // ID du gang qui a invité ce joueur
@@ -202,6 +205,22 @@ public class PlayerData {
 
         // Reset stats dernière minute
         resetLastMinuteStats();
+    }
+
+    public BankType getBankType() {
+        return bankType;
+    }
+
+    public void setBankType(BankType bankType) {
+        this.bankType = bankType != null ? bankType : BankType.NONE;
+    }
+
+    public long getLastBankTypeChange() {
+        return lastBankTypeChange;
+    }
+
+    public void setLastBankTypeChange(long lastBankTypeChange) {
+        this.lastBankTypeChange = Math.max(0L, lastBankTypeChange);
     }
 
     // --- Daily reward getters/setters ---

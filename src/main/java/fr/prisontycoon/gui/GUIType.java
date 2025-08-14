@@ -37,6 +37,7 @@ public enum GUIType {
     GANG_SETTINGS("gang_settings"),
     BANNER_CREATOR("banner_creator"),
     BANK_MAIN("bank_main"),
+    BANK_TYPE_SELECTOR("bank_type_selector"),
     INVESTMENT_MENU("investment_menu"),
     CONTAINER_CONFIG("container_config"),
     CONTAINER_FILTER("container_filter"),

@@ -129,6 +129,8 @@ public class PlayerDataManager {
                     bank_total_deposits BIGINT DEFAULT 0,
                     bank_last_interest BIGINT DEFAULT 0,
                     bank_investments TEXT DEFAULT '{}',
+                    bank_type VARCHAR(32) DEFAULT 'NONE',
+                    bank_type_last_change BIGINT DEFAULT 0,
                     statistics_total_blocks_mined BIGINT DEFAULT 0,
                     statistics_total_blocks_destroyed BIGINT DEFAULT 0,
                     statistics_total_greed_triggers BIGINT DEFAULT 0,
@@ -340,6 +342,10 @@ public class PlayerDataManager {
                 data.setTotalBankDeposits(rs.getLong("bank_total_deposits"));
                 data.setBankLastInterest(rs.getLong("bank_last_interest"));
 
+                String bankTypeStr = rs.getString("bank_type");
+                data.setBankType(fr.prisontycoon.data.BankType.fromId(bankTypeStr));
+                data.setLastBankTypeChange(rs.getLong("bank_type_last_change"));
+
                 Map<String, Long> bankInvestments = loadJsonValue(rs, "bank_investments", new TypeToken<Map<String, Long>>() {
                 }.getType());
                 if (bankInvestments != null) {
@@ -491,14 +497,14 @@ public class PlayerDataManager {
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
                         gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
-                        daily_progress, daily_last_claim, total_playtime, last_repair_time
+                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     )
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -557,7 +563,9 @@ public class PlayerDataManager {
                         daily_progress = EXCLUDED.daily_progress,
                         daily_last_claim = EXCLUDED.daily_last_claim,
                         total_playtime = EXCLUDED.total_playtime,
-                        last_repair_time = EXCLUDED.last_repair_time
+                        last_repair_time = EXCLUDED.last_repair_time,
+                        bank_type = EXCLUDED.bank_type,
+                        bank_type_last_change = EXCLUDED.bank_type_last_change
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -625,6 +633,8 @@ public class PlayerDataManager {
                     ps.setLong(56, data.getDailyLastClaim());
                     ps.setLong(57, data.getTotalPlaytimeMillis());
                     ps.setLong(58, data.getLastRepairTime());
+                    ps.setString(59, data.getBankType().name());
+                    ps.setLong(60, data.getLastBankTypeChange());
 
                     ps.executeUpdate();
                     conn.commit();

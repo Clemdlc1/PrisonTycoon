@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Nouveau GUIListener optimisé utilisant le système d'IDs
@@ -175,6 +176,7 @@ public class GUIListener implements Listener {
             case DAILY_REWARD -> plugin.getDailyRewardGUI().handleClick(player, slot);
 
             case BANK_MAIN -> plugin.getBankGUI().handleMainMenuClick(player, slot, item);
+            case BANK_TYPE_SELECTOR -> plugin.getBankGUI().handleBankTypeSelectionClick(player, slot, item);
             case QUESTS_MENU, QUESTS_DAILY, QUESTS_WEEKLY, ADVANCEMENT_QUESTS, QUEST_STATISTICS, QUEST_REWARDS_HISTORY,
                  BLOCK_COLLECTOR -> plugin.getQuestsGUI().handleClick(player, slot, item);
             case BATTLE_PASS_MAIN_MENU, BATTLE_PASS_MENU -> plugin.getBattlePassGUI().handleClick(player, slot, item);

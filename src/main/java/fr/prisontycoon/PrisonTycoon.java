@@ -1,6 +1,7 @@
 package fr.prisontycoon;
 
 import fr.custommobs.CustomMobsPlugin;
+import fr.skyblock.CustomSkyblock;
 import fr.shop.PlayerShops;
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
@@ -36,6 +37,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private static PrisonTycoon instance;
     private CustomMobsPlugin customMobsPlugin = null;
     private PlayerShops playerShopsPlugin = null;
+    private CustomSkyblock customSkyblock = null;
 
     // --- Utilitaires Core ---
     private Logger logger;
@@ -394,6 +396,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new BankCommand(this), "bank");
         registerCommand(new TankAdminCommand(this), "tankadmin");
         registerCommand(new ShopCommand(this), "shop");
+
         registerCommand(new ShopCommand(this), "shop");
 
         // Commandes avec alias
@@ -529,6 +532,14 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public boolean isPlayerShopsAvailable() {
         return this.playerShopsPlugin != null && this.playerShopsPlugin.isEnabled();
+    }
+
+    public CustomSkyblock getCustomSkyblock() {
+        return this.customSkyblock;
+    }
+
+    public void setCustomSkyblock(CustomSkyblock customSkyblock) {
+        this.customSkyblock = customSkyblock;
     }
 
     // --- Managers ---

@@ -6,9 +6,11 @@ import fr.prisontycoon.managers.BankManager;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -24,11 +26,12 @@ import java.util.Map;
 public class BankGUI {
 
     // Slots pour le menu principal
-    private static final int SAVINGS_SLOT = 20;
-    private static final int INVESTMENT_SLOT = 22;
-    private static final int SAFE_SLOT = 24;
-    private static final int BANK_LEVEL_SLOT = 40;
-    private static final int CLOSE_SLOT = 44;
+    private static final int SAVINGS_SLOT = 11;
+    private static final int INVESTMENT_SLOT = 13;
+    private static final int SAFE_SLOT = 15;
+    private static final int BANK_LEVEL_SLOT = 21;
+    private static final int CLOSE_SLOT = 35;
+    private static final int BANK_TYPE_SLOT = 23;
     // Slots pour le menu d'investissement
     private static final int[] INVESTMENT_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 25};
     private final PrisonTycoon plugin;
@@ -45,18 +48,115 @@ public class BankGUI {
      * Ouvre le menu principal de la banque
      */
     public void openMainMenu(Player player) {
+        if (player == null) return;
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data.getBankType() == fr.prisontycoon.data.BankType.NONE) {
+            if (!bankManager.canUseSavings(player)) {
+                player.sendMessage("§c❌ Le système bancaire nécessite le rang F+ pour choisir une banque !");
+                return;
+            }
+            openBankTypeSelector(player);
+            return;
+        }
         if (!bankManager.canUseSavings(player)) {
             player.sendMessage("§c❌ Le système bancaire nécessite le rang F+ !");
             return;
         }
 
-        Inventory gui = plugin.getGUIManager().createInventory(54, "§6🏦 Banque PrisonTycoon");
+        Inventory gui = plugin.getGUIManager().createInventory(36, "§6🏦 Banque PrisonTycoon");
         guiManager.registerOpenGUI(player, GUIType.BANK_MAIN, gui);
         plugin.getGUIManager().fillBorders(gui);
         setupMainMenu(gui, player);
 
         player.openInventory(gui);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.2f);
+    }
+
+    public void openBankTypeSelector(Player player) {
+        if (!bankManager.canUseSavings(player)) {
+            player.sendMessage("§c❌ Le système bancaire nécessite le rang F+ pour choisir une banque !");
+            return;
+        }
+        Inventory gui = plugin.getGUIManager().createInventory(27, "§d🏦 Choix de la Banque");
+        guiManager.registerOpenGUI(player, GUIType.BANK_TYPE_SELECTOR, gui);
+        plugin.getGUIManager().fillBorders(gui);
+
+        // Placeholder info
+        gui.setItem(4, createInfoItem());
+
+        int[] slots = {10, 12, 14, 16};
+        fr.prisontycoon.data.BankType[] types = {
+                fr.prisontycoon.data.BankType.PRUDENTIA,
+                fr.prisontycoon.data.BankType.MERCATORIA,
+                fr.prisontycoon.data.BankType.INDUSTRIA,
+                fr.prisontycoon.data.BankType.FORTIS
+        };
+        var current = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId()).getBankType();
+        for (int i = 0; i < slots.length; i++) {
+            gui.setItem(slots[i], createBankTypeChoiceItem(types[i], current));
+        }
+        gui.setItem(22, createCloseItem());
+        player.openInventory(gui);
+        player.playSound(player.getLocation(), Sound.UI_TOAST_IN, 1.0f, 1.0f);
+    }
+
+    private ItemStack createInfoItem() {
+        ItemStack item = new ItemStack(Material.BOOK);
+        ItemMeta meta = item.getItemMeta();
+        plugin.getGUIManager().applyName(meta, "§6🏦 Types de Banque");
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Choisissez votre type de banque");
+        lore.add("§7pour bénéficier d'avantages");
+        lore.add("§7spécifiques à votre style de jeu.");
+        lore.add("");
+        lore.add("§c⚠ Changement possible 1 fois par semaine");
+        lore.add("§e▶ Cliquez sur une banque pour la sélectionner");
+        plugin.getGUIManager().applyLore(meta, lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createBankTypeChoiceItem(fr.prisontycoon.data.BankType type, fr.prisontycoon.data.BankType current) {
+        Material icon = switch (type) {
+            case PRUDENTIA -> Material.BOOK;
+            case MERCATORIA -> Material.EMERALD;
+            case INDUSTRIA -> Material.PISTON;
+            case FORTIS -> Material.ENDER_CHEST;
+            default -> Material.PAPER;
+        };
+        ItemStack item = new ItemStack(icon);
+        ItemMeta meta = item.getItemMeta();
+        boolean isCurrent = current == type;
+        plugin.getGUIManager().applyName(meta, (isCurrent ? "§a" : "§e") + type.getDisplayName() + (isCurrent ? " §7(Actuelle)" : ""));
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        double dSell = (type.getSellMultiplier() - 1.0) * 100.0;
+        double dPrestige = (type.getPrestigeCostMultiplier() - 1.0) * 100.0;
+        double dInvest = (type.getInvestmentBuyCostMultiplier() - 1.0) * 100.0;
+        double dInterest = (type.getInterestGainMultiplier() - 1.0) * 100.0;
+        double dSafe = (type.getSafeLimitMultiplier() - 1.0) * 100.0;
+        if (dSell != 0) lore.add("§7• Vente: " + (dSell >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSell)));
+        if (dPrestige != 0) lore.add("§7• Coût prestige: " + (dPrestige >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dPrestige)));
+        if (dInvest != 0) lore.add("§7• Coût investissement: " + (dInvest >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dInvest)));
+        if (dInterest != 0) lore.add("§7• Intérêts: " + (dInterest >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dInterest)));
+        if (type.getIslandPrintersBonus() != 0) lore.add("§7• Imprimantes île: §a+" + type.getIslandPrintersBonus());
+        if (dSafe != 0) lore.add("§7• Coffre-fort: " + (dSafe >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSafe)) + " §7capacité");
+        lore.add("");
+        if (isCurrent) {
+            lore.add("§a✔ Déjà sélectionnée");
+        } else {
+            lore.add("§e▶ Cliquez pour choisir ce type");
+        }
+        plugin.getGUIManager().applyLore(meta, lore);
+        // tag
+        meta.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "bank_type"),
+                PersistentDataType.STRING, type.name());
+        if (isCurrent) {
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        }
+        item.setItemMeta(meta);
+        return item;
     }
 
     /**
@@ -78,8 +178,9 @@ public class BankGUI {
             gui.setItem(SAFE_SLOT, createLockedSafeItem());
         }
 
-        // Niveau bancaire
+        // Niveau bancaire et type de banque
         gui.setItem(BANK_LEVEL_SLOT, createBankLevelItem(player, playerData));
+        gui.setItem(BANK_TYPE_SLOT, createBankTypeItem(playerData));
 
         // Fermer
         gui.setItem(CLOSE_SLOT, createCloseItem());
@@ -265,6 +366,39 @@ public class BankGUI {
         plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
 
+        return item;
+    }
+
+    private ItemStack createBankTypeItem(PlayerData playerData) {
+        ItemStack item = new ItemStack(Material.ENDER_CHEST);
+        ItemMeta meta = item.getItemMeta();
+
+        var bankType = playerData.getBankType();
+        plugin.getGUIManager().applyName(meta, "§d🏦 Type de Banque: " + bankType.getDisplayName());
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        double dSell = (bankType.getSellMultiplier() - 1.0) * 100.0;
+        double dPrestige = (bankType.getPrestigeCostMultiplier() - 1.0) * 100.0;
+        double dInvest = (bankType.getInvestmentBuyCostMultiplier() - 1.0) * 100.0;
+        double dInterest = (bankType.getInterestGainMultiplier() - 1.0) * 100.0;
+        double dSafe = (bankType.getSafeLimitMultiplier() - 1.0) * 100.0;
+        lore.add("§7• Vente: " + (dSell >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSell)));
+        lore.add("§7• Coût prestige: " + (dPrestige >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dPrestige)));
+        lore.add("§7• Coût investissement: " + (dInvest >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dInvest)));
+        lore.add("§7• Intérêts: " + (dInterest >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dInterest)));
+        if (bankType.getIslandPrintersBonus() != 0) {
+            lore.add("§7• Imprimantes île: §a+" + bankType.getIslandPrintersBonus());
+        }
+        if (Math.abs(dSafe) > 0.0001) {
+            lore.add("§7• Coffre-fort: " + (dSafe >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSafe)) + " §7capacité");
+        }
+        lore.add("");
+        lore.add("§7Changement possible 1 fois / 7 jours");
+        lore.add("§e▶ Cliquez pour changer");
+
+        plugin.getGUIManager().applyLore(meta, lore);
+        item.setItemMeta(meta);
         return item;
     }
 
@@ -510,6 +644,9 @@ public class BankGUI {
                 player.closeInventory();
                 bankManager.upgradeBankLevel(player);
             }
+            case BANK_TYPE_SLOT -> {
+                openBankTypeSelector(player);
+            }
             case CLOSE_SLOT -> player.closeInventory();
         }
     }
@@ -567,5 +704,38 @@ public class BankGUI {
                 player.performCommand("bank invest info " + materialName.toLowerCase());
             }
         }
+    }
+
+    public void handleBankTypeSelectionClick(Player player, int slot, ItemStack clicked) {
+        if (clicked == null || !clicked.hasItemMeta()) return;
+        if (!bankManager.canUseSavings(player)) {
+            player.sendMessage("§c❌ Le système bancaire nécessite le rang F+ pour choisir une banque !");
+            player.closeInventory();
+            return;
+        }
+        if (slot == 22 ) {
+            openMainMenu(player);
+        }
+
+        String typeName = clicked.getItemMeta().getPersistentDataContainer()
+                .get(new org.bukkit.NamespacedKey(plugin, "bank_type"), PersistentDataType.STRING);
+        if (typeName == null) return;
+        fr.prisontycoon.data.BankType selected;
+        try {
+            selected = fr.prisontycoon.data.BankType.valueOf(typeName);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data.getBankType() == selected) {
+            player.sendMessage("§eCette banque est déjà sélectionnée.");
+            player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+            return;
+        }
+        data.setBankType(selected);
+        data.setLastBankTypeChange(System.currentTimeMillis());
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        player.sendMessage("§a✅ Type de banque défini: §e" + selected.getDisplayName());
+        openMainMenu(player);
     }
 }

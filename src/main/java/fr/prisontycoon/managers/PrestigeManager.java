@@ -2,12 +2,14 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.data.BankType;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import fr.prisontycoon.utils.NumberFormatter;
 
 /**
  * Gestionnaire principal du système de prestige (CORRIGÉ: sans rang FREE)
@@ -23,6 +25,45 @@ public class PrestigeManager {
     }
 
     /**
+     * Calcule le coût de prestige en coins pour un niveau donné
+     */
+    public long getPrestigeCost(Player player, int prestigeLevel) {
+        // Coût de base: 1M coins pour P1, puis +500k par niveau
+        long baseCost = 1_000_000L + ((prestigeLevel - 1) * 500_000L);
+        
+        // Appliquer le multiplicateur du type de banque
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        double bankMultiplier = playerData.getBankType().getPrestigeCostMultiplier();
+        
+        return (long) (baseCost * bankMultiplier);
+    }
+
+    /**
+     * Vérifie si un joueur a assez de coins pour le prestige
+     */
+    public boolean hasEnoughCoinsForPrestige(Player player, int prestigeLevel) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        long requiredCoins = getPrestigeCost(player, prestigeLevel);
+        return playerData.getCoins() >= requiredCoins;
+    }
+
+    /**
+     * Déduit le coût de prestige des coins du joueur
+     */
+    public boolean deductPrestigeCost(Player player, int prestigeLevel) {
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        long cost = getPrestigeCost(player, prestigeLevel);
+
+        if (!hasEnoughCoinsForPrestige(player, prestigeLevel)) {
+            return false;
+        }
+    
+        playerData.removeCoins(cost);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        return true;
+    }
+
+    /**
      * CORRIGÉ: Vérifie si un joueur peut effectuer un prestige (rang Z requis au lieu de FREE)
      */
     public boolean canPrestige(Player player) {
@@ -34,11 +75,20 @@ public class PrestigeManager {
         }
 
         // Vérifier le niveau de prestige maximum
-        return playerData.getPrestigeLevel() < 50;
+        if (playerData.getPrestigeLevel() >= 50) {
+            return false;
+        }
+
+        // Vérifier si le joueur a assez de coins
+        int nextPrestigeLevel = playerData.getPrestigeLevel() + 1;
+        if (!hasEnoughCoinsForPrestige(player, nextPrestigeLevel)) {
+            return false;
+        }
 
         // TODO: Vérifier pas d'épargne active en banque
         // TODO: Vérifier pas d'investissement actif
         // TODO: Vérifier ne pas être en challenge
+        return true;
     }
 
     /**
@@ -54,6 +104,12 @@ public class PrestigeManager {
 
         // Confirmation du prestige
         if (!confirmPrestige(player, newPrestigeLevel)) {
+            return false;
+        }
+
+        // Déduire le coût de prestige
+        if (!deductPrestigeCost(player, newPrestigeLevel)) {
+            player.sendMessage("§c❌ Erreur: Impossible de déduire le coût de prestige!");
             return false;
         }
 
@@ -158,11 +214,13 @@ public class PrestigeManager {
      * Envoie les messages de prestige au joueur
      */
     private void sendPrestigeMessages(Player player, int prestigeLevel) {
+        long costPaid = getPrestigeCost(player, prestigeLevel);
         player.sendMessage("§6════════════════════════════════");
         player.sendMessage("§6🏆        PRESTIGE RÉUSSI!        🏆");
         player.sendMessage("§6════════════════════════════════");
         player.sendMessage("§7Nouveau niveau de prestige: §6§lP" + prestigeLevel);
         player.sendMessage("§7Vous avez été reset au rang §eA §7avec des bonus permanents!");
+        player.sendMessage("§7Coût payé: §c" + NumberFormatter.format(costPaid) + " coins");
         player.sendMessage("§7Tapez §e/prestige info §7pour voir vos avantages!");
         player.sendMessage("§6════════════════════════════════");
     }
@@ -256,11 +314,25 @@ public class PrestigeManager {
 
         if (canPrestige(player)) {
             player.sendMessage("§a✅ Vous pouvez effectuer un prestige!");
+            int nextLevel = prestigeLevel + 1;
+            long cost = getPrestigeCost(player, nextLevel);
+            player.sendMessage("§7Coût pour P" + nextLevel + ": §c" + NumberFormatter.format(cost) + " coins");
             player.sendMessage("§7Tapez §e/prestige effectuer §7pour continuer.");
         } else if (!currentRank.equals("z")) {
             player.sendMessage("§c❌ Vous devez atteindre le rang Z pour prestigier.");
         } else if (prestigeLevel >= 50) {
             player.sendMessage("§6👑 Prestige maximum atteint! Rang LÉGENDE!");
+        } else {
+            // Afficher pourquoi le prestige n'est pas possible
+            int nextLevel = prestigeLevel + 1;
+            long cost = getPrestigeCost(player, nextLevel);
+            long currentCoins = playerData.getCoins();
+            player.sendMessage("§c❌ Coût requis pour P" + nextLevel + ": §c" + NumberFormatter.format(cost) + " coins");
+            player.sendMessage("§7Vos coins: §e" + NumberFormatter.format(currentCoins) + " coins");
+            if (currentCoins < cost) {
+                long missing = cost - currentCoins;
+                player.sendMessage("§c❌ Il vous manque: §c" + NumberFormatter.format(missing) + " coins");
+            }
         }
 
         // Affiche les mines de prestige accessibles

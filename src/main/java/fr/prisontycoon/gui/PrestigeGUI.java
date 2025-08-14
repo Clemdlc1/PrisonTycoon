@@ -3,8 +3,10 @@ package fr.prisontycoon.gui;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.commands.PrestigeCommand;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.data.BankType;
 import fr.prisontycoon.prestige.PrestigeReward;
 import fr.prisontycoon.prestige.PrestigeTalent;
+import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -99,7 +101,7 @@ public class PrestigeGUI {
 
         // Bouton de prestige (si possible)
         if (plugin.getPrestigeManager().canPrestige(player)) {
-            gui.setItem(PERFORM_PRESTIGE_SLOT, createPerformPrestigeButton(playerData.getPrestigeLevel() + 1));
+            gui.setItem(PERFORM_PRESTIGE_SLOT, createPerformPrestigeButton(player, playerData.getPrestigeLevel() + 1));
         } else {
             gui.setItem(PERFORM_PRESTIGE_SLOT, createLockedPrestigeButton());
         }
@@ -990,20 +992,37 @@ public class PrestigeGUI {
         return item;
     }
 
-    private ItemStack createPerformPrestigeButton(int nextLevel) {
+    private ItemStack createPerformPrestigeButton(Player player, int nextLevel) {
         ItemStack item = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
             plugin.getGUIManager().applyName(meta, "§6🚀 Effectuer Prestige " + nextLevel);
-            plugin.getGUIManager().applyLore(meta, List.of(
-                    "§7Passez au niveau de prestige suivant",
-                    "§7et débloquez de nouveaux bonus!",
-                    "",
-                    "§aConditions remplies!",
-                    "",
-                    "§eCliquez pour prestigier!"
-            ));
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Passez au niveau de prestige suivant");
+            lore.add("§7et débloquez de nouveaux bonus!");
+            lore.add("");
+            
+            // Afficher le coût de prestige
+            long cost = plugin.getPrestigeManager().getPrestigeCost(player, nextLevel);
+            lore.add("§7Coût: §c" + NumberFormatter.format(cost) + " coins");
+            
+            // Afficher l'effet de la banque
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+            BankType bankType = playerData.getBankType();
+            if (bankType != BankType.NONE && bankType.getPrestigeCostMultiplier() != 1.0) {
+                double multiplier = bankType.getPrestigeCostMultiplier();
+                double percentage = (multiplier - 1.0) * 100.0;
+                String effect = percentage > 0 ? "§c+" + String.format("%.0f%%", percentage) : "§a" + String.format("%.0f%%", percentage);
+                lore.add("§7Effet banque: " + effect + " §7sur le coût");
+            }
+            
+            lore.add("");
+            lore.add("§aConditions remplies!");
+            lore.add("");
+            lore.add("§eCliquez pour prestigier!");
+            
+            plugin.getGUIManager().applyLore(meta, lore);
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "perform_prestige");

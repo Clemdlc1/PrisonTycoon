@@ -50,6 +50,22 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // Bloque tout usage si aucune banque n'est choisie, sauf help et type
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data.getBankType() == fr.prisontycoon.data.BankType.NONE) {
+            if (args.length == 0) {
+                player.sendMessage("§c❌ Vous devez choisir une banque avant d'accéder à la banque.");
+                plugin.getBankGUI().openBankTypeSelector(player);
+                return true;
+            }
+            String sc = args[0].toLowerCase();
+            if (!sc.equals("help") && !sc.equals("type")) {
+                player.sendMessage("§c❌ Vous devez d'abord choisir une banque: §e/bank type");
+                plugin.getBankGUI().openBankTypeSelector(player);
+                return true;
+            }
+        }
+
         // Menu principal si aucun argument
         if (args.length == 0) {
             plugin.getBankGUI().openMainMenu(player);
@@ -64,6 +80,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             case "invest" -> handleInvest(player, args);
             case "safe" -> handleSafe(player, args);
             case "improve" -> handleImprove(player);
+            case "type" -> handleType(player, args);
             case "help" -> sendHelpMessage(player);
             default -> {
                 player.sendMessage("§c❌ Sous-commande inconnue. Utilisez /bank help");
@@ -559,6 +576,7 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         }
 
         player.sendMessage("§e/bank improve §7- Améliore le niveau bancaire");
+        player.sendMessage("§e/bank type §7- Choisir/voir votre type de banque");
         player.sendMessage("§6═══════════════════════════════");
         player.sendMessage("§7Montants acceptés: §e1000, 1k, 1.5m, 2b, 3t, all");
 
@@ -571,13 +589,51 @@ public class BankCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleType(Player player, String[] args) {
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (!plugin.getBankManager().canUseSavings(player)) {
+            player.sendMessage("§c❌ Le système bancaire nécessite le rang F+ pour choisir une banque !");
+            return;
+        }
+        if (args.length == 1) {
+            player.sendMessage("§6🏦 Type actuel: §e" + data.getBankType().getDisplayName());
+            player.sendMessage("§7Changez avec: §e/bank type <prudentia|mercatoria|industria|fortis>");
+            return;
+        }
+        String choice = args[1].toUpperCase();
+        fr.prisontycoon.data.BankType newType;
+        try {
+            newType = fr.prisontycoon.data.BankType.valueOf(choice);
+        } catch (IllegalArgumentException e) {
+            player.sendMessage("§c❌ Type inconnu. Options: prudentia, mercatoria, industria, fortis");
+            return;
+        }
+        long now = System.currentTimeMillis();
+        long week = 7L * 24 * 60 * 60 * 1000;
+        long last = data.getLastBankTypeChange();
+        if (last > 0 && (now - last) < week) {
+            long remaining = week - (now - last);
+            long days = Math.max(0, remaining / (24 * 60 * 60 * 1000));
+            player.sendMessage("§c❌ Vous pourrez rechanger dans §e" + days + "§c jour(s).");
+            return;
+        }
+        if (data.getBankType() == newType) {
+            player.sendMessage("§eVous avez déjà ce type de banque.");
+            return;
+        }
+        data.setBankType(newType);
+        data.setLastBankTypeChange(now);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+        player.sendMessage("§a✅ Type de banque défini: §e" + newType.getDisplayName());
+    }
+
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
             List<String> subCommands = Arrays.asList(
-                    "deposit", "withdraw", "invest", "safe", "improve", "help"
+                    "deposit", "withdraw", "invest", "safe", "improve", "type", "help"
             );
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
         } else if (args.length == 2) {
@@ -593,6 +649,10 @@ public class BankCommand implements CommandExecutor, TabCompleter {
                 case "deposit", "withdraw" -> {
                     List<String> amounts = Arrays.asList("1000", "5000", "10k", "50k", "100k", "1m", "all");
                     StringUtil.copyPartialMatches(args[1], amounts, completions);
+                }
+                case "type" -> {
+                    List<String> types = Arrays.asList("prudentia", "mercatoria", "industria", "fortis");
+                    StringUtil.copyPartialMatches(args[1], types, completions);
                 }
             }
         } else if (args.length == 3) {

@@ -123,6 +123,18 @@ public class GlobalBonusManager {
             details.addDetailedSource("Surcharge de Mine", overloadBonus);
         }
 
+        // 8. Type de banque (bonus/malus)
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data != null && data.getBankType() != null) {
+            if (category == BonusCategory.SELL_BONUS) {
+                double sellMult = data.getBankType().getSellMultiplier();
+                if (sellMult != 1.0) {
+                    double sellPct = (sellMult - 1.0) * 100.0;
+                    details.setBankBonus(details.getBankBonus() + sellPct);
+                    details.addDetailedSource("Type de Banque", sellPct);
+                }
+            }
+        }
 
         return details;
     }
@@ -711,9 +723,10 @@ public class GlobalBonusManager {
         private double enchantmentBonus = 0.0;
         private double overloadBonus = 0.0;
         private double armorBonus = 0.0;
+        private double bankBonus = 0.0; // Nouveau champ pour le bonus de banque
 
         public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus;
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus + bankBonus;
         }
 
         public double getTotalMultiplier() {
@@ -742,6 +755,14 @@ public class GlobalBonusManager {
 
         public void setArmorBonus(double armorBonus) {
             this.armorBonus = armorBonus;
+        }
+
+        public double getBankBonus() {
+            return bankBonus;
+        }
+
+        public void setBankBonus(double bankBonus) {
+            this.bankBonus = bankBonus;
         }
 
         // Getters
@@ -798,8 +819,8 @@ public class GlobalBonusManager {
             return detailedSources;
         }
 
-        public void addDetailedSource(String source, double bonus) {
-            detailedSources.put(source, bonus);
+        public void addDetailedSource(String name, double percent) {
+            detailedSources.put(name, percent);
         }
     }
 }

@@ -435,6 +435,8 @@ public class BoostGUI {
             sb.append("\n§9✦ Enchantements§7: ").append(details.getEnchantmentBonus() >= 0 ? "+" : "").append(String.format("%.2f", details.getEnchantmentBonus())).append("%");
         if (details.getOverloadBonus() > 0)
             sb.append("\n§c🔥 Surcharge de Mine§7: ").append(details.getOverloadBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getOverloadBonus())).append("%");
+        if (details.getBankBonus() > 0)
+            sb.append("\n§d🏦 Type de Banque§7: +").append(String.format("%.1f", details.getBankBonus())).append("%");
         if (!details.getDetailedSources().isEmpty()) {
             sb.append("\n\n§8Détails:");
             for (var source : details.getDetailedSources().entrySet()) {

@@ -143,6 +143,11 @@ public class BankManager {
         double interestRate = 0.05;
         long interestPeriod = 12 * 60 * 60 * 1000;
         interestRate += bankLevel * 0.01;
+        // Applique le multiplicateur de type de banque
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data != null && data.getBankType() != null) {
+            interestRate *= data.getBankType().getInterestGainMultiplier();
+        }
         if (timeDiff >= interestPeriod) {
             long periods = timeDiff / interestPeriod;
             double totalInterest = savingsBalance * interestRate * periods;
@@ -221,7 +226,17 @@ public class BankManager {
             player.sendMessage("§c❌ Valeur trop élevée ! Contactez un administrateur.");
             return false;
         }
-        long totalValue = (long) (block.currentValue * quantity);
+        // Coût affecté par type de banque (sans altérer la valeur globale)
+        double effectiveUnitPrice = block.currentValue;
+        var data2 = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data2 != null && data2.getBankType() != null) {
+            effectiveUnitPrice *= data2.getBankType().getInvestmentBuyCostMultiplier();
+        }
+        if (effectiveUnitPrice * quantity > Long.MAX_VALUE) {
+            player.sendMessage("§c❌ Montant trop élevé ! Réduisez la quantité.");
+            return false;
+        }
+        long totalValue = (long) (effectiveUnitPrice * quantity);
         playerData.addCoins(totalValue);
         playerData.removeInvestment(material, quantity);
         block.totalInvestments = Math.max(0, block.totalInvestments - quantity);
@@ -349,18 +364,30 @@ public class BankManager {
             player.sendMessage("§c❌ Solde du coffre-fort insuffisant !");
             return false;
         }
-        long withdrawalFee = (long) (amount * 0.20);
+        double feeRate = 0.20;
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        if (data != null && data.getBankType() != null) {
+            // Banque Fortis: frais -10 points => 10%
+            if (data.getBankType().name().equals("FORTIS")) {
+                feeRate = 0.10;
+            }
+        }
+        long withdrawalFee = (long) (amount * feeRate);
         long netAmount = amount - withdrawalFee;
         playerData.removeSafeBalance(amount);
         playerData.addCoins(netAmount);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
         player.sendMessage("§a✅ " + NumberFormatter.format(netAmount) + " retirés du coffre-fort");
-        player.sendMessage("§7Frais de retrait (20%): " + NumberFormatter.format(withdrawalFee));
+        player.sendMessage("§7Frais de retrait (" + (int) Math.round(feeRate * 100) + "%): " + NumberFormatter.format(withdrawalFee));
         return true;
     }
 
     public long getSafeLimit(Player player) {
-        return 1_000_000_000L;
+        // Capacité de base, modifiée par le type de banque
+        long base = 1_000_000_000L;
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        var bankType = data.getBankType();
+        return (long) (base * bankType.getSafeLimitMultiplier());
     }
 
     public boolean upgradeBankLevel(Player player) {
