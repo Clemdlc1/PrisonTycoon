@@ -18,7 +18,6 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Interface graphique pour enchanter les épées et armures
@@ -37,6 +36,35 @@ public class WeaponArmorEnchantGUI {
 
     public WeaponArmorEnchantGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Applique la réduction du talent "Soldes" (métiers: guerrier) si actif
+     * Retourne le coût effectif arrondi au supérieur minimal 0.
+     */
+    private int applySoldesDiscount(PlayerData playerData, int baseCost) {
+        if (playerData == null || baseCost <= 0) return baseCost;
+        String prof = playerData.getActiveProfession();
+        if (!"guerrier".equalsIgnoreCase(prof)) return baseCost;
+
+        // Récupérer le talent "soldes" via ProfessionManager
+        var professionManager = plugin.getProfessionManager();
+        if (professionManager == null) return baseCost;
+        var guerrier = professionManager.getProfession("guerrier");
+        if (guerrier == null) return baseCost;
+        var soldes = guerrier.getTalent("soldes");
+        if (soldes == null) return baseCost;
+
+        int level = playerData.getTalentLevel("guerrier", "soldes");
+        if (level <= 0) return baseCost;
+
+        int percent = soldes.getValueAtLevel(level); // pourcentage de réduction
+        // clamp [0, 90] pour éviter les aberrations
+        percent = Math.max(0, Math.min(90, percent));
+
+        double multiplier = 1.0 - (percent / 100.0);
+        long discounted = Math.round(baseCost * multiplier);
+        return (int) Math.max(0, discounted);
     }
 
     /**
@@ -70,7 +98,7 @@ public class WeaponArmorEnchantGUI {
         ItemStack displayItem = item.clone();
         ItemMeta meta = displayItem.getItemMeta();
 
-        List<String> lore = meta.hasLore() ? new ArrayList<>(Objects.requireNonNull(meta.getLore())) : new ArrayList<>();
+        List<String> lore = new ArrayList<>();
 
         plugin.getGUIManager().applyLore(meta, lore);
         displayItem.setItemMeta(meta);
@@ -88,7 +116,9 @@ public class WeaponArmorEnchantGUI {
         boolean isMaxEnchanted = isMaxVanillaEnchanted(item, isWeapon);
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        boolean canAfford = playerData.getBeacons() >= 50;
+        int baseCost = 50;
+        int effectiveCost = applySoldesDiscount(playerData, baseCost);
+        boolean canAfford = playerData.getBeacons() >= effectiveCost;
 
         if (isMaxEnchanted) {
             plugin.getGUIManager().applyName(meta, "§c❌ §lDéjà Enchanté au Maximum");
@@ -110,7 +140,11 @@ public class WeaponArmorEnchantGUI {
         }
 
         lore.add("");
-        lore.add("§6💰 Coût: §e50 beacons");
+        if (effectiveCost < baseCost) {
+            lore.add("§6💰 Coût: §e" + NumberFormatter.format(effectiveCost) + " beacons §7(§a-" + (100 * (baseCost - effectiveCost) / baseCost) + "%§7 §fSoldes§7)");
+        } else {
+            lore.add("§6💰 Coût: §e" + NumberFormatter.format(effectiveCost) + " beacons");
+        }
         lore.add("§7Beacons disponibles: §e" + NumberFormatter.format(playerData.getBeacons()));
 
         if (isMaxEnchanted) {
@@ -339,16 +373,18 @@ public class WeaponArmorEnchantGUI {
         }
 
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        if (playerData.getBeacons() < 50) {
-            player.sendMessage("§cVous n'avez pas assez de beacons! (50 requis)");
+        int baseCost = 50;
+        int effectiveCost = applySoldesDiscount(playerData, baseCost);
+        if (playerData.getBeacons() < effectiveCost) {
+            player.sendMessage("§cVous n'avez pas assez de beacons! (" + effectiveCost + " requis)");
             return;
         }
 
         // CORRIGÉ : Sauvegarder les enchantements uniques AVANT d'ajouter les vanilla
-        Map<String, Integer> uniqueEnchants = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
+        plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
 
         // Retirer les beacons
-        playerData.removeBeacon(50);
+        playerData.removeBeacon(effectiveCost);
 
         // Appliquer les enchantements vanilla
         if (isWeapon) {
@@ -408,10 +444,8 @@ public class WeaponArmorEnchantGUI {
             return;
         }
 
-        // ÉTAT AVANT TENTATIVE
-        Map<String, Integer> beforeEnchants = plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
-        int beforeCount = beforeEnchants.size();
-        int beforeLevel = beforeEnchants.getOrDefault(enchantId, 0);
+        // ÉTAT AVANT TENTATIVE (consultation uniquement)
+        plugin.getWeaponArmorEnchantmentManager().getUniqueEnchantments(item);
 
         // Tentative d'application
         boolean success = plugin.getWeaponArmorEnchantmentManager().addEnchantment(item, enchantId, 1);

@@ -2,6 +2,10 @@ package fr.prisontycoon.commands;
 
 import fr.prisontycoon.PrisonTycoon;
 import org.bukkit.Sound;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,9 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Commande /repair - Ouvre le menu de réparation de la pioche légendaire
- */
+    /**
+     * Commande /repair - Répare gratuitement l'item tenu en main (si réparable) avec un cooldown
+     */
 public class RepairCommand implements CommandExecutor, TabCompleter {
 
     private final PrisonTycoon plugin;
@@ -35,29 +39,61 @@ public class RepairCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");
             return true;
         }
-
-        // Vérifie si le joueur a une pioche légendaire
-        if (!plugin.getPickaxeManager().hasLegendaryPickaxe(player)) {
-            player.sendMessage("§c❌ Vous n'avez pas de pioche légendaire!");
-            player.sendMessage("§7Utilisez §e/pickaxe §7pour en obtenir une.");
+        
+        // Condition de métier: Guerrier niveau 5+
+        fr.prisontycoon.data.PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        String activeProfession = playerData.getActiveProfession();
+        if (activeProfession == null || !"guerrier".equalsIgnoreCase(activeProfession) || playerData.getProfessionLevel("guerrier") < 5) {
+            player.sendMessage("§c❌ Vous devez être §cGuerrier §7niveau §e5+ §cpour utiliser /repair!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return true;
         }
 
-        // Vérifie si la pioche est dans l'inventaire
-        if (plugin.getPickaxeManager().findPlayerPickaxe(player) == null) {
-            player.sendMessage("§c❌ Pioche légendaire introuvable dans votre inventaire!");
-            player.sendMessage("§7Assurez-vous qu'elle soit dans votre inventaire.");
+        // Cooldown 3h (persistant)
+        long now = System.currentTimeMillis();
+        long last = playerData.getLastRepairTime();
+        long cooldownMs = 3L * 60L * 60L * 1000L; // 3 heures
+        long remaining = (last + cooldownMs) - now;
+        if (remaining > 0) {
+            long hours = remaining / (60L * 60L * 1000L);
+            long minutes = (remaining % (60L * 60L * 1000L)) / (60L * 1000L);
+            long seconds = (remaining % (60L * 1000L)) / 1000L;
+            player.sendMessage("§c⌛ /repair en cooldown: §e" + hours + "h " + minutes + "m " + seconds + "s");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return true;
         }
 
-        // Ouvre le menu de réparation
-        plugin.getPickaxeRepairMenu().openRepairGUI(player);
+        // Répare l'item en main si réparable
+        ItemStack inHand = player.getInventory().getItemInMainHand();
+        if (inHand == null || inHand.getType() == Material.AIR) {
+            player.sendMessage("§c❌ Vous devez tenir un item à réparer dans votre main!");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return true;
+        }
 
-        // Message de bienvenue
-        player.sendMessage("§e🔨 Menu de réparation ouvert!");
-        player.sendMessage("§7Cliquez directement sur les pourcentages pour réparer votre pioche.");
+        ItemMeta meta = inHand.getItemMeta();
+        if (!(meta instanceof Damageable damageable)) {
+            player.sendMessage("§c❌ Cet item ne peut pas être réparé!");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return true;
+        }
+
+        if (damageable.getDamage() <= 0) {
+            player.sendMessage("§eℹ Cet item est déjà en parfait état!");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.7f, 1.2f);
+            return true;
+        }
+
+        damageable.setDamage(0);
+        inHand.setItemMeta(meta);
+
+        // Set cooldown timestamp
+        playerData.setLastRepairTime(now);
+        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+
+        // Feedback
+        player.sendMessage("§a✅ Votre §e" + inHand.getType().name().toLowerCase() + " §aa été entièrement réparé!");
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
 
         return true;
     }

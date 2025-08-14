@@ -124,6 +124,9 @@ public class PlayerData {
     private long totalPlaytimeMillis = 0L;
     private long sessionStartMillis = 0L;
 
+	// Cooldowns/horodatages divers
+	private long lastRepairTime = 0L; // /repair (3h)
+
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -249,6 +252,14 @@ public class PlayerData {
     public void setSessionStartMillis(long sessionStartMillis) {
         this.sessionStartMillis = Math.max(0L, sessionStartMillis);
     }
+
+	public long getLastRepairTime() {
+		return lastRepairTime;
+	}
+
+	public void setLastRepairTime(long lastRepairTime) {
+		this.lastRepairTime = Math.max(0L, lastRepairTime);
+	}
 
     public void addPlaytimeMillis(long delta) {
         if (delta > 0) {

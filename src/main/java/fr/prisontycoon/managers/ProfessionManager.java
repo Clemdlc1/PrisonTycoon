@@ -267,6 +267,11 @@ public class ProfessionManager {
         player.sendMessage("§7Récupérez votre récompense et débloqué un talent via /metier");
 
         player.sendMessage("");
+
+        // Notification de déblocage: /repair pour Guerrier niveau 5+
+        if ("guerrier".equalsIgnoreCase(professionId) && newLevel >= 5) {
+            player.sendMessage("§6🔧 §eVous avez débloqué la commande §a/repair§e (répare l'item en main, cooldown 3h)!");
+        }
     }
 
     /**

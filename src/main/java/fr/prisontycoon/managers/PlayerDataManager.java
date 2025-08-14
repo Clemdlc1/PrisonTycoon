@@ -141,7 +141,8 @@ public class PlayerDataManager {
                     claimed_head_rewards TEXT DEFAULT '[]',
                     daily_progress INT DEFAULT 0,
                     daily_last_claim BIGINT DEFAULT 0,
-                    total_playtime BIGINT DEFAULT 0
+                    total_playtime BIGINT DEFAULT 0,
+                    last_repair_time BIGINT DEFAULT 0
                 );
                 """;
 
@@ -396,6 +397,7 @@ public class PlayerDataManager {
                 data.setDailyProgress(Math.max(0, Math.min(14, rs.getInt("daily_progress"))));
                 data.setDailyLastClaim(Math.max(0L, rs.getLong("daily_last_claim")));
                 data.setTotalPlaytimeMillis(Math.max(0L, rs.getLong("total_playtime")));
+                data.setLastRepairTime(Math.max(0L, rs.getLong("last_repair_time")));
 
                 plugin.getPluginLogger().debug("§aDonnées chargées avec succès pour " + playerName + " (" + playerId + ")");
                 return data;
@@ -489,14 +491,14 @@ public class PlayerDataManager {
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
                         gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
-                        daily_progress, daily_last_claim, total_playtime
+                        daily_progress, daily_last_claim, total_playtime, last_repair_time
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?
                     )
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -554,7 +556,8 @@ public class PlayerDataManager {
                         claimed_head_rewards = EXCLUDED.claimed_head_rewards,
                         daily_progress = EXCLUDED.daily_progress,
                         daily_last_claim = EXCLUDED.daily_last_claim,
-                        total_playtime = EXCLUDED.total_playtime
+                        total_playtime = EXCLUDED.total_playtime,
+                        last_repair_time = EXCLUDED.last_repair_time
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -621,6 +624,7 @@ public class PlayerDataManager {
                     ps.setInt(55, data.getDailyProgress());
                     ps.setLong(56, data.getDailyLastClaim());
                     ps.setLong(57, data.getTotalPlaytimeMillis());
+                    ps.setLong(58, data.getLastRepairTime());
 
                     ps.executeUpdate();
                     conn.commit();

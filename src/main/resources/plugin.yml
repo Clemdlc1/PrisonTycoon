@@ -45,6 +45,11 @@ permissions:
     children:
       specialmine.mine.a: true
 
+  # Permission spécifique pour /repair
+  specialmine.repair:
+    description: "Utiliser /repair (Guerrier niv 5+, cooldown 3h)"
+    default: false
+
   # Permissions de mines (A-Z)
   specialmine.mine.a:
     description: "Accès à la mine A"
@@ -251,9 +256,9 @@ commands:
     aliases: [ pioche ]
 
   repair:
-    description: "Ouvre le menu de réparation de la pioche légendaire"
+    description: "Répare gratuitement l'item en main (Guerrier niv 5+, CD 3h)"
     usage: /repair
-    permission: specialmine.basic
+    permission: specialmine.repair
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ fix ]
 
