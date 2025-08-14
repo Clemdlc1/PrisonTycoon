@@ -435,6 +435,11 @@ commands:
     permission: specialmine.basic
     aliases: [ jour ]
 
+  shop:
+    description: "Ouvre le shop"
+    usage: /shop
+    permission: specialmine.basic
+
 # Compatibilité
 depend-bootstrap: false
 

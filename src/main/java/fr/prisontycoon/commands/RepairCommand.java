@@ -33,17 +33,11 @@ public class RepairCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
             return true;
         }
-
-        // Vérifie la permission
-        if (!player.hasPermission("specialmine.repair")) {
-            player.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");
-            return true;
-        }
         
         // Condition de métier: Guerrier niveau 5+
         fr.prisontycoon.data.PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String activeProfession = playerData.getActiveProfession();
-        if (activeProfession == null || !"guerrier".equalsIgnoreCase(activeProfession) || playerData.getProfessionLevel("guerrier") < 5) {
+        if (activeProfession == null || !"guerrier".equalsIgnoreCase(activeProfession) || playerData.getProfessionLevel("guerrier") < 5 || !player.hasPermission("specialmine.repair")) {
             player.sendMessage("§c❌ Vous devez être §cGuerrier §7niveau §e5+ §cpour utiliser /repair!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return true;

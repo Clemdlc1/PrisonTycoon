@@ -112,6 +112,19 @@ public class MainMenuGUI {
                 ),
                 "bookshop"));
 
+        gui.setItem(31, createNavItem(
+                Material.EMERALD,
+                "§a🛒 §lShop",
+                List.of(
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+                        "§7Accédez au magasin par catégories",
+                        "§7PvP, Blocs, Outils, Redstone, etc.",
+                        "",
+                        "§e▶ Cliquez pour ouvrir",
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+                ),
+                "shop"));
+
         // Placeholders (implémentations futures)
         gui.setItem(32, createDisabledNavItem(
                 Material.ENCHANTING_TABLE,
@@ -178,6 +191,7 @@ public class MainMenuGUI {
             case "boost" -> plugin.getBoostGUI().openBoostMenu(player);
             case "autominer" -> plugin.getAutominerGUI().openMainMenu(player);
             case "bookshop" -> plugin.getBookShopGUI().openSelector(player);
+	    case "shop" -> plugin.getShopGUI().openMainShop(player);
             case "recherche", "ile", "boutique", "tutoriel" -> {
                 player.closeInventory();
                 player.sendMessage("§e🔮 Cette fonctionnalité arrive bientôt !");

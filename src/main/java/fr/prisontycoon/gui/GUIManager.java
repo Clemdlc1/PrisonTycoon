@@ -181,6 +181,14 @@ public class GUIManager {
         return data != null ? data.get(key) : null;
     }
 
+     /**
+     * Définit/écrase une donnée pour le GUI du joueur courant
+     */
+    public void setGUIData(Player player, String key, String value) {
+        if (player == null || key == null) return;
+        guiData.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>()).put(key, value);
+    }
+
     /**
      * Ajoute des métadonnées à un item pour identifier le GUI
      */

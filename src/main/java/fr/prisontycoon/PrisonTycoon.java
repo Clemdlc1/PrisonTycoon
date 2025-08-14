@@ -116,6 +116,8 @@ public final class PrisonTycoon extends JavaPlugin {
     private ForgeGUI forgeGUI;
     private ForgeRecipeGUI forgeRecipeGUI;
     private DailyRewardGUI dailyRewardGUI;
+    private ShopGUI shopGUI;
+
 
     // --- Tâches ---
     private ActionBarTask actionBarTask;
@@ -301,6 +303,8 @@ public final class PrisonTycoon extends JavaPlugin {
         forgeGUI = new ForgeGUI(this);
         forgeRecipeGUI = new ForgeRecipeGUI(this);
         dailyRewardGUI = new DailyRewardGUI(this);
+        shopGUI = new ShopGUI(this);
+
 
         logger.info("§aInterfaces graphiques initialisées.");
     }
@@ -389,6 +393,8 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new GiveBoostCommand(this), "giveboost");
         registerCommand(new BankCommand(this), "bank");
         registerCommand(new TankAdminCommand(this), "tankadmin");
+        registerCommand(new ShopCommand(this), "shop");
+        registerCommand(new ShopCommand(this), "shop");
 
         // Commandes avec alias
         registerCommand(new GangCommand(this), "gang", "g");
@@ -803,6 +809,10 @@ public final class PrisonTycoon extends JavaPlugin {
     public BattlePassGUI getBattlePassGUI() {
         return battlePassGUI;
     }
+    public ShopGUI getShopGUI() {
+        return shopGUI;
+    }
+
 
     public ForgeGUI getForgeGUI() {
         return forgeGUI;

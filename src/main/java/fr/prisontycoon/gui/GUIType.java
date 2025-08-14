@@ -65,6 +65,18 @@ public enum GUIType {
     DAILY_REWARD("daily_reward"),
     FORGE_MAIN("forge_main"),
     BATTLE_PASS_MAIN_MENU("battle_pass_main_menu"),
+    SHOP_MAIN("shop_main"),
+    SHOP_CATEGORY("shop_category"),
+    SHOP_QUANTITY("shop_quantity"),
+    SHOP_PVP("shop_pvp"),
+    SHOP_BLOCKS("shop_blocks"),
+    SHOP_FOOD("shop_food"),
+    SHOP_TOOLS("shop_tools"),
+    SHOP_MISC("shop_misc"),
+    SHOP_REDSTONE("shop_redstone"),
+    SHOP_DECORATION("shop_decoration"),
+    SHOP_FARMING("shop_farming"),
+
     FORGE_RECIPE("forge_recipe");
 
     private final String id;
