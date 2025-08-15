@@ -40,6 +40,9 @@ public class UpgradeMenu extends BaseMenu {
         // === AMÉLIORATION DU NIVEAU AVEC COINS ===
         setupLevelUpgrades(inv, island, player);
 
+        // === AMÉLIORATIONS D'ÎLE POUR SYSTÈME D'IMPRIMANTES ===
+        setupIslandSystemUpgrades(inv, island, player);
+
         // === AMÉLIORATIONS SPÉCIALES ===
         setupSpecialUpgrades(inv, island, player);
 
@@ -177,9 +180,113 @@ public class UpgradeMenu extends BaseMenu {
                 ChatColor.BLUE + "Améliorer niveau +5", lore5));
     }
 
+    private void setupIslandSystemUpgrades(Inventory inv, Island island, Player player) {
+        // === AMÉLIORATIONS SYSTÈME D'IMPRIMANTES ===
+        
+        // Upgrade nombre max de caisses de dépôt
+        int currentDepositBoxes = island.getMaxDepositBoxes();
+        int nextDepositBoxes = currentDepositBoxes + 1;
+        long depositBoxCost = calculateDepositBoxUpgradeCost(currentDepositBoxes);
+        boolean canAffordDepositBox = plugin.getPrisonTycoonHook().hasTokens(player.getUniqueId(), depositBoxCost);
+
+        List<String> depositBoxLore = new ArrayList<>();
+        depositBoxLore.add(ChatColor.GRAY + "Limite actuelle: " + ChatColor.WHITE + currentDepositBoxes + " caisses");
+        depositBoxLore.add(ChatColor.GRAY + "Nouvelle limite: " + ChatColor.WHITE + nextDepositBoxes + " caisses");
+        depositBoxLore.add(ChatColor.GRAY + "Coût: " + ChatColor.LIGHT_PURPLE + depositBoxCost + " tokens");
+        depositBoxLore.add("");
+        depositBoxLore.add(ChatColor.YELLOW + "Avantages:");
+        depositBoxLore.add(ChatColor.GRAY + "• Plus de caisses de dépôt");
+        depositBoxLore.add(ChatColor.GRAY + "• Meilleure gestion des billets");
+        depositBoxLore.add("");
+        depositBoxLore.add(canAffordDepositBox ? ChatColor.GREEN + "Clic pour améliorer" : ChatColor.RED + "Pas assez de tokens");
+
+        inv.setItem(21, createItem(canAffordDepositBox ? Material.CHEST : Material.BARRIER,
+                ChatColor.GOLD + "Caisses de Dépôt Max", depositBoxLore));
+
+        // Upgrade nombre max de hoppers
+        int currentHoppers = island.getMaxHoppers();
+        int nextHoppers = currentHoppers + 5;
+        long hopperCost = calculateHopperUpgradeCost(currentHoppers);
+        boolean canAffordHopper = plugin.getPrisonTycoonHook().hasTokens(player.getUniqueId(), hopperCost);
+
+        List<String> hopperLore = new ArrayList<>();
+        hopperLore.add(ChatColor.GRAY + "Limite actuelle: " + ChatColor.WHITE + currentHoppers + " hoppers");
+        hopperLore.add(ChatColor.GRAY + "Nouvelle limite: " + ChatColor.WHITE + nextHoppers + " hoppers");
+        hopperLore.add(ChatColor.GRAY + "Coût: " + ChatColor.LIGHT_PURPLE + hopperCost + " tokens");
+        hopperLore.add("");
+        hopperLore.add(ChatColor.YELLOW + "Avantages:");
+        hopperLore.add(ChatColor.GRAY + "• Plus de hoppers connectés");
+        hopperLore.add(ChatColor.GRAY + "• Meilleur transport d'items");
+        hopperLore.add("");
+        hopperLore.add(canAffordHopper ? ChatColor.GREEN + "Clic pour améliorer" : ChatColor.RED + "Pas assez de tokens");
+
+        inv.setItem(22, createItem(canAffordHopper ? Material.HOPPER : Material.BARRIER,
+                ChatColor.GOLD + "Hoppers Max", hopperLore));
+
+        // Upgrade vitesse de transfert des hoppers
+        double currentSpeed = island.getHopperTransferSpeed();
+        double nextSpeed = Math.round((currentSpeed + 0.5) * 10.0) / 10.0; // Round to 1 decimal
+        long speedCost = calculateTransferSpeedUpgradeCost(currentSpeed);
+        boolean canAffordSpeed = plugin.getPrisonTycoonHook().hasTokens(player.getUniqueId(), speedCost);
+
+        List<String> speedLore = new ArrayList<>();
+        speedLore.add(ChatColor.GRAY + "Vitesse actuelle: " + ChatColor.WHITE + currentSpeed + "x");
+        speedLore.add(ChatColor.GRAY + "Nouvelle vitesse: " + ChatColor.WHITE + nextSpeed + "x");
+        speedLore.add(ChatColor.GRAY + "Coût: " + ChatColor.LIGHT_PURPLE + speedCost + " tokens");
+        speedLore.add("");
+        speedLore.add(ChatColor.YELLOW + "Avantages:");
+        speedLore.add(ChatColor.GRAY + "• Transfert plus rapide");
+        speedLore.add(ChatColor.GRAY + "• Traitement optimisé");
+        speedLore.add("");
+        speedLore.add(canAffordSpeed ? ChatColor.GREEN + "Clic pour améliorer" : ChatColor.RED + "Pas assez de tokens");
+
+        inv.setItem(23, createItem(canAffordSpeed ? Material.COMPARATOR : Material.BARRIER,
+                ChatColor.GOLD + "Vitesse Hoppers", speedLore));
+
+        // Upgrade nombre max d'imprimantes
+        int currentPrinters = island.getMaxPrinters();
+        int nextPrinters = currentPrinters + 5;
+        long printerCost = calculatePrinterUpgradeCost(currentPrinters);
+        boolean canAffordPrinter = plugin.getPrisonTycoonHook().hasBeacons(player.getUniqueId(), printerCost);
+
+        List<String> printerLore = new ArrayList<>();
+        printerLore.add(ChatColor.GRAY + "Limite actuelle: " + ChatColor.WHITE + currentPrinters + " imprimantes");
+        printerLore.add(ChatColor.GRAY + "Nouvelle limite: " + ChatColor.WHITE + nextPrinters + " imprimantes");
+        printerLore.add(ChatColor.GRAY + "Coût: " + ChatColor.AQUA + printerCost + " beacons");
+        printerLore.add("");
+        printerLore.add(ChatColor.YELLOW + "Avantages:");
+        printerLore.add(ChatColor.GRAY + "• Plus d'imprimantes");
+        printerLore.add(ChatColor.GRAY + "• Plus de revenus passifs");
+        printerLore.add("");
+        printerLore.add(canAffordPrinter ? ChatColor.GREEN + "Clic pour améliorer" : ChatColor.RED + "Pas assez de beacons");
+
+        inv.setItem(30, createItem(canAffordPrinter ? Material.DISPENSER : Material.BARRIER,
+                ChatColor.GOLD + "Imprimantes Max", printerLore));
+
+        // Upgrade vitesse de génération de billets
+        double currentGenSpeed = island.getPrinterGenerationSpeed();
+        double nextGenSpeed = Math.round((currentGenSpeed + 0.2) * 10.0) / 10.0; // Round to 1 decimal
+        long genSpeedCost = calculateGenerationSpeedUpgradeCost(currentGenSpeed);
+        boolean canAffordGenSpeed = plugin.getPrisonTycoonHook().hasBeacons(player.getUniqueId(), genSpeedCost);
+
+        List<String> genSpeedLore = new ArrayList<>();
+        genSpeedLore.add(ChatColor.GRAY + "Vitesse actuelle: " + ChatColor.WHITE + currentGenSpeed + "x");
+        genSpeedLore.add(ChatColor.GRAY + "Nouvelle vitesse: " + ChatColor.WHITE + nextGenSpeed + "x");
+        genSpeedLore.add(ChatColor.GRAY + "Coût: " + ChatColor.AQUA + genSpeedCost + " beacons");
+        genSpeedLore.add("");
+        genSpeedLore.add(ChatColor.YELLOW + "Avantages:");
+        genSpeedLore.add(ChatColor.GRAY + "• Génération plus rapide");
+        genSpeedLore.add(ChatColor.GRAY + "• Revenus accélérés");
+        genSpeedLore.add("");
+        genSpeedLore.add(canAffordGenSpeed ? ChatColor.GREEN + "Clic pour améliorer" : ChatColor.RED + "Pas assez de beacons");
+
+        inv.setItem(31, createItem(canAffordGenSpeed ? Material.EMERALD : Material.BARRIER,
+                ChatColor.GOLD + "Vitesse Génération", genSpeedLore));
+    }
+
     private void setupSpecialUpgrades(Inventory inv, Island island, Player player) {
         // Boost de revenus temporaire
-        inv.setItem(28, createItem(Material.CLOCK, ChatColor.YELLOW + "Boost de revenus",
+        inv.setItem(37, createItem(Material.CLOCK, ChatColor.YELLOW + "Boost de revenus",
                 ChatColor.GRAY + "Double vos revenus passifs",
                 ChatColor.GRAY + "pendant 24 heures",
                 ChatColor.GRAY + "Coût: " + ChatColor.AQUA + "50 beacons",
@@ -187,7 +294,7 @@ public class UpgradeMenu extends BaseMenu {
                 ChatColor.YELLOW + "Clic pour activer"));
 
         // Protection avancée
-        inv.setItem(29, createItem(Material.SHIELD, ChatColor.BLUE + "Protection avancée",
+        inv.setItem(38, createItem(Material.SHIELD, ChatColor.BLUE + "Protection avancée",
                 ChatColor.GRAY + "Protection contre les griefs",
                 ChatColor.GRAY + "et les exploits pendant 7 jours",
                 ChatColor.GRAY + "Coût: " + ChatColor.GOLD + "10000 coins",
@@ -197,7 +304,7 @@ public class UpgradeMenu extends BaseMenu {
         // Pack de warps bonus
         boolean hasVip = plugin.getPrisonTycoonHook().hasCustomPermission(player, "specialmine.vip");
         if (!hasVip) {
-            inv.setItem(30, createItem(Material.ENDER_PEARL, ChatColor.GOLD + "Pack Warps VIP",
+            inv.setItem(39, createItem(Material.ENDER_PEARL, ChatColor.GOLD + "Pack Warps VIP",
                     ChatColor.GRAY + "Obtenez +1 warp d'île",
                     ChatColor.GRAY + "permanent pour votre île",
                     ChatColor.GRAY + "Coût: " + ChatColor.AQUA + "500 beacons",
@@ -223,6 +330,33 @@ public class UpgradeMenu extends BaseMenu {
                 ChatColor.YELLOW + "Clic pour calculer"));
     }
 
+    // ==================== MÉTHODES DE CALCUL DES COÛTS ====================
+
+    private long calculateDepositBoxUpgradeCost(int currentLevel) {
+        // Coût exponentiel : base 1000 tokens * (level^1.5)
+        return (long) (1000 * Math.pow(currentLevel, 1.5));
+    }
+
+    private long calculateHopperUpgradeCost(int currentLevel) {
+        // Coût progressif : base 500 tokens * level * 2
+        return 500L * (currentLevel / 5) * 2;
+    }
+
+    private long calculateTransferSpeedUpgradeCost(double currentSpeed) {
+        // Coût exponentiel basé sur la vitesse : 2000 * (speed^2)
+        return (long) (2000 * Math.pow(currentSpeed, 2));
+    }
+
+    private long calculatePrinterUpgradeCost(int currentLevel) {
+        // Coût en beacons : base 10 beacons * (level/5)^1.8
+        return (long) (10 * Math.pow(currentLevel / 5.0, 1.8));
+    }
+
+    private long calculateGenerationSpeedUpgradeCost(double currentSpeed) {
+        // Coût en beacons : 25 * (speed^2.2)
+        return (long) (25 * Math.pow(currentSpeed, 2.2));
+    }
+
     @Override
     public void handleClick(Player player, int slot) {
         Island island = (Island) getMenuData(player, "island");
@@ -240,9 +374,14 @@ public class UpgradeMenu extends BaseMenu {
             case 12 -> handleExpansion(player, island, plugin.getMaxIslandSize()); // Max
             case 19 -> handleLevelUpgrade(player, island, island.getLevel() + 1); // +1 niveau
             case 20 -> handleLevelUpgrade(player, island, island.getLevel() + 5); // +5 niveaux
-            case 28 -> handleRevenueBoost(player, island); // Boost revenus
-            case 29 -> handleAdvancedProtection(player, island); // Protection
-            case 30 -> handleVipWarps(player, island); // Warps VIP
+            case 21 -> handleDepositBoxUpgrade(player, island); // Caisses de dépôt max
+            case 22 -> handleHopperUpgrade(player, island); // Hoppers max
+            case 23 -> handleTransferSpeedUpgrade(player, island); // Vitesse hoppers
+            case 30 -> handlePrinterUpgrade(player, island); // Imprimantes max
+            case 31 -> handleGenerationSpeedUpgrade(player, island); // Vitesse génération
+            case 37 -> handleRevenueBoost(player, island); // Boost revenus
+            case 38 -> handleAdvancedProtection(player, island); // Protection
+            case 39 -> handleVipWarps(player, island); // Warps VIP
         }
     }
 
@@ -306,5 +445,124 @@ public class UpgradeMenu extends BaseMenu {
     private void openCalculator(Player player, Island island) {
         // TODO: Implémenter un calculateur de coûts
         player.sendMessage(ChatColor.YELLOW + "Calculateur bientôt disponible !");
+    }
+
+    // ==================== HANDLERS POUR AMÉLIORATIONS SYSTÈME ====================
+
+    private void handleDepositBoxUpgrade(Player player, Island island) {
+        int currentLevel = island.getMaxDepositBoxes();
+        long cost = calculateDepositBoxUpgradeCost(currentLevel);
+        
+        if (!plugin.getPrisonTycoonHook().hasTokens(player.getUniqueId(), cost)) {
+            player.sendMessage(ChatColor.RED + "Vous n'avez pas assez de tokens !");
+            player.sendMessage(ChatColor.GRAY + "Tokens requis: " + ChatColor.LIGHT_PURPLE + cost);
+            return;
+        }
+        
+        // Déduire les tokens
+        plugin.getPrisonTycoonHook().removeTokens(player.getUniqueId(), cost);
+        
+        // Améliorer l'île
+        island.setMaxDepositBoxes(currentLevel + 1);
+        plugin.getDatabaseManager().saveIsland(island);
+        
+        player.sendMessage(ChatColor.GREEN + "Limite de caisses de dépôt améliorée à " + (currentLevel + 1) + " !");
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+        
+        open(player); // Rafraîchir
+    }
+
+    private void handleHopperUpgrade(Player player, Island island) {
+        int currentLevel = island.getMaxHoppers();
+        long cost = calculateHopperUpgradeCost(currentLevel);
+        
+        if (!plugin.getPrisonTycoonHook().hasTokens(player.getUniqueId(), cost)) {
+            player.sendMessage(ChatColor.RED + "Vous n'avez pas assez de tokens !");
+            player.sendMessage(ChatColor.GRAY + "Tokens requis: " + ChatColor.LIGHT_PURPLE + cost);
+            return;
+        }
+        
+        // Déduire les tokens
+        plugin.getPrisonTycoonHook().removeTokens(player.getUniqueId(), cost);
+        
+        // Améliorer l'île
+        island.setMaxHoppers(currentLevel + 5);
+        plugin.getDatabaseManager().saveIsland(island);
+        
+        player.sendMessage(ChatColor.GREEN + "Limite de hoppers améliorée à " + (currentLevel + 5) + " !");
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+        
+        open(player); // Rafraîchir
+    }
+
+    private void handleTransferSpeedUpgrade(Player player, Island island) {
+        double currentSpeed = island.getHopperTransferSpeed();
+        long cost = calculateTransferSpeedUpgradeCost(currentSpeed);
+        
+        if (!plugin.getPrisonTycoonHook().hasTokens(player.getUniqueId(), cost)) {
+            player.sendMessage(ChatColor.RED + "Vous n'avez pas assez de tokens !");
+            player.sendMessage(ChatColor.GRAY + "Tokens requis: " + ChatColor.LIGHT_PURPLE + cost);
+            return;
+        }
+        
+        // Déduire les tokens
+        plugin.getPrisonTycoonHook().removeTokens(player.getUniqueId(), cost);
+        
+        // Améliorer l'île
+        double newSpeed = Math.round((currentSpeed + 0.5) * 10.0) / 10.0;
+        island.setHopperTransferSpeed(newSpeed);
+        plugin.getDatabaseManager().saveIsland(island);
+        
+        player.sendMessage(ChatColor.GREEN + "Vitesse de transfert améliorée à " + newSpeed + "x !");
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+        
+        open(player); // Rafraîchir
+    }
+
+    private void handlePrinterUpgrade(Player player, Island island) {
+        int currentLevel = island.getMaxPrinters();
+        long cost = calculatePrinterUpgradeCost(currentLevel);
+        
+        if (!plugin.getPrisonTycoonHook().hasBeacons(player.getUniqueId(), cost)) {
+            player.sendMessage(ChatColor.RED + "Vous n'avez pas assez de beacons !");
+            player.sendMessage(ChatColor.GRAY + "Beacons requis: " + ChatColor.AQUA + cost);
+            return;
+        }
+        
+        // Déduire les beacons
+        plugin.getPrisonTycoonHook().removeBeacons(player.getUniqueId(), cost);
+        
+        // Améliorer l'île
+        island.setMaxPrinters(currentLevel + 5);
+        plugin.getDatabaseManager().saveIsland(island);
+        
+        player.sendMessage(ChatColor.GREEN + "Limite d'imprimantes améliorée à " + (currentLevel + 5) + " !");
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+        
+        open(player); // Rafraîchir
+    }
+
+    private void handleGenerationSpeedUpgrade(Player player, Island island) {
+        double currentSpeed = island.getPrinterGenerationSpeed();
+        long cost = calculateGenerationSpeedUpgradeCost(currentSpeed);
+        
+        if (!plugin.getPrisonTycoonHook().hasBeacons(player.getUniqueId(), cost)) {
+            player.sendMessage(ChatColor.RED + "Vous n'avez pas assez de beacons !");
+            player.sendMessage(ChatColor.GRAY + "Beacons requis: " + ChatColor.AQUA + cost);
+            return;
+        }
+        
+        // Déduire les beacons
+        plugin.getPrisonTycoonHook().removeBeacons(player.getUniqueId(), cost);
+        
+        // Améliorer l'île
+        double newSpeed = Math.round((currentSpeed + 0.2) * 10.0) / 10.0;
+        island.setPrinterGenerationSpeed(newSpeed);
+        plugin.getDatabaseManager().saveIsland(island);
+        
+        player.sendMessage(ChatColor.GREEN + "Vitesse de génération améliorée à " + newSpeed + "x !");
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+        
+        open(player); // Rafraîchir
     }
 }
