@@ -19,6 +19,7 @@ public class Island {
     private int level;
     private double bank;
     private Set<UUID> members;
+    private Set<UUID> officers; // Nouveaux: officiers de l'île (peuvent gérer les structures)
     private Set<UUID> visitors;
     private Map<IslandFlag, Boolean> flags;
     private long creationTime;
@@ -68,6 +69,7 @@ public class Island {
         this.level = 1;
         this.bank = 0.0;
         this.members = new HashSet<>();
+        this.officers = new HashSet<>(); // Initialiser les officiers
         this.visitors = new HashSet<>();
         this.flags = new HashMap<>();
         this.creationTime = System.currentTimeMillis();
@@ -110,6 +112,25 @@ public class Island {
 
     public void removeMember(UUID player) {
         members.remove(player);
+        officers.remove(player); // Retirer aussi des officiers si c'était un officier
+    }
+
+    public void addOfficer(UUID player) {
+        if (isMember(player) || owner.equals(player)) {
+            officers.add(player);
+        }
+    }
+
+    public void removeOfficer(UUID player) {
+        officers.remove(player);
+    }
+
+    public boolean isOfficer(UUID player) {
+        return officers.contains(player);
+    }
+
+    public boolean canManageStructures(UUID player) {
+        return owner.equals(player) || officers.contains(player);
     }
 
     public void addVisitor(UUID player) {
@@ -156,6 +177,7 @@ public class Island {
         return false;
     }
     public Set<UUID> getMembers() { return new HashSet<>(members); }
+    public Set<UUID> getOfficers() { return new HashSet<>(officers); }
     public Set<UUID> getVisitors() { return new HashSet<>(visitors); }
     public Map<IslandFlag, Boolean> getFlags() { return new HashMap<>(flags); }
     public void setFlag(IslandFlag flag, boolean value) {
