@@ -194,14 +194,6 @@ public class DepositBoxManager {
     public boolean isBill(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
-        
-        // Vérifier d'abord avec le BillStackManager
-        BillStackManager billStackManager = plugin.getPrinterManager().getBillStackManager();
-        if (billStackManager != null && billStackManager.isBill(item)) {
-            return true;
-        }
-        
-        // Fallback vers la méthode classique
         return meta.getPersistentDataContainer().has(billKey, PersistentDataType.BOOLEAN) &&
                 meta.getPersistentDataContainer().has(billTierKey, PersistentDataType.INTEGER);
     }
@@ -211,31 +203,7 @@ public class DepositBoxManager {
      */
     public int getBillTier(ItemStack item) {
         if (!isBill(item)) return 0;
-        
-        // Vérifier d'abord avec le BillStackManager
-        BillStackManager billStackManager = plugin.getPrinterManager().getBillStackManager();
-        if (billStackManager != null && billStackManager.isBill(item)) {
-            return billStackManager.getBillTier(item);
-        }
-        
-        // Fallback vers la méthode classique
         return item.getItemMeta().getPersistentDataContainer().get(billTierKey, PersistentDataType.INTEGER);
-    }
-    
-    /**
-     * Obtient la quantité réelle d'un billet (en tenant compte du stacking)
-     */
-    public int getBillStackSize(ItemStack item) {
-        if (!isBill(item)) return 0;
-        
-        // Vérifier d'abord avec le BillStackManager
-        BillStackManager billStackManager = plugin.getPrinterManager().getBillStackManager();
-        if (billStackManager != null && billStackManager.isBill(item)) {
-            return billStackManager.getBillStackSize(item);
-        }
-        
-        // Fallback vers la quantité classique
-        return item.getAmount();
     }
     
     /**
@@ -293,57 +261,24 @@ public class DepositBoxManager {
         int baseItemsToProcess = depositBox.getItemsToProcess();
         int itemsToProcess = (int) (baseItemsToProcess * hopperTransferSpeed);
         int processedItems = 0;
-        BigInteger totalEarnings = BigInteger.ZERO;
         
         for (int i = 0; i < hopperInventory.getSize() && processedItems < itemsToProcess; i++) {
             ItemStack item = hopperInventory.getItem(i);
             if (item != null && isBill(item)) {
-                // Obtenir la quantité réelle (stack size)
-                int stackSize = getBillStackSize(item);
+                // Calculer la valeur avec le multiplicateur
                 BigInteger billValue = getBillValue(item);
+                BigInteger multipliedValue = billValue.multiply(BigInteger.valueOf((long) (depositBox.getMultiplierLevel() * 100))).divide(BigInteger.valueOf(100));
                 
-                // Calculer la valeur totale avec le multiplicateur de la caisse de dépôt
-                double multiplier = 1.0 + (depositBox.getMultiplierLevel() * 0.1); // 10% par niveau
-                BigInteger totalValue = billValue.multiply(BigInteger.valueOf(stackSize))
-                    .multiply(BigInteger.valueOf((long) (multiplier * 100)))
-                    .divide(BigInteger.valueOf(100));
-                
-                // Appliquer le bonus de vente du joueur via GlobalBonusManager
+                // Donner l'argent au propriétaire
                 PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(depositBox.getOwner());
-                Player player = plugin.getServer().getPlayer(depositBox.getOwner());
-                if (player != null) {
-                    double salesMultiplier = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, 
-                        fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
-                    totalValue = totalValue.multiply(BigInteger.valueOf((long) (salesMultiplier * 100)))
-                        .divide(BigInteger.valueOf(100));
-                }
-                
-                totalEarnings = totalEarnings.add(totalValue);
+                playerData.addCoins(multipliedValue.longValue());
                 
                 // Retirer l'item du hopper
                 hopperInventory.setItem(i, null);
-                processedItems += stackSize; // Compter la vraie quantité processée
+                processedItems++;
                 
-                // Limiter le traitement si on dépasse la capacité
-                if (processedItems >= itemsToProcess) {
-                    break;
-                }
-            }
-        }
-        
-        // Donner l'argent au propriétaire s'il y a des gains
-        if (totalEarnings.compareTo(BigInteger.ZERO) > 0) {
-            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(depositBox.getOwner());
-            playerData.addCoins(totalEarnings.longValue());
-            plugin.getPlayerDataManager().markDirty(depositBox.getOwner());
-            
-            // Effet sonore et notification
-            location.getWorld().playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
-            
-            // Notifier le joueur s'il est en ligne
-            Player owner = plugin.getServer().getPlayer(depositBox.getOwner());
-            if (owner != null) {
-                owner.sendMessage("§a💰 §lCaisse de dépôt: §6+" + fr.prisontycoon.utils.NumberFormatter.format(totalEarnings.longValue()) + " coins");
+                // Effet sonore
+                location.getWorld().playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
             }
         }
         
@@ -397,17 +332,17 @@ public class DepositBoxManager {
             if (item != null && isBill(item)) {
                 // Calculer la valeur du billet
                 BigInteger billValue = getBillValue(item);
-                int stackSize = getBillStackSize(item); // Utiliser la taille du stack réelle
+                int amount = item.getAmount();
                 
                 // Appliquer le bonus de vente du joueur via GlobalBonusManager
                 double salesMultiplier = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, 
                     fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
-                BigInteger totalValue = billValue.multiply(BigInteger.valueOf(stackSize))
+                BigInteger totalValue = billValue.multiply(BigInteger.valueOf(amount))
                     .multiply(BigInteger.valueOf((long) (salesMultiplier * 100)))
                     .divide(BigInteger.valueOf(100));
 
                 totalEarnings = totalEarnings.add(totalValue);
-                billsSold += stackSize;
+                billsSold += amount;
                 
                 // Retirer l'item de l'inventaire
                 player.getInventory().setItem(i, null);
@@ -438,18 +373,6 @@ public class DepositBoxManager {
             .filter(depositBox -> depositBox.getId().equals(id))
             .findFirst()
             .orElse(null);
-    }
-    
-    /**
-     * Obtient l'ID d'une caisse de dépôt à une location donnée
-     */
-    public String getDepositBoxIdAtLocation(Location location) {
-        for (DepositBoxData depositBox : depositBoxCache.values()) {
-            if (depositBox.getLocation().equals(location)) {
-                return depositBox.getId();
-            }
-        }
-        return null;
     }
 
     /**
