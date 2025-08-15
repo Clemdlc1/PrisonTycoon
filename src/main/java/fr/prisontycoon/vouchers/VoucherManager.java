@@ -41,7 +41,6 @@ public class VoucherManager {
             case COINS -> Material.GOLD_INGOT;
             case EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
             case JOB_XP -> Material.EMERALD;
-            case PRINTER_SLOT -> Material.DISPENSER;
         };
 
         ItemStack voucher = new ItemStack(material);
@@ -151,12 +150,6 @@ public class VoucherManager {
                 player.sendMessage("§a✅ §lVoucher utilisé!");
                 player.sendMessage("§7Vous avez reçu: §d" + type.getValueDescription(tier).substring(9));
                 player.sendMessage("§7Métier: §e" + activeProfession);
-            }
-            case PRINTER_SLOT -> {
-                playerData.addPrinterSlotBonus((int) value);
-                player.sendMessage("§a✅ §lVoucher utilisé!");
-                player.sendMessage("§7Vous avez reçu: §6" + type.getValueDescription(tier).substring(9));
-                player.sendMessage("§7Nouveaux slots d'imprimantes: §e" + plugin.getPrinterManager().getPlayerPrinterSlots(player.getUniqueId()));
             }
         }
 

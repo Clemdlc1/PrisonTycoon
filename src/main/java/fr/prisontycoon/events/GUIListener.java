@@ -181,10 +181,8 @@ public class GUIListener implements Listener {
                  BLOCK_COLLECTOR -> plugin.getQuestsGUI().handleClick(player, slot, item);
             case BATTLE_PASS_MAIN_MENU, BATTLE_PASS_MENU -> plugin.getBattlePassGUI().handleClick(player, slot, item);
 
-            case SHOP_MAIN, SHOP_CATEGORY, SHOP_QUANTITY, SHOP_PVP, SHOP_BLOCKS, SHOP_FOOD, SHOP_TOOLS, SHOP_REDSTONE, SHOP_DECORATION, SHOP_FARMING, SHOP_MISC, SHOP_PRINTERS ->
+            case SHOP_MAIN, SHOP_CATEGORY, SHOP_QUANTITY, SHOP_PVP, SHOP_BLOCKS, SHOP_FOOD, SHOP_TOOLS, SHOP_REDSTONE, SHOP_DECORATION, SHOP_FARMING, SHOP_MISC ->
                     plugin.getShopGUI().handleClick(player, guiType, slot, item);
-
-            case DEPOSIT_BOX_UPGRADE -> plugin.getDepositBoxUpgradeGUI().handleClick(player, slot, item);
 
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
 

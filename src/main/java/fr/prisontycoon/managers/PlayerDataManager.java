@@ -404,7 +404,6 @@ public class PlayerDataManager {
                 data.setDailyLastClaim(Math.max(0L, rs.getLong("daily_last_claim")));
                 data.setTotalPlaytimeMillis(Math.max(0L, rs.getLong("total_playtime")));
                 data.setLastRepairTime(Math.max(0L, rs.getLong("last_repair_time")));
-                data.setPrinterSlotBonus(Math.max(0, rs.getInt("printer_slot_bonus")));
 
                 plugin.getPluginLogger().debug("§aDonnées chargées avec succès pour " + playerName + " (" + playerId + ")");
                 return data;
@@ -498,15 +497,14 @@ public class PlayerDataManager {
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
                         gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
-                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change, printer_slot_bonus
+                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     )
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -567,8 +565,7 @@ public class PlayerDataManager {
                         total_playtime = EXCLUDED.total_playtime,
                         last_repair_time = EXCLUDED.last_repair_time,
                         bank_type = EXCLUDED.bank_type,
-                        bank_type_last_change = EXCLUDED.bank_type_last_change,
-                        printer_slot_bonus = EXCLUDED.printer_slot_bonus
+                        bank_type_last_change = EXCLUDED.bank_type_last_change
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -638,7 +635,6 @@ public class PlayerDataManager {
                     ps.setLong(58, data.getLastRepairTime());
                     ps.setString(59, data.getBankType().name());
                     ps.setLong(60, data.getLastBankTypeChange());
-                    ps.setInt(61, data.getPrinterSlotBonus());
 
                     ps.executeUpdate();
                     conn.commit();

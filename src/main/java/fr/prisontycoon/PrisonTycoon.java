@@ -85,9 +85,6 @@ public final class PrisonTycoon extends JavaPlugin {
     private ForgeManager forgeManager;
     private DailyRewardManager dailyRewardManager;
     private BattlePassManager battlePassManager;
-    private PrinterManager printerManager;
-    private DepositBoxManager depositBoxManager;
-    private DepositBoxUpgradeGUI depositBoxUpgradeGUI;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -207,15 +204,6 @@ public final class PrisonTycoon extends JavaPlugin {
                 blackMarketManager.shutdown();
                 logger.info("§7BlackMarketManager fermé.");
             }
-            if (printerManager != null) {
-                printerManager.saveAll();
-                printerManager.cleanupNametags();
-                logger.info("§7PrinterManager sauvegardé.");
-            }
-            if (depositBoxManager != null) {
-                depositBoxManager.saveAll();
-                logger.info("§7DepositBoxManager sauvegardé.");
-            }
         } catch (Exception e) {
             logger.severe("§cErreur lors de la désactivation du plugin:");
             e.printStackTrace();
@@ -279,9 +267,6 @@ public final class PrisonTycoon extends JavaPlugin {
         blockCollectorManager = new BlockCollectorManager(this);
         forgeManager = new ForgeManager(this);
         battlePassManager = new BattlePassManager(this);
-        printerManager = new PrinterManager(this);
-        depositBoxManager = new DepositBoxManager(this);
-        depositBoxUpgradeGUI = new DepositBoxUpgradeGUI(this);
 
         logger.info("§aTous les managers ont été initialisés.");
     }
@@ -346,7 +331,6 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new OutpostListener(this), this);
         pluginManager.registerEvents(new PluginLoadListener(this), this);
         pluginManager.registerEvents(new MenuHeadProtectionListener(this), this);
-        pluginManager.registerEvents(new PrinterListener(this), this);
         this.headCollectionListener = new HeadCollectionListener(this);
         pluginManager.registerEvents(this.headCollectionListener, this);
         logger.info("§aÉvénements enregistrés.");
@@ -432,9 +416,6 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new DailyCommand(this), "daily", "jour");
         registerCommand(new ForgeCommand(this), "forge");
         registerCommand(new BattlePassAdminCommand(this), "battlepassadmin", "bpadmin");
-        registerCommand(new DepotCommand(this), "depot");
-        registerCommand(new PrinterAdminCommand(this), "printeradmin");
-        registerCommand(new KeyCommand(this), "key");
 
         logger.info("§aCommandes enregistrées.");
     }
@@ -868,18 +849,5 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public BlockCollectorManager getBlockCollectorManager() {
         return blockCollectorManager;
-    }
-
-    // --- Imprimantes et Caisses de Dépôt ---
-    public PrinterManager getPrinterManager() {
-        return printerManager;
-    }
-
-    public DepositBoxManager getDepositBoxManager() {
-        return depositBoxManager;
-    }
-
-    public DepositBoxUpgradeGUI getDepositBoxUpgradeGUI() {
-        return depositBoxUpgradeGUI;
     }
 }

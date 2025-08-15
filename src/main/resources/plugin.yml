@@ -441,25 +441,7 @@ commands:
     usage: /shop
     permission: specialmine.basic
 
-  depot:
-    description: "Vend tous les billets de votre inventaire"
-    usage: /depot
-    permission: specialmine.basic
-    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-
-  printeradmin:
-    description: "Administration des imprimantes et caisses de dépôt"
-    usage: /printeradmin <give|list|remove|info|reload> [args...]
-    permission: specialmine.admin
-    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-
-  key:
-    description: "Admin: donne des clés de crates aux joueurs"
-    usage: /key <joueur> <type> [quantité]
-    permission: specialmine.admin
-    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
-
-  # Compatibilité
+# Compatibilité
 depend-bootstrap: false
 
 # Site web et auteur

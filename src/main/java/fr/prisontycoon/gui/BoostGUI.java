@@ -14,7 +14,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -378,12 +377,12 @@ public class BoostGUI {
 
                 Component hover = createBonusHoverComponent(category, details);
 
-                Component mainLine = LegacyComponentSerializer.legacySection()
+                Component mainLine = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
                         .deserialize(category.getColor() + "▶ " + category.getDisplayName())
                         .hoverEvent(HoverEvent.showText(hover))
                         .decoration(TextDecoration.ITALIC, false);
 
-                Component multLine = LegacyComponentSerializer.legacySection()
+                Component multLine = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
                         .deserialize("  §7Multiplicateur: §f×" + String.format("%.3f", details.getTotalMultiplier()) +
                                 " " + arrow + " §f" + (details.getTotalBonus() >= 0 ? "+" : "") + String.format("%.1f", details.getTotalBonus()) + "%")
                         .hoverEvent(HoverEvent.showText(hover))
@@ -437,7 +436,7 @@ public class BoostGUI {
         if (details.getOverloadBonus() > 0)
             sb.append("\n§c🔥 Surcharge de Mine§7: ").append(details.getOverloadBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getOverloadBonus())).append("%");
         if (details.getBankBonus() > 0)
-            sb.append("\n§d🏦 Banque§7: +").append(String.format("%.1f", details.getBankBonus())).append("%");
+            sb.append("\n§d🏦 Type de Banque§7: +").append(String.format("%.1f", details.getBankBonus())).append("%");
         if (!details.getDetailedSources().isEmpty()) {
             sb.append("\n\n§8Détails:");
             for (var source : details.getDetailedSources().entrySet()) {
@@ -447,7 +446,7 @@ public class BoostGUI {
             }
         }
         sb.append("\n\n§8Total: ").append(details.getTotalBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getTotalBonus())).append("%");
-        return LegacyComponentSerializer.legacySection().deserialize(sb.toString()).decoration(TextDecoration.ITALIC, false);
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(sb.toString()).decoration(TextDecoration.ITALIC, false);
     }
 
     /**
@@ -467,7 +466,7 @@ public class BoostGUI {
                 "\n\n§bBoosts Temporaires:" +
                 "\n§7• Bonus limités dans le temps" +
                 "\n§7• Activés via des items ou par les admins";
-        return LegacyComponentSerializer.legacySection().deserialize(text).decoration(TextDecoration.ITALIC, false);
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(text).decoration(TextDecoration.ITALIC, false);
     }
 
     /**
@@ -482,6 +481,6 @@ public class BoostGUI {
                 "\n§e/boost §7- Gérer vos boosts temporaires" +
                 "\n§e/cristal §7- Gérer vos cristaux" +
                 "\n§e/metier §7- Voir votre progression métier";
-        return LegacyComponentSerializer.legacySection().deserialize(text).decoration(TextDecoration.ITALIC, false);
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(text).decoration(TextDecoration.ITALIC, false);
     }
 }
