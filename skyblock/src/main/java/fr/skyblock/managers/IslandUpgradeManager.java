@@ -71,6 +71,70 @@ public class IslandUpgradeManager {
     }
 
     /**
+     * Vérifie si un joueur est connecté et présent sur l'île
+     */
+    public boolean isPlayerOnIsland(Player player) {
+        Island island = getIslandByPlayer(player.getUniqueId());
+        if (island == null) return false;
+        
+        // Vérifier si le joueur est dans le bon monde et dans la zone de l'île
+        return isPlayerInIslandBounds(player, island);
+    }
+
+    /**
+     * Vérifie si au moins un joueur est présent sur une île donnée
+     */
+    public boolean isAnyPlayerOnIsland(UUID islandId) {
+        Island island = databaseManager.loadIsland(islandId);
+        if (island == null) return false;
+        
+        // Vérifier le propriétaire
+        Player owner = plugin.getServer().getPlayer(island.getOwner());
+        if (owner != null && isPlayerInIslandBounds(owner, island)) {
+            return true;
+        }
+        
+        // Vérifier les membres
+        for (UUID memberId : island.getMembers()) {
+            Player member = plugin.getServer().getPlayer(memberId);
+            if (member != null && isPlayerInIslandBounds(member, island)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Vérifie si un joueur est dans les limites d'une île
+     */
+    private boolean isPlayerInIslandBounds(Player player, Island island) {
+        if (player == null || island == null || island.getCenter() == null) return false;
+        
+        Location center = island.getCenter();
+        Location playerLoc = player.getLocation();
+        
+        // Vérifier le monde
+        if (!playerLoc.getWorld().equals(center.getWorld())) return false;
+        
+        // Vérifier la distance
+        double distance = playerLoc.distance(center);
+        return distance <= island.getSize();
+    }
+
+    /**
+     * Obtient l'île d'un joueur (propriétaire ou membre)
+     */
+    private Island getIslandByPlayer(UUID playerId) {
+        for (Island island : databaseManager.getAllIslands()) {
+            if (island.getOwner().equals(playerId) || island.getMembers().contains(playerId)) {
+                return island;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Obtient l'ID de l'île à une location donnée
      */
     public UUID getIslandIdAtLocation(Location location) {

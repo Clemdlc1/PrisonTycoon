@@ -194,6 +194,14 @@ public class DepositBoxManager {
     public boolean isBill(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         ItemMeta meta = item.getItemMeta();
+        
+        // Vérifier d'abord avec le BillStackManager
+        BillStackManager billStackManager = plugin.getPrinterManager().getBillStackManager();
+        if (billStackManager != null && billStackManager.isBill(item)) {
+            return true;
+        }
+        
+        // Fallback vers la méthode classique
         return meta.getPersistentDataContainer().has(billKey, PersistentDataType.BOOLEAN) &&
                 meta.getPersistentDataContainer().has(billTierKey, PersistentDataType.INTEGER);
     }
@@ -203,7 +211,31 @@ public class DepositBoxManager {
      */
     public int getBillTier(ItemStack item) {
         if (!isBill(item)) return 0;
+        
+        // Vérifier d'abord avec le BillStackManager
+        BillStackManager billStackManager = plugin.getPrinterManager().getBillStackManager();
+        if (billStackManager != null && billStackManager.isBill(item)) {
+            return billStackManager.getBillTier(item);
+        }
+        
+        // Fallback vers la méthode classique
         return item.getItemMeta().getPersistentDataContainer().get(billTierKey, PersistentDataType.INTEGER);
+    }
+    
+    /**
+     * Obtient la quantité réelle d'un billet (en tenant compte du stacking)
+     */
+    public int getBillStackSize(ItemStack item) {
+        if (!isBill(item)) return 0;
+        
+        // Vérifier d'abord avec le BillStackManager
+        BillStackManager billStackManager = plugin.getPrinterManager().getBillStackManager();
+        if (billStackManager != null && billStackManager.isBill(item)) {
+            return billStackManager.getBillStackSize(item);
+        }
+        
+        // Fallback vers la quantité classique
+        return item.getAmount();
     }
     
     /**
@@ -332,17 +364,17 @@ public class DepositBoxManager {
             if (item != null && isBill(item)) {
                 // Calculer la valeur du billet
                 BigInteger billValue = getBillValue(item);
-                int amount = item.getAmount();
+                int stackSize = getBillStackSize(item); // Utiliser la taille du stack réelle
                 
                 // Appliquer le bonus de vente du joueur via GlobalBonusManager
                 double salesMultiplier = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, 
                     fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
-                BigInteger totalValue = billValue.multiply(BigInteger.valueOf(amount))
+                BigInteger totalValue = billValue.multiply(BigInteger.valueOf(stackSize))
                     .multiply(BigInteger.valueOf((long) (salesMultiplier * 100)))
                     .divide(BigInteger.valueOf(100));
 
                 totalEarnings = totalEarnings.add(totalValue);
-                billsSold += amount;
+                billsSold += stackSize;
                 
                 // Retirer l'item de l'inventaire
                 player.getInventory().setItem(i, null);

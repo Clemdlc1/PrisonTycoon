@@ -40,6 +40,7 @@ public class PrinterManager {
 
     private final PrisonTycoon plugin;
     private final DatabaseManager databaseManager;
+    private final BillStackManager billStackManager;
     private final Gson gson = new Gson();
     private final NamespacedKey printerKey;
     private final NamespacedKey printerTierKey;
@@ -61,6 +62,7 @@ public class PrinterManager {
     public PrinterManager(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.databaseManager = plugin.getDatabaseManager();
+        this.billStackManager = new BillStackManager(plugin);
         this.printerKey = new NamespacedKey(plugin, "printer");
         this.printerTierKey = new NamespacedKey(plugin, "printer_tier");
         this.printerIdKey = new NamespacedKey(plugin, "printer_id");
@@ -68,6 +70,9 @@ public class PrinterManager {
         initializeCaches();
         startGenerationTask();
         initializeNametagSystem();
+        
+        // Enregistrer le BillStackManager comme listener
+        plugin.getServer().getPluginManager().registerEvents(billStackManager, plugin);
         
         plugin.getPluginLogger().info("§aPrinterManager initialisé.");
     }
@@ -427,15 +432,9 @@ public class PrinterManager {
         // Obtenir le multiplicateur de vitesse de génération
         double speedMultiplier = getPrinterGenerationSpeedMultiplier(islandId);
         
-        // Créer le billet
-        ItemStack bill = printer.createBillItem();
-        bill.setAmount(1);
-        
-        // Spawner l'item au-dessus de l'imprimante
-        Location spawnLocation = printer.getLocation().add(0.5, 1.0, 0.5);
-        Item item = printer.getLocation().getWorld().dropItem(spawnLocation, bill);
-        item.setVelocity(new Vector(0, 0.1, 0));
-        item.setPickupDelay(20); // 1 seconde de délai
+        // Utiliser le BillStackManager pour spawner le billet avec empilement automatique
+        Location spawnLocation = printer.getLocation().clone();
+        billStackManager.spawnStackedBill(spawnLocation, printer.getTier());
         
         // Mettre à jour le temps de génération avec le multiplicateur de vitesse
         long adjustedInterval = (long) (printer.getGenerationIntervalSeconds() * 1000 / speedMultiplier);
@@ -779,4 +778,5 @@ public class PrinterManager {
     public NamespacedKey getPrinterKey() { return printerKey; }
     public NamespacedKey getPrinterTierKey() { return printerTierKey; }
     public NamespacedKey getPrinterIdKey() { return printerIdKey; }
+    public BillStackManager getBillStackManager() { return billStackManager; }
 }
