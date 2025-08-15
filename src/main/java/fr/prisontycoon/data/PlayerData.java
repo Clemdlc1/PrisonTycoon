@@ -128,7 +128,10 @@ public class PlayerData {
     private long sessionStartMillis = 0L;
 
 	// Cooldowns/horodatages divers
-	private long lastRepairTime = 0L; // /repair (3h)
+	    private long lastRepairTime = 0L; // /repair (3h)
+    
+    // Slots d'imprimantes bonus (via items physiques)
+    private int printerSlotBonus = 0;
 
 
     public PlayerData(UUID playerId, String playerName) {
@@ -278,6 +281,19 @@ public class PlayerData {
 
 	public void setLastRepairTime(long lastRepairTime) {
 		this.lastRepairTime = Math.max(0L, lastRepairTime);
+	}
+	
+	// --- Printer slots bonus ---
+	public int getPrinterSlotBonus() {
+		return printerSlotBonus;
+	}
+	
+	public void setPrinterSlotBonus(int printerSlotBonus) {
+		this.printerSlotBonus = Math.max(0, printerSlotBonus);
+	}
+	
+	public void addPrinterSlotBonus(int amount) {
+		this.printerSlotBonus = Math.max(0, this.printerSlotBonus + amount);
 	}
 
     public void addPlaytimeMillis(long delta) {

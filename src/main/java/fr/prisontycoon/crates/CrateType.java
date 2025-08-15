@@ -96,6 +96,10 @@ public enum CrateType {
                 var tier = reward.getBlueprintTier() != null ? reward.getBlueprintTier() : 1;
                 yield plugin.getForgeManager().createBlueprint(fr.prisontycoon.managers.ForgeManager.ArmorTier.ofLevel(tier));
             }
+            case DEPOSIT_BOX -> {
+                yield plugin.getDepositBoxManager().createDepositBoxItem();
+            }
+
         };
     }
 
@@ -133,7 +137,7 @@ public enum CrateType {
     // ================================================================= //
 
     public enum RewardType {
-        CONTAINER, KEY, CRISTAL_VIERGE, VOUCHER, BOOST, LIVRE_UNIQUE, AUTOMINER, FORGE_BLUEPRINT
+        CONTAINER, KEY, CRISTAL_VIERGE, VOUCHER, BOOST, LIVRE_UNIQUE, AUTOMINER, FORGE_BLUEPRINT, DEPOSIT_BOX
     }
 
     public static class CrateReward {
@@ -150,7 +154,8 @@ public enum CrateType {
         private final String bookType;
         private final String autominerType;
         private final int cristalLevel;
-        private final Integer blueprintTier; // Tier du plan de forge
+        private final Integer blueprintTier;
+
 
         private CrateReward(Builder builder) {
             this.type = builder.type;
@@ -167,6 +172,7 @@ public enum CrateType {
             this.autominerType = builder.autominerType;
             this.cristalLevel = builder.cristalLevel;
             this.blueprintTier = builder.blueprintTier;
+
         }
 
         public static Builder builder(RewardType type, int minAmount, int maxAmount, double probability) {
@@ -226,6 +232,8 @@ public enum CrateType {
             return blueprintTier;
         }
 
+
+
         public static class Builder {
             private final RewardType type;
             private final int minAmount;
@@ -241,6 +249,7 @@ public enum CrateType {
             private String autominerType;
             private int cristalLevel;
             private Integer blueprintTier;
+
 
             private Builder(RewardType type, int minAmount, int maxAmount, double probability) {
                 this.type = type;
@@ -291,6 +300,8 @@ public enum CrateType {
                 return this;
             }
 
+
+
             public CrateReward build() {
                 return new CrateReward(this);
             }
@@ -317,6 +328,7 @@ public enum CrateType {
                     CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(4).build(), // <-- CHANGEMENT ICI
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 4.0).blueprintTier(1).build(),
                     CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 2.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 1800).build()
             );
         }
@@ -325,9 +337,10 @@ public enum CrateType {
             return List.of(
                     CrateReward.builder(CONTAINER, 1, 1, 15.0).containerTier(1).build(),
                     CrateReward.builder(KEY, 1, 1, 10.0).keyType("Commune").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(5).build(), // <-- CHANGEMENT ICI
+                    CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(5).build(),
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 4.0).blueprintTier(2).build(),
                     CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 2.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 3600).build()
             );
         }
@@ -337,7 +350,7 @@ public enum CrateType {
                     CrateReward.builder(CONTAINER, 1, 1, 20.0).containerTier(2).build(),
                     CrateReward.builder(KEY, 1, 2, 10.0).keyType("Commune").build(),
                     CrateReward.builder(KEY, 1, 1, 5.0).keyType("Peu Commune").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 2, 4, 6.0).cristalLevel(9).build(), // <-- CHANGEMENT ICI
+                    CrateReward.builder(CRISTAL_VIERGE, 2, 4, 6.0).cristalLevel(9).build(), 
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 3.0).blueprintTier(3).build(),
                     CrateReward.builder(VOUCHER, 1, 1, 3.0).voucherType("TOKEN_BOOST_MEDIUM").build(),
                     CrateReward.builder(BOOST, 1, 1, 1.0).boost("TOKENS", 2, 7200).build()
@@ -349,7 +362,7 @@ public enum CrateType {
                     CrateReward.builder(CONTAINER, 1, 1, 18.0).containerTier(3).build(),
                     CrateReward.builder(KEY, 1, 2, 12.0).keyType("Peu Commune").build(),
                     CrateReward.builder(KEY, 1, 1, 8.0).keyType("Rare").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 4, 8, 10.0).cristalLevel(13).build(), // <-- CHANGEMENT ICI
+                    CrateReward.builder(CRISTAL_VIERGE, 4, 8, 10.0).cristalLevel(13).build(),
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 2.5).blueprintTier(4).build(),
                     CrateReward.builder(LIVRE_UNIQUE, 1, 1, 4.0).book("greed").build(),
                     CrateReward.builder(VOUCHER, 1, 1, 2.0).voucherType("XP_BOOST_LARGE").build(),
@@ -364,9 +377,10 @@ public enum CrateType {
                     CrateReward.builder(KEY, 1, 2, 10.0).keyType("Légendaire").build(),
                     CrateReward.builder(CRISTAL_VIERGE, 8, 12, 12.0).cristalLevel(16).build(),
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 2.0).blueprintTier(5).build(),
-                    CrateReward.builder(LIVRE_UNIQUE, 1, 1, 6.0).book("combustion").build(),
-                    CrateReward.builder(AUTOMINER, 1, 1, 3.0).autominer("iron").build(),
-                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("ALL", 2, 14400).build()
+                    CrateReward.builder(LIVRE_UNIQUE, 1, 1, 6.0).book("tonnerre").build(),
+                    CrateReward.builder(AUTOMINER, 1, 1, 3.0).autominer("OR").build(),
+                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("GLOBAL_BOOST", 2, 14400).build(),
+                    CrateReward.builder(DEPOSIT_BOX, 1, 1, 2.0).build()
             );
         }
 
@@ -378,8 +392,8 @@ public enum CrateType {
                     CrateReward.builder(CRISTAL_VIERGE, 12, 20, 15.0).cristalLevel(19).build(),
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 1.5).blueprintTier(6).build(),
                     CrateReward.builder(LIVRE_UNIQUE, 1, 1, 5.0).book("beaconbreaker").build(),
-                    CrateReward.builder(AUTOMINER, 1, 1, 2.0).autominer("diamond").build(),
-                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("ALL", 5, 21600).build()
+                    CrateReward.builder(AUTOMINER, 1, 1, 2.0).autominer("EMERAUDE").build(),
+                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("GLOBAL_BOOST", 5, 21600).build()
             );
         }
     }

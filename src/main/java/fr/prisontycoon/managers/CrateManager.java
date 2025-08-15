@@ -397,6 +397,7 @@ public class CrateManager {
             case VOUCHER -> "§eVoucher " + reward.getVoucherType();
             case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
             case FORGE_BLUEPRINT -> "§7Plan de forge " + reward.getBlueprintTier();
+            case DEPOSIT_BOX -> "§7DEPOSIT "; //todo
         };
     }
 

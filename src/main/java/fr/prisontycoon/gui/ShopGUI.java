@@ -8,7 +8,6 @@ import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -36,10 +35,8 @@ public class ShopGUI {
     private static final int CATEGORY_REDSTONE_SLOT = 21;
     private static final int CATEGORY_DECORATION_SLOT = 23;
     private static final int CATEGORY_FARMING_SLOT = 25;
+    private static final int CATEGORY_PRINTERS_SLOT = 28;
     private static final int CLOSE_SLOT = 44;
-
-    // Quantités de base proposées (seront filtrées selon la stack max de l'item)
-    private static final int[] BASE_QUANTITIES = {1, 5, 10, 16, 32, 64};
 
     public ShopGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -65,6 +62,7 @@ public class ShopGUI {
         gui.setItem(CATEGORY_REDSTONE_SLOT, createCategoryItem(ShopCategory.REDSTONE, player));
         gui.setItem(CATEGORY_DECORATION_SLOT, createCategoryItem(ShopCategory.DECORATION, player));
         gui.setItem(CATEGORY_FARMING_SLOT, createCategoryItem(ShopCategory.FARMING, player));
+        gui.setItem(CATEGORY_PRINTERS_SLOT, createCategoryItem(ShopCategory.PRINTERS, player));
 
         // Bouton fermer
         gui.setItem(CLOSE_SLOT, createCloseButton());
@@ -1314,6 +1312,60 @@ public class ShopGUI {
                 items.add(new ShopItem("sunflower", "Tournesol", new ItemStack(Material.SUNFLOWER), 50, category));
             }
 
+            case PRINTERS -> {
+                // ==================== IMPRIMANTES ====================
+                
+                // Imprimantes Tier 1-10 (basiques)
+                for (int tier = 1; tier <= 10; tier++) {
+                    String tierName = "Imprimante Tier " + tier;
+                    ItemStack printerItem = plugin.getPrinterManager().createPrinterItem(tier);
+                    if (printerItem != null) {
+                        fr.prisontycoon.data.PrinterTier printerTier = fr.prisontycoon.data.PrinterTier.getByTier(tier);
+                        if (printerTier != null) {
+                            items.add(new ShopItem("printer_tier_" + tier, tierName, printerItem, 
+                                printerTier.getPurchasePrice().longValue(), category));
+                        }
+                    }
+                }
+                
+                // Imprimantes Tier 11-25 (intermédiaires)
+                for (int tier = 11; tier <= 25; tier++) {
+                    String tierName = "Imprimante Tier " + tier;
+                    ItemStack printerItem = plugin.getPrinterManager().createPrinterItem(tier);
+                    if (printerItem != null) {
+                        fr.prisontycoon.data.PrinterTier printerTier = fr.prisontycoon.data.PrinterTier.getByTier(tier);
+                        if (printerTier != null) {
+                            items.add(new ShopItem("printer_tier_" + tier, tierName, printerItem, 
+                                printerTier.getPurchasePrice().longValue(), category));
+                        }
+                    }
+                }
+                
+                // Imprimantes Tier 26-50 (avancées)
+                for (int tier = 26; tier <= 50; tier++) {
+                    String tierName = "Imprimante Tier " + tier;
+                    ItemStack printerItem = plugin.getPrinterManager().createPrinterItem(tier);
+                    if (printerItem != null) {
+                        fr.prisontycoon.data.PrinterTier printerTier = fr.prisontycoon.data.PrinterTier.getByTier(tier);
+                        if (printerTier != null) {
+                            items.add(new ShopItem("printer_tier_" + tier, tierName, printerItem, 
+                                printerTier.getPurchasePrice().longValue(), category));
+                        }
+                    }
+                }
+                
+
+                
+                // ==================== MATÉRIAUX DE MAINTENANCE ====================
+                
+                items.add(new ShopItem("redstone", "Redstone", new ItemStack(Material.REDSTONE), 50, category));
+                items.add(new ShopItem("hopper", "Entonnoir", new ItemStack(Material.HOPPER), 200, category));
+                items.add(new ShopItem("dispenser", "Distributeur", new ItemStack(Material.DISPENSER), 150, category));
+                items.add(new ShopItem("chest", "Coffre", new ItemStack(Material.CHEST), 100, category));
+                items.add(new ShopItem("paper", "Papier", new ItemStack(Material.PAPER), 20, category));
+                items.add(new ShopItem("ink_sac", "Poche d'Encre", new ItemStack(Material.INK_SAC), 30, category));
+            }
+
             case MISC -> {
                 // ==================== MATÉRIAUX DE CRAFT ====================
 
@@ -1504,7 +1556,8 @@ public class ShopGUI {
         REDSTONE("Redstone", "Composants et mécanismes automatisés", Material.REDSTONE),
         DECORATION("Décoration", "Éléments décoratifs et esthétiques", Material.PAINTING),
         FARMING("Agriculture", "Graines, outils et matériel d'élevage", Material.WHEAT_SEEDS),
-        MISC("Divers", "Articles utiles de toutes sortes", Material.CHEST);
+        MISC("Divers", "Articles utiles de toutes sortes", Material.CHEST),
+        PRINTERS("Imprimantes", "Matériel et consommables pour les imprimantes", Material.PAPER);
 
         private final String displayName;
         private final String description;

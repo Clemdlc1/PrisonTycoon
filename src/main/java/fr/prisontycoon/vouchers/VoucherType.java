@@ -10,7 +10,8 @@ public enum VoucherType {
     TOKENS("Tokens", "§b💎 Voucher Tokens", "§7Donne des tokens au joueur"),
     COINS("Coins", "§6💰 Voucher Coins", "§7Donne des coins au joueur"),
     EXPERIENCE("Experience", "§a⭐ Voucher Expérience", "§7Donne de l'expérience au joueur"),
-    JOB_XP("JobXP", "§d🔨 Voucher XP Métier", "§7Donne de l'XP au métier actuel");
+    JOB_XP("JobXP", "§d🔨 Voucher XP Métier", "§7Donne de l'XP au métier actuel"),
+    PRINTER_SLOT("PrinterSlot", "§6🖨️ Voucher Slot Imprimante", "§7Donne +1 slot d'imprimante");
 
     private final String displayName;
     private final String itemName;
@@ -80,6 +81,10 @@ public enum VoucherType {
                 case 9 -> 7500000L;
                 case 10 -> 25000000L;
                 default -> 0L;
+            };
+            case PRINTER_SLOT -> switch (tier) {
+                case 1 -> 1L; // +1 slot
+                default -> 1L;
             };
         };
     }

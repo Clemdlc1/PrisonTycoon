@@ -73,11 +73,12 @@ public enum GUIType {
     SHOP_BLOCKS("shop_blocks"),
     SHOP_FOOD("shop_food"),
     SHOP_TOOLS("shop_tools"),
-    SHOP_MISC("shop_misc"),
     SHOP_REDSTONE("shop_redstone"),
     SHOP_DECORATION("shop_decoration"),
     SHOP_FARMING("shop_farming"),
-
+    SHOP_MISC("shop_misc"),
+    SHOP_PRINTERS("shop_printers"),
+    DEPOSIT_BOX_UPGRADE("deposit_box_upgrade"),
     FORGE_RECIPE("forge_recipe");
 
     private final String id;
