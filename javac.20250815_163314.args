@@ -1,7 +1,0 @@
--cp
-.
--d
-/tmp
-src/main/java/fr/prisontycoon/enchantments/WeaponArmorEnchantmentManager.java
-src/main/java/fr/prisontycoon/enchantments/UniqueEnchantmentBookFactory.java
-src/main/java/fr/prisontycoon/enchantments/CustomEnchantment.java
