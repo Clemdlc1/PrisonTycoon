@@ -58,6 +58,7 @@ public class BillStackManager implements Listener {
         
         ItemStack bill = new ItemStack(printerTier.getBillMaterial());
         ItemMeta meta = bill.getItemMeta();
+        if (meta == null) return null;
         
         // Données de base du billet
         meta.setDisplayName(printerTier.getBillName());

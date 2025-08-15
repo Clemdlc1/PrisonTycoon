@@ -293,24 +293,57 @@ public class DepositBoxManager {
         int baseItemsToProcess = depositBox.getItemsToProcess();
         int itemsToProcess = (int) (baseItemsToProcess * hopperTransferSpeed);
         int processedItems = 0;
+        BigInteger totalEarnings = BigInteger.ZERO;
         
         for (int i = 0; i < hopperInventory.getSize() && processedItems < itemsToProcess; i++) {
             ItemStack item = hopperInventory.getItem(i);
             if (item != null && isBill(item)) {
-                // Calculer la valeur avec le multiplicateur
+                // Obtenir la quantité réelle (stack size)
+                int stackSize = getBillStackSize(item);
                 BigInteger billValue = getBillValue(item);
-                BigInteger multipliedValue = billValue.multiply(BigInteger.valueOf((long) (depositBox.getMultiplierLevel() * 100))).divide(BigInteger.valueOf(100));
                 
-                // Donner l'argent au propriétaire
+                // Calculer la valeur totale avec le multiplicateur de la caisse de dépôt
+                double multiplier = 1.0 + (depositBox.getMultiplierLevel() * 0.1); // 10% par niveau
+                BigInteger totalValue = billValue.multiply(BigInteger.valueOf(stackSize))
+                    .multiply(BigInteger.valueOf((long) (multiplier * 100)))
+                    .divide(BigInteger.valueOf(100));
+                
+                // Appliquer le bonus de vente du joueur via GlobalBonusManager
                 PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(depositBox.getOwner());
-                playerData.addCoins(multipliedValue.longValue());
+                Player player = plugin.getServer().getPlayer(depositBox.getOwner());
+                if (player != null) {
+                    double salesMultiplier = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, 
+                        fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
+                    totalValue = totalValue.multiply(BigInteger.valueOf((long) (salesMultiplier * 100)))
+                        .divide(BigInteger.valueOf(100));
+                }
+                
+                totalEarnings = totalEarnings.add(totalValue);
                 
                 // Retirer l'item du hopper
                 hopperInventory.setItem(i, null);
-                processedItems++;
+                processedItems += stackSize; // Compter la vraie quantité processée
                 
-                // Effet sonore
-                location.getWorld().playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
+                // Limiter le traitement si on dépasse la capacité
+                if (processedItems >= itemsToProcess) {
+                    break;
+                }
+            }
+        }
+        
+        // Donner l'argent au propriétaire s'il y a des gains
+        if (totalEarnings.compareTo(BigInteger.ZERO) > 0) {
+            PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(depositBox.getOwner());
+            playerData.addCoins(totalEarnings.longValue());
+            plugin.getPlayerDataManager().markDirty(depositBox.getOwner());
+            
+            // Effet sonore et notification
+            location.getWorld().playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
+            
+            // Notifier le joueur s'il est en ligne
+            Player owner = plugin.getServer().getPlayer(depositBox.getOwner());
+            if (owner != null) {
+                owner.sendMessage("§a💰 §lCaisse de dépôt: §6+" + fr.prisontycoon.utils.NumberFormatter.format(totalEarnings.longValue()) + " coins");
             }
         }
         
@@ -405,6 +438,18 @@ public class DepositBoxManager {
             .filter(depositBox -> depositBox.getId().equals(id))
             .findFirst()
             .orElse(null);
+    }
+    
+    /**
+     * Obtient l'ID d'une caisse de dépôt à une location donnée
+     */
+    public String getDepositBoxIdAtLocation(Location location) {
+        for (DepositBoxData depositBox : depositBoxCache.values()) {
+            if (depositBox.getLocation().equals(location)) {
+                return depositBox.getId();
+            }
+        }
+        return null;
     }
 
     /**
