@@ -344,4 +344,7 @@ public class CrateGUI {
             return seconds + "s";
         }
     }
+
+    public void handleCrateClick(Player player) {
+    }
 }

@@ -185,7 +185,7 @@ public class GUIListener implements Listener {
                     plugin.getShopGUI().handleClick(player, guiType, slot, item);
 
             case DEPOSIT_BOX_UPGRADE -> plugin.getDepositBoxUpgradeGUI().handleClick(player, slot, item);
-
+            case CRATE_MANAGEMENT -> plugin.getCrateGUI().handleCrateClick(player);
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
 
             case HEAD_COLLECTION -> plugin.getHeadCollectionGUI().handleCollectionMenuClick(player, slot, item);

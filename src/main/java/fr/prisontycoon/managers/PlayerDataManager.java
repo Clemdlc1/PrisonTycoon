@@ -144,7 +144,8 @@ public class PlayerDataManager {
                     daily_progress INT DEFAULT 0,
                     daily_last_claim BIGINT DEFAULT 0,
                     total_playtime BIGINT DEFAULT 0,
-                    last_repair_time BIGINT DEFAULT 0
+                    last_repair_time BIGINT DEFAULT 0,
+                    printer_slot_bonus INT DEFAULT 0
                 );
                 """;
 
