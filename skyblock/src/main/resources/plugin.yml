@@ -1,0 +1,45 @@
+name: CustomSkyblock
+version: 1.0.0
+main: fr.skyblock.CustomSkyblock
+api-version: 1.21
+author: YourName
+depend: [Multiverse-Core, PrisonTycoon]
+softdepend: [VoidWorldGenerator]
+
+commands:
+  island:
+    description: Commandes principales de l'île
+    aliases: [is]
+    permission: skyblock.island
+    usage: /<command> [sous-commande]
+  isadmin:
+    description: Commandes administrateur
+    aliases: [isa]
+    permission: skyblock.admin
+    usage: /<command> [sous-commande]
+  balance:
+    description: Voir votre solde
+    aliases: [bal, money]
+    permission: skyblock.economy
+    usage: /<command>
+  pay:
+    description: Envoyer de l'argent à un joueur
+    permission: skyblock.economy
+    usage: /<command> <joueur> <montant>
+
+permissions:
+  skyblock.*:
+    description: Toutes les permissions
+    children:
+      skyblock.island: true
+      skyblock.admin: true
+      skyblock.economy: true
+  skyblock.island:
+    description: Utiliser les commandes d'île
+    default: true
+  skyblock.admin:
+    description: Commandes administrateur
+    default: op
+  skyblock.economy:
+    description: Utiliser l'économie
+    default: true
