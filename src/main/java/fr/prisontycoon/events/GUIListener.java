@@ -160,6 +160,7 @@ public class GUIListener implements Listener {
                     plugin.getAutominerEnchantUpgradeGUI().handleUpgradeClick(player, slot, item, clickType);
 
             case AUTOMINER_STORAGE -> plugin.getAutominerCondHeadGUI().handleStorageClick(player, slot, item);
+            case CRATE_MANAGEMENT -> plugin.getCrateGUI().handleCrateClick(player);
 
             case GANG_MAIN -> plugin.getGangGUI().handleMainGangMenuClick(player, slot, item, clickType);
             case GANG_NO_GANG -> plugin.getGangGUI().handleNoGangMenuClick(player, slot, item, clickType);
