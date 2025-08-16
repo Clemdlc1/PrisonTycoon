@@ -441,6 +441,12 @@ commands:
     usage: /shop
     permission: specialmine.basic
 
+  key:
+    description: "Admin: donne des clés de crates aux joueurs"
+    usage: /key <joueur> <type> [quantité]
+    permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+
 # Compatibilité
 depend-bootstrap: false
 

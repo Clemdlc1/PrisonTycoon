@@ -394,7 +394,16 @@ public class CrateManager {
             case CRISTAL_VIERGE -> "§dCristal Niveau " + reward.getRandomAmount();
             case LIVRE_UNIQUE -> "§5Livre " + reward.getBookType();
             case AUTOMINER -> "§7Autominer " + reward.getAutominerType();
-            case VOUCHER -> "§eVoucher " + reward.getVoucherType();
+            case VOUCHER -> {
+                // Si le type de voucher correspond à PrinterSlot, afficher équivalent imprimante
+                try {
+                    String vt = reward.getVoucherType();
+                    if (vt != null && vt.equalsIgnoreCase("PRINTER_SLOT")) {
+                        yield "§6Imprimante (slot)";
+                    }
+                } catch (Throwable ignored) {}
+                yield "§eVoucher " + reward.getVoucherType();
+            }
             case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
             case FORGE_BLUEPRINT -> "§7Plan de forge " + reward.getBlueprintTier();
         };
@@ -413,7 +422,27 @@ public class CrateManager {
                 player.getWorld().dropItemNaturally(player.getLocation(), rewardItem);
                 player.sendMessage("§e⚠ Inventaire plein! L'item a été lâché au sol.");
             }
+            return;
         }
+
+        // Conversion de récompense de type "slot voucher": applique +1 PrinterExtraSlot (max 100)
+        try {
+            if (reward.getType() == fr.prisontycoon.crates.CrateType.RewardType.VOUCHER) {
+                String vt = reward.getVoucherType();
+                if (vt != null && vt.equalsIgnoreCase("PRINTER_SLOT")) {
+                    var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+                    int current = data.getPrinterExtraSlots();
+                    if (current < 100) {
+                        data.setPrinterExtraSlots(Math.min(100, current + 1));
+                        plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+                        plugin.getPlayerDataManager().saveSingleColumn(player.getUniqueId(), "printer_extra_slots");
+                        player.sendMessage("§a✅ +1 slot d'imprimante (" + data.getPrinterExtraSlots() + "/100)");
+                    } else {
+                        player.sendMessage("§e⚠ Vous avez déjà atteint la limite de 100 slots d'imprimantes.");
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
     }
 
 

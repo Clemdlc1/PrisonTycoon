@@ -416,6 +416,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new DailyCommand(this), "daily", "jour");
         registerCommand(new ForgeCommand(this), "forge");
         registerCommand(new BattlePassAdminCommand(this), "battlepassadmin", "bpadmin");
+        registerCommand(new KeyCommand(this), "key");
 
         logger.info("§aCommandes enregistrées.");
     }

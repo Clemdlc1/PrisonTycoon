@@ -10,7 +10,8 @@ public enum VoucherType {
     TOKENS("Tokens", "§b💎 Voucher Tokens", "§7Donne des tokens au joueur"),
     COINS("Coins", "§6💰 Voucher Coins", "§7Donne des coins au joueur"),
     EXPERIENCE("Experience", "§a⭐ Voucher Expérience", "§7Donne de l'expérience au joueur"),
-    JOB_XP("JobXP", "§d🔨 Voucher XP Métier", "§7Donne de l'XP au métier actuel");
+    JOB_XP("JobXP", "§d🔨 Voucher XP Métier", "§7Donne de l'XP au métier actuel"),
+    PRINTER_SLOT("PrinterSlot", "§6🖨️ Slot d'Imprimante", "§7Augmente votre limite d'imprimantes de +1");
 
     private final String displayName;
     private final String itemName;
@@ -81,6 +82,7 @@ public enum VoucherType {
                 case 10 -> 25000000L;
                 default -> 0L;
             };
+            case PRINTER_SLOT -> 1L; // chaque voucher donne +1 slot, peu importe le tier
         };
     }
 
@@ -123,6 +125,9 @@ public enum VoucherType {
      * Retourne la description avec la valeur
      */
     public String getValueDescription(int tier) {
+        if (this == PRINTER_SLOT) {
+            return "§7Effet: §a+1 slot d'imprimante";
+        }
         long value = getValue(tier);
         return "§7Valeur: " + getTierColor(tier) + NumberFormatter.formatWithColor(value) + " " + displayName;
     }

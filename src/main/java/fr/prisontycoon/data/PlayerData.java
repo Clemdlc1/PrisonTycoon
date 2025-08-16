@@ -110,6 +110,9 @@ public class PlayerData {
     private BankType bankType = BankType.NONE;
     private long lastBankTypeChange = 0L;
 
+    // Slots supplémentaires d'imprimantes obtenus via items (vouchers)
+    private int printerExtraSlots = 0;
+
     private String gangId;
     private String gangInvitation; // ID du gang qui a invité ce joueur
 
@@ -221,6 +224,27 @@ public class PlayerData {
 
     public void setLastBankTypeChange(long lastBankTypeChange) {
         this.lastBankTypeChange = Math.max(0L, lastBankTypeChange);
+    }
+
+    // === Imprimantes: slots supplémentaires (vouchers) ===
+    public int getPrinterExtraSlots() {
+        synchronized (dataLock) {
+            return Math.max(0, Math.min(100, printerExtraSlots));
+        }
+    }
+
+    public void setPrinterExtraSlots(int slots) {
+        synchronized (dataLock) {
+            this.printerExtraSlots = Math.max(0, Math.min(100, slots));
+        }
+    }
+
+    public void addPrinterExtraSlots(int delta) {
+        if (delta == 0) return;
+        synchronized (dataLock) {
+            int current = Math.max(0, this.printerExtraSlots);
+            this.printerExtraSlots = Math.max(0, Math.min(100, current + delta));
+        }
     }
 
     // --- Daily reward getters/setters ---

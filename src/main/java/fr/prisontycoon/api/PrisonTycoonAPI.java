@@ -1191,6 +1191,22 @@ public class PrisonTycoonAPI {
         return plugin.getEnchantmentManager().createKey(keyType);
     }
 
+    /**
+     * Nombre maximum de slots d'imprimantes pour un joueur.
+     * Base 10 + 1 par prestige + bonus via vouchers (printer_extra_slots) + bonus type de banque.
+     */
+    public int getMaxPrinterSlots(UUID playerId) {
+        if (playerId == null) return 10;
+        PlayerData data = playerDataManager.getPlayerData(playerId);
+        if (data == null) return 10;
+
+        int base = 10;
+        int prestigeBonus = data.getPrestigeLevel();
+        int voucherBonus = data.getPrinterExtraSlots();
+        int bankBonus = data.getBankType() != null ? data.getBankType().getIslandPrintersBonus() : 0;
+        return Math.max(0, base + prestigeBonus + voucherBonus + bankBonus);
+    }
+
     public ItemStack createCristalVierge(int niveau) {
         return plugin.getCristalManager().createCristalViergeApi(niveau);
     }

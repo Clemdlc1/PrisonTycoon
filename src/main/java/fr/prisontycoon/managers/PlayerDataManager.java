@@ -144,7 +144,8 @@ public class PlayerDataManager {
                     daily_progress INT DEFAULT 0,
                     daily_last_claim BIGINT DEFAULT 0,
                     total_playtime BIGINT DEFAULT 0,
-                    last_repair_time BIGINT DEFAULT 0
+                    last_repair_time BIGINT DEFAULT 0,
+                    printer_extra_slots INT DEFAULT 0
                 );
                 """;
 
@@ -399,6 +400,11 @@ public class PlayerDataManager {
                     data.setClaimedHeadRewards(new HashSet<>());
                 }
 
+                // Charger les slots supplémentaires d'imprimantes
+                int extraSlots = rs.getInt("printer_extra_slots");
+                data.setPrinterExtraSlots(extraSlots);
+
+
                 // Daily reward
                 data.setDailyProgress(Math.max(0, Math.min(14, rs.getInt("daily_progress"))));
                 data.setDailyLastClaim(Math.max(0L, rs.getLong("daily_last_claim")));
@@ -497,14 +503,14 @@ public class PlayerDataManager {
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
                         gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
-                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change
+                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change, printer_extra_slots
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     )
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -565,7 +571,8 @@ public class PlayerDataManager {
                         total_playtime = EXCLUDED.total_playtime,
                         last_repair_time = EXCLUDED.last_repair_time,
                         bank_type = EXCLUDED.bank_type,
-                        bank_type_last_change = EXCLUDED.bank_type_last_change
+                        bank_type_last_change = EXCLUDED.bank_type_last_change,
+                        printer_extra_slots = EXCLUDED.printer_extra_slots
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -635,6 +642,7 @@ public class PlayerDataManager {
                     ps.setLong(58, data.getLastRepairTime());
                     ps.setString(59, data.getBankType().name());
                     ps.setLong(60, data.getLastBankTypeChange());
+                    ps.setInt(61, data.getPrinterExtraSlots());
 
                     ps.executeUpdate();
                     conn.commit();
@@ -1021,6 +1029,7 @@ public class PlayerDataManager {
                 case "unlocked_outpost_skins" -> ps.setString(1, gson.toJson(data.getUnlockedOutpostSkins()));
                 case "collected_heads" -> ps.setString(1, gson.toJson(data.getCollectedHeads()));
                 case "claimed_head_rewards" -> ps.setString(1, gson.toJson(data.getClaimedHeadRewards()));
+                case "printer_extra_slots" -> ps.setInt(1, data.getPrinterExtraSlots());
                 default -> {
                     return false;
                 }

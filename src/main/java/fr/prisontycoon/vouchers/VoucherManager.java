@@ -41,6 +41,7 @@ public class VoucherManager {
             case COINS -> Material.GOLD_INGOT;
             case EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
             case JOB_XP -> Material.EMERALD;
+            case PRINTER_SLOT -> Material.PAPER;
         };
 
         ItemStack voucher = new ItemStack(material);
@@ -150,6 +151,18 @@ public class VoucherManager {
                 player.sendMessage("§a✅ §lVoucher utilisé!");
                 player.sendMessage("§7Vous avez reçu: §d" + type.getValueDescription(tier).substring(9));
                 player.sendMessage("§7Métier: §e" + activeProfession);
+            }
+            case PRINTER_SLOT -> {
+                int current = playerData.getPrinterExtraSlots();
+                if (current >= 100) {
+                    player.sendMessage("§e⚠ Vous avez déjà 100 slots d'imprimantes (limite atteinte).");
+                    return false;
+                }
+                playerData.setPrinterExtraSlots(Math.min(100, current + 1));
+                plugin.getPlayerDataManager().markDirty(player.getUniqueId());
+                plugin.getPlayerDataManager().saveSingleColumn(player.getUniqueId(), "printer_extra_slots");
+                player.sendMessage("§a✅ §lSlot d'imprimante obtenu!");
+                player.sendMessage("§7Votre limite d'imprimantes augmente de §a+1§7 (" + playerData.getPrinterExtraSlots() + "/100)");
             }
         }
 

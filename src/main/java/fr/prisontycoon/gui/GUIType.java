@@ -77,6 +77,7 @@ public enum GUIType {
     SHOP_REDSTONE("shop_redstone"),
     SHOP_DECORATION("shop_decoration"),
     SHOP_FARMING("shop_farming"),
+    SHOP_PRINTERS("shop_printers"),
 
     FORGE_RECIPE("forge_recipe");
 

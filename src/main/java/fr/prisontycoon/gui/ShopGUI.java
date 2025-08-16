@@ -8,7 +8,6 @@ import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -36,6 +35,7 @@ public class ShopGUI {
     private static final int CATEGORY_REDSTONE_SLOT = 21;
     private static final int CATEGORY_DECORATION_SLOT = 23;
     private static final int CATEGORY_FARMING_SLOT = 25;
+    private static final int CATEGORY_PRINTERS_SLOT = 28;
     private static final int CLOSE_SLOT = 44;
 
     // Quantités de base proposées (seront filtrées selon la stack max de l'item)
@@ -65,6 +65,7 @@ public class ShopGUI {
         gui.setItem(CATEGORY_REDSTONE_SLOT, createCategoryItem(ShopCategory.REDSTONE, player));
         gui.setItem(CATEGORY_DECORATION_SLOT, createCategoryItem(ShopCategory.DECORATION, player));
         gui.setItem(CATEGORY_FARMING_SLOT, createCategoryItem(ShopCategory.FARMING, player));
+        gui.setItem(CATEGORY_PRINTERS_SLOT, createCategoryItem(ShopCategory.PRINTERS, player));
 
         // Bouton fermer
         gui.setItem(CLOSE_SLOT, createCloseButton());
@@ -281,6 +282,33 @@ public class ShopGUI {
         playerData.removeCoins(totalPrice);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
+        // Route spéciale: imprimantes et voucher slot
+        if (item.getId().startsWith("printer_t")) {
+            int tier;
+            try { tier = Integer.parseInt(item.getId().substring("printer_t".length())); } catch (Exception e) { tier = 1; }
+            // Si CustomSkyblock est présent, créer l'item imprimante via son API, sinon donner un dropper marqué générique
+            ItemStack printerItem;
+            if (plugin.getCustomSkyblock() != null) {
+                try {
+                    // Appel réfléchi pour ne pas dépendre à la compilation du type CustomSkyblock
+                    Object printerManager = plugin.getCustomSkyblock().getClass().getMethod("getPrinterManager").invoke(plugin.getCustomSkyblock());
+                    printerItem = (ItemStack) printerManager.getClass().getMethod("createPrinterItem", int.class).invoke(printerManager, tier);
+                } catch (Throwable t) {
+                    printerItem = new ItemStack(Material.DROPPER);
+                }
+            } else {
+                printerItem = new ItemStack(Material.DROPPER);
+            }
+            int remaining = quantity;
+            int maxStack = Math.max(1, printerItem.getMaxStackSize());
+            while (remaining > 0) {
+                int give = Math.min(remaining, maxStack);
+                ItemStack stack = printerItem.clone();
+                stack.setAmount(give);
+                player.getInventory().addItem(stack);
+                remaining -= give;
+            }
+        } else {
         // Donner les items en respectant la stack max (outils non stackables, etc.)
         int remaining = quantity;
         int maxStack = Math.max(1, item.createItemStack(1).getMaxStackSize());
@@ -289,6 +317,7 @@ public class ShopGUI {
             ItemStack purchasedItem = item.createItemStack(give);
             player.getInventory().addItem(purchasedItem);
             remaining -= give;
+            }
         }
 
         // Messages de succès
@@ -642,6 +671,15 @@ public class ShopGUI {
         List<ShopItem> items = new ArrayList<>();
 
         switch (category) {
+            case PRINTERS -> {
+                // 50 tiers d'imprimantes achetables
+                for (int tier = 1; tier <= 50; tier++) {
+                    long price = plugin.getConfig().getLong("shop.printers.t" + tier + ".price",
+                            Math.max(1000L, Math.round(5000L * Math.pow(1.35, tier - 1))));
+                    ItemStack base = new ItemStack(Material.DROPPER);
+                    items.add(new ShopItem("printer_t" + tier, "Imprimante Tier " + tier, base, price, category));
+                }
+            }
             case PVP -> {
                 // ==================== ARMURES COMPLÈTES ====================
 
@@ -1504,6 +1542,7 @@ public class ShopGUI {
         REDSTONE("Redstone", "Composants et mécanismes automatisés", Material.REDSTONE),
         DECORATION("Décoration", "Éléments décoratifs et esthétiques", Material.PAINTING),
         FARMING("Agriculture", "Graines, outils et matériel d'élevage", Material.WHEAT_SEEDS),
+        PRINTERS("Imprimantes", "Imprimantes à argent et upgrades", Material.DROPPER),
         MISC("Divers", "Articles utiles de toutes sortes", Material.CHEST);
 
         private final String displayName;

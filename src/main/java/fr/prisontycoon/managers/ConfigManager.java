@@ -61,6 +61,15 @@ public class ConfigManager {
             loadSellPricesConfiguration();
             loadWarpsConfiguration();
 
+            // Valeurs par défaut du shop imprimantes si absentes (T1..T50)
+            if (!config.isConfigurationSection("shop.printers")) {
+                for (int tier = 1; tier <= 50; tier++) {
+                    long price = Math.max(1000L, Math.round(5000L * Math.pow(1.35, tier - 1)));
+                    config.set("shop.printers.t" + tier + ".price", price);
+                }
+                plugin.saveConfig();
+            }
+
 
             plugin.getPluginLogger().info("§aConfiguration chargée avec succès!");
             plugin.getPluginLogger().info("§7- " + minesData.size() + " mines configurées");
