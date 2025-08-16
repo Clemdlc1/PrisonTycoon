@@ -313,7 +313,6 @@ public class TankGUI implements Listener {
         plugin.getGUIManager().applyName(meta, "§6⚡ Informations du Tank");
 
         List<String> lore = Arrays.asList(
-                "§7ID: §e" + tankData.getId(),
                 "§7Propriétaire: §e" + plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName(),
                 "§7Nom personnalisé: " + (tankData.hasCustomName() ? "§f" + tankData.getCustomName() : "§cAucun"),
                 "",
@@ -779,10 +778,8 @@ public class TankGUI implements Listener {
                         int tier = e.getKey(); int amount = e.getValue();
                         while (amount > 0 && player.getInventory().firstEmpty() != -1) {
                             int give = Math.min(64, amount);
-                            ItemStack bill = new ItemStack(Material.PAPER, give);
-                            ItemMeta m = bill.getItemMeta();
-                            plugin.getGUIManager().applyName(m, "§bBillet Tier " + tier + " §7(" + NumberFormatter.format(plugin.getTankManager().getBillValue(tier)) + "$)");
-                            bill.setItemMeta(m);
+                            ItemStack bill = plugin.getTankManager().createBillForTier(tier);
+                            bill.setAmount(give);
                             player.getInventory().addItem(bill);
                             tankData.removeBills(tier, give);
                             amount -= give; moved += give;
@@ -845,8 +842,10 @@ public class TankGUI implements Listener {
             ItemMeta meta = it.getItemMeta();
             plugin.getGUIManager().applyName(meta, "§fBillet Tier " + tier);
             plugin.getGUIManager().applyLore(meta, List.of(
-                    "§7Quantité: §b" + NumberFormatter.format(amount),
-                    "§7Valeur: §e" + NumberFormatter.format(plugin.getTankManager().getBillValue(tier)) + "$"
+                    "§7Tier " + tier + " (" + NumberFormatter.format(plugin.getTankManager().getBillValue(tier)) + "$)",
+                    "§7Utiliser /sell ou un tank pour vendre vos billets",
+                    "",
+                    "§7Quantité: §b" + NumberFormatter.format(amount)
             ));
             it.setItemMeta(meta);
             gui.setItem(slot++, it);

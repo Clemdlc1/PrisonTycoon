@@ -80,6 +80,19 @@ public class SellCommand implements CommandExecutor, TabCompleter {
                 continue;
             }
 
+            // Vente de billets (papier avec lore spécifique)
+            if (item.getType() == Material.PAPER && plugin.getTankManager().isBillItem(item)) {
+                int tier = plugin.getTankManager().getBillTier(item);
+                long unit = plugin.getTankManager().getBillValue(tier);
+                int amount = item.getAmount();
+                long value = unit * amount;
+                totalValue += value;
+                totalItems += amount;
+                soldItems.merge(Material.PAPER, amount, Integer::sum);
+                player.getInventory().setItem(i, null);
+                continue;
+            }
+
             long sellPrice = plugin.getConfigManager().getSellPrice(item.getType());
             if (sellPrice <= 0) continue;
 
@@ -109,6 +122,20 @@ public class SellCommand implements CommandExecutor, TabCompleter {
 
         if (plugin.getContainerManager().isContainer(handItem)) {
             sellContainerInHand(player, handItem);
+            return;
+        }
+
+        // Vendre un billet en main
+        if (handItem.getType() == Material.PAPER && plugin.getTankManager().isBillItem(handItem)) {
+            int tier = plugin.getTankManager().getBillTier(handItem);
+            long unit = plugin.getTankManager().getBillValue(tier);
+            int amount = handItem.getAmount();
+            long totalValue = unit * amount;
+            Map<Material, Integer> soldItems = new HashMap<>();
+            soldItems.put(Material.PAPER, amount);
+            player.getInventory().setItemInMainHand(null);
+            String logContext = "sell hand bill (T" + tier + ") (" + player.getName() + ")";
+            processSale(player, totalValue, amount, soldItems, 0, logContext);
             return;
         }
 
