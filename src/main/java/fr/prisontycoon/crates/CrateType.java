@@ -317,6 +317,7 @@ public enum CrateType {
                     CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(4).build(), // <-- CHANGEMENT ICI
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 4.0).blueprintTier(1).build(),
                     CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 3.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 1800).build()
             );
         }
@@ -328,6 +329,7 @@ public enum CrateType {
                     CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(5).build(), // <-- CHANGEMENT ICI
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 4.0).blueprintTier(2).build(),
                     CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 4.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 3600).build()
             );
         }
@@ -340,6 +342,7 @@ public enum CrateType {
                     CrateReward.builder(CRISTAL_VIERGE, 2, 4, 6.0).cristalLevel(9).build(), // <-- CHANGEMENT ICI
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 3.0).blueprintTier(3).build(),
                     CrateReward.builder(VOUCHER, 1, 1, 3.0).voucherType("TOKEN_BOOST_MEDIUM").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 1.0).boost("TOKENS", 2, 7200).build()
             );
         }
@@ -353,6 +356,7 @@ public enum CrateType {
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 2.5).blueprintTier(4).build(),
                     CrateReward.builder(LIVRE_UNIQUE, 1, 1, 4.0).book("greed").build(),
                     CrateReward.builder(VOUCHER, 1, 1, 2.0).voucherType("XP_BOOST_LARGE").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 6.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 1.0).boost("XP", 3, 10800).build()
             );
         }
@@ -366,6 +370,7 @@ public enum CrateType {
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 2.0).blueprintTier(5).build(),
                     CrateReward.builder(LIVRE_UNIQUE, 1, 1, 6.0).book("combustion").build(),
                     CrateReward.builder(AUTOMINER, 1, 1, 3.0).autominer("iron").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 8.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 1.0).boost("ALL", 2, 14400).build()
             );
         }
@@ -379,6 +384,7 @@ public enum CrateType {
                     CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 1.5).blueprintTier(6).build(),
                     CrateReward.builder(LIVRE_UNIQUE, 1, 1, 5.0).book("beaconbreaker").build(),
                     CrateReward.builder(AUTOMINER, 1, 1, 2.0).autominer("diamond").build(),
+                    CrateReward.builder(VOUCHER, 1, 1, 10.0).voucherType("PRINTER_SLOT").build(),
                     CrateReward.builder(BOOST, 1, 1, 1.0).boost("ALL", 5, 21600).build()
             );
         }

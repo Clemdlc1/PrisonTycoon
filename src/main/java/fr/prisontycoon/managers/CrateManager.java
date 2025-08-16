@@ -399,7 +399,7 @@ public class CrateManager {
                 try {
                     String vt = reward.getVoucherType();
                     if (vt != null && vt.equalsIgnoreCase("PRINTER_SLOT")) {
-                        yield "§6Imprimante (slot)";
+                        yield "§6Slot Imprimante";
                     }
                 } catch (Throwable ignored) {}
                 yield "§eVoucher " + reward.getVoucherType();

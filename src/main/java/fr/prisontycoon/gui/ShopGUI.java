@@ -339,6 +339,34 @@ public class ShopGUI {
     }
 
     /**
+     * Crée un item d'imprimante via reflection vers CustomSkyblock
+     */
+    private ItemStack createPrinterItemViaReflection(int tier) {
+        if (plugin.getCustomSkyblock() != null) {
+            try {
+                // Appel réfléchi pour ne pas dépendre à la compilation du type CustomSkyblock
+                Object printerManager = plugin.getCustomSkyblock().getClass().getMethod("getPrinterManager").invoke(plugin.getCustomSkyblock());
+                return (ItemStack) printerManager.getClass().getMethod("createPrinterItem", int.class).invoke(printerManager, tier);
+            } catch (Throwable t) {
+                plugin.getLogger().warning("Erreur lors de la création d'imprimante via reflection: " + t.getMessage());
+            }
+        }
+        
+        // Fallback: créer un dropper basique avec nom et lore
+        ItemStack fallback = new ItemStack(Material.DROPPER);
+        ItemMeta meta = fallback.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§6Imprimante Tier " + tier);
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Génère des billets automatiquement");
+            lore.add("§eTier: " + tier);
+            meta.setLore(lore);
+            fallback.setItemMeta(meta);
+        }
+        return fallback;
+    }
+
+    /**
      * Calcule le prix avec les réductions applicables
      */
     private long calculatePrice(ShopItem item, int quantity, Player player) {
@@ -676,8 +704,10 @@ public class ShopGUI {
                 for (int tier = 1; tier <= 50; tier++) {
                     long price = plugin.getConfig().getLong("shop.printers.t" + tier + ".price",
                             Math.max(1000L, Math.round(5000L * Math.pow(1.35, tier - 1))));
-                    ItemStack base = new ItemStack(Material.DROPPER);
-                    items.add(new ShopItem("printer_t" + tier, "Imprimante Tier " + tier, base, price, category));
+                    
+                    // Utiliser la méthode createPrinterItem via reflection
+                    ItemStack printerItem = createPrinterItemViaReflection(tier);
+                    items.add(new ShopItem("printer_t" + tier, "Imprimante Tier " + tier, printerItem, price, category));
                 }
             }
             case PVP -> {
