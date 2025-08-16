@@ -50,7 +50,11 @@ public class ChatListener implements Listener {
         // Convertir le Component en String pour la logique existante
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
 
+        // Si un GUI attend une saisie (Tank: nom/prix), on consomme le message et on n'affiche rien aux autres joueurs
         if (plugin.getTankGUI().isPlayerAwaitingInput(player)) {
+            event.setCancelled(true);
+            // Déléguer au TankGUI en tâche sync pour interagir avec les GUIs
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getTankGUI().handleChatInput(player, message));
             return;
         }
 

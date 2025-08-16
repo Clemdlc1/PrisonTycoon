@@ -191,6 +191,7 @@ public class GUIListener implements Listener {
             case OUTPOST_MAIN, OUTPOST_SKINS -> plugin.getOutpostGUI().handleClick(player, item, guiType.name());
             case FORGE_MAIN -> plugin.getForgeGUI().handleClick(player, slot, item);
             case FORGE_RECIPE -> plugin.getForgeRecipeGUI().handleClick(player, slot, item);
+            case TANK_CONFIG, TANK_PRICES, TANK_FILTER, TANK_BILLS -> plugin.getTankGUI().handleClick(player, slot, item, clickType);
             default -> plugin.getPluginLogger().warning("GUI non géré: " + guiType);
         }
     }

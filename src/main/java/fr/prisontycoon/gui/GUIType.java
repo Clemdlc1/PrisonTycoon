@@ -43,6 +43,8 @@ public enum GUIType {
     CONTAINER_FILTER("container_filter"),
     TANK_CONFIG("tank_config"),
     TANK_PRICES("tank_prices"),
+    TANK_FILTER("tank_filter"),
+    TANK_BILLS("tank_bills"),
     OUTPOST_MAIN("outpost_main"),
     OUTPOST_SKINS("outpost_skins"),
     WARP_MENU("warp_menu"),

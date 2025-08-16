@@ -104,8 +104,10 @@ public class SellHandManager {
         SellHandType type = getSellHandType(sellHandItem);
         if (type == null) return false;
 
-        // Vérifier que le tank contient des items
-        if (tankData.getContents().isEmpty()) {
+        // Vérifier que le tank contient des items ou des billets
+        boolean hasItems = !tankData.getContents().isEmpty();
+        boolean hasBills = tankData.getBills() != null && !tankData.getBills().isEmpty();
+        if (!hasItems && !hasBills) {
             player.sendMessage("§c❌ Le tank est vide!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return false;
@@ -126,6 +128,17 @@ public class SellHandManager {
             }
         }
 
+        // Ajouter la valeur des billets stockés
+        for (var billEntry : tankData.getBills().entrySet()) {
+            int tier = billEntry.getKey();
+            int amount = billEntry.getValue();
+            long billValue = plugin.getTankManager().getBillValue(tier);
+            if (billValue > 0 && amount > 0) {
+                totalValue += billValue * amount;
+                totalItems += amount;
+            }
+        }
+
         if (totalValue == 0) {
             player.sendMessage("§c❌ Aucun item vendable dans le tank!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -137,8 +150,9 @@ public class SellHandManager {
         double global = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, GlobalBonusManager.BonusCategory.SELL_BONUS);
         long finalValue = Math.round(totalValue * multiplier * global);
 
-        // Effectuer la vente
+        // Effectuer la vente (items + billets)
         tankData.clearContents();
+        tankData.clearBills();
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         playerData.addCoins(finalValue);
 
@@ -146,7 +160,7 @@ public class SellHandManager {
         player.sendMessage("§a✓ §lVENTE AU SERVEUR:");
         player.sendMessage("§7▸ Items vendus: §b" + NumberFormatter.format(totalItems));
         player.sendMessage("§7▸ Valeur de base: §e" + NumberFormatter.format(totalValue) + "$");
-        player.sendMessage("§7▸ Multiplicateur: §6" + String.format("%.1f", multiplier) + "x §7(" + type.getDisplayName() + "§7)");
+        player.sendMessage("§7▸ Multiplicateur: §6" + String.format("%.1f", multiplier) + "x §7(" + type.getDisplayName() + "§7) §8X §a" + String.format("%.1f", global) + "x §7(Bonus Vente)");
         player.sendMessage("§7▸ §lGain final: §a" + NumberFormatter.format(finalValue) + "$");
 
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);

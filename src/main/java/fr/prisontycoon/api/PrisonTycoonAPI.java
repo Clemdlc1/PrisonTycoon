@@ -98,7 +98,7 @@ public class PrisonTycoonAPI {
         if (playerData == null) return false;
 
         playerData.addCoins(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "coins");
         return true;
     }
 
@@ -144,7 +144,7 @@ public class PrisonTycoonAPI {
         }
 
         playerData.removeCoins(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "coins");
         return true;
     }
 
@@ -218,7 +218,7 @@ public class PrisonTycoonAPI {
         if (playerData == null) return false;
 
         playerData.addTokens(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "tokens");
         return true;
     }
 
@@ -249,7 +249,7 @@ public class PrisonTycoonAPI {
 
         boolean success = playerData.removeTokens(amount);
         if (success) {
-            playerDataManager.markDirty(playerId);
+            playerDataManager.saveSingleColumn(playerId, "tokens");
         }
         return success;
     }
@@ -314,7 +314,7 @@ public class PrisonTycoonAPI {
         if (playerData == null) return false;
 
         playerData.addBeacons(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "beacons");
         return true;
     }
 
@@ -332,7 +332,7 @@ public class PrisonTycoonAPI {
             return false;
         }
 
-        playerData.removeBeacon(amount); // Note: la méthode s'appelle removeBeacon (singulier)
+        playerData.removeBeacon(amount);
         playerDataManager.markDirty(player.getUniqueId());
         return true;
     }
@@ -351,8 +351,8 @@ public class PrisonTycoonAPI {
             return false;
         }
 
-        playerData.removeBeacon(amount); // Note: la méthode s'appelle removeBeacon (singulier)
-        playerDataManager.markDirty(playerId);
+        playerData.removeBeacon(amount);
+        playerDataManager.saveSingleColumn(playerId, "beacons");
         return true;
     }
 
@@ -384,7 +384,7 @@ public class PrisonTycoonAPI {
         if (playerData == null) return false;
 
         playerData.setBeacons(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "beacons");
         return true;
     }
 
@@ -416,7 +416,7 @@ public class PrisonTycoonAPI {
         if (playerData == null) return false;
 
         playerData.addExperience(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "experience");
         return true;
     }
 
@@ -454,7 +454,7 @@ public class PrisonTycoonAPI {
         }
 
         playerData.removeExperience(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "experience");
         return true;
     }
 
@@ -486,7 +486,7 @@ public class PrisonTycoonAPI {
         if (playerData == null) return false;
 
         playerData.setExperience(amount);
-        playerDataManager.markDirty(playerId);
+        playerDataManager.saveSingleColumn(playerId, "experience");
         return true;
     }
 
@@ -1233,5 +1233,30 @@ public class PrisonTycoonAPI {
 
     public ItemStack createPhysicalEnchantmentBook(EnchantmentBookManager.EnchantmentBook book) {
         return plugin.getEnchantmentBookManager().createPhysicalEnchantmentBook(book);
+    }
+
+    // ===============================
+    // API Tanks par monde
+    // ===============================
+
+    /**
+     * Charge les tanks du monde donné (ne charge que ceux dont la location.world == worldName)
+     */
+    public void loadWorldTanks(String worldName) {
+        plugin.getTankManager().loadWorldTanks(worldName);
+    }
+
+    /**
+     * Sauvegarde tous les tanks actuellement en cache pour le monde donné
+     */
+    public void saveWorldTanks(String worldName) {
+        plugin.getTankManager().saveWorldTanks(worldName);
+    }
+
+    /**
+     * Décharge les tanks du monde donné depuis le cache et retire leurs nametags
+     */
+    public void unloadWorldTanks(String worldName) {
+        plugin.getTankManager().unloadWorldTanks(worldName);
     }
 }

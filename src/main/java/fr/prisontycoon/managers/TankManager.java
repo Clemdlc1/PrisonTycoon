@@ -43,6 +43,7 @@ public class TankManager {
         this.tankIdKey = new NamespacedKey(plugin, "tank_id");
         createTanksTable();
         loadTanks();
+        startNameTagVisibilityTask();
     }
 
     private void createTanksTable() {
@@ -54,7 +55,8 @@ public class TankManager {
                         filters TEXT,
                         prices TEXT,
                         custom_name VARCHAR(255),
-                        total_items BIGINT
+                        total_items BIGINT,
+                        bills TEXT
                     );
                 """;
         try (Connection conn = databaseManager.getConnection();
@@ -183,10 +185,12 @@ public class TankManager {
         if (nameTag == null || nameTag.isDead()) return;
         String ownerName = plugin.getServer().getOfflinePlayer(tankData.getOwner()).getName();
         String playerBalance = "0$";
+        int totalBills = tankData.getBills().values().stream().mapToInt(Integer::intValue).sum();
         List<String> lines = Arrays.asList(
                 "§6⚡ Tank de §e" + ownerName,
                 "§7Solde propriétaire: §a" + playerBalance,
                 "§7Items: §b" + NumberFormatter.format(tankData.getTotalItems()) + "§7/§b" + NumberFormatter.format(TankData.MAX_CAPACITY),
+                (totalBills > 0 ? "§7Billets: §b" + NumberFormatter.format(totalBills) + " §7(§e" + tankData.getBills().size() + " tiers§7)" : "§7Billets: §cAucun"),
                 "§7Prix: " + (tankData.getPrices().isEmpty() ? "§cAucun" : "§a" + tankData.getPrices().size() + " configurés")
         );
         nameTag.setCustomName(String.join("\n", lines));
@@ -318,7 +322,7 @@ public class TankManager {
                 UUID owner = UUID.fromString(rs.getString("owner"));
                 TankData tankData = new TankData(id, owner);
 
-                // Correction : Désérialiser la localisation manuellement
+                // Désérialiser la localisation et filtrer par monde Market
                 String locationJson = rs.getString("location");
                 if (locationJson != null) {
                     Type locationMapType = new TypeToken<Map<String, Object>>() {
@@ -326,6 +330,10 @@ public class TankManager {
                     Map<String, Object> locationMap = gson.fromJson(locationJson, locationMapType);
 
                     String worldName = (String) locationMap.get("world");
+                    if (worldName == null || !"Market".equalsIgnoreCase(worldName)) {
+                        // Ne charger que les tanks du monde Market
+                        continue;
+                    }
                     double x = (double) locationMap.get("x");
                     double y = (double) locationMap.get("y");
                     double z = (double) locationMap.get("z");
@@ -355,6 +363,18 @@ public class TankManager {
 
                 tankData.setCustomName(rs.getString("custom_name"));
 
+                // Charger les billets
+                String billsJson = rs.getString("bills");
+                if (billsJson != null) {
+                    Type billsMapType = new TypeToken<Map<Integer, Integer>>() {}.getType();
+                    Map<Integer, Integer> bills = gson.fromJson(billsJson, billsMapType);
+                    if (bills != null) {
+                        for (Map.Entry<Integer, Integer> e : bills.entrySet()) {
+                            tankData.addBills(e.getKey(), e.getValue());
+                        }
+                    }
+                }
+
                 tankCache.put(id, tankData);
                 if (tankData.isPlaced()) {
                     tankLocations.put(tankData.getLocation(), id);
@@ -366,17 +386,107 @@ public class TankManager {
         }
     }
 
+    // ====== Nouveau: gestion par monde ======
+    public void loadWorldTanks(String worldName) {
+        if (worldName == null || worldName.isEmpty()) return;
+        String query = "SELECT * FROM tanks";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                String id = rs.getString("id");
+                UUID owner = UUID.fromString(rs.getString("owner"));
+                TankData tankData = new TankData(id, owner);
+
+                String locationJson = rs.getString("location");
+                if (locationJson == null) continue;
+                Type locationMapType = new TypeToken<Map<String, Object>>() {}.getType();
+                Map<String, Object> locationMap = gson.fromJson(locationJson, locationMapType);
+                String wn = (String) locationMap.get("world");
+                if (wn == null || !worldName.equalsIgnoreCase(wn)) continue;
+
+                double x = ((Number) locationMap.get("x")).doubleValue();
+                double y = ((Number) locationMap.get("y")).doubleValue();
+                double z = ((Number) locationMap.get("z")).doubleValue();
+                float yaw = ((Number) locationMap.get("yaw")).floatValue();
+                float pitch = ((Number) locationMap.get("pitch")).floatValue();
+                Location location = new Location(plugin.getServer().getWorld(wn), x, y, z, yaw, pitch);
+                tankData.setLocation(location);
+
+                Type materialSetType = new TypeToken<Set<Material>>() {}.getType();
+                String filtersJson = rs.getString("filters");
+                if (filtersJson != null) {
+                    Set<Material> filters = gson.fromJson(filtersJson, materialSetType);
+                    tankData.getFilters().addAll(filters);
+                }
+
+                Type materialLongMapType = new TypeToken<Map<Material, Long>>() {}.getType();
+                String pricesJson = rs.getString("prices");
+                if (pricesJson != null) {
+                    Map<Material, Long> prices = gson.fromJson(pricesJson, materialLongMapType);
+                    tankData.getPrices().putAll(prices);
+                }
+
+                tankData.setCustomName(rs.getString("custom_name"));
+
+                String billsJson = rs.getString("bills");
+                if (billsJson != null) {
+                    Type billsMapType = new TypeToken<Map<Integer, Integer>>() {}.getType();
+                    Map<Integer, Integer> bills = gson.fromJson(billsJson, billsMapType);
+                    if (bills != null) {
+                        for (Map.Entry<Integer, Integer> e : bills.entrySet()) {
+                            tankData.addBills(e.getKey(), e.getValue());
+                        }
+                    }
+                }
+
+                tankCache.put(id, tankData);
+                if (tankData.isPlaced()) {
+                    tankLocations.put(tankData.getLocation(), id);
+                    createNameTag(tankData);
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Could not load world tanks: " + e.getMessage());
+        }
+    }
+
+    public void saveWorldTanks(String worldName) {
+        if (worldName == null || worldName.isEmpty()) return;
+        tankCache.values().stream()
+                .filter(t -> t.isPlaced() && t.getLocation() != null && t.getLocation().getWorld() != null)
+                .filter(t -> worldName.equalsIgnoreCase(t.getLocation().getWorld().getName()))
+                .forEach(this::saveTank);
+    }
+
+    public void unloadWorldTanks(String worldName) {
+        if (worldName == null || worldName.isEmpty()) return;
+        Iterator<Map.Entry<String, TankData>> it = tankCache.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, TankData> e = it.next();
+            TankData t = e.getValue();
+            if (t.isPlaced() && t.getLocation() != null && t.getLocation().getWorld() != null &&
+                    worldName.equalsIgnoreCase(t.getLocation().getWorld().getName())) {
+                removeNameTag(t.getId());
+                tankLocations.remove(t.getLocation());
+                it.remove();
+            }
+        }
+    }
+
     public void saveTank(TankData tankData) {
         String query = """
-                    INSERT INTO tanks (id, owner, location, filters, prices, custom_name, total_items)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO tanks (id, owner, location, filters, prices, custom_name, total_items, bills)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET
                         owner = EXCLUDED.owner,
                         location = EXCLUDED.location,
                         filters = EXCLUDED.filters,
                         prices = EXCLUDED.prices,
                         custom_name = EXCLUDED.custom_name,
-                        total_items = EXCLUDED.total_items;
+                        total_items = EXCLUDED.total_items,
+                        bills = EXCLUDED.bills;
                 """;
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -403,6 +513,9 @@ public class TankManager {
             ps.setString(5, gson.toJson(tankData.getPrices()));
             ps.setString(6, tankData.getCustomName());
             ps.setLong(7, tankData.getTotalItems());
+
+            // Sérialiser les billets
+            ps.setString(8, gson.toJson(tankData.getBills()));
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -456,5 +569,52 @@ public class TankManager {
             }
         }
         tankNameTags.clear();
+    }
+
+    // === GESTION DE LA VISIBILITÉ DES NAMETAGS (20 blocs) ===
+    private void startNameTagVisibilityTask() {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            for (Map.Entry<String, ArmorStand> entry : new HashMap<>(tankNameTags).entrySet()) {
+                String id = entry.getKey();
+                ArmorStand as = entry.getValue();
+                if (as == null || as.isDead()) continue;
+                // clé "id" ou "id_custom" -> récupérer id réel
+                String tankId = id.endsWith("_custom") ? id.substring(0, id.length() - 7) : id;
+                TankData data = tankCache.get(tankId);
+                if (data == null || !data.isPlaced() || data.getLocation().getWorld() == null) continue;
+                boolean nearby = data.getLocation().getWorld().getNearbyPlayers(data.getLocation(), 20).iterator().hasNext();
+                as.setCustomNameVisible(nearby);
+            }
+        }, 40L, 40L); // toutes les 2s
+    }
+
+    // === BILLETS: UTILITAIRES ===
+    public boolean isBillItem(ItemStack item) {
+        if (item == null || item.getType() != Material.PAPER || !item.hasItemMeta()) return false;
+        String name = item.getItemMeta().getDisplayName();
+        if (name == null) return false;
+        String stripped = org.bukkit.ChatColor.stripColor(name);
+        return stripped != null && stripped.startsWith("Billet Tier ");
+    }
+
+    public int getBillTier(ItemStack item) {
+        if (!isBillItem(item)) return -1;
+        String stripped = org.bukkit.ChatColor.stripColor(item.getItemMeta().getDisplayName());
+        try {
+            int idx = stripped.indexOf("Billet Tier ");
+            String after = stripped.substring(idx + "Billet Tier ".length());
+            // format: "<tier> (xx$)" ou "<tier)"
+            StringBuilder num = new StringBuilder();
+            for (char c : after.toCharArray()) {
+                if (Character.isDigit(c)) num.append(c); else break;
+            }
+            return Integer.parseInt(num.toString());
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    public long getBillValue(int tier) {
+        return plugin.getConfig().getLong("printers." + tier + ".value", tier * 10L);
     }
 }

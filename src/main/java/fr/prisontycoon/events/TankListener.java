@@ -5,12 +5,14 @@ import fr.prisontycoon.data.TankData;
 import fr.prisontycoon.gui.TankGUI;
 import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Location;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -30,6 +32,43 @@ public class TankListener implements Listener {
     public TankListener(PrisonTycoon plugin) {
         this.plugin = plugin;
         this.tankGUI = new TankGUI(plugin);
+    }
+
+    // === HOPPERS → Injecter billets dans les tanks (data uniquement) ===
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryMove(InventoryMoveItemEvent event) {
+        try {
+            var destHolder = event.getDestination().getHolder();
+            if (!(destHolder instanceof org.bukkit.block.BlockState bs)) return;
+            var block = bs.getBlock();
+            if (block.getType() != Material.BARREL) return;
+
+            var loc = block.getLocation();
+            if (!plugin.getTankManager().isTankBlock(loc)) return;
+            var data = plugin.getTankManager().getTankAt(loc);
+            if (data == null) return;
+            if (!plugin.getTankManager().isBillItem(event.getItem())) {
+                event.setCancelled(true);
+            }
+
+            // Laisser l'item entrer physiquement, puis vider l'inventaire du baril pour éviter les boucles
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    org.bukkit.block.Barrel barrel = (org.bukkit.block.Barrel) block.getState();
+                    var inv = barrel.getInventory();
+                    for (org.bukkit.inventory.ItemStack content : inv.getContents()) {
+                        if (content == null || content.getType() == Material.AIR) continue;
+                        int tier = plugin.getTankManager().getBillTier(content);
+                        if (tier > 0) {
+                            data.addBills(tier, content.getAmount());
+                        }
+                    }
+                    inv.clear();
+                    plugin.getTankManager().saveTank(data);
+                    plugin.getTankManager().updateTankNameTag(data);
+                } catch (Throwable ignored) {}
+            });
+        } catch (Throwable ignored) {}
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -121,9 +160,7 @@ public class TankListener implements Listener {
 
         // Vérifier si l'item en main principale est un Sell Hand
         if (mainHand == null || !plugin.getSellHandManager().isSellHand(mainHand)) return;
-
-        player.sendMessage("4");
-
+        
         // Vérifier si c'est un shift + clic sur un bloc
         if ((action == Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && event.getClickedBlock() != null) {
             Location location = event.getClickedBlock().getLocation();

@@ -19,6 +19,8 @@ public class TankData {
     private final Map<Material, Integer> contents; // Contenu du tank
     private final Set<Material> filters; // Filtres - quels matériaux accepter
     private final Map<Material, Long> prices; // Prix d'achat par matériau
+    // Stockage des billets par tier (tier -> quantité)
+    private final Map<Integer, Integer> bills;
 
     // NOUVEAU: Coordonnées du tank placé et nom personnalisé
     private Location location; // Position du tank dans le monde
@@ -32,6 +34,7 @@ public class TankData {
         this.prices = new HashMap<>();
         this.location = null;
         this.customName = null;
+        this.bills = new HashMap<>();
     }
 
     public TankData(String id, UUID owner, Map<Material, Integer> contents,
@@ -43,6 +46,7 @@ public class TankData {
         this.prices = new HashMap<>(prices);
         this.location = location;
         this.customName = customName;
+        this.bills = new HashMap<>();
     }
 
     // === GESTION DU CONTENU ===
@@ -131,6 +135,23 @@ public class TankData {
             }
 
             TankData tankData = new TankData(id, owner, contents, filters, prices, location, customName);
+
+            // Charger les billets si présents
+            if (section.contains("bills")) {
+                ConfigurationSection billsSection = section.getConfigurationSection("bills");
+                if (billsSection != null) {
+                    for (String tierStr : billsSection.getKeys(false)) {
+                        try {
+                            int tier = Integer.parseInt(tierStr);
+                            int amount = billsSection.getInt(tierStr, 0);
+                            if (amount > 0) {
+                                tankData.addBills(tier, amount);
+                            }
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+            }
+
             return tankData;
 
         } catch (Exception e) {
@@ -180,6 +201,41 @@ public class TankData {
         contents.clear();
     }
 
+    // === GESTION DES BILLETS (IMPRIMANTES) ===
+
+    /**
+     * Ajoute des billets d'un tier donné
+     */
+    public void addBills(int tier, int amount) {
+        if (amount <= 0) return;
+        bills.put(tier, bills.getOrDefault(tier, 0) + amount);
+    }
+
+    /**
+     * Retire des billets d'un tier donné (retourne false si insuffisant)
+     */
+    public boolean removeBills(int tier, int amount) {
+        if (amount <= 0) return false;
+        int current = bills.getOrDefault(tier, 0);
+        if (current < amount) return false;
+        if (current == amount) bills.remove(tier); else bills.put(tier, current - amount);
+        return true;
+    }
+
+    /**
+     * Retourne une copie du stockage de billets
+     */
+    public Map<Integer, Integer> getBills() {
+        return new HashMap<>(bills);
+    }
+
+    /**
+     * Vide tous les billets
+     */
+    public void clearBills() {
+        bills.clear();
+    }
+
     /**
      * Calcule le nombre total d'items dans le tank
      */
@@ -215,7 +271,6 @@ public class TankData {
      */
     public void removeFilter(Material material) {
         filters.remove(material);
-        prices.remove(material); // Retirer aussi le prix associé
     }
 
     /**
@@ -356,6 +411,13 @@ public class TankData {
         }
         data.put("prices", pricesMap);
 
+        // Billets
+        Map<String, Integer> billsMap = new HashMap<>();
+        for (Map.Entry<Integer, Integer> e : bills.entrySet()) {
+            billsMap.put(String.valueOf(e.getKey()), e.getValue());
+        }
+        data.put("bills", billsMap);
+
         return data;
     }
 
@@ -383,6 +445,8 @@ public class TankData {
 
     @Override
     public TankData clone() {
-        return new TankData(id, owner, contents, filters, prices, location, customName);
+        TankData clone = new TankData(id, owner, contents, filters, prices, location, customName);
+        for (Map.Entry<Integer, Integer> e : bills.entrySet()) clone.addBills(e.getKey(), e.getValue());
+        return clone;
     }
 }

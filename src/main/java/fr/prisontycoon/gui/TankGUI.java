@@ -69,8 +69,8 @@ public class TankGUI implements Listener {
             return;
         }
 
-        Inventory gui = plugin.getGUIManager().createInventory(54, "§6⚡ Configuration Tank " + tankId);
-        plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_CONFIG, gui);
+        Inventory gui = plugin.getGUIManager().createInventory(36, "§6⚡ Tank §8- §fMenu");
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_CONFIG, gui, java.util.Map.of("tank_id", tankId));
         plugin.getGUIManager().fillBorders(gui);
 
         // === LIGNE 1 : INFORMATIONS ===
@@ -78,25 +78,17 @@ public class TankGUI implements Listener {
 
         // === LIGNE 2 : GESTION ===
         gui.setItem(11, createCustomNameItem(tankData));
-        gui.setItem(13, createFiltersItem(tankData));
+        gui.setItem(13, createSellAllItem());
         gui.setItem(15, createContentsItem(tankData));
 
         // === LIGNE 3 : ACTIONS ===
-        gui.setItem(20, createAddFilterItem());
-        gui.setItem(21, createClearFiltersItem());
-        gui.setItem(22, createWithdrawAllItem());
-        gui.setItem(23, createPricesOverviewItem(tankData));
-        gui.setItem(24, createClearPricesItem());
+        gui.setItem(20, createBillsOverviewItem(tankData));
+        gui.setItem(21, createWithdrawAllItem());
+        gui.setItem(23, createFiltersMenuButton());
+        gui.setItem(24, createPricesOverviewItem(tankData));
 
-        // === LIGNES 4-5 : MINERAIS COURANTS ===
-        for (int i = 0; i < COMMON_ORES.length; i++) {
-            gui.setItem(28 + i, createMaterialFilterItem(tankData, COMMON_ORES[i]));
-        }
-
-        // === LIGNE 6 : MINERAIS DEEPSLATE ===
-        for (int i = 0; i < DEEPSLATE_ORES.length; i++) {
-            gui.setItem(37 + i, createMaterialFilterItem(tankData, DEEPSLATE_ORES[i]));
-        }
+        // Boutons navigation/informations supplémentaires
+        gui.setItem(31, createCloseButton());
 
         player.openInventory(gui);
         openTankGUIs.put(player.getUniqueId(), tankId);
@@ -156,31 +148,158 @@ public class TankGUI implements Listener {
     }
 
     /**
-     * Ouvre la GUI de sélection de matériaux
+     * Ouvre la GUI Filtres & Prix (vue par défaut: manage)
      */
-    public void openMaterialSelectionGUI(Player player, String tankId) {
-        Inventory gui = plugin.getGUIManager().createInventory(54, "§e🔧 Ajouter un filtre - " + tankId);
+    public void openMaterialSelectionGUI(Player player, String tankId, int page) {
+        openMaterialSelectionGUI(player, tankId, page, "manage");
+    }
 
-        List<Material> allMaterials = Arrays.asList(Material.values());
-        allMaterials = allMaterials.stream()
-                .filter(material -> material.isBlock() || material.isItem())
-                .filter(material -> !material.isAir())
-                .sorted(Comparator.comparing(Material::name))
-                .toList();
+    /**
+     * Ouvre la GUI Filtres & Prix avec vue (manage/select)
+     */
+    public void openMaterialSelectionGUI(Player player, String tankId, int page, String view) {
+        if ("select".equalsIgnoreCase(view)) {
+            // Vue sélection des matériaux (ajout)
+            List<TankFilter> filters = Arrays.asList(TankFilter.values());
+            int itemsPerPage = 45;
+            int totalPages = Math.max(1, (int) Math.ceil(filters.size() / (double) itemsPerPage));
+            page = Math.max(0, Math.min(page, totalPages - 1));
 
-        int slot = 0;
-        for (Material material : allMaterials) {
-            if (slot >= 45) break; // Laisser de la place pour les boutons
+            String title = "§e🔧 Ajouter un filtre §7(§e" + (page + 1) + "§7/§e" + totalPages + "§7)";
+            Inventory gui = plugin.getGUIManager().createInventory(54, title);
 
-            gui.setItem(slot, createMaterialSelectionItem(material));
-            slot++;
+            int start = page * itemsPerPage;
+            int end = Math.min(start + itemsPerPage, filters.size());
+            int slot = 0;
+            for (int i = start; i < end; i++) {
+                TankFilter tf = filters.get(i);
+                ItemStack it = new ItemStack(tf.material());
+                ItemMeta meta = it.getItemMeta();
+                plugin.getGUIManager().applyName(meta, tf.displayName());
+                plugin.getGUIManager().applyLore(meta, Arrays.asList(
+                        "§7Clic pour autoriser ce matériau",
+                        "§7dans les filtres du tank"
+                ));
+                it.setItemMeta(meta);
+                gui.setItem(slot++, it);
+            }
+
+            // Navigation
+            gui.setItem(45, createBackButton());
+            if (page > 0) {
+                ItemStack prev = new ItemStack(Material.ARROW);
+                ItemMeta pMeta = prev.getItemMeta();
+                plugin.getGUIManager().applyName(pMeta, "§7← Page précédente");
+                prev.setItemMeta(pMeta);
+                gui.setItem(46, prev);
+            }
+            if (page < totalPages - 1) {
+                ItemStack next = new ItemStack(Material.ARROW);
+                ItemMeta nMeta = next.getItemMeta();
+                plugin.getGUIManager().applyName(nMeta, "§7Page suivante →");
+                next.setItemMeta(nMeta);
+                gui.setItem(52, next);
+            }
+            gui.setItem(53, createCloseButton());
+
+            plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_FILTER, gui, java.util.Map.of(
+                    "tank_filter_view", "select",
+                    "tank_filter_page", String.valueOf(page),
+                    "tank_id", tankId
+            ));
+            player.openInventory(gui);
+            return;
         }
 
-        // Boutons de navigation
-        gui.setItem(45, createBackButton());
-        gui.setItem(53, createCloseButton());
+        // Vue gestion (manage) - filtres actifs + actions
+        TankData tankData = plugin.getTankManager().getTankCache().get(tankId);
+        if (tankData == null) return;
 
+        int itemsPerPage = 28;
+        java.util.List<Material> active = new java.util.ArrayList<>(tankData.getFilters());
+        int totalPages = Math.max(1, (int) Math.ceil(active.size() / (double) itemsPerPage));
+        page = Math.max(0, Math.min(page, totalPages - 1));
+
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§e🔧 Filtres & Prix §7(§e" + (page + 1) + "§7/§e" + totalPages + "§7)");
+        plugin.getGUIManager().fillBorders(gui);
+
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, active.size());
+        int slot = 10;
+        for (int i = start; i < end; i++) {
+            gui.setItem(slot++, createMaterialFilterItem(tankData, active.get(i)));
+            if ((slot + 1) % 9 == 0) slot += 2;
+        }
+
+        // Ajouter un filtre
+        ItemStack add = new ItemStack(Material.GREEN_WOOL);
+        ItemMeta aMeta = add.getItemMeta();
+        plugin.getGUIManager().applyName(aMeta, "§a+ Ajouter un filtre");
+        plugin.getGUIManager().applyLore(aMeta, java.util.List.of("§7Ouvre la sélection des matériaux"));
+        add.setItemMeta(aMeta);
+        gui.setItem(48, add);
+
+        // Navigation
+        gui.setItem(45, createBackButton());
+        if (page > 0) {
+            ItemStack prev = new ItemStack(Material.ARROW);
+            ItemMeta pMeta = prev.getItemMeta();
+            plugin.getGUIManager().applyName(pMeta, "§7← Page précédente");
+            prev.setItemMeta(pMeta);
+            gui.setItem(46, prev);
+        }
+        if (page < totalPages - 1) {
+            ItemStack next = new ItemStack(Material.ARROW);
+            ItemMeta nMeta = next.getItemMeta();
+            plugin.getGUIManager().applyName(nMeta, "§7Page suivante →");
+            next.setItemMeta(nMeta);
+            gui.setItem(52, next);
+        }
+        gui.setItem(49, createCloseButton());
+
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_FILTER, gui, java.util.Map.of(
+                "tank_filter_view", "manage",
+                "tank_filter_page", String.valueOf(page),
+                "tank_id", tankId
+        ));
         player.openInventory(gui);
+    }
+
+
+    public enum TankFilter {
+        COAL_ORE(Material.COAL_ORE, "§fMinerai de charbon"),
+        IRON_ORE(Material.IRON_ORE, "§fMinerai de fer"),
+        GOLD_ORE(Material.GOLD_ORE, "§fMinerai d'or"),
+        COPPER_ORE(Material.COPPER_ORE, "§fMinerai de cuivre"),
+        REDSTONE_ORE(Material.REDSTONE_ORE, "§fMinerai de redstone"),
+        LAPIS_ORE(Material.LAPIS_ORE, "§fMinerai de lapis"),
+        DIAMOND_ORE(Material.DIAMOND_ORE, "§fMinerai de diamant"),
+        EMERALD_ORE(Material.EMERALD_ORE, "§fMinerai d'émeraude"),
+        DEEPSLATE_COAL(Material.DEEPSLATE_COAL_ORE, "§8Deepslate charbon"),
+        DEEPSLATE_IRON(Material.DEEPSLATE_IRON_ORE, "§8Deepslate fer"),
+        DEEPSLATE_GOLD(Material.DEEPSLATE_GOLD_ORE, "§8Deepslate or"),
+        DEEPSLATE_COPPER(Material.DEEPSLATE_COPPER_ORE, "§8Deepslate cuivre"),
+        DEEPSLATE_REDSTONE(Material.DEEPSLATE_REDSTONE_ORE, "§8Deepslate redstone"),
+        DEEPSLATE_LAPIS(Material.DEEPSLATE_LAPIS_ORE, "§8Deepslate lapis"),
+        DEEPSLATE_DIAMOND(Material.DEEPSLATE_DIAMOND_ORE, "§8Deepslate diamant"),
+        DEEPSLATE_EMERALD(Material.DEEPSLATE_EMERALD_ORE, "§8Deepslate émeraude"),
+        NETHER_QUARTZ(Material.NETHER_QUARTZ_ORE, "§cQuartz du Nether"),
+        NETHER_GOLD(Material.NETHER_GOLD_ORE, "§cOr du Nether"),
+        ANCIENT_DEBRIS(Material.ANCIENT_DEBRIS, "§4Débris antiques"),
+        NETHERRACK(Material.NETHERRACK, "§cNetherrack"),
+        SOUL_SAND(Material.SOUL_SAND, "§cSable des âmes"),
+        SOUL_SOIL(Material.SOUL_SOIL, "§cTerre des âmes");
+
+        private final Material material;
+        private final String displayName;
+
+        TankFilter(Material material, String displayName) {
+            this.material = material;
+            this.displayName = displayName;
+        }
+
+        public Material material() { return material; }
+        public String displayName() { return displayName; }
     }
 
     // === CRÉATION DES ITEMS ===
@@ -298,6 +417,21 @@ public class TankGUI implements Listener {
     }
 
     /**
+     * Bouton d'accès au sous-menu Filtres/Prix
+     */
+    private ItemStack createFiltersMenuButton() {
+        ItemStack item = new ItemStack(Material.HOPPER);
+        ItemMeta meta = item.getItemMeta();
+        plugin.getGUIManager().applyName(meta, "§e🔧 Filtres & Prix");
+        plugin.getGUIManager().applyLore(meta, List.of(
+                "§7Ouvrir la gestion des filtres",
+                "§7et configuration des prix"
+        ));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /**
      * Crée l'item de contenu du tank
      */
     private ItemStack createContentsItem(TankData tankData) {
@@ -330,6 +464,48 @@ public class TankGUI implements Listener {
         lore.add("");
         lore.add("§7Clic: §bRécupérer tout le contenu");
 
+        plugin.getGUIManager().applyLore(meta, lore);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /**
+     * Bouton pour vendre tout le contenu (items + billets) avec bonus du joueur
+     */
+    private ItemStack createSellAllItem() {
+        ItemStack item = new ItemStack(Material.GOLD_INGOT);
+        ItemMeta meta = item.getItemMeta();
+        plugin.getGUIManager().applyName(meta, "§6💰 Vendre le contenu");
+        plugin.getGUIManager().applyLore(meta, List.of(
+                "§7Vend tout le contenu du tank",
+                "§7en appliquant vos bonus de vente"
+        ));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /**
+     * Aperçu des billets stockés et accès au sous-menu
+     */
+    private ItemStack createBillsOverviewItem(TankData tankData) {
+        ItemStack item = new ItemStack(Material.PAPER);
+        ItemMeta meta = item.getItemMeta();
+        plugin.getGUIManager().applyName(meta, "§f🧾 Billets stockés");
+        int total = tankData.getBills().values().stream().mapToInt(Integer::intValue).sum();
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Total billets: §b" + NumberFormatter.format(total));
+        if (total == 0) {
+            lore.add("§7Aucun billet pour le moment");
+        } else {
+            int count = 0;
+            for (var e : tankData.getBills().entrySet()) {
+                if (count >= 5) { lore.add("§8▸ §7... et d'autres"); break; }
+                lore.add("§8▸ §fTier " + e.getKey() + " §7x §b" + NumberFormatter.format(e.getValue()));
+                count++;
+            }
+        }
+        lore.add("");
+        lore.add("§7Clic: §bOuvrir le menu des billets");
         plugin.getGUIManager().applyLore(meta, lore);
         item.setItemMeta(meta);
         return item;
@@ -525,32 +701,108 @@ public class TankGUI implements Listener {
         return item;
     }
 
-    // === GESTION DES ÉVÉNEMENTS ===
-
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        ItemStack clicked = event.getCurrentItem();
-        String tankId = openTankGUIs.get(player.getUniqueId());
+    // Nouveau handler centralisé appelé par GUIListener
+    public void handleClick(Player player, int slot, ItemStack clicked, ClickType clickType) {
+        GUIType guiType = plugin.getGUIManager().getOpenGUIType(player);
+        player.sendMessage("1");
+        if (guiType == null) return;
+        player.sendMessage("2");
+        String tankId = plugin.getGUIManager().getGUIData(player, "tank_id");
+        if (tankId == null) {
+            tankId = openTankGUIs.get(player.getUniqueId());
+        }
         if (tankId == null) return;
+        player.sendMessage("3");
 
-        event.setCancelled(true);
-
-        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-
-        if (clicked == null || clicked.getType() == Material.AIR) return;
-
-        String title = plugin.getGUIManager().getLegacyTitle(event.getView());
-
-        if (title.startsWith("§e🔧 Ajouter un filtre")) {
-            handleMaterialSelection(player, clicked, tankId);
-        } else if (title.startsWith("§6💰 Prix - Tank de")) {
-            if (clicked.getType() == Material.BARRIER) {
-                player.closeInventory();
+        switch (guiType) {
+            case TANK_CONFIG -> {
+                // Actions du menu principal
+                if (clicked == null || clicked.getType() == Material.AIR) return;
+                player.sendMessage("4");
+                handleMainGUIClick(player, clicked, clickType, tankId);
             }
-        } else {
-            handleMainGUIClick(player, clicked, event.getClick(), tankId);
+            case TANK_FILTER -> {
+                String view = plugin.getGUIManager().getGUIData(player, "tank_filter_view");
+                String pageStr = plugin.getGUIManager().getGUIData(player, "tank_filter_page");
+                int page = 0;
+                try { if (pageStr != null) page = Integer.parseInt(pageStr); } catch (NumberFormatException ignored) {}
+
+                if ("select".equalsIgnoreCase(view)) {
+                    int itemsPerPage = 45;
+                    int totalPages = Math.max(1, (int) Math.ceil(TankFilter.values().length / (double) itemsPerPage));
+                    if (slot == 45) { openMaterialSelectionGUI(player, tankId, 0, "manage"); return; }
+                    if (slot == 46 && page > 0) { openMaterialSelectionGUI(player, tankId, page - 1, "select"); return; }
+                    if (slot == 52 && page < totalPages - 1) { openMaterialSelectionGUI(player, tankId, page + 1, "select"); return; }
+                    if (slot == 53) { player.closeInventory(); return; }
+                    if (clicked != null && clicked.getType() != Material.AIR) {
+                        handleMaterialSelection(player, clicked, tankId);
+                        openMaterialSelectionGUI(player, tankId, 0, "manage");
+                    }
+                    return;
+                }
+
+                // manage view
+                if (slot == 45) { openTankGUI(player, tankId); return; }
+                if (slot == 46 && page > 0) { openMaterialSelectionGUI(player, tankId, page - 1, "manage"); return; }
+                if (slot == 52) { openMaterialSelectionGUI(player, tankId, page + 1, "manage"); return; }
+                if (slot == 49) { player.closeInventory(); return; }
+                if (slot == 48) { openMaterialSelectionGUI(player, tankId, 0, "select"); return; }
+
+                if (clicked != null && clicked.getType() != Material.AIR) {
+                    TankData tankData = plugin.getTankManager().getTankCache().get(tankId);
+                    if (tankData != null && tankData.getFilters().contains(clicked.getType())) {
+                        handleMaterialFilter(player, tankData, clicked.getType(), clickType);
+                    }
+                }
+            }
+            case TANK_BILLS -> {
+                TankData tankData = plugin.getTankManager().getTankCache().get(tankId);
+                if (tankData == null || clicked == null) return;
+                if (clicked.getType() == Material.GOLD_BLOCK) {
+                    long total = 0; int qty = 0;
+                    for (java.util.Map.Entry<Integer, Integer> e : tankData.getBills().entrySet()) { total += plugin.getTankManager().getBillValue(e.getKey()) * e.getValue(); qty += e.getValue(); }
+                    if (qty == 0) { player.sendMessage("§c❌ Aucun billet à vendre!"); return; }
+                    double global = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
+                    long finalValue = Math.round(total * global);
+                    var pdata = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+                    pdata.addCoins(finalValue);
+                    tankData.clearBills();
+                    plugin.getTankManager().saveTank(tankData);
+                    plugin.getTankManager().updateTankNameTag(tankData);
+                    player.sendMessage("§a✓ Vendu §b" + NumberFormatter.format(qty) + " §abillets pour §e" + NumberFormatter.format(finalValue) + "$ §a(avec bonus)");
+                    openBillsMenu(player, tankData);
+                    return;
+                }
+                if (clicked.getType() == Material.CHEST_MINECART) {
+                    int moved = 0; java.util.Map<Integer, Integer> map = new java.util.HashMap<>(tankData.getBills());
+                    for (java.util.Map.Entry<Integer, Integer> e : map.entrySet()) {
+                        int tier = e.getKey(); int amount = e.getValue();
+                        while (amount > 0 && player.getInventory().firstEmpty() != -1) {
+                            int give = Math.min(64, amount);
+                            ItemStack bill = new ItemStack(Material.PAPER, give);
+                            ItemMeta m = bill.getItemMeta();
+                            plugin.getGUIManager().applyName(m, "§bBillet Tier " + tier + " §7(" + NumberFormatter.format(plugin.getTankManager().getBillValue(tier)) + "$)");
+                            bill.setItemMeta(m);
+                            player.getInventory().addItem(bill);
+                            tankData.removeBills(tier, give);
+                            amount -= give; moved += give;
+                        }
+                    }
+                    if (moved > 0) { plugin.getTankManager().saveTank(tankData); plugin.getTankManager().updateTankNameTag(tankData); player.sendMessage("§a✓ Récupéré §b" + NumberFormatter.format(moved) + " §abillets depuis le tank"); }
+                    else { player.sendMessage("§c❌ Inventaire plein ou aucun billet!"); }
+                    openBillsMenu(player, tankData);
+                    return;
+                }
+                if (slot == 49) { // back
+                    openTankGUI(player, tankData.getId());
+                }
+            }
+            case TANK_PRICES -> {
+                if (clicked != null && clicked.getType() == Material.BARRIER) {
+                    player.closeInventory();
+                }
+            }
+            default -> {}
         }
     }
 
@@ -565,10 +817,12 @@ public class TankGUI implements Listener {
 
         switch (clickedType) {
             case NAME_TAG -> handleCustomName(player, tankData, clickType);
-            case GREEN_WOOL -> openMaterialSelectionGUI(player, tankId);
+            case GOLD_INGOT -> handleSellAllFromGUI(player, tankData);
+            case GREEN_WOOL, HOPPER -> openMaterialSelectionGUI(player, tankId, 0);
             case RED_WOOL -> handleClearFilters(player, tankData);
             case ORANGE_WOOL -> handleClearPrices(player, tankData);
             case ENDER_CHEST -> handleWithdrawAll(player, tankData);
+            case PAPER -> openBillsMenu(player, tankData);
             default -> {
                 // Vérifier si c'est un matériau filtrable
                 if (isMaterialFilterItem(clicked)) {
@@ -576,6 +830,78 @@ public class TankGUI implements Listener {
                 }
             }
         }
+    }
+
+    private void openBillsMenu(Player player, TankData tankData) {
+        // Simple listing avec options vendre tout / récupérer tout
+        Inventory gui = plugin.getGUIManager().createInventory(54, "§f🧾 Billets");
+        plugin.getGUIManager().fillBorders(gui);
+        int slot = 10;
+        for (var e : tankData.getBills().entrySet()) {
+            if (slot > 43) break;
+            int tier = e.getKey();
+            int amount = e.getValue();
+            ItemStack it = new ItemStack(Material.PAPER);
+            ItemMeta meta = it.getItemMeta();
+            plugin.getGUIManager().applyName(meta, "§fBillet Tier " + tier);
+            plugin.getGUIManager().applyLore(meta, List.of(
+                    "§7Quantité: §b" + NumberFormatter.format(amount),
+                    "§7Valeur: §e" + NumberFormatter.format(plugin.getTankManager().getBillValue(tier)) + "$"
+            ));
+            it.setItemMeta(meta);
+            gui.setItem(slot++, it);
+            if ((slot + 1) % 9 == 0) slot += 2;
+        }
+        // Boutons actions
+        ItemStack sellAll = new ItemStack(Material.GOLD_BLOCK);
+        ItemMeta sMeta = sellAll.getItemMeta();
+        plugin.getGUIManager().applyName(sMeta, "§6Vendre tous les billets");
+        sellAll.setItemMeta(sMeta);
+        gui.setItem(48, sellAll);
+
+        ItemStack takeAll = new ItemStack(Material.CHEST_MINECART);
+        ItemMeta tMeta = takeAll.getItemMeta();
+        plugin.getGUIManager().applyName(tMeta, "§bRécupérer tous les billets");
+        takeAll.setItemMeta(tMeta);
+        gui.setItem(50, takeAll);
+
+        gui.setItem(49, createBackButton());
+
+        plugin.getGUIManager().registerOpenGUI(player, GUIType.TANK_BILLS, gui, java.util.Map.of("tank_id", tankData.getId()));
+        player.openInventory(gui);
+    }
+
+    private void handleSellAllFromGUI(Player player, TankData tankData) {
+        // Utilise la logique de SellHand (sans durabilité, bonus perso s'applique via GlobalBonusManager)
+        var fakeSellHand = plugin.getSellHandManager();
+        if (fakeSellHand == null) return;
+        // Reproduire le calcul simplifié ici
+        long totalValue = 0;
+        int totalItems = 0;
+        for (var entry : tankData.getContents().entrySet()) {
+            long price = plugin.getConfigManager().getSellPrice(entry.getKey());
+            if (price > 0) { totalValue += price * entry.getValue(); totalItems += entry.getValue(); }
+        }
+        for (var e : tankData.getBills().entrySet()) {
+            long v = plugin.getTankManager().getBillValue(e.getKey());
+            if (v > 0) { totalValue += v * e.getValue(); totalItems += e.getValue(); }
+        }
+        if (totalValue <= 0) {
+            player.sendMessage("§c❌ Rien à vendre!");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+        double global = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
+        long finalValue = Math.round(totalValue * global);
+        var data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        data.addCoins(finalValue);
+        tankData.clearContents();
+        tankData.clearBills();
+        plugin.getTankManager().saveTank(tankData);
+        plugin.getTankManager().updateTankNameTag(tankData);
+        player.sendMessage("§a✓ Vendu §b" + NumberFormatter.format(totalItems) + " §aitems/billets pour §e" + NumberFormatter.format(finalValue) + "$ §a(avec bonus)");
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        openTankGUI(player, tankData.getId());
     }
 
     /**
@@ -747,7 +1073,7 @@ public class TankGUI implements Listener {
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
 
             // Mettre à jour la GUI
-            openTankGUI(player, tankData.getId());
+            openMaterialSelectionGUI(player, tankData.getId(), 0);
 
         } else if (clickType == ClickType.RIGHT && tankData.getFilters().contains(material)) {
             // Configurer le prix
@@ -797,6 +1123,76 @@ public class TankGUI implements Listener {
     public boolean isPlayerAwaitingInput(Player player) {
         UUID playerUUID = player.getUniqueId();
         return awaitingPriceInput.containsKey(playerUUID) || awaitingNameInput.containsKey(playerUUID);
+    }
+
+    /**
+     * Appelé par ChatListener pour traiter la saisie de prix/nom sans diffuser au chat
+     */
+    public void handleChatInput(Player player, String rawMessage) {
+        UUID uuid = player.getUniqueId();
+        String tankId = awaitingPriceInput.get(uuid);
+        Material material = awaitingPriceMaterial.get(uuid);
+        String nameInputTankId = awaitingNameInput.get(uuid);
+
+        if (tankId != null && material != null) {
+            awaitingPriceInput.remove(uuid);
+            awaitingPriceMaterial.remove(uuid);
+
+            String message = rawMessage.trim();
+            if (message.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§c❌ Configuration du prix annulée");
+                Bukkit.getScheduler().runTask(plugin, () -> openTankGUI(player, tankId));
+                return;
+            }
+            try {
+                long price = Long.parseLong(message);
+                if (price < 0) {
+                    player.sendMessage("§c❌ Le prix ne peut pas être négatif!");
+                    return;
+                }
+                TankData tankData = plugin.getTankManager().getTankCache().get(tankId);
+                if (tankData != null) {
+                    tankData.setPrice(material, price);
+                    if (price == 0) {
+                        player.sendMessage("§6⚠ Prix désactivé pour " + material.name().toLowerCase());
+                    } else {
+                        player.sendMessage("§a✓ Prix configuré: " + NumberFormatter.format(price) + "$ /item pour " + material.name().toLowerCase());
+                    }
+                    Bukkit.getScheduler().runTask(plugin, () -> openTankGUI(player, tankId));
+                }
+            } catch (NumberFormatException e) {
+                player.sendMessage("§c❌ Veuillez entrer un nombre valide!");
+            }
+            return;
+        }
+
+        if (nameInputTankId != null) {
+            awaitingNameInput.remove(uuid);
+            String message = rawMessage.trim();
+            if (message.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§c❌ Configuration du nom annulée");
+                Bukkit.getScheduler().runTask(plugin, () -> openTankGUI(player, nameInputTankId));
+                return;
+            }
+            if (message.length() > 32) {
+                player.sendMessage("§c❌ Le nom est trop long! (32 caractères maximum)");
+                return;
+            }
+            TankData tankData = plugin.getTankManager().getTankCache().get(nameInputTankId);
+            if (tankData != null) {
+                String processedName = message.replace('&', '§');
+                PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+                if (!playerData.hasCustomPermission("specialmine.vip")) {
+                    processedName = ChatColor.stripColor(processedName);
+                }
+                tankData.setCustomName(processedName);
+                player.sendMessage("§a✓ Nom personnalisé défini: " + processedName);
+                if (tankData.isPlaced()) {
+                    plugin.getTankManager().updateTankNameTag(tankData);
+                }
+                Bukkit.getScheduler().runTask(plugin, () -> openTankGUI(player, nameInputTankId));
+            }
+        }
     }
 
     @EventHandler
