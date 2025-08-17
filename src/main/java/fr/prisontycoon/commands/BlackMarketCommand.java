@@ -89,6 +89,11 @@ public class BlackMarketCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§cVous n'avez pas la permission d'utiliser cette commande!");
                     return true;
                 }
+                if (plugin.getCombatManager() != null && plugin.getCombatManager().isInCombat(player)) {
+                    long remaining = plugin.getCombatManager().getRemainingCombatSeconds(player);
+                    player.sendMessage("§c❌ Impossible de se téléporter en combat! Reste: §e" + remaining + "s");
+                    return true;
+                }
                 teleportToBlackMarket(player);
                 return true;
             }

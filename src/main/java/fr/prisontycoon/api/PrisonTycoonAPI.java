@@ -1141,6 +1141,20 @@ public class PrisonTycoonAPI {
         return playerDataManager;
     }
 
+    /**
+     * Indique si un joueur est actuellement en combat (a été frappé par un autre joueur dans les 10 dernières secondes).
+     *
+     * @param player Le joueur à tester
+     * @return true si le joueur est en combat, false sinon
+     */
+    public boolean isInCombat(Player player) {
+        return plugin.getCombatManager().isInCombat(player);
+    }
+
+    public long getRemainingCombatSeconds(Player player) {
+        return plugin.getCombatManager().getRemainingCombatSeconds(player);
+    }
+
     public int getReputation(UUID playerId) {
         return plugin.getReputationManager().getReputation(playerId);
     }

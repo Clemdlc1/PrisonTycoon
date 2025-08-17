@@ -377,7 +377,7 @@ commands:
     aliases: [ ]
   ap:
     description: "Gestion de l'avant-poste - skins, capture, informations"
-    usage: /ap [info|skins|capture|tp|admin|help]
+    usage: /ap [info|skins|capture|admin|help]
     permission: specialmine.basic
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ avantposte, outpost ]

@@ -98,6 +98,11 @@ public class WarpCommand implements CommandExecutor, TabCompleter {
      * Gère la commande /spawn
      */
     private void handleSpawnCommand(Player player) {
+        if (plugin.getCombatManager() != null && plugin.getCombatManager().isInCombat(player)) {
+            long remaining = plugin.getCombatManager().getRemainingCombatSeconds(player);
+            player.sendMessage("§c❌ Impossible de se téléporter en combat! Reste: §e" + remaining + "s");
+            return;
+        }
         WarpData spawnWarp = plugin.getWarpManager().getSpawnWarp();
 
         if (spawnWarp != null) {

@@ -122,6 +122,13 @@ public class WarpManager {
             return false;
         }
 
+        // Bloque la téléportation si le joueur est en combat
+        if (plugin.getCombatManager() != null && plugin.getCombatManager().isInCombat(player)) {
+            long remaining = plugin.getCombatManager().getRemainingCombatSeconds(player);
+            player.sendMessage("§c❌ Impossible de se téléporter en combat! Reste: §e" + remaining + "s");
+            return false;
+        }
+
         // Vérification des permissions si demandé
         if (checkPermissions && !canAccessWarp(player, warp)) {
             player.sendMessage("§c❌ Vous n'avez pas accès à ce warp!");

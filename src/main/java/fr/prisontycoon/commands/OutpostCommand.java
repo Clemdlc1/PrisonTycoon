@@ -59,7 +59,6 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
             case "info", "i" -> handleInfoCommand(player, outpostManager);
             case "skins", "skin", "s" -> handleSkinsCommand(player);
             case "capture", "cap", "c" -> handleCaptureCommand(player, outpostManager);
-            case "tp", "teleport" -> handleTeleportCommand(player, outpostManager);
             case "admin", "a" -> handleAdminCommand(player, outpostManager, args);
             case "help", "h", "?" -> handleHelpCommand(player);
             default -> {
@@ -143,27 +142,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
 
         outpostManager.startCapture(player);
     }
-
-    /**
-     * Téléporte vers l'avant-poste
-     */
-    private void handleTeleportCommand(Player player, OutpostManager outpostManager) {
-        if (outpostManager.getOutpostCenter() == null) {
-            player.sendMessage("§c❌ Position de l'avant-poste non définie!");
-            return;
-        }
-
-        player.teleport(outpostManager.getOutpostCenter().add(0, 1, 0));
-        player.sendMessage("§a✅ Téléporté à l'avant-poste!");
-
-        OutpostData outpostData = outpostManager.getOutpostData();
-        if (outpostData.isControlled()) {
-            player.sendMessage("§7Actuellement contrôlé par: §6" + outpostData.getControllerName());
-        } else {
-            player.sendMessage("§7L'avant-poste n'est pas contrôlé - vous pouvez le capturer!");
-        }
-    }
-
+ 
     /**
      * Commandes administrateur
      */
@@ -223,7 +202,6 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/AP info §7- Affiche les informations");
         player.sendMessage("§e/AP skins §7- Menu des skins");
         player.sendMessage("§e/AP capture §7- Démarre/vérifie la capture");
-        player.sendMessage("§e/AP tp §7- Téléporte à l'avant-poste");
         player.sendMessage("");
         player.sendMessage("§6🎯 §lComment capturer:");
         player.sendMessage("§71. Allez sur l'avant-poste (Cave)");
@@ -242,7 +220,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            List<String> completions = new ArrayList<>(Arrays.asList("info", "skins", "capture", "tp", "help"));
+            List<String> completions = new ArrayList<>(Arrays.asList("info", "skins", "capture", "help"));
 
             if (player.hasPermission(PERMISSION_ADMIN)) {
                 completions.add("admin");

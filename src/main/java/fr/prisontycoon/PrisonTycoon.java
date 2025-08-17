@@ -76,6 +76,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private GUIManager guiManager;
     private OutpostManager outpostManager;
     private WarpManager warpManager;
+    private CombatManager combatManager;
     private CristalManager cristalManager;
     private CristalBonusHelper cristalBonusHelper;
     private HeadCollectionManager headCollectionManager;
@@ -261,6 +262,7 @@ public final class PrisonTycoon extends JavaPlugin {
         gangManager = new GangManager(this);
         outpostManager = new OutpostManager(this);
         warpManager = new WarpManager(this);
+        combatManager = new CombatManager(this);
         headCollectionManager = new HeadCollectionManager(this);
         mineOverloadManager = new MineOverloadManager(this);
         questManager = new QuestManager(this);
@@ -331,6 +333,7 @@ public final class PrisonTycoon extends JavaPlugin {
         pluginManager.registerEvents(new OutpostListener(this), this);
         pluginManager.registerEvents(new PluginLoadListener(this), this);
         pluginManager.registerEvents(new MenuHeadProtectionListener(this), this);
+        pluginManager.registerEvents(new CombatListener(this), this);
         this.headCollectionListener = new HeadCollectionListener(this);
         pluginManager.registerEvents(this.headCollectionListener, this);
         logger.info("§aÉvénements enregistrés.");
@@ -832,6 +835,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public ForgeRecipeGUI getForgeRecipeGUI() {
         return forgeRecipeGUI;
+    }
+
+    public CombatManager getCombatManager() {
+        return combatManager;
     }
 
     // --- Commandes ---
