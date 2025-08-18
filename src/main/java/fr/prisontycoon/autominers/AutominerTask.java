@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import fr.prisontycoon.pets.PetEffectType;
 
 import java.util.Map;
 
@@ -72,6 +73,14 @@ public class AutominerTask extends BukkitRunnable {
 
         // Calculer la consommation de carburant
         double fuelConsumption = autominerManager.calculateFuelConsumption(autominer);
+        // Réduction via pets (AUTOMINER_EFFICIENCY)
+        double petReduction = 0.0;
+        if (plugin.getPetService() != null) {
+            petReduction = plugin.getPetService().computeUtilityBonusPercent(player, PetEffectType.AUTOMINER_EFFICIENCY) / 100.0;
+        }
+        if (petReduction > 0) {
+            fuelConsumption = fuelConsumption * Math.max(0.0, 1.0 - Math.min(0.9, petReduction));
+        }
         if (playerData.getAutominerFuelReserve() < fuelConsumption) {
             return; // Pas assez de carburant pour ce tick
         }

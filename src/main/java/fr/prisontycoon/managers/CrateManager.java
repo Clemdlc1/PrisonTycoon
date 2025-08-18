@@ -395,7 +395,6 @@ public class CrateManager {
             case LIVRE_UNIQUE -> "§5Livre " + reward.getBookType();
             case AUTOMINER -> "§7Autominer " + reward.getAutominerType();
             case VOUCHER -> {
-                // Si le type de voucher correspond à PrinterSlot, afficher équivalent imprimante
                 try {
                     String vt = reward.getVoucherType();
                     if (vt != null && vt.equalsIgnoreCase("PRINTER_SLOT")) {
@@ -406,6 +405,7 @@ public class CrateManager {
             }
             case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
             case FORGE_BLUEPRINT -> "§7Plan de forge " + reward.getBlueprintTier();
+            case PET_BOX -> "§aBoîte de pet T" + reward.getPetBoxTier();
         };
     }
 

@@ -43,6 +43,23 @@ public class VoucherBoostListener implements Listener {
         else if (plugin.getBoostManager().isBoostItem(item)) {
             handled = plugin.getBoostManager().activateBoost(event.getPlayer(), item);
         }
+        // Vérifie si c'est une boîte de pet
+        else if (plugin.getPetService().isPetBox(item)) {
+            int tier = plugin.getPetService().getPetBoxTier(item);
+            var def = plugin.getPetService().openPetBox(event.getPlayer(), tier);
+            if (def != null) {
+                // Consommer l'item
+                var p = event.getPlayer();
+                var hand = p.getInventory().getItemInMainHand();
+                if (hand != null && hand.isSimilar(item)) {
+                    hand.setAmount(Math.max(0, hand.getAmount() - 1));
+                    p.getInventory().setItemInMainHand(hand.getAmount() > 0 ? hand : null);
+                } else {
+                    item.setAmount(Math.max(0, item.getAmount() - 1));
+                }
+                handled = true;
+            }
+        }
 
         // Annule l'événement si un voucher ou boost a été utilisé
         if (handled) {

@@ -6,6 +6,7 @@ import fr.custommobs.events.types.GangWarEvent;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
+import fr.prisontycoon.pets.PetEffectType;
 import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.managers.PickaxeManager;
 import net.kyori.adventure.text.Component;
@@ -388,6 +389,19 @@ public class MiningListener implements Listener {
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
 
         plugin.getMineManager().checkAndRegenerateMineIfNeeded(mineName);
+
+        // Réduction d'usure via pet (PICKAXE_WEAR)
+        try {
+            double wearReduction = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, PetEffectType.PICKAXE_WEAR) : 0.0;
+            if (wearReduction > 0) {
+                // Si réduction > 0, nous sautons la logique de dégradation sur ce tick avec une probabilité proportionnelle
+                double probability = Math.min(0.9, wearReduction / 100.0);
+                if (random.nextDouble() < probability) {
+                    return; // saute la suite (évite l'usure appliquée ailleurs dans le flux)
+                }
+            }
+        } catch (Throwable ignored) {
+        }
 
     }
 

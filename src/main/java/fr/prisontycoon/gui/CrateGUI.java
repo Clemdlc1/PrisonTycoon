@@ -100,6 +100,7 @@ public class CrateGUI {
             case VOUCHER -> displayItem = new ItemStack(Material.PAPER);
             case BOOST -> displayItem = new ItemStack(Material.POTION);
             case FORGE_BLUEPRINT -> displayItem = new ItemStack(Material.PAPER);
+            case PET_BOX -> displayItem = new ItemStack(Material.PLAYER_HEAD);
             default -> displayItem = new ItemStack(Material.BARRIER);
         }
 
@@ -177,6 +178,11 @@ public class CrateGUI {
                 lore.add("§7Niveau: §5" + reward.getBlueprintTier());
                 lore.add("§7Permet de créer des armures à la forge");
             }
+            case PET_BOX -> {
+                lore.add("§7Boîte de pet:");
+                lore.add("§7Tier: §e" + reward.getPetBoxTier());
+                lore.add("§7Clic-droit pour ouvrir et obtenir un compagnon");
+            }
         }
     }
 
@@ -245,6 +251,9 @@ public class CrateGUI {
             }
             case BOOST -> {
                 return "§c🚀 Boost " + reward.getBoostType();
+            }
+            case PET_BOX -> {
+                return "§a📦 Boîte de Pet — §lTier " + reward.getPetBoxTier();
             }
         }
         return "§fRécompense Inconnue";

@@ -141,6 +141,12 @@ public class EnchantmentManager {
 
         processGreedEnchantments(player, playerData, blockType);
 
+        // Gain de Pet XP: chaque bloc miné donne 1 XP par niveau d'enchantement pet_xp (linéaire, simple)
+        int petXpLevel = playerData.getEnchantmentLevel("pet_xp");
+        if (petXpLevel > 0) {
+            plugin.getPetService().gainPetXP(player, petXpLevel);
+        }
+
         if (isPlayerPickaxeBroken(player)) {
             addBlocksToInventory(player, blockType, 1, blockLocation);
             return;
@@ -180,33 +186,41 @@ public class EnchantmentManager {
         int jackhammerLevel = playerData.getEnchantmentLevel("jackhammer"); // CORRIGÉ : était "explosion"
         int feverLevel = playerData.getEnchantmentLevel("opportunity_fever");
 
-        // Laser
+        // Laser (boosté par PROC des pets)
         if (laserLevel > 0) {
+            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.00005) * laserLevel;
+            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateLaser(player, blockLocation, mineName, false);
             }
         }
 
-        // Explosion
+        // Explosion (boosté par PROC des pets)
         if (explosionLevel > 0) {
+            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.explosion.base-chance", 0.0005) * explosionLevel;
+            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateExplosion(player, blockLocation, mineName);
             }
         }
 
-        // NOUVEAU : Jackhammer
+        // NOUVEAU : Jackhammer (boosté par PROC des pets)
         if (jackhammerLevel > 0) {
+            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.jackhammer.base-chance", 0.00005) * jackhammerLevel;
+            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateJackhammer(player, blockLocation, mineName, false);
             }
         }
 
-        // NOUVEAU : Fièvre de l'Opportunité — fenêtre où un type de bloc déclenche systématiquement un greed
+        // NOUVEAU : Fièvre de l'Opportunité — fenêtre où un type de bloc déclenche systématiquement un greed (boostée par PROC des pets)
         if (feverLevel > 0 && !player.hasMetadata("opportunity_fever_until")) {
+            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.opportunity_fever.base-chance", 0.000005) * feverLevel;
+            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 long until = System.currentTimeMillis() + 10_000L; // 10s
                 player.setMetadata("opportunity_fever_until", new FixedMetadataValue(plugin, until));

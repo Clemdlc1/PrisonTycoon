@@ -145,7 +145,8 @@ public class PlayerDataManager {
                     daily_last_claim BIGINT DEFAULT 0,
                     total_playtime BIGINT DEFAULT 0,
                     last_repair_time BIGINT DEFAULT 0,
-                    printer_extra_slots INT DEFAULT 0
+                    printer_extra_slots INT DEFAULT 0,
+                    pets_data TEXT DEFAULT '{}'
                 );
                 """;
 
@@ -411,6 +412,15 @@ public class PlayerDataManager {
                 data.setTotalPlaytimeMillis(Math.max(0L, rs.getLong("total_playtime")));
                 data.setLastRepairTime(Math.max(0L, rs.getLong("last_repair_time")));
 
+
+                String petsJson = rs.getString("pets_data");
+                if (petsJson != null && !petsJson.isBlank() && !petsJson.equals("null")) {
+                    java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, fr.prisontycoon.pets.PetService.PetData>>(){}.getType();
+                    java.util.Map<String, fr.prisontycoon.pets.PetService.PetData> pets = gson.fromJson(petsJson, type);
+                    if (pets != null) data.setPets(pets);
+                }
+
+
                 plugin.getPluginLogger().debug("§aDonnées chargées avec succès pour " + playerName + " (" + playerId + ")");
                 return data;
             }
@@ -503,14 +513,14 @@ public class PlayerDataManager {
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
                         gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
-                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change, printer_extra_slots
+                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change, printer_extra_slots, pets_data
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     )
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -572,7 +582,8 @@ public class PlayerDataManager {
                         last_repair_time = EXCLUDED.last_repair_time,
                         bank_type = EXCLUDED.bank_type,
                         bank_type_last_change = EXCLUDED.bank_type_last_change,
-                        printer_extra_slots = EXCLUDED.printer_extra_slots
+                        printer_extra_slots = EXCLUDED.printer_extra_slots,
+                        pets_data = EXCLUDED.pets_data
                     """;
 
             try (Connection conn = databaseManager.getConnection()) {
@@ -643,6 +654,7 @@ public class PlayerDataManager {
                     ps.setString(59, data.getBankType().name());
                     ps.setLong(60, data.getLastBankTypeChange());
                     ps.setInt(61, data.getPrinterExtraSlots());
+                    ps.setString(62, gson.toJson(data.getPets()));
 
                     ps.executeUpdate();
                     conn.commit();
@@ -1030,6 +1042,10 @@ public class PlayerDataManager {
                 case "collected_heads" -> ps.setString(1, gson.toJson(data.getCollectedHeads()));
                 case "claimed_head_rewards" -> ps.setString(1, gson.toJson(data.getClaimedHeadRewards()));
                 case "printer_extra_slots" -> ps.setInt(1, data.getPrinterExtraSlots());
+                case "pets_data" -> {
+                    // Délégué au PetService; ici on ne gère pas
+                    ps.setString(1, null);
+                }
                 default -> {
                     return false;
                 }

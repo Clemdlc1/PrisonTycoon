@@ -136,6 +136,14 @@ public class GlobalBonusManager {
             }
         }
 
+        // 9. Bonus Pets (n'utilise que des catégories existantes)
+        if (plugin.getPetService() != null) {
+            double petsBonus = plugin.getPetService().computePlayerBonusPercent(player, category);
+            if (petsBonus > 0) {
+                details.setPetsBonus(petsBonus);
+                details.addDetailedSource("Pets", petsBonus);
+            }
+        }
         return details;
     }
 
@@ -724,9 +732,10 @@ public class GlobalBonusManager {
         private double overloadBonus = 0.0;
         private double armorBonus = 0.0;
         private double bankBonus = 0.0; // Nouveau champ pour le bonus de banque
+        private double petsBonus = 0.0; // Bonus provenant des pets
 
         public double getTotalBonus() {
-            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus + bankBonus;
+            return cristalBonus + professionBonus + prestigeBonus + temporaryBoostBonus + gangBonus + temporaryGangBoostBonus + enchantmentBonus + overloadBonus + armorBonus + bankBonus + petsBonus;
         }
 
         public double getTotalMultiplier() {
@@ -764,6 +773,10 @@ public class GlobalBonusManager {
         public void setBankBonus(double bankBonus) {
             this.bankBonus = bankBonus;
         }
+
+        public double getPetsBonus() { return petsBonus; }
+
+        public void setPetsBonus(double petsBonus) { this.petsBonus = petsBonus; }
 
         // Getters
         public double getCristalBonus() {

@@ -133,6 +133,10 @@ public class PlayerData {
 	// Cooldowns/horodatages divers
 	private long lastRepairTime = 0L; // /repair (3h)
 
+    // === Pets ===
+    private Map<String, fr.prisontycoon.pets.PetService.PetData> pets = new ConcurrentHashMap<>();
+    private int unlockedPetSlots = 1; // 1 slot débloqué par défaut
+
 
     public PlayerData(UUID playerId, String playerName) {
         this.playerId = playerId;
@@ -208,6 +212,32 @@ public class PlayerData {
 
         // Reset stats dernière minute
         resetLastMinuteStats();
+    }
+
+    // ==================== PETS ====================
+    public Map<String, fr.prisontycoon.pets.PetService.PetData> getPets() {
+        synchronized (dataLock) {
+            return new HashMap<>(pets);
+        }
+    }
+
+    public void setPets(Map<String, fr.prisontycoon.pets.PetService.PetData> pets) {
+        synchronized (dataLock) {
+            this.pets.clear();
+            if (pets != null) this.pets.putAll(pets);
+        }
+    }
+
+    public int getUnlockedPetSlots() {
+        synchronized (dataLock) {
+            return Math.max(1, Math.min(3, unlockedPetSlots));
+        }
+    }
+
+    public void setUnlockedPetSlots(int slots) {
+        synchronized (dataLock) {
+            this.unlockedPetSlots = Math.max(1, Math.min(3, slots));
+        }
     }
 
     public BankType getBankType() {

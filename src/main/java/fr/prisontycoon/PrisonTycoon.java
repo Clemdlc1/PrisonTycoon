@@ -86,6 +86,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private ForgeManager forgeManager;
     private DailyRewardManager dailyRewardManager;
     private BattlePassManager battlePassManager;
+    private fr.prisontycoon.pets.PetService petService;
 
     // --- GUIs ---
     private AutominerCondHeadGUI autominerCondHeadGUI;
@@ -269,6 +270,7 @@ public final class PrisonTycoon extends JavaPlugin {
         blockCollectorManager = new BlockCollectorManager(this);
         forgeManager = new ForgeManager(this);
         battlePassManager = new BattlePassManager(this);
+        petService = new fr.prisontycoon.pets.PetService(this);
 
         logger.info("§aTous les managers ont été initialisés.");
     }
@@ -693,6 +695,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public BattlePassManager getBattlePassManager() {
         return battlePassManager;
+    }
+
+    public fr.prisontycoon.pets.PetService getPetService() {
+        return petService;
     }
 
     public DailyRewardGUI getDailyRewardGUI() {
