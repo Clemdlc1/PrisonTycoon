@@ -21,7 +21,7 @@ public enum QuestType {
     EARN_TOKENS("Gagner des tokens", "token(s) gagné(s)"),
     SPEND_MONEY("Dépenser de l'argent", "coin(s) dépensé(s)"),
     SELL_ITEMS("Vendre des objets", "objet(s) vendu(s)"),
-    UPGRADE_ENCHANTMENTS("Améliorer des enchantements","enchantement(s) amélioré(s)"),
+    UPGRADE_ENCHANTMENTS("Améliorer des enchantements", "enchantement(s) amélioré(s)"),
 
     // Quêtes sociales existantes
     CHAT_MESSAGES("Envoyer des messages", "message(s) envoyé(s)"),
@@ -29,16 +29,16 @@ public enum QuestType {
     HELP_PLAYERS("Aider des joueurs", "joueur(s) aidé(s)"),
 
     // Avant-poste
-    CAPTURE_OUTPOST("Capturer l'avant-poste","capture(s) réalisée(s)"),
-    HOLD_OUTPOST_MINUTES("Occuper l'avant-poste (minutes)","minute(s) en contrôle"),
+    CAPTURE_OUTPOST("Capturer l'avant-poste", "capture(s) réalisée(s)"),
+    HOLD_OUTPOST_MINUTES("Occuper l'avant-poste (minutes)", "minute(s) en contrôle"),
 
     // Evénements CustomMobs
-    WIN_SPONTANEOUS_EVENT("Gagner un événement spontané","victoire(s) en événement"),
-    PARTICIPATE_BOSS("Participer à un boss","participation(s) à un boss"),
+    WIN_SPONTANEOUS_EVENT("Gagner un événement spontané", "victoire(s) en événement"),
+    PARTICIPATE_BOSS("Participer à un boss", "participation(s) à un boss"),
 
     // Economie/Objets
-    USE_SELLHAND("Utiliser /sellhand","sellhand(s) utilisé(s)"),
-    BREAK_CONTAINER("Casser des conteneurs","conteneur(s) cassé(s)"),
+    USE_SELLHAND("Utiliser /sellhand", "sellhand(s) utilisé(s)"),
+    BREAK_CONTAINER("Casser des conteneurs", "conteneur(s) cassé(s)"),
 
     // ========================================
     // NOUVELLES QUÊTES DE TEMPS DE JEU

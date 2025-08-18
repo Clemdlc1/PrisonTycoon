@@ -2,17 +2,15 @@ package fr.prisontycoon.managers;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.data.BankType;
+import fr.prisontycoon.utils.NumberFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import fr.prisontycoon.utils.NumberFormatter;
 
 /**
  * Gestionnaire principal du système de prestige (CORRIGÉ: sans rang FREE)
@@ -33,11 +31,11 @@ public class PrestigeManager {
     public long getPrestigeCost(Player player, int prestigeLevel) {
         // Coût de base: 1M coins pour P1, puis +500k par niveau
         long baseCost = 1_000_000L + ((prestigeLevel - 1) * 500_000L);
-        
+
         // Appliquer le multiplicateur du type de banque
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         double bankMultiplier = playerData.getBankType().getPrestigeCostMultiplier();
-        
+
         return (long) (baseCost * bankMultiplier);
     }
 
@@ -60,7 +58,7 @@ public class PrestigeManager {
         if (!hasEnoughCoinsForPrestige(player, prestigeLevel)) {
             return false;
         }
-    
+
         playerData.removeCoins(cost);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
         return true;
@@ -94,7 +92,7 @@ public class PrestigeManager {
             player.sendMessage("§7Retirez d'abord votre épargne via §e/bank withdraw§7.");
             return false;
         }
-        
+
         // Vérifier pas d'investissement actif
         Map<Material, Long> investments = playerData.getAllInvestments();
         if (!investments.isEmpty()) {
@@ -102,7 +100,7 @@ public class PrestigeManager {
             player.sendMessage("§7Vendez d'abord vos investissements via §e/bank invest§7.");
             return false;
         }
-        
+
         return true;
     }
 

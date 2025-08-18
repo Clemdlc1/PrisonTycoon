@@ -206,7 +206,7 @@ public class MainMenuGUI {
             case "autominer" -> plugin.getAutominerGUI().openMainMenu(player);
             case "bookshop" -> plugin.getBookShopGUI().openSelector(player);
             case "pets" -> plugin.getPetsMenuGUI().openPetsMenu(player);
-	    case "shop" -> plugin.getShopGUI().openMainShop(player);
+            case "shop" -> plugin.getShopGUI().openMainShop(player);
             case "recherche", "ile", "boutique", "tutoriel" -> {
                 player.closeInventory();
                 player.sendMessage("§e🔮 Cette fonctionnalité arrive bientôt !");

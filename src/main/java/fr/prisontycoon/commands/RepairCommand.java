@@ -1,24 +1,24 @@
 package fr.prisontycoon.commands;
 
 import fr.prisontycoon.PrisonTycoon;
-import org.bukkit.Sound;
 import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-    /**
-     * Commande /repair - Répare gratuitement l'item tenu en main (si réparable) avec un cooldown
-     */
+/**
+ * Commande /repair - Répare gratuitement l'item tenu en main (si réparable) avec un cooldown
+ */
 public class RepairCommand implements CommandExecutor, TabCompleter {
 
     private final PrisonTycoon plugin;
@@ -33,11 +33,11 @@ public class RepairCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cCette commande ne peut être exécutée que par un joueur!");
             return true;
         }
-        
+
         // Condition de métier: Guerrier niveau 5+
         fr.prisontycoon.data.PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         String activeProfession = playerData.getActiveProfession();
-        if (activeProfession == null || !"guerrier".equalsIgnoreCase(activeProfession) || playerData.getProfessionLevel("guerrier") < 5 || !player.hasPermission("specialmine.repair")) {
+        if (!"guerrier".equalsIgnoreCase(activeProfession) || playerData.getProfessionLevel("guerrier") < 5 || !player.hasPermission("specialmine.repair")) {
             player.sendMessage("§c❌ Vous devez être §cGuerrier §7niveau §e5+ §cpour utiliser /repair!");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return true;

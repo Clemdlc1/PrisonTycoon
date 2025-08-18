@@ -118,11 +118,11 @@ public class HeadCollectionManager {
 
             // Sauvegarde toutes les têtes
             for (HeadData head : placedHeads.values()) {
-                String path = "heads." + head.getId();
-                headsConfig.set(path + ".world", head.getLocation().getWorld().getName());
-                headsConfig.set(path + ".x", head.getLocation().getX());
-                headsConfig.set(path + ".y", head.getLocation().getY());
-                headsConfig.set(path + ".z", head.getLocation().getZ());
+                String path = "heads." + head.id();
+                headsConfig.set(path + ".world", head.location().getWorld().getName());
+                headsConfig.set(path + ".x", head.location().getX());
+                headsConfig.set(path + ".y", head.location().getY());
+                headsConfig.set(path + ".z", head.location().getZ());
             }
 
             headsConfig.save(headsFile);
@@ -150,16 +150,16 @@ public class HeadCollectionManager {
     public void unregisterHeadBreak(Location location) {
         HeadData toRemove = null;
         for (HeadData head : placedHeads.values()) {
-            if (head.getLocation().getBlock().equals(location.getBlock())) {
+            if (head.location().getBlock().equals(location.getBlock())) {
                 toRemove = head;
                 break;
             }
         }
 
         if (toRemove != null) {
-            placedHeads.remove(toRemove.getId());
+            placedHeads.remove(toRemove.id());
             saveHeadsToFile();
-            plugin.getPluginLogger().info("§cTête supprimée: " + toRemove.getId());
+            plugin.getPluginLogger().info("§cTête supprimée: " + toRemove.id());
         }
     }
 
@@ -174,14 +174,14 @@ public class HeadCollectionManager {
         if (playerData == null) return false;
 
         Set<String> collectedHeads = playerData.getCollectedHeads();
-        if (collectedHeads.contains(head.getId())) {
+        if (collectedHeads.contains(head.id())) {
             player.sendMessage("§c❌ Vous avez déjà collecté cette tête !");
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return false;
         }
 
         // Ajouter la tête à la collection
-        collectedHeads.add(head.getId());
+        collectedHeads.add(head.id());
         playerData.setCollectedHeads(collectedHeads);
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
 
@@ -238,7 +238,7 @@ public class HeadCollectionManager {
      */
     private HeadData getHeadAtLocation(Location location) {
         for (HeadData head : placedHeads.values()) {
-            if (head.getLocation().getBlock().equals(location.getBlock())) {
+            if (head.location().getBlock().equals(location.getBlock())) {
                 return head;
             }
         }
@@ -270,7 +270,7 @@ public class HeadCollectionManager {
      * Affiche des particules pour les têtes non collectées
      */
     private void showParticlesForUncollectedHead(HeadData head) {
-        Location location = head.getLocation();
+        Location location = head.location();
         if (location.getWorld().getPlayers().isEmpty()) return;
 
         boolean hasUncollectedPlayers = false;
@@ -278,7 +278,7 @@ public class HeadCollectionManager {
             if (player.getLocation().distance(location) > 50) continue;
 
             PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-            if (playerData != null && !playerData.getCollectedHeads().contains(head.getId())) {
+            if (playerData != null && !playerData.getCollectedHeads().contains(head.id())) {
                 hasUncollectedPlayers = true;
                 break;
             }
@@ -330,7 +330,7 @@ public class HeadCollectionManager {
 
         // Effets
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-        player.sendMessage("§a✓ Récompense réclamée : " + reward.getDescription());
+        player.sendMessage("§a✓ Récompense réclamée : " + reward.description());
 
         return true;
     }
@@ -339,7 +339,7 @@ public class HeadCollectionManager {
      * Donne la récompense au joueur - PERSONNALISE CETTE MÉTHODE
      */
     private void giveRewardToPlayer(Player player, HeadReward reward) {
-        switch (reward.getType()) {
+        switch (reward.type()) {
             case BASIC -> {
             }
             case INTERMEDIATE -> {
@@ -387,48 +387,12 @@ public class HeadCollectionManager {
     }
 
     // Classes de données internes
-    public static class HeadData {
-        private final String id;
-        private final Location location;
-
-        public HeadData(String id, Location location) {
-            this.id = id;
-            this.location = location;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public Location getLocation() {
-            return location;
-        }
+        public record HeadData(String id, Location location) {
     }
 
     /**
-     * Classe pour les récompenses - similaire au système de crates
-     */
-    public static class HeadReward {
-        private final int requiredHeads;
-        private final HeadRewardType type;
-        private final String description;
-
-        public HeadReward(int requiredHeads, HeadRewardType type, String description) {
-            this.requiredHeads = requiredHeads;
-            this.type = type;
-            this.description = description;
-        }
-
-        public int getRequiredHeads() {
-            return requiredHeads;
-        }
-
-        public HeadRewardType getType() {
-            return type;
-        }
-
-        public String getDescription() {
-            return description;
-        }
+         * Classe pour les récompenses - similaire au système de crates
+         */
+        public record HeadReward(int requiredHeads, HeadRewardType type, String description) {
     }
 }

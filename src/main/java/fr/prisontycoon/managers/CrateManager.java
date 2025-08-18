@@ -400,7 +400,8 @@ public class CrateManager {
                     if (vt != null && vt.equalsIgnoreCase("PRINTER_SLOT")) {
                         yield "§6Slot Imprimante";
                     }
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
                 yield "§eVoucher " + reward.getVoucherType();
             }
             case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
@@ -443,7 +444,8 @@ public class CrateManager {
                     }
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
     }
 
 

@@ -49,7 +49,7 @@ public class BlackMarketManager {
     private Location currentLocation;
     private boolean isAvailable = true;
     private MarketState currentState = MarketState.AVAILABLE;
-    private FancyNPCUtils npcUtils;
+    private final FancyNPCUtils npcUtils;
 
 
     public BlackMarketManager(PrisonTycoon plugin) {

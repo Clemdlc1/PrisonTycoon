@@ -211,7 +211,7 @@ public class HeadCollectionGUI {
         boolean alreadyClaimed = playerData.getClaimedHeadRewards().contains(requiredHeads);
 
         // Matériaux selon l'état et le type de récompense
-        Material material = getRewardMaterial(reward.getType(), alreadyClaimed, canClaim);
+        Material material = getRewardMaterial(reward.type(), alreadyClaimed, canClaim);
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -221,8 +221,8 @@ public class HeadCollectionGUI {
 
         List<String> lore = new ArrayList<>();
         lore.add("§7");
-        lore.add("§e🎁 Type: §f" + getRewardTypeName(reward.getType()));
-        lore.add("§e💰 Récompense: §f" + reward.getDescription());
+        lore.add("§e🎁 Type: §f" + getRewardTypeName(reward.type()));
+        lore.add("§e💰 Récompense: §f" + reward.description());
         lore.add("§7");
         lore.add("§e📋 Requis: §f" + requiredHeads + " têtes");
         lore.add("§e👤 Vous avez: §f" + playerData.getCollectedHeads().size() + " têtes");

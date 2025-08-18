@@ -12,7 +12,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
@@ -265,45 +264,6 @@ public class TankGUI implements Listener {
         player.openInventory(gui);
     }
 
-
-    public enum TankFilter {
-        COAL_ORE(Material.COAL_ORE, "§fMinerai de charbon"),
-        IRON_ORE(Material.IRON_ORE, "§fMinerai de fer"),
-        GOLD_ORE(Material.GOLD_ORE, "§fMinerai d'or"),
-        COPPER_ORE(Material.COPPER_ORE, "§fMinerai de cuivre"),
-        REDSTONE_ORE(Material.REDSTONE_ORE, "§fMinerai de redstone"),
-        LAPIS_ORE(Material.LAPIS_ORE, "§fMinerai de lapis"),
-        DIAMOND_ORE(Material.DIAMOND_ORE, "§fMinerai de diamant"),
-        EMERALD_ORE(Material.EMERALD_ORE, "§fMinerai d'émeraude"),
-        DEEPSLATE_COAL(Material.DEEPSLATE_COAL_ORE, "§8Deepslate charbon"),
-        DEEPSLATE_IRON(Material.DEEPSLATE_IRON_ORE, "§8Deepslate fer"),
-        DEEPSLATE_GOLD(Material.DEEPSLATE_GOLD_ORE, "§8Deepslate or"),
-        DEEPSLATE_COPPER(Material.DEEPSLATE_COPPER_ORE, "§8Deepslate cuivre"),
-        DEEPSLATE_REDSTONE(Material.DEEPSLATE_REDSTONE_ORE, "§8Deepslate redstone"),
-        DEEPSLATE_LAPIS(Material.DEEPSLATE_LAPIS_ORE, "§8Deepslate lapis"),
-        DEEPSLATE_DIAMOND(Material.DEEPSLATE_DIAMOND_ORE, "§8Deepslate diamant"),
-        DEEPSLATE_EMERALD(Material.DEEPSLATE_EMERALD_ORE, "§8Deepslate émeraude"),
-        NETHER_QUARTZ(Material.NETHER_QUARTZ_ORE, "§cQuartz du Nether"),
-        NETHER_GOLD(Material.NETHER_GOLD_ORE, "§cOr du Nether"),
-        ANCIENT_DEBRIS(Material.ANCIENT_DEBRIS, "§4Débris antiques"),
-        NETHERRACK(Material.NETHERRACK, "§cNetherrack"),
-        SOUL_SAND(Material.SOUL_SAND, "§cSable des âmes"),
-        SOUL_SOIL(Material.SOUL_SOIL, "§cTerre des âmes");
-
-        private final Material material;
-        private final String displayName;
-
-        TankFilter(Material material, String displayName) {
-            this.material = material;
-            this.displayName = displayName;
-        }
-
-        public Material material() { return material; }
-        public String displayName() { return displayName; }
-    }
-
-    // === CRÉATION DES ITEMS ===
-
     /**
      * Crée l'item d'information du tank
      */
@@ -328,6 +288,8 @@ public class TankGUI implements Listener {
         item.setItemMeta(meta);
         return item;
     }
+
+    // === CRÉATION DES ITEMS ===
 
     /**
      * Crée l'item d'information publique du tank
@@ -498,7 +460,10 @@ public class TankGUI implements Listener {
         } else {
             int count = 0;
             for (var e : tankData.getBills().entrySet()) {
-                if (count >= 5) { lore.add("§8▸ §7... et d'autres"); break; }
+                if (count >= 5) {
+                    lore.add("§8▸ §7... et d'autres");
+                    break;
+                }
                 lore.add("§8▸ §fTier " + e.getKey() + " §7x §b" + NumberFormatter.format(e.getValue()));
                 count++;
             }
@@ -724,15 +689,30 @@ public class TankGUI implements Listener {
                 String view = plugin.getGUIManager().getGUIData(player, "tank_filter_view");
                 String pageStr = plugin.getGUIManager().getGUIData(player, "tank_filter_page");
                 int page = 0;
-                try { if (pageStr != null) page = Integer.parseInt(pageStr); } catch (NumberFormatException ignored) {}
+                try {
+                    if (pageStr != null) page = Integer.parseInt(pageStr);
+                } catch (NumberFormatException ignored) {
+                }
 
                 if ("select".equalsIgnoreCase(view)) {
                     int itemsPerPage = 45;
                     int totalPages = Math.max(1, (int) Math.ceil(TankFilter.values().length / (double) itemsPerPage));
-                    if (slot == 45) { openMaterialSelectionGUI(player, tankId, 0, "manage"); return; }
-                    if (slot == 46 && page > 0) { openMaterialSelectionGUI(player, tankId, page - 1, "select"); return; }
-                    if (slot == 52 && page < totalPages - 1) { openMaterialSelectionGUI(player, tankId, page + 1, "select"); return; }
-                    if (slot == 53) { player.closeInventory(); return; }
+                    if (slot == 45) {
+                        openMaterialSelectionGUI(player, tankId, 0, "manage");
+                        return;
+                    }
+                    if (slot == 46 && page > 0) {
+                        openMaterialSelectionGUI(player, tankId, page - 1, "select");
+                        return;
+                    }
+                    if (slot == 52 && page < totalPages - 1) {
+                        openMaterialSelectionGUI(player, tankId, page + 1, "select");
+                        return;
+                    }
+                    if (slot == 53) {
+                        player.closeInventory();
+                        return;
+                    }
                     if (clicked != null && clicked.getType() != Material.AIR) {
                         handleMaterialSelection(player, clicked, tankId);
                         openMaterialSelectionGUI(player, tankId, 0, "manage");
@@ -741,11 +721,26 @@ public class TankGUI implements Listener {
                 }
 
                 // manage view
-                if (slot == 45) { openTankGUI(player, tankId); return; }
-                if (slot == 46 && page > 0) { openMaterialSelectionGUI(player, tankId, page - 1, "manage"); return; }
-                if (slot == 52) { openMaterialSelectionGUI(player, tankId, page + 1, "manage"); return; }
-                if (slot == 49) { player.closeInventory(); return; }
-                if (slot == 48) { openMaterialSelectionGUI(player, tankId, 0, "select"); return; }
+                if (slot == 45) {
+                    openTankGUI(player, tankId);
+                    return;
+                }
+                if (slot == 46 && page > 0) {
+                    openMaterialSelectionGUI(player, tankId, page - 1, "manage");
+                    return;
+                }
+                if (slot == 52) {
+                    openMaterialSelectionGUI(player, tankId, page + 1, "manage");
+                    return;
+                }
+                if (slot == 49) {
+                    player.closeInventory();
+                    return;
+                }
+                if (slot == 48) {
+                    openMaterialSelectionGUI(player, tankId, 0, "select");
+                    return;
+                }
 
                 if (clicked != null && clicked.getType() != Material.AIR) {
                     TankData tankData = plugin.getTankManager().getTankCache().get(tankId);
@@ -758,9 +753,16 @@ public class TankGUI implements Listener {
                 TankData tankData = plugin.getTankManager().getTankCache().get(tankId);
                 if (tankData == null || clicked == null) return;
                 if (clicked.getType() == Material.GOLD_BLOCK) {
-                    long total = 0; int qty = 0;
-                    for (java.util.Map.Entry<Integer, Integer> e : tankData.getBills().entrySet()) { total += plugin.getTankManager().getBillValue(e.getKey()) * e.getValue(); qty += e.getValue(); }
-                    if (qty == 0) { player.sendMessage("§c❌ Aucun billet à vendre!"); return; }
+                    long total = 0;
+                    int qty = 0;
+                    for (java.util.Map.Entry<Integer, Integer> e : tankData.getBills().entrySet()) {
+                        total += plugin.getTankManager().getBillValue(e.getKey()) * e.getValue();
+                        qty += e.getValue();
+                    }
+                    if (qty == 0) {
+                        player.sendMessage("§c❌ Aucun billet à vendre!");
+                        return;
+                    }
                     double global = plugin.getGlobalBonusManager().getTotalBonusMultiplier(player, fr.prisontycoon.managers.GlobalBonusManager.BonusCategory.SELL_BONUS);
                     long finalValue = Math.round(total * global);
                     var pdata = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
@@ -773,20 +775,28 @@ public class TankGUI implements Listener {
                     return;
                 }
                 if (clicked.getType() == Material.CHEST_MINECART) {
-                    int moved = 0; java.util.Map<Integer, Integer> map = new java.util.HashMap<>(tankData.getBills());
+                    int moved = 0;
+                    java.util.Map<Integer, Integer> map = new java.util.HashMap<>(tankData.getBills());
                     for (java.util.Map.Entry<Integer, Integer> e : map.entrySet()) {
-                        int tier = e.getKey(); int amount = e.getValue();
+                        int tier = e.getKey();
+                        int amount = e.getValue();
                         while (amount > 0 && player.getInventory().firstEmpty() != -1) {
                             int give = Math.min(64, amount);
                             ItemStack bill = plugin.getTankManager().createBillForTier(tier);
                             bill.setAmount(give);
                             player.getInventory().addItem(bill);
                             tankData.removeBills(tier, give);
-                            amount -= give; moved += give;
+                            amount -= give;
+                            moved += give;
                         }
                     }
-                    if (moved > 0) { plugin.getTankManager().saveTank(tankData); plugin.getTankManager().updateTankNameTag(tankData); player.sendMessage("§a✓ Récupéré §b" + NumberFormatter.format(moved) + " §abillets depuis le tank"); }
-                    else { player.sendMessage("§c❌ Inventaire plein ou aucun billet!"); }
+                    if (moved > 0) {
+                        plugin.getTankManager().saveTank(tankData);
+                        plugin.getTankManager().updateTankNameTag(tankData);
+                        player.sendMessage("§a✓ Récupéré §b" + NumberFormatter.format(moved) + " §abillets depuis le tank");
+                    } else {
+                        player.sendMessage("§c❌ Inventaire plein ou aucun billet!");
+                    }
                     openBillsMenu(player, tankData);
                     return;
                 }
@@ -799,7 +809,8 @@ public class TankGUI implements Listener {
                     player.closeInventory();
                 }
             }
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -879,11 +890,17 @@ public class TankGUI implements Listener {
         int totalItems = 0;
         for (var entry : tankData.getContents().entrySet()) {
             long price = plugin.getConfigManager().getSellPrice(entry.getKey());
-            if (price > 0) { totalValue += price * entry.getValue(); totalItems += entry.getValue(); }
+            if (price > 0) {
+                totalValue += price * entry.getValue();
+                totalItems += entry.getValue();
+            }
         }
         for (var e : tankData.getBills().entrySet()) {
             long v = plugin.getTankManager().getBillValue(e.getKey());
-            if (v > 0) { totalValue += v * e.getValue(); totalItems += e.getValue(); }
+            if (v > 0) {
+                totalValue += v * e.getValue();
+                totalItems += e.getValue();
+            }
         }
         if (totalValue <= 0) {
             player.sendMessage("§c❌ Rien à vendre!");
@@ -1280,6 +1297,47 @@ public class TankGUI implements Listener {
 
                 Bukkit.getScheduler().runTask(plugin, () -> openTankGUI(player, nameInputTankId));
             }
+        }
+    }
+
+    public enum TankFilter {
+        COAL_ORE(Material.COAL_ORE, "§fMinerai de charbon"),
+        IRON_ORE(Material.IRON_ORE, "§fMinerai de fer"),
+        GOLD_ORE(Material.GOLD_ORE, "§fMinerai d'or"),
+        COPPER_ORE(Material.COPPER_ORE, "§fMinerai de cuivre"),
+        REDSTONE_ORE(Material.REDSTONE_ORE, "§fMinerai de redstone"),
+        LAPIS_ORE(Material.LAPIS_ORE, "§fMinerai de lapis"),
+        DIAMOND_ORE(Material.DIAMOND_ORE, "§fMinerai de diamant"),
+        EMERALD_ORE(Material.EMERALD_ORE, "§fMinerai d'émeraude"),
+        DEEPSLATE_COAL(Material.DEEPSLATE_COAL_ORE, "§8Deepslate charbon"),
+        DEEPSLATE_IRON(Material.DEEPSLATE_IRON_ORE, "§8Deepslate fer"),
+        DEEPSLATE_GOLD(Material.DEEPSLATE_GOLD_ORE, "§8Deepslate or"),
+        DEEPSLATE_COPPER(Material.DEEPSLATE_COPPER_ORE, "§8Deepslate cuivre"),
+        DEEPSLATE_REDSTONE(Material.DEEPSLATE_REDSTONE_ORE, "§8Deepslate redstone"),
+        DEEPSLATE_LAPIS(Material.DEEPSLATE_LAPIS_ORE, "§8Deepslate lapis"),
+        DEEPSLATE_DIAMOND(Material.DEEPSLATE_DIAMOND_ORE, "§8Deepslate diamant"),
+        DEEPSLATE_EMERALD(Material.DEEPSLATE_EMERALD_ORE, "§8Deepslate émeraude"),
+        NETHER_QUARTZ(Material.NETHER_QUARTZ_ORE, "§cQuartz du Nether"),
+        NETHER_GOLD(Material.NETHER_GOLD_ORE, "§cOr du Nether"),
+        ANCIENT_DEBRIS(Material.ANCIENT_DEBRIS, "§4Débris antiques"),
+        NETHERRACK(Material.NETHERRACK, "§cNetherrack"),
+        SOUL_SAND(Material.SOUL_SAND, "§cSable des âmes"),
+        SOUL_SOIL(Material.SOUL_SOIL, "§cTerre des âmes");
+
+        private final Material material;
+        private final String displayName;
+
+        TankFilter(Material material, String displayName) {
+            this.material = material;
+            this.displayName = displayName;
+        }
+
+        public Material material() {
+            return material;
+        }
+
+        public String displayName() {
+            return displayName;
         }
     }
 }

@@ -419,7 +419,8 @@ public class PlayerDataManager {
 
                 String petsJson = rs.getString("pets_data");
                 if (petsJson != null && !petsJson.isBlank() && !petsJson.equals("null")) {
-                    java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, fr.prisontycoon.pets.PetService.PetData>>(){}.getType();
+                    java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, fr.prisontycoon.pets.PetService.PetData>>() {
+                    }.getType();
                     java.util.Map<String, fr.prisontycoon.pets.PetService.PetData> pets = gson.fromJson(petsJson, type);
                     if (pets != null) data.setPets(pets);
                 }

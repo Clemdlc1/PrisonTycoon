@@ -126,7 +126,6 @@ public class HeadCollectionListener implements Listener {
 
                 if (!collected) {
                     // Le message d'erreur est déjà envoyé dans collectHead()
-                    return;
                 }
             }
         }

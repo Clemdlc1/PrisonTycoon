@@ -99,6 +99,14 @@ public enum BankType {
         this.safeLimitMultiplier = safeLimitMultiplier;
     }
 
+    public static BankType fromId(String id) {
+        if (id == null) return NONE;
+        for (BankType type : values()) {
+            if (type.id.equalsIgnoreCase(id)) return type;
+        }
+        return NONE;
+    }
+
     public String getId() {
         return id;
     }
@@ -133,14 +141,6 @@ public enum BankType {
 
     public double getSafeLimitMultiplier() {
         return safeLimitMultiplier;
-    }
-
-    public static BankType fromId(String id) {
-        if (id == null) return NONE;
-        for (BankType type : values()) {
-            if (type.id.equalsIgnoreCase(id)) return type;
-        }
-        return NONE;
     }
 }
 

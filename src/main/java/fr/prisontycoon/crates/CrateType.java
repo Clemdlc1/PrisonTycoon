@@ -242,7 +242,9 @@ public enum CrateType {
             return petBoxTier;
         }
 
-        public Integer getPetFoodTier() { return petFoodTier; }
+        public Integer getPetFoodTier() {
+            return petFoodTier;
+        }
 
         public static class Builder {
             private final RewardType type;

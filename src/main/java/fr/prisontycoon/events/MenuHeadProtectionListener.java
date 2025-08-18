@@ -99,7 +99,6 @@ public class MenuHeadProtectionListener implements Listener {
         if (cursor != null && isMenuHead(cursor)) {
             if (event.getClickedInventory() != player.getInventory() || event.getSlot() != 8) {
                 event.setCancelled(true);
-                return;
             }
         }
     }

@@ -2,20 +2,15 @@ package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.managers.BattlePassManager;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * GUI Pass de combat amélioré: 5 pages, 6 paliers/page, affichage double ligne avec barres de progression
@@ -271,7 +266,7 @@ public class BattlePassGUI {
             // Calculer le prix (réduction VIP)
             boolean isVip = player.hasPermission("prisontycoon.vip");
             int basePrice = 5000;
-            int price = isVip ? (int)(basePrice * 0.7) : basePrice;
+            int price = isVip ? (int) (basePrice * 0.7) : basePrice;
 
             List<String> lore = Arrays.asList(
                     "",
@@ -520,7 +515,8 @@ public class BattlePassGUI {
             try {
                 String pageStr = guiManager.getGUIData(player, "page");
                 if (pageStr != null) page = Integer.parseInt(pageStr);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
 
             // Fallback: si pas de data, essaie de lire depuis le titre
             if (page == 1) {
@@ -530,7 +526,8 @@ public class BattlePassGUI {
                         int start = title.indexOf("Page ") + 5;
                         int end = title.indexOf("/9)", start);
                         if (start > 4 && end > start) page = Integer.parseInt(title.substring(start, end));
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 }
             }
 

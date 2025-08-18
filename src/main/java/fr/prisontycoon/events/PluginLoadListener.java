@@ -1,9 +1,9 @@
 package fr.prisontycoon.events; // Assurez-vous que le package est correct
 
 import fr.custommobs.CustomMobsPlugin;
-import fr.skyblock.CustomSkyblock;
 import fr.prisontycoon.PrisonTycoon;
 import fr.shop.PlayerShops;
+import fr.skyblock.CustomSkyblock;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

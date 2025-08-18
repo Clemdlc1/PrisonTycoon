@@ -4,17 +4,16 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.commands.RankupCommand;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Tâche de récapitulatif minute dans le chat

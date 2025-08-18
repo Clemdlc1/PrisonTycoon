@@ -142,7 +142,7 @@ public class OutpostCommand implements CommandExecutor, TabCompleter {
 
         outpostManager.startCapture(player);
     }
- 
+
     /**
      * Commandes administrateur
      */

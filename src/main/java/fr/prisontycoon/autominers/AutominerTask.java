@@ -3,12 +3,12 @@ package fr.prisontycoon.autominers;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.managers.AutominerManager;
+import fr.prisontycoon.pets.PetEffectType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
-import fr.prisontycoon.pets.PetEffectType;
 
 import java.util.Map;
 

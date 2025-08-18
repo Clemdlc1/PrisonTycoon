@@ -175,7 +175,7 @@ public class QuestManager {
 
     public List<QuestDefinition> getQuestsByCategory(QuestCategory cat) {
         List<QuestDefinition> list = new ArrayList<>();
-        for (var q : quests.values()) if (q.getCategory() == cat) list.add(q);
+        for (var q : quests.values()) if (q.category() == cat) list.add(q);
         return list;
     }
 
@@ -229,7 +229,8 @@ public class QuestManager {
                     int bpPoints = rs.getInt("bp_points");
                     boolean bpPremium = rs.getBoolean("bp_premium");
                     try {
-                        java.lang.reflect.Type intSetType = new TypeToken<java.util.Set<Integer>>(){}.getType();
+                        java.lang.reflect.Type intSetType = new TypeToken<java.util.Set<Integer>>() {
+                        }.getType();
                         String bpClaimedFreeJson = rs.getString("bp_claimed_free");
                         String bpClaimedPremiumJson = rs.getString("bp_claimed_premium");
                         java.util.Set<Integer> bpClaimedFree = gson.fromJson(bpClaimedFreeJson, intSetType);
@@ -343,13 +344,13 @@ public class QuestManager {
         p.resetWeeklyIfNeeded();
 
         for (QuestDefinition q : quests.values()) {
-            if (q.getType() != type) continue;
-            String qid = q.getId();
+            if (q.type() != type) continue;
+            String qid = q.id();
             // Restreindre aux quêtes actives (présentes dans la map de progression)
             if (!p.getAllProgress().containsKey(qid)) continue;
             int current = p.get(qid);
-            if (current >= q.getTarget()) continue; // déjà suffisant
-            p.set(qid, Math.min(q.getTarget(), current + amount));
+            if (current >= q.target()) continue; // déjà suffisant
+            p.set(qid, Math.min(q.target(), current + amount));
         }
         cache.put(id, p);
     }
@@ -358,16 +359,16 @@ public class QuestManager {
         QuestDefinition q = quests.get(questId);
         if (q == null) return false;
         PlayerQuestProgress p = getProgress(player.getUniqueId());
-        if (p.get(questId) < q.getTarget() || p.isClaimed(questId)) return false;
-        q.getRewards().grant(plugin, player);
+        if (p.get(questId) < q.target() || p.isClaimed(questId)) return false;
+        q.rewards().grant(plugin, player);
         p.setClaimed(questId);
-        if (q.getCategory() == QuestCategory.DAILY) p.incDailyCompleted();
-        if (q.getCategory() == QuestCategory.WEEKLY) p.incWeeklyCompleted();
+        if (q.category() == QuestCategory.DAILY) p.incDailyCompleted();
+        if (q.category() == QuestCategory.WEEKLY) p.incWeeklyCompleted();
         cache.put(player.getUniqueId(), p);
         // Sauvegarde immédiate après claim pour résilience (crash/déconnexion)
         saveProgress(p);
         // Ajouter des points de Pass
-        int bp = q.getBattlePassPoints();
+        int bp = q.battlePassPoints();
         if (bp > 0) {
             plugin.getBattlePassManager().addPoints(player, bp);
         }
@@ -398,14 +399,14 @@ public class QuestManager {
         int count = Math.min(desiredCount, pool.size());
         Set<String> selected = new HashSet<>();
         for (int i = 0; i < count; i++) {
-            selected.add(pool.get(i).getId());
+            selected.add(pool.get(i).id());
         }
 
         // Supprimer de la progression toutes les quêtes de cette catégorie qui ne sont pas sélectionnées
         // et s'assurer que les sélectionnées existent au moins à 0
         // Construire l'ensemble des IDs de cette catégorie
         Set<String> categoryIds = new HashSet<>();
-        for (QuestDefinition q : all) categoryIds.add(q.getId());
+        for (QuestDefinition q : all) categoryIds.add(q.id());
 
         boolean changed = false;
         // Purge
@@ -434,7 +435,7 @@ public class QuestManager {
      */
     private boolean ensureActiveQuestsForCategory(PlayerQuestProgress progress, QuestCategory category, int desiredCount) {
         Set<String> categoryIds = new HashSet<>();
-        for (QuestDefinition q : getQuestsByCategory(category)) categoryIds.add(q.getId());
+        for (QuestDefinition q : getQuestsByCategory(category)) categoryIds.add(q.id());
         int active = 0;
         for (String qid : progress.getAllProgress().keySet()) {
             if (categoryIds.contains(qid)) active++;
@@ -453,10 +454,10 @@ public class QuestManager {
         Set<String> activeIds = p.getAllProgress().keySet();
         List<QuestDefinition> result = new ArrayList<>();
         for (QuestDefinition q : getQuestsByCategory(category)) {
-            if (activeIds.contains(q.getId())) result.add(q);
+            if (activeIds.contains(q.id())) result.add(q);
         }
         // Optionnel: ordre stable
-        result.sort(Comparator.comparing(QuestDefinition::getId));
+        result.sort(Comparator.comparing(QuestDefinition::id));
         return result;
     }
 }

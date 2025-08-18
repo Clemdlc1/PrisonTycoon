@@ -1,11 +1,7 @@
 package fr.prisontycoon.quests;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Progression des quêtes pour un joueur.
@@ -14,19 +10,16 @@ public class PlayerQuestProgress {
     private final UUID playerId;
     private final Map<String, Integer> progressByQuest = new HashMap<>(); // questId -> progress
     private final Map<String, Boolean> claimedByQuest = new HashMap<>();  // questId -> claimed
-
+    private final Set<Integer> battlePassClaimedFree = new HashSet<>();
+    private final Set<Integer> battlePassClaimedPremium = new HashSet<>();
     private LocalDate dailyDate;   // reset quotidien
     private int dailyCompletedCount;
-
     private LocalDate weeklyWeekStart; // reset hebdo
     private int weeklyCompletedCount;
-
     // Données Battle Pass (BP)
     private String battlePassSeasonId;
     private int battlePassPoints;
     private boolean battlePassPremium;
-    private final Set<Integer> battlePassClaimedFree = new HashSet<>();
-    private final Set<Integer> battlePassClaimedPremium = new HashSet<>();
 
     public PlayerQuestProgress(UUID playerId) {
         this.playerId = playerId;
@@ -50,20 +43,20 @@ public class PlayerQuestProgress {
         progressByQuest.put(questId, Math.max(0, amount));
     }
 
-	/**
-	 * S'assure qu'une entrée existe pour cette quête (par exemple pour la persistance à 0)
-	 */
-	public void ensureEntry(String questId) {
-		progressByQuest.putIfAbsent(questId, 0);
-	}
+    /**
+     * S'assure qu'une entrée existe pour cette quête (par exemple pour la persistance à 0)
+     */
+    public void ensureEntry(String questId) {
+        progressByQuest.putIfAbsent(questId, 0);
+    }
 
-	/**
-	 * Supprime toute trace d'une quête (progression et statut réclamé)
-	 */
-	public void remove(String questId) {
-		progressByQuest.remove(questId);
-		claimedByQuest.remove(questId);
-	}
+    /**
+     * Supprime toute trace d'une quête (progression et statut réclamé)
+     */
+    public void remove(String questId) {
+        progressByQuest.remove(questId);
+        claimedByQuest.remove(questId);
+    }
 
     public boolean isClaimed(String questId) {
         return claimedByQuest.getOrDefault(questId, false);
@@ -73,12 +66,12 @@ public class PlayerQuestProgress {
         claimedByQuest.put(questId, true);
     }
 
-	/**
-	 * Efface l'état "réclamé" d'une quête
-	 */
-	public void clearClaimed(String questId) {
-		claimedByQuest.remove(questId);
-	}
+    /**
+     * Efface l'état "réclamé" d'une quête
+     */
+    public void clearClaimed(String questId) {
+        claimedByQuest.remove(questId);
+    }
 
     public void resetDailyIfNeeded() {
         LocalDate today = LocalDate.now();

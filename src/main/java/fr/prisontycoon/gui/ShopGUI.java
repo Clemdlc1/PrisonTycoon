@@ -23,9 +23,6 @@ import java.util.List;
  */
 public class ShopGUI {
 
-    private final PrisonTycoon plugin;
-    private final GUIManager guiManager;
-
     // Slots des catégories dans le menu principal
     private static final int CATEGORY_PVP_SLOT = 10;
     private static final int CATEGORY_BLOCKS_SLOT = 12;
@@ -37,9 +34,10 @@ public class ShopGUI {
     private static final int CATEGORY_FARMING_SLOT = 25;
     private static final int CATEGORY_PRINTERS_SLOT = 28;
     private static final int CLOSE_SLOT = 44;
-
     // Quantités de base proposées (seront filtrées selon la stack max de l'item)
     private static final int[] BASE_QUANTITIES = {1, 5, 10, 16, 32, 64};
+    private final PrisonTycoon plugin;
+    private final GUIManager guiManager;
 
     public ShopGUI(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -176,7 +174,10 @@ public class ShopGUI {
                     String pageStr = guiManager.getGUIData(player, "page");
                     int currentPage = 0;
                     if (pageStr != null) {
-                        try { currentPage = Integer.parseInt(pageStr); } catch (NumberFormatException ignored) {}
+                        try {
+                            currentPage = Integer.parseInt(pageStr);
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                     if (category != null) {
                         try {
@@ -193,7 +194,10 @@ public class ShopGUI {
                     String pageStr = guiManager.getGUIData(player, "page");
                     int currentPage = 0;
                     if (pageStr != null) {
-                        try { currentPage = Integer.parseInt(pageStr); } catch (NumberFormatException ignored) {}
+                        try {
+                            currentPage = Integer.parseInt(pageStr);
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                     if (category != null) {
                         try {
@@ -234,7 +238,10 @@ public class ShopGUI {
                     String pageStr = guiManager.getGUIData(player, "page");
                     int currentPage = 0;
                     if (pageStr != null) {
-                        try { currentPage = Integer.parseInt(pageStr); } catch (NumberFormatException ignored) {}
+                        try {
+                            currentPage = Integer.parseInt(pageStr);
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                     if (category != null) {
                         try {
@@ -285,7 +292,11 @@ public class ShopGUI {
         // Route spéciale: imprimantes et voucher slot
         if (item.getId().startsWith("printer_t")) {
             int tier;
-            try { tier = Integer.parseInt(item.getId().substring("printer_t".length())); } catch (Exception e) { tier = 1; }
+            try {
+                tier = Integer.parseInt(item.getId().substring("printer_t".length()));
+            } catch (Exception e) {
+                tier = 1;
+            }
             // Si CustomSkyblock est présent, créer l'item imprimante via son API, sinon donner un dropper marqué générique
             ItemStack printerItem;
             if (plugin.getCustomSkyblock() != null) {
@@ -309,14 +320,14 @@ public class ShopGUI {
                 remaining -= give;
             }
         } else {
-        // Donner les items en respectant la stack max (outils non stackables, etc.)
-        int remaining = quantity;
-        int maxStack = Math.max(1, item.createItemStack(1).getMaxStackSize());
-        while (remaining > 0) {
-            int give = Math.min(remaining, maxStack);
-            ItemStack purchasedItem = item.createItemStack(give);
-            player.getInventory().addItem(purchasedItem);
-            remaining -= give;
+            // Donner les items en respectant la stack max (outils non stackables, etc.)
+            int remaining = quantity;
+            int maxStack = Math.max(1, item.createItemStack(1).getMaxStackSize());
+            while (remaining > 0) {
+                int give = Math.min(remaining, maxStack);
+                ItemStack purchasedItem = item.createItemStack(give);
+                player.getInventory().addItem(purchasedItem);
+                remaining -= give;
             }
         }
 
@@ -351,7 +362,7 @@ public class ShopGUI {
                 plugin.getLogger().warning("Erreur lors de la création d'imprimante via reflection: " + t.getMessage());
             }
         }
-        
+
         // Fallback: créer un dropper basique avec nom et lore
         ItemStack fallback = new ItemStack(Material.DROPPER);
         ItemMeta meta = fallback.getItemMeta();
@@ -643,10 +654,10 @@ public class ShopGUI {
     private int[] getSuggestedQuantitiesFor(ShopItem shopItem) {
         int max = Math.max(1, shopItem.createItemStack(1).getMaxStackSize());
         // Cas explicites demandés
-        if (max >= 64) return new int[] {1, 2, 4, 8, 16, 32, 64};
-        if (max == 32) return new int[] {1, 2, 4, 8, 16, 32, 64};
-        if (max == 16) return new int[] {1, 2, 4, 8, 16, 24, 32};
-        if (max == 8)  return new int[] {1, 2, 4, 8, 12, 16, 24};
+        if (max >= 64) return new int[]{1, 2, 4, 8, 16, 32, 64};
+        if (max == 32) return new int[]{1, 2, 4, 8, 16, 32, 64};
+        if (max == 16) return new int[]{1, 2, 4, 8, 16, 24, 32};
+        if (max == 8) return new int[]{1, 2, 4, 8, 12, 16, 24};
 
         // Fallback générique: construit une progression jusqu'à 7 valeurs
         java.util.ArrayList<Integer> list = new java.util.ArrayList<>();
@@ -704,7 +715,7 @@ public class ShopGUI {
                 for (int tier = 1; tier <= 50; tier++) {
                     long price = plugin.getConfig().getLong("shop.printers.t" + tier + ".price",
                             Math.max(1000L, Math.round(5000L * Math.pow(1.35, tier - 1))));
-                    
+
                     // Utiliser la méthode createPrinterItem via reflection
                     ItemStack printerItem = createPrinterItemViaReflection(tier);
                     items.add(new ShopItem("printer_t" + tier, "Imprimante Tier " + tier, printerItem, price, category));
@@ -1562,67 +1573,6 @@ public class ShopGUI {
     // ==================== CLASSES INTERNES ====================
 
     /**
-     * Énumération des catégories du shop
-     */
-    public enum ShopCategory {
-        PVP("PvP & Combat", "Équipements et consommables pour le combat", Material.DIAMOND_SWORD),
-        BLOCKS("Blocs", "Blocs de construction et matériaux", Material.COBBLESTONE),
-        FOOD("Nourriture", "Aliments pour restaurer votre faim", Material.BREAD),
-        TOOLS("Outils", "Outils pour faciliter vos tâches", Material.DIAMOND_PICKAXE),
-        REDSTONE("Redstone", "Composants et mécanismes automatisés", Material.REDSTONE),
-        DECORATION("Décoration", "Éléments décoratifs et esthétiques", Material.PAINTING),
-        FARMING("Agriculture", "Graines, outils et matériel d'élevage", Material.WHEAT_SEEDS),
-        PRINTERS("Imprimantes", "Imprimantes à argent et upgrades", Material.DROPPER),
-        MISC("Divers", "Articles utiles de toutes sortes", Material.CHEST);
-
-        private final String displayName;
-        private final String description;
-        private final Material icon;
-
-        ShopCategory(String displayName, String description, Material icon) {
-            this.displayName = displayName;
-            this.description = description;
-            this.icon = icon;
-        }
-
-        public String getDisplayName() { return displayName; }
-        public String getDescription() { return description; }
-        public Material getIcon() { return icon; }
-    }
-
-    /**
-     * Classe représentant un article du shop
-     */
-    public static class ShopItem {
-        private final String id;
-        private final String displayName;
-        private final ItemStack baseItem;
-        private final long price;
-        private final ShopCategory category;
-
-        public ShopItem(String id, String displayName, ItemStack baseItem, long price, ShopCategory category) {
-            this.id = id;
-            this.displayName = displayName;
-            this.baseItem = baseItem.clone();
-            this.price = price;
-            this.category = category;
-        }
-
-        public String getId() { return id; }
-        public String getDisplayName() { return displayName; }
-        public long getPrice() { return price; }
-        public ShopCategory getCategory() { return category; }
-
-        public ItemStack createItemStack(int quantity) {
-            ItemStack item = baseItem.clone();
-            item.setAmount(Math.min(quantity, item.getMaxStackSize()));
-            return item;
-        }
-    }
-
-    // ==================== MÉTHODES DE CRÉATION D'ITEMS ENCHANTÉS ====================
-
-    /**
      * Crée une arbalète enchantée
      */
     private ItemStack createEnchantedCrossbow() {
@@ -1657,6 +1607,8 @@ public class ShopGUI {
 
         return item;
     }
+
+    // ==================== MÉTHODES DE CRÉATION D'ITEMS ENCHANTÉS ====================
 
     /**
      * Crée des élytres enchantées
@@ -1761,5 +1713,83 @@ public class ShopGUI {
         int minutes = seconds / 60;
         int remainingSeconds = seconds % 60;
         return String.format("%d:%02d", minutes, remainingSeconds);
+    }
+
+    /**
+     * Énumération des catégories du shop
+     */
+    public enum ShopCategory {
+        PVP("PvP & Combat", "Équipements et consommables pour le combat", Material.DIAMOND_SWORD),
+        BLOCKS("Blocs", "Blocs de construction et matériaux", Material.COBBLESTONE),
+        FOOD("Nourriture", "Aliments pour restaurer votre faim", Material.BREAD),
+        TOOLS("Outils", "Outils pour faciliter vos tâches", Material.DIAMOND_PICKAXE),
+        REDSTONE("Redstone", "Composants et mécanismes automatisés", Material.REDSTONE),
+        DECORATION("Décoration", "Éléments décoratifs et esthétiques", Material.PAINTING),
+        FARMING("Agriculture", "Graines, outils et matériel d'élevage", Material.WHEAT_SEEDS),
+        PRINTERS("Imprimantes", "Imprimantes à argent et upgrades", Material.DROPPER),
+        MISC("Divers", "Articles utiles de toutes sortes", Material.CHEST);
+
+        private final String displayName;
+        private final String description;
+        private final Material icon;
+
+        ShopCategory(String displayName, String description, Material icon) {
+            this.displayName = displayName;
+            this.description = description;
+            this.icon = icon;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public Material getIcon() {
+            return icon;
+        }
+    }
+
+    /**
+     * Classe représentant un article du shop
+     */
+    public static class ShopItem {
+        private final String id;
+        private final String displayName;
+        private final ItemStack baseItem;
+        private final long price;
+        private final ShopCategory category;
+
+        public ShopItem(String id, String displayName, ItemStack baseItem, long price, ShopCategory category) {
+            this.id = id;
+            this.displayName = displayName;
+            this.baseItem = baseItem.clone();
+            this.price = price;
+            this.category = category;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public long getPrice() {
+            return price;
+        }
+
+        public ShopCategory getCategory() {
+            return category;
+        }
+
+        public ItemStack createItemStack(int quantity) {
+            ItemStack item = baseItem.clone();
+            item.setAmount(Math.min(quantity, item.getMaxStackSize()));
+            return item;
+        }
     }
 }

@@ -132,7 +132,10 @@ public class DailyRewardGUI {
 
         int clickedDay = -1;
         for (int i = 0; i < slots.length; i++) {
-            if (slot == slots[i]) { clickedDay = i + 1; break; }
+            if (slot == slots[i]) {
+                clickedDay = i + 1;
+                break;
+            }
         }
         if (slot == 31) clickedDay = 15;
 

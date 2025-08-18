@@ -303,14 +303,14 @@ public class PrestigeRewardManager {
      * Donne une récompense spéciale (choix P5, P10, etc.)
      */
     public void giveSpecialReward(Player player, PrestigeReward reward) {
-        switch (reward.getType()) {
+        switch (reward.type()) {
             case TOKENS -> {
-                long amount = Long.parseLong(reward.getValue().toString());
+                long amount = Long.parseLong(reward.value().toString());
                 giveTokens(player, amount);
             }
             case KEYS -> {
                 // Format: "crystal:2,legendary:3"
-                String[] keyData = reward.getValue().toString().split(",");
+                String[] keyData = reward.value().toString().split(",");
                 for (String keyInfo : keyData) {
                     String[] parts = keyInfo.split(":");
                     if (parts.length == 2) {
@@ -320,14 +320,14 @@ public class PrestigeRewardManager {
             }
             case CRYSTALS -> {
                 // Format: "18:3" (niveau:quantité)
-                String[] crystalData = reward.getValue().toString().split(":");
+                String[] crystalData = reward.value().toString().split(":");
                 if (crystalData.length == 2) {
                     giveCrystals(player, Integer.parseInt(crystalData[0]), Integer.parseInt(crystalData[1]));
                 }
             }
-            case AUTOMINER -> giveAutominer(player, reward.getValue().toString());
+            case AUTOMINER -> giveAutominer(player, reward.value().toString());
             case BOOK -> {
-                String bookData = reward.getValue().toString();
+                String bookData = reward.value().toString();
                 if (bookData.startsWith("unique_random")) {
                     int count = bookData.contains(":") ? Integer.parseInt(bookData.split(":")[1]) : 1;
                     for (int i = 0; i < count; i++) {
@@ -337,12 +337,12 @@ public class PrestigeRewardManager {
                     giveSpecialBook(player, bookData);
                 }
             }
-            case TITLE -> giveTitle(player, reward.getValue().toString());
-            case COSMETIC -> giveCosmetic(player, reward.getValue().toString());
+            case TITLE -> giveTitle(player, reward.value().toString());
+            case COSMETIC -> giveCosmetic(player, reward.value().toString());
         }
 
-        player.sendMessage("§a✅ Récompense spéciale reçue: §6" + reward.getDisplayName());
-        plugin.getPluginLogger().info("Récompense spéciale donnée à " + player.getName() + ": " + reward.getId());
+        player.sendMessage("§a✅ Récompense spéciale reçue: §6" + reward.displayName());
+        plugin.getPluginLogger().info("Récompense spéciale donnée à " + player.getName() + ": " + reward.id());
     }
 
     /**

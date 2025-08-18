@@ -279,7 +279,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
                 }
                 adminResetReputation(player, args[1]);
                 break;
-                
+
             default:
                 player.sendMessage("§cCommande admin inconnue!");
                 break;

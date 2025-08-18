@@ -33,7 +33,8 @@ public class BattlePassAdminCommand implements CommandExecutor {
                 plugin.getBattlePassManager().startNewSeasonNow();
                 sender.sendMessage("§aNouvelle saison démarrée.");
             }
-            case "season" -> sender.sendMessage("§7Saison actuelle: §e" + plugin.getBattlePassManager().getCurrentSeasonId());
+            case "season" ->
+                    sender.sendMessage("§7Saison actuelle: §e" + plugin.getBattlePassManager().getCurrentSeasonId());
             case "givepremium" -> {
                 if (args.length < 2) {
                     sender.sendMessage("§cUsage: /bpadmin givepremium <joueur>");

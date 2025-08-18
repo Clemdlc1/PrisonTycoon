@@ -37,13 +37,13 @@ public class PetsCommand implements CommandExecutor, TabCompleter {
         // Sous-commandes optionnelles pour les admins (futures)
         if (args.length >= 1) {
             String subCommand = args[0].toLowerCase();
-            
+
             switch (subCommand) {
                 case "help", "aide" -> {
                     sendHelpMessage(player);
                     return true;
                 }
-                
+
                 default -> {
                     player.sendMessage("§c✖ Sous-commande inconnue. Utilisez §e/pets help §cpour voir l'aide.");
                     return true;
@@ -57,17 +57,17 @@ public class PetsCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> completions = new ArrayList<>();
-        
+
         if (args.length == 1) {
             // Sous-commandes disponibles
             completions.add("help");
             completions.add("aide");
-            
+
             // Filtrer selon ce que l'utilisateur a tapé
             String input = args[0].toLowerCase();
             completions.removeIf(completion -> !completion.toLowerCase().startsWith(input));
         }
-        
+
         return completions;
     }
 

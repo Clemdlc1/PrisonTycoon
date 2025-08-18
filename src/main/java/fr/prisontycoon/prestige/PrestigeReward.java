@@ -10,23 +10,19 @@ import java.util.List;
 
 /**
  * Représente une récompense spéciale de prestige
+ *
+ * @param value Peut être int, String, etc. selon le type
  */
-public class PrestigeReward {
+public record PrestigeReward(String id, String displayName, String description, RewardType type, Object value,
+                             ItemStack displayItem) {
 
-    private final String id;
-    private final String displayName;
-    private final String description;
-    private final RewardType type;
-    private final Object value; // Peut être int, String, etc. selon le type
-    private final ItemStack displayItem;
-
-    public PrestigeReward(String id, String displayName, String description, RewardType type, Object value, Material displayMaterial) {
+    public PrestigeReward(String id, String displayName, String description, RewardType type, Object value, Material displayItem) {
         this.id = id;
         this.displayName = displayName;
         this.description = description;
         this.type = type;
         this.value = value;
-        this.displayItem = createDisplayItem(displayMaterial);
+        this.displayItem = createDisplayItem(displayItem);
     }
 
     private ItemStack createDisplayItem(Material material) {
@@ -44,27 +40,8 @@ public class PrestigeReward {
         return item;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public RewardType getType() {
-        return type;
-    }
-
-    public Object getValue() {
-        return value;
-    }
-
-    public ItemStack getDisplayItem() {
+    @Override
+    public ItemStack displayItem() {
         return displayItem.clone();
     }
 

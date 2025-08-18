@@ -1,11 +1,13 @@
 package fr.prisontycoon.managers;
+
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.api.PrisonTycoonAPI;
-import fr.prisontycoon.quests.QuestRewards;
 import fr.prisontycoon.boosts.BoostType;
-import fr.prisontycoon.quests.QuestManager;
 import fr.prisontycoon.quests.PlayerQuestProgress;
+import fr.prisontycoon.quests.QuestManager;
+import fr.prisontycoon.quests.QuestRewards;
 import org.bukkit.entity.Player;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -79,13 +81,6 @@ public class BattlePassManager {
         // Utiliser QuestManager pour récupérer les données BP
         QuestManager questManager = plugin.getQuestManager();
         PlayerQuestProgress progress = questManager.getProgress(playerId);
-
-        // Extraire les données BP du PlayerQuestProgress
-        // Ces données sont stockées dans player_quests par QuestManager
-        return extractBattlePassData(progress, playerId);
-    }
-
-    private PlayerPassData extractBattlePassData(PlayerQuestProgress progress, UUID playerId) {
         String currentSeason = getCurrentSeasonId();
         String storedSeason = progress.getBattlePassSeasonId();
         int points = progress.getBattlePassPoints();
@@ -242,7 +237,7 @@ public class BattlePassManager {
         // Calculer le prix (réduction VIP)
         boolean isVip = player.hasPermission("prisontycoon.vip");
         long basePrice = 5000;
-        long price = isVip ? (long)(basePrice * 0.7) : basePrice;
+        long price = isVip ? (long) (basePrice * 0.7) : basePrice;
 
         // Vérifier les fonds via l'API
         PrisonTycoonAPI api = PrisonTycoonAPI.getInstance();
@@ -333,22 +328,14 @@ public class BattlePassManager {
                     QuestRewards.builder().keys(Map.of("legendary", 3)).beacons(10000).essence(50).build()
             );
             default -> new TierRewards(
-                    QuestRewards.builder().beacons(100 + tier * 20).build(),
-                    QuestRewards.builder().beacons(200 + tier * 40).tokens(tier * 10).build()
+                    QuestRewards.builder().beacons(100 + tier * 20L).build(),
+                    QuestRewards.builder().beacons(200 + tier * 40L).tokens(tier * 10L).build()
             );
         };
     }
 
     // ============================================================================================
     // RECORDS POUR LES DONNÉES
-    // ============================================================================================
-
-    public record PlayerPassData(int points, boolean premium, Set<Integer> claimedFree, Set<Integer> claimedPremium) {}
-
-    public record TierRewards(QuestRewards free, QuestRewards premium) {}
-
-    // ============================================================================================
-    // COMMANDES ADMIN
     // ============================================================================================
 
     public void addPointsAdmin(UUID playerId, int points) {
@@ -373,9 +360,19 @@ public class BattlePassManager {
         updatePlayerData(playerId, newData);
     }
 
+    // ============================================================================================
+    // COMMANDES ADMIN
+    // ============================================================================================
+
     public void resetPlayerData(UUID playerId) {
         PlayerPassData newData = new PlayerPassData(0, false, new HashSet<>(), new HashSet<>());
         updatePlayerData(playerId, newData);
         plugin.getLogger().info("Données Battle Pass réinitialisées pour " + playerId);
+    }
+
+    public record PlayerPassData(int points, boolean premium, Set<Integer> claimedFree, Set<Integer> claimedPremium) {
+    }
+
+    public record TierRewards(QuestRewards free, QuestRewards premium) {
     }
 }

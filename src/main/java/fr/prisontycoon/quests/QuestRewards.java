@@ -35,8 +35,8 @@ public class QuestRewards {
         this.boostMinutes = 0;
         this.boostPercent = 0.0;
         this.essenceFragments = 0;
-            this.tokens = 0;
-            this.crateKeys = new HashMap<>();
+        this.tokens = 0;
+        this.crateKeys = new HashMap<>();
     }
 
     // Constructeur pratique avec voucher
@@ -91,6 +91,20 @@ public class QuestRewards {
     // ================================================================================================
     // GETTERS PRINCIPAUX
     // ================================================================================================
+
+    private static String mapKeyLabel(String label) {
+        if (label == null) return "Commune";
+        String l = label.trim().toLowerCase();
+        return switch (l) {
+            case "common", "commune" -> "Commune";
+            case "uncommon", "peu_commune", "peu commune", "peu-commune" -> "Peu Commune";
+            case "rare" -> "Rare";
+            case "epic", "epique", "épique" -> "Rare"; // approximation
+            case "legendary", "legendaire", "légendaire" -> "Légendaire";
+            case "cristal", "crystal" -> "Cristal";
+            default -> Character.toUpperCase(l.charAt(0)) + l.substring(1);
+        };
+    }
 
     /**
      * Octroie toutes les récompenses au joueur
@@ -161,6 +175,10 @@ public class QuestRewards {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
     }
 
+    // ================================================================================================
+    // GETTERS VOUCHER (MÉTHODES MANQUANTES)
+    // ================================================================================================
+
     /**
      * Génère une description textuelle des récompenses pour affichage
      */
@@ -212,10 +230,6 @@ public class QuestRewards {
         return desc.toString();
     }
 
-    // ================================================================================================
-    // GETTERS VOUCHER (MÉTHODES MANQUANTES)
-    // ================================================================================================
-
     /**
      * Vérifie si cette récompense a des éléments bonus (voucher ou boost)
      */
@@ -258,16 +272,16 @@ public class QuestRewards {
         return totalValue;
     }
 
+    // ================================================================================================
+    // GETTERS BOOST (MÉTHODES MANQUANTES)
+    // ================================================================================================
+
     /**
      * @return Le nombre de beacons à donner
      */
     public long getBeacons() {
         return beacons;
     }
-
-    // ================================================================================================
-    // GETTERS BOOST (MÉTHODES MANQUANTES)
-    // ================================================================================================
 
     /**
      * @return Le nombre d'XP métier à donner
@@ -304,6 +318,10 @@ public class QuestRewards {
         return tokens;
     }
 
+    // ================================================================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================================================================
+
     /**
      * @return Les clés de crates à donner (type -> quantité)
      */
@@ -312,7 +330,7 @@ public class QuestRewards {
     }
 
     // ================================================================================================
-    // MÉTHODES UTILITAIRES
+    // BUILDER PATTERN (OPTIONNEL POUR FACILITER LA CRÉATION)
     // ================================================================================================
 
     /**
@@ -322,16 +340,16 @@ public class QuestRewards {
         return boostType;
     }
 
-    // ================================================================================================
-    // BUILDER PATTERN (OPTIONNEL POUR FACILITER LA CRÉATION)
-    // ================================================================================================
-
     /**
      * @return La durée du boost en minutes
      */
     public int getBoostMinutes() {
         return boostMinutes;
     }
+
+    // ================================================================================================
+    // MÉTHODES DE COMMODITÉ STATIQUES
+    // ================================================================================================
 
     /**
      * @return Le pourcentage de bonus du boost
@@ -341,7 +359,7 @@ public class QuestRewards {
     }
 
     // ================================================================================================
-    // MÉTHODES DE COMMODITÉ STATIQUES
+    // UTILITAIRES INTERNES
     // ================================================================================================
 
     /**
@@ -349,24 +367,6 @@ public class QuestRewards {
      */
     public boolean hasBoost() {
         return boostType != null && boostMinutes > 0 && boostPercent > 0;
-    }
-
-    // ================================================================================================
-    // UTILITAIRES INTERNES
-    // ================================================================================================
-
-    private static String mapKeyLabel(String label) {
-        if (label == null) return "Commune";
-        String l = label.trim().toLowerCase();
-        return switch (l) {
-            case "common", "commune" -> "Commune";
-            case "uncommon", "peu_commune", "peu commune", "peu-commune" -> "Peu Commune";
-            case "rare" -> "Rare";
-            case "epic", "epique", "épique" -> "Rare"; // approximation
-            case "legendary", "legendaire", "légendaire" -> "Légendaire";
-            case "cristal", "crystal" -> "Cristal";
-            default -> Character.toUpperCase(l.charAt(0)) + l.substring(1);
-        };
     }
 
     /**
@@ -438,7 +438,7 @@ public class QuestRewards {
         private double boostPercent = 0.0;
         private int essenceFragments = 0;
         private long tokens = 0;
-        private Map<String, Integer> crateKeys = new HashMap<>();
+        private final Map<String, Integer> crateKeys = new HashMap<>();
 
         public Builder beacons(long beacons) {
             this.beacons = beacons;

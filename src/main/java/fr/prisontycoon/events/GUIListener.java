@@ -181,7 +181,8 @@ public class GUIListener implements Listener {
                  BLOCK_COLLECTOR -> plugin.getQuestsGUI().handleClick(player, slot, item);
             case BATTLE_PASS_MAIN_MENU, BATTLE_PASS_MENU -> plugin.getBattlePassGUI().handleClick(player, slot, item);
 
-            case SHOP_MAIN, SHOP_CATEGORY, SHOP_QUANTITY, SHOP_PVP, SHOP_BLOCKS, SHOP_FOOD, SHOP_TOOLS, SHOP_REDSTONE, SHOP_DECORATION, SHOP_FARMING, SHOP_MISC, SHOP_PRINTERS ->
+            case SHOP_MAIN, SHOP_CATEGORY, SHOP_QUANTITY, SHOP_PVP, SHOP_BLOCKS, SHOP_FOOD, SHOP_TOOLS, SHOP_REDSTONE,
+                 SHOP_DECORATION, SHOP_FARMING, SHOP_MISC, SHOP_PRINTERS ->
                     plugin.getShopGUI().handleClick(player, guiType, slot, item);
 
             case INVESTMENT_MENU -> plugin.getBankGUI().handleInvestmentMenuClick(player, slot, item, clickType);
@@ -191,7 +192,8 @@ public class GUIListener implements Listener {
             case OUTPOST_MAIN, OUTPOST_SKINS -> plugin.getOutpostGUI().handleClick(player, item, guiType.name());
             case FORGE_MAIN -> plugin.getForgeGUI().handleClick(player, slot, item);
             case FORGE_RECIPE -> plugin.getForgeRecipeGUI().handleClick(player, slot, item);
-            case TANK_CONFIG, TANK_PRICES, TANK_FILTER, TANK_BILLS -> plugin.getTankGUI().handleClick(player, slot, item, clickType);
+            case TANK_CONFIG, TANK_PRICES, TANK_FILTER, TANK_BILLS ->
+                    plugin.getTankGUI().handleClick(player, slot, item, clickType);
             default -> plugin.getPluginLogger().warning("GUI non géré: " + guiType);
         }
     }

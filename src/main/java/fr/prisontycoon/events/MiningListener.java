@@ -6,9 +6,9 @@ import fr.custommobs.events.types.GangWarEvent;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.MineData;
 import fr.prisontycoon.data.PlayerData;
-import fr.prisontycoon.pets.PetEffectType;
 import fr.prisontycoon.managers.GlobalBonusManager;
 import fr.prisontycoon.managers.PickaxeManager;
+import fr.prisontycoon.pets.PetEffectType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Location;
@@ -250,7 +250,7 @@ public class MiningListener implements Listener {
         if (wearReduction > 0) {
             double probability = wearReduction / 100.0;
             if (random.nextDouble() < probability) {
-                return; 
+                return;
             }
         }
 

@@ -774,9 +774,13 @@ public class GlobalBonusManager {
             this.bankBonus = bankBonus;
         }
 
-        public double getPetsBonus() { return petsBonus; }
+        public double getPetsBonus() {
+            return petsBonus;
+        }
 
-        public void setPetsBonus(double petsBonus) { this.petsBonus = petsBonus; }
+        public void setPetsBonus(double petsBonus) {
+            this.petsBonus = petsBonus;
+        }
 
         // Getters
         public double getCristalBonus() {

@@ -1,7 +1,6 @@
 package fr.prisontycoon.commands;
 
 import fr.prisontycoon.PrisonTycoon;
-import fr.prisontycoon.crates.CrateType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;

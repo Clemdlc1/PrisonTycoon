@@ -152,7 +152,7 @@ public class QuestsGUI {
             openBlockCollector(player);
             return;
         }
-        
+
         if (slot == ADVANCEMENT_QUESTS_SLOT) {
             openAdvancementQuests(player);
             return;
@@ -179,21 +179,20 @@ public class QuestsGUI {
             return;
         }
 
-		// Gestion des clics sur les quêtes et bonus dans une catégorie
-		if (categoryData != null) {
-			QuestCategory category = QuestCategory.valueOf(categoryData);
-			if (slot == 49) {
-				claimBonusReward(player, category);
-				return;
-			}
-			handleQuestClick(player, slot, item, category);
-			return;
-		}
+        // Gestion des clics sur les quêtes et bonus dans une catégorie
+        if (categoryData != null) {
+            QuestCategory category = QuestCategory.valueOf(categoryData);
+            if (slot == 49) {
+                claimBonusReward(player, category);
+                return;
+            }
+            handleQuestClick(player, slot, item, category);
+            return;
+        }
 
         // Gestion du collectionneur de blocs
         if ("main".equals(viewData)) {
             handleBlockCollectorClick(player, slot, item);
-            return;
         }
     }
 
@@ -227,7 +226,7 @@ public class QuestsGUI {
         int total = dailyQuests.size();
 
         for (QuestDefinition quest : dailyQuests) {
-            if (progress.get(quest.getId()) >= quest.getTarget()) {
+            if (progress.get(quest.id()) >= quest.target()) {
                 completed++;
             }
         }
@@ -272,7 +271,7 @@ public class QuestsGUI {
         int total = weeklyQuests.size();
 
         for (QuestDefinition quest : weeklyQuests) {
-            if (progress.get(quest.getId()) >= quest.getTarget()) {
+            if (progress.get(quest.id()) >= quest.target()) {
                 completed++;
             }
         }
@@ -391,7 +390,7 @@ public class QuestsGUI {
         List<QuestDefinition> dailyQuests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), QuestCategory.DAILY);
 
         boolean allCompleted = dailyQuests.stream()
-                .allMatch(quest -> progress.get(quest.getId()) >= quest.getTarget());
+                .allMatch(quest -> progress.get(quest.id()) >= quest.target());
 
         ItemStack item = new ItemStack(allCompleted ? Material.GOLDEN_APPLE : Material.APPLE);
         ItemMeta meta = item.getItemMeta();
@@ -435,7 +434,7 @@ public class QuestsGUI {
         List<QuestDefinition> weeklyQuests = plugin.getQuestManager().getActiveQuestsForPlayer(player.getUniqueId(), QuestCategory.WEEKLY);
 
         boolean allCompleted = weeklyQuests.stream()
-                .allMatch(quest -> progress.get(quest.getId()) >= quest.getTarget());
+                .allMatch(quest -> progress.get(quest.id()) >= quest.target());
 
         ItemStack item = new ItemStack(allCompleted ? Material.ENCHANTED_GOLDEN_APPLE : Material.GOLDEN_APPLE);
         ItemMeta meta = item.getItemMeta();
@@ -520,13 +519,13 @@ public class QuestsGUI {
     }
 
     private ItemStack createQuestItem(QuestDefinition quest, PlayerQuestProgress progress, Player player) {
-        int currentProgress = progress.get(quest.getId());
-        int target = quest.getTarget();
+        int currentProgress = progress.get(quest.id());
+        int target = quest.target();
         boolean completed = currentProgress >= target;
-        boolean claimed = progress.isClaimed(quest.getId());
+        boolean claimed = progress.isClaimed(quest.id());
 
         // Choix du matériau selon le type de quête
-        Material material = getQuestMaterial(quest.getType());
+        Material material = getQuestMaterial(quest.type());
         ItemStack item = new ItemStack(material);
 
         if (claimed) {
@@ -556,7 +555,7 @@ public class QuestsGUI {
 
         // Récompenses détaillées
         lore.add("§7Récompenses:");
-        QuestRewards rewards = quest.getRewards();
+        QuestRewards rewards = quest.rewards();
 
         if (rewards.getBeacons() > 0) {
             lore.add("§7» §6" + formatNumber(rewards.getBeacons()) + " Beacons");
@@ -584,7 +583,7 @@ public class QuestsGUI {
         }
 
         // ID pour gestion interne
-        lore.add("§8ID: " + quest.getId());
+        lore.add("§8ID: " + quest.id());
 
         guiManager.applyLore(meta, lore);
         item.setItemMeta(meta);
@@ -705,7 +704,7 @@ public class QuestsGUI {
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
 
         boolean allCompleted = quests.stream()
-                .allMatch(quest -> progress.get(quest.getId()) >= quest.getTarget());
+                .allMatch(quest -> progress.get(quest.id()) >= quest.target());
 
         if (allCompleted) {
             plugin.getQuestManager().grantAllDoneBonus(player, category);
@@ -778,27 +777,27 @@ public class QuestsGUI {
     }
 
     private String getQuestDisplayName(QuestDefinition quest) {
-        return quest.getType().getDescription();
+        return quest.type().getDescription();
     }
 
     private String getQuestDescription(QuestDefinition quest) {
-        String base = quest.getType().getDescription();
-        String units = quest.getType().getUnitDescription();
+        String base = quest.type().getDescription();
+        String units = quest.type().getUnitDescription();
         StringBuilder details = new StringBuilder();
         // Ajout d'éventuels paramètres contextuels pour enrichir la description
-        if (quest.getParams() != null && !quest.getParams().isEmpty()) {
-            Object material = quest.getParams().get("material");
-            Object mine = quest.getParams().get("mine");
-            Object category = quest.getParams().get("category");
+        if (quest.params() != null && !quest.params().isEmpty()) {
+            Object material = quest.params().get("material");
+            Object mine = quest.params().get("mine");
+            Object category = quest.params().get("category");
             List<String> parts = new ArrayList<>();
-            if (material != null) parts.add("Bloc: " + String.valueOf(material));
-            if (mine != null) parts.add("Mine: " + String.valueOf(mine));
-            if (category != null) parts.add("Catégorie: " + String.valueOf(category));
+            if (material != null) parts.add("Bloc: " + material);
+            if (mine != null) parts.add("Mine: " + mine);
+            if (category != null) parts.add("Catégorie: " + category);
             if (!parts.isEmpty()) {
                 details.append(" – ").append(String.join(", ", parts));
             }
         }
-        return base + " (cible: " + quest.getTarget() + " " + units + ")" + details;
+        return base + " (cible: " + quest.target() + " " + units + ")" + details;
     }
 
     // ================================================================================================
@@ -963,7 +962,7 @@ public class QuestsGUI {
         PlayerQuestProgress progress = plugin.getQuestManager().getProgress(player.getUniqueId());
 
         boolean allCompleted = quests.stream()
-                .allMatch(quest -> progress.get(quest.getId()) >= quest.getTarget());
+                .allMatch(quest -> progress.get(quest.id()) >= quest.target());
 
         if (allCompleted) {
             player.sendMessage("§a★ Toutes les quêtes " +

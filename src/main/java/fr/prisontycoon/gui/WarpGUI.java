@@ -170,7 +170,6 @@ public class WarpGUI {
             if (plugin.getWarpManager().teleportToWarp(player, warpId)) {
                 player.closeInventory();
             }
-            return;
         }
 
         // Les accès rapides utilisent aussi warpId PDC, géré plus haut

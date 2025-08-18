@@ -135,12 +135,17 @@ public class BankGUI {
         double dInvest = (type.getInvestmentBuyCostMultiplier() - 1.0) * 100.0;
         double dInterest = (type.getInterestGainMultiplier() - 1.0) * 100.0;
         double dSafe = (type.getSafeLimitMultiplier() - 1.0) * 100.0;
-        if (dSell != 0) lore.add("§7• Vente: " + (dSell >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSell)));
-        if (dPrestige != 0) lore.add("§7• Coût prestige: " + (dPrestige >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dPrestige)));
-        if (dInvest != 0) lore.add("§7• Coût investissement: " + (dInvest >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dInvest)));
-        if (dInterest != 0) lore.add("§7• Intérêts: " + (dInterest >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dInterest)));
+        if (dSell != 0)
+            lore.add("§7• Vente: " + (dSell >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSell)));
+        if (dPrestige != 0)
+            lore.add("§7• Coût prestige: " + (dPrestige >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dPrestige)));
+        if (dInvest != 0)
+            lore.add("§7• Coût investissement: " + (dInvest >= 0 ? "§c+" : "§a-") + String.format("%.0f%%", Math.abs(dInvest)));
+        if (dInterest != 0)
+            lore.add("§7• Intérêts: " + (dInterest >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dInterest)));
         if (type.getIslandPrintersBonus() != 0) lore.add("§7• Imprimantes île: §a+" + type.getIslandPrintersBonus());
-        if (dSafe != 0) lore.add("§7• Coffre-fort: " + (dSafe >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSafe)) + " §7capacité");
+        if (dSafe != 0)
+            lore.add("§7• Coffre-fort: " + (dSafe >= 0 ? "§a+" : "§c-") + String.format("%.0f%%", Math.abs(dSafe)) + " §7capacité");
         lore.add("");
         if (isCurrent) {
             lore.add("§a✔ Déjà sélectionnée");
@@ -713,7 +718,7 @@ public class BankGUI {
             player.closeInventory();
             return;
         }
-        if (slot == 22 ) {
+        if (slot == 22) {
             openMainMenu(player);
         }
 

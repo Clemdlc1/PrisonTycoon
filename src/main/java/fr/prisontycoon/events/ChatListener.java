@@ -1,7 +1,6 @@
 package fr.prisontycoon.events;
 
 import fr.prisontycoon.PrisonTycoon;
-import org.bukkit.Bukkit;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -11,6 +10,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,12 +33,12 @@ public class ChatListener implements Listener {
 
     // Anti-spam
     private static final long SPAM_DELAY = 2000; // 2 secondes entre les messages
-	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]|\\[shop\\]");
-	private static final long SHOP_TAG_COOLDOWN = 5 * 60 * 1000L; // 5 minutes
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\[hand\\]|\\[inv\\]|\\[shop\\]");
+    private static final long SHOP_TAG_COOLDOWN = 5 * 60 * 1000L; // 5 minutes
     private final PrisonTycoon plugin;
     private final Map<UUID, String> lastMessages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastMessageTimes = new ConcurrentHashMap<>();
-	private final Map<UUID, Long> lastShopTagTimes = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastShopTagTimes = new ConcurrentHashMap<>();
 
     public ChatListener(PrisonTycoon plugin) {
         this.plugin = plugin;
@@ -249,17 +249,17 @@ public class ChatListener implements Listener {
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(processedMessage);
         int lastEnd = 0;
 
-		while (matcher.find()) {
+        while (matcher.find()) {
             String beforeText = processedMessage.substring(lastEnd, matcher.start());
             if (!beforeText.isEmpty()) {
                 finalMessage.append(LegacyComponentSerializer.legacySection().deserialize(beforeText));
             }
             String placeholder = matcher.group();
-			if (placeholder.equals("[shop]")) {
-				finalMessage.append(createShopComponent(player));
-			} else if (!canUseSpecialPlaceholders) {
-				finalMessage.append(Component.text("[PERMISSION REQUISE]", NamedTextColor.RED));
-			} else if (placeholder.equals("[hand]")) {
+            if (placeholder.equals("[shop]")) {
+                finalMessage.append(createShopComponent(player));
+            } else if (!canUseSpecialPlaceholders) {
+                finalMessage.append(Component.text("[PERMISSION REQUISE]", NamedTextColor.RED));
+            } else if (placeholder.equals("[hand]")) {
                 finalMessage.append(createHandComponent(player.getInventory().getItemInMainHand()));
             } else if (placeholder.equals("[inv]")) {
                 finalMessage.append(createInventoryComponent(player));
@@ -369,9 +369,15 @@ public class ChatListener implements Listener {
 
             String ownerName = (String) shop.getClass().getMethod("getOwnerName").invoke(shop);
             Object ad = null;
-            try { ad = shop.getClass().getMethod("getAdvertisement").invoke(shop); } catch (NoSuchMethodException ignored) {}
+            try {
+                ad = shop.getClass().getMethod("getAdvertisement").invoke(shop);
+            } catch (NoSuchMethodException ignored) {
+            }
             String customMsg = null;
-            try { customMsg = (String) shop.getClass().getMethod("getCustomMessage").invoke(shop); } catch (NoSuchMethodException ignored) {}
+            try {
+                customMsg = (String) shop.getClass().getMethod("getCustomMessage").invoke(shop);
+            } catch (NoSuchMethodException ignored) {
+            }
 
             StringBuilder sb = new StringBuilder();
             sb.append("Shop de ").append(ownerName != null ? ownerName : player.getName());
@@ -384,7 +390,8 @@ public class ChatListener implements Listener {
                     if (title != null && !title.isEmpty()) sb.append(title).append("\n");
                     if (desc != null && !desc.isEmpty()) sb.append(desc).append("\n");
                     if (active != null && active) sb.append("(Annonce active)");
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
             } else if (customMsg != null && !customMsg.isEmpty()) {
                 sb.append("\n").append(customMsg);
             }
@@ -427,7 +434,7 @@ public class ChatListener implements Listener {
         lastMessageTimes.put(uuid, System.currentTimeMillis());
     }
 
-	private String processMessage(Player player, String message) {
+    private String processMessage(Player player, String message) {
         boolean canUseColors = player.hasPermission("specialmine.chat.colors") ||
                 player.hasPermission("specialmine.vip") ||
                 player.hasPermission("specialmine.admin");

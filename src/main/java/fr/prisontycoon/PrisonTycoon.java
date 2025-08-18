@@ -1,8 +1,6 @@
 package fr.prisontycoon;
 
 import fr.custommobs.CustomMobsPlugin;
-import fr.skyblock.CustomSkyblock;
-import fr.shop.PlayerShops;
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.autominers.AutominerTask;
 import fr.prisontycoon.boosts.BoostManager;
@@ -22,7 +20,8 @@ import fr.prisontycoon.utils.ChatLogger;
 import fr.prisontycoon.utils.Logger;
 import fr.prisontycoon.utils.StartupBedrockReplacer;
 import fr.prisontycoon.vouchers.VoucherManager;
-import org.bukkit.Bukkit;
+import fr.shop.PlayerShops;
+import fr.skyblock.CustomSkyblock;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -831,6 +830,7 @@ public final class PrisonTycoon extends JavaPlugin {
     public BattlePassGUI getBattlePassGUI() {
         return battlePassGUI;
     }
+
     public ShopGUI getShopGUI() {
         return shopGUI;
     }

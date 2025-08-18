@@ -4,18 +4,18 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.TankData;
 import fr.prisontycoon.gui.TankGUI;
 import fr.prisontycoon.utils.NumberFormatter;
-import org.bukkit.Location;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
@@ -47,13 +47,13 @@ public class TankListener implements Listener {
             if (!plugin.getTankManager().isTankBlock(loc)) return;
             var data = plugin.getTankManager().getTankAt(loc);
             if (data == null) return;
-            
+
             // Vérifier si le tank est plein
             if (data.isFull()) {
                 event.setCancelled(true);
                 return;
             }
-            
+
             if (!plugin.getTankManager().isBillItem(event.getItem())) {
                 event.setCancelled(true);
             }
@@ -72,9 +72,11 @@ public class TankListener implements Listener {
                     inv.clear();
                     plugin.getTankManager().saveTank(data);
                     plugin.getTankManager().updateTankNameTag(data);
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
             });
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -166,7 +168,7 @@ public class TankListener implements Listener {
 
         // Vérifier si l'item en main principale est un Sell Hand
         if (mainHand == null || !plugin.getSellHandManager().isSellHand(mainHand)) return;
-        
+
         // Vérifier si c'est un shift + clic sur un bloc
         if ((action == Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && event.getClickedBlock() != null) {
             Location location = event.getClickedBlock().getLocation();

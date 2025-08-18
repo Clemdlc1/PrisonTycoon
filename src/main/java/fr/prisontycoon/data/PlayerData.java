@@ -44,7 +44,7 @@ public class PlayerData {
     // Investissements - Map<Material, Quantité> avec support grandes valeurs
     private final Map<Material, Long> investments = new ConcurrentHashMap<>();
     private final Map<String, Integer> pickaxeEnchantmentBookLevels = new ConcurrentHashMap<>();
-    private List<SanctionData> sanctionHistory;
+    private final List<SanctionData> sanctionHistory;
     // Économie TOTALE (toutes sources)
     private long coins;
     private long tokens;
@@ -130,11 +130,11 @@ public class PlayerData {
     private long totalPlaytimeMillis = 0L;
     private long sessionStartMillis = 0L;
 
-	// Cooldowns/horodatages divers
-	private long lastRepairTime = 0L; // /repair (3h)
+    // Cooldowns/horodatages divers
+    private long lastRepairTime = 0L; // /repair (3h)
 
     // === Pets ===
-    private Map<String, fr.prisontycoon.pets.PetService.PetData> pets = new ConcurrentHashMap<>();
+    private final Map<String, fr.prisontycoon.pets.PetService.PetData> pets = new ConcurrentHashMap<>();
     private int unlockedPetSlots = 1; // 1 slot débloqué par défaut
 
 
@@ -326,13 +326,13 @@ public class PlayerData {
         this.sessionStartMillis = Math.max(0L, sessionStartMillis);
     }
 
-	public long getLastRepairTime() {
-		return lastRepairTime;
-	}
+    public long getLastRepairTime() {
+        return lastRepairTime;
+    }
 
-	public void setLastRepairTime(long lastRepairTime) {
-		this.lastRepairTime = Math.max(0L, lastRepairTime);
-	}
+    public void setLastRepairTime(long lastRepairTime) {
+        this.lastRepairTime = Math.max(0L, lastRepairTime);
+    }
 
     public void addPlaytimeMillis(long delta) {
         if (delta > 0) {

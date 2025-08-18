@@ -147,7 +147,8 @@ public class TankData {
                             if (amount > 0) {
                                 tankData.addBills(tier, amount);
                             }
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
             }
@@ -218,7 +219,8 @@ public class TankData {
         if (amount <= 0) return false;
         int current = bills.getOrDefault(tier, 0);
         if (current < amount) return false;
-        if (current == amount) bills.remove(tier); else bills.put(tier, current - amount);
+        if (current == amount) bills.remove(tier);
+        else bills.put(tier, current - amount);
         return true;
     }
 

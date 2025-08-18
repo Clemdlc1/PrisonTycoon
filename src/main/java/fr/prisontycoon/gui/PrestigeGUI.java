@@ -2,8 +2,8 @@ package fr.prisontycoon.gui;
 
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.commands.PrestigeCommand;
-import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.data.BankType;
+import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.prestige.PrestigeReward;
 import fr.prisontycoon.prestige.PrestigeTalent;
 import fr.prisontycoon.utils.NumberFormatter;
@@ -170,13 +170,13 @@ public class PrestigeGUI {
         if (rewards.size() == 1) {
             // Récompense unique (P10, P20, etc.) - centrer sur la colonne du milieu
             PrestigeReward reward = rewards.getFirst();
-            boolean isChosen = reward.getId().equals(chosenRewardId);
+            boolean isChosen = reward.id().equals(chosenRewardId);
             gui.setItem(baseSlot + 1, createExclusiveRewardItem(player, reward, prestigeLevel, isUnlocked, isChosen, hasChoice));
         } else {
             // Choix multiple (P5, P15, etc.) - étaler sur les 3 colonnes
             for (int col = 0; col < Math.min(3, rewards.size()); col++) {
                 PrestigeReward reward = rewards.get(col);
-                boolean isChosen = reward.getId().equals(chosenRewardId);
+                boolean isChosen = reward.id().equals(chosenRewardId);
 
                 // CORRECTION: Si hasChoice = true et cette récompense n'est pas choisie,
                 // alors createExclusiveRewardItem va utiliser du Glass
@@ -249,7 +249,7 @@ public class PrestigeGUI {
                 statusLore.add("§a➤ Cliquez pour choisir");
 
                 meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "choose_reward");
-                meta.getPersistentDataContainer().set(rewardIdKey, PersistentDataType.STRING, reward.getId());
+                meta.getPersistentDataContainer().set(rewardIdKey, PersistentDataType.STRING, reward.id());
                 meta.getPersistentDataContainer().set(prestigeLevelKey, PersistentDataType.INTEGER, prestigeLevel);
 
             } else {
@@ -263,11 +263,11 @@ public class PrestigeGUI {
                 statusLore.add("§c▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             }
 
-            plugin.getGUIManager().applyName(meta, prefix + nameColor + reward.getDisplayName() + " §7(P" + prestigeLevel + ")");
+            plugin.getGUIManager().applyName(meta, prefix + nameColor + reward.displayName() + " §7(P" + prestigeLevel + ")");
 
             // Construire la lore complète
             List<String> lore = new ArrayList<>();
-            lore.add("§f" + reward.getDescription());
+            lore.add("§f" + reward.description());
             lore.add("");
             lore.addAll(statusLore);
 
@@ -562,7 +562,7 @@ public class PrestigeGUI {
             // Trouver le nom de la récompense existante
             PrestigeReward existingReward = findRewardById(existingChoice);
             if (existingReward != null) {
-                player.sendMessage("§7Choix actuel: §e" + existingReward.getDisplayName());
+                player.sendMessage("§7Choix actuel: §e" + existingReward.displayName());
             }
             return;
         }
@@ -581,7 +581,7 @@ public class PrestigeGUI {
         plugin.getPrestigeManager().getRewardManager().giveSpecialReward(player, reward);
 
         // Messages et effets
-        player.sendMessage("§a✅ Récompense choisie : " + reward.getDisplayName());
+        player.sendMessage("§a✅ Récompense choisie : " + reward.displayName());
         player.sendMessage("§7Cette récompense a été appliquée à votre compte!");
         player.sendMessage("§7Les autres récompenses de P" + prestigeLevel + " ne sont plus disponibles.");
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
@@ -609,7 +609,7 @@ public class PrestigeGUI {
             List<PrestigeReward> rewards = PrestigeReward.SpecialRewards.getSpecialRewardsForPrestige(prestigeLevel);
 
             for (PrestigeReward reward : rewards) {
-                if (reward.getId().equals(rewardId)) {
+                if (reward.id().equals(rewardId)) {
                     return reward;
                 }
             }
@@ -885,7 +885,7 @@ public class PrestigeGUI {
                     if (rewardNames.size() >= 2) break; // Limite à 2 pour l'espace
 
                     PrestigeReward reward = findRewardById(entry.getValue());
-                    String name = reward != null ? reward.getDisplayName() : "Récompense P" + entry.getKey();
+                    String name = reward != null ? reward.displayName() : "Récompense P" + entry.getKey();
                     rewardNames.add("§eP" + entry.getKey() + ": §7" + name);
                 }
 
@@ -1002,11 +1002,11 @@ public class PrestigeGUI {
             lore.add("§7Passez au niveau de prestige suivant");
             lore.add("§7et débloquez de nouveaux bonus!");
             lore.add("");
-            
+
             // Afficher le coût de prestige
             long cost = plugin.getPrestigeManager().getPrestigeCost(player, nextLevel);
             lore.add("§7Coût: §c" + NumberFormatter.format(cost) + " coins");
-            
+
             // Afficher l'effet de la banque
             PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
             BankType bankType = playerData.getBankType();
@@ -1016,12 +1016,12 @@ public class PrestigeGUI {
                 String effect = percentage > 0 ? "§c+" + String.format("%.0f%%", percentage) : "§a" + String.format("%.0f%%", percentage);
                 lore.add("§7Effet banque: " + effect + " §7sur le coût");
             }
-            
+
             lore.add("");
             lore.add("§aConditions remplies!");
             lore.add("");
             lore.add("§eCliquez pour prestigier!");
-            
+
             plugin.getGUIManager().applyLore(meta, lore);
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -1205,7 +1205,7 @@ public class PrestigeGUI {
                     String rewardId = entry.getValue();
 
                     PrestigeReward reward = findRewardById(rewardId);
-                    String rewardName = reward != null ? reward.getDisplayName() : rewardId;
+                    String rewardName = reward != null ? reward.displayName() : rewardId;
 
                     lore.add("§a• P" + level + ": §e" + rewardName);
                 }
