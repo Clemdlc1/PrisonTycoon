@@ -70,6 +70,20 @@ public class MainMenuGUI {
                 ),
                 "profession"));
 
+        // Accès au menu des compagnons (Pets)
+        gui.setItem(22, createNavItem(
+                Material.WOLF_SPAWN_EGG,
+                "§6🐾 §lCompagnons",
+                List.of(
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+                        "§7Gérez vos compagnons équipés et votre collection",
+                        "§7Consultez les synergies et statistiques",
+                        "",
+                        "§e▶ Cliquez pour ouvrir",
+                        "§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+                ),
+                "pets"));
+
         gui.setItem(23, createGangNavItem(player));
 
         gui.setItem(24, createNavItem(
@@ -191,6 +205,7 @@ public class MainMenuGUI {
             case "boost" -> plugin.getBoostGUI().openBoostMenu(player);
             case "autominer" -> plugin.getAutominerGUI().openMainMenu(player);
             case "bookshop" -> plugin.getBookShopGUI().openSelector(player);
+            case "pets" -> plugin.getPetsMenuGUI().openPetsMenu(player);
 	    case "shop" -> plugin.getShopGUI().openMainShop(player);
             case "recherche", "ile", "boutique", "tutoriel" -> {
                 player.closeInventory();

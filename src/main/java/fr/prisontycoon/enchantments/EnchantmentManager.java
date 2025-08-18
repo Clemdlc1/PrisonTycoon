@@ -177,6 +177,13 @@ public class EnchantmentManager {
         plugin.getPlayerDataManager().markDirty(player.getUniqueId());
     }
 
+    private double applyProcBonus(Player player, double chance) {
+        double procFactor = 0.0;
+        procFactor = plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0;
+        chance *= (1.0 + procFactor);
+        return Math.min(1.0, chance);
+    }
+
     /**
      * MODIFIÉ : Traite les enchantements spéciaux (laser, explosion, jackhammer)
      */
@@ -188,9 +195,8 @@ public class EnchantmentManager {
 
         // Laser (boosté par PROC des pets)
         if (laserLevel > 0) {
-            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.laser.base-chance", 0.00005) * laserLevel;
-            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
+            chance = applyProcBonus(player, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateLaser(player, blockLocation, mineName, false);
             }
@@ -198,9 +204,8 @@ public class EnchantmentManager {
 
         // Explosion (boosté par PROC des pets)
         if (explosionLevel > 0) {
-            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.explosion.base-chance", 0.0005) * explosionLevel;
-            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
+            chance = applyProcBonus(player, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateExplosion(player, blockLocation, mineName);
             }
@@ -208,9 +213,8 @@ public class EnchantmentManager {
 
         // NOUVEAU : Jackhammer (boosté par PROC des pets)
         if (jackhammerLevel > 0) {
-            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.jackhammer.base-chance", 0.00005) * jackhammerLevel;
-            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
+            chance = applyProcBonus(player, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 activateJackhammer(player, blockLocation, mineName, false);
             }
@@ -218,9 +222,8 @@ public class EnchantmentManager {
 
         // NOUVEAU : Fièvre de l'Opportunité — fenêtre où un type de bloc déclenche systématiquement un greed (boostée par PROC des pets)
         if (feverLevel > 0 && !player.hasMetadata("opportunity_fever_until")) {
-            double procFactor = 0.0; try { procFactor = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.PROC_PICKAXE) / 100.0 : 0.0; } catch (Throwable ignored) {}
             double chance = plugin.getConfigManager().getEnchantmentSetting("special.opportunity_fever.base-chance", 0.000005) * feverLevel;
-            chance *= (1.0 + procFactor); chance = Math.min(1.0, chance);
+            chance = applyProcBonus(player, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 long until = System.currentTimeMillis() + 10_000L; // 10s
                 player.setMetadata("opportunity_fever_until", new FixedMetadataValue(plugin, until));
@@ -665,9 +668,10 @@ public class EnchantmentManager {
         final BlockValueData blockValue = plugin.getConfigManager().getBlockValue(blockType);
 
         // Chances partagées
-        final double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
-        final double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
-        final double totalChance = baseChance * luckBonus / 100;
+        double baseChance = plugin.getConfigManager().getEnchantmentSetting("greed.base-chance", 0.05);
+        double luckBonus = luckLevel * plugin.getConfigManager().getEnchantmentSetting("greed.luck-bonus-per-level", 0.002);
+        double totalChance = baseChance + luckBonus;
+        totalChance = applyProcBonus(player, totalChance);
 
         // NOUVEAU : Cohésion — multiplicateur de greed selon joueurs dans la mine
         int cohesionLevel = playerData.getEnchantmentLevel("cohesion");
@@ -809,6 +813,10 @@ public class EnchantmentManager {
         int keyGreedLevel = playerData.getEnchantmentLevel("key_greed");
         if (keyGreedLevel <= 0) return;
         double chance = plugin.getConfigManager().getEnchantmentSetting("keys.base-chance", 0.00001) * keyGreedLevel;
+        chance = applyProcBonus(player, chance);
+        double petbonus = 0.0;
+        petbonus = plugin.getPetService().computeUtilityBonusPercent(player, fr.prisontycoon.pets.PetEffectType.KEYS_CHANCE) / 100.0;
+        chance *= (1.0 + petbonus);
 
         if (ThreadLocalRandom.current().nextDouble() < chance) {
             giveRandomKey(player);
@@ -821,6 +829,7 @@ public class EnchantmentManager {
         int abundanceLevel = playerdata.getEnchantmentLevel("abundance");
         if (abundanceLevel > 0 && !playerdata.isAbundanceActive() && !playerdata.isAbundanceOnCooldown()) {
             double chance = plugin.getConfigManager().getEnchantmentSetting("abundance.base-chance", 0.000001) * abundanceLevel;
+            chance = applyProcBonus(player, chance);
             if (ThreadLocalRandom.current().nextDouble() < chance) {
                 // MODIFIÉ: Calcule la durée avec le bonus du cristal
                 int duration = plugin.getCristalBonusHelper().getAbondanceDuration(player, 60); // 60s de base

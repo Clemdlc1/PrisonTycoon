@@ -25,21 +25,21 @@ public final class PetRegistry {
         // Rare (5)
         register("griffon", "§dGriffon", PetRarity.RARE, PetEffectType.TOKEN, 2.4);
         register("basilic", "§dBasilic", PetRarity.RARE, PetEffectType.MONEY, 2.0);
-        register("selkie", "§dSelkie", PetRarity.RARE, PetEffectType.AUTOMINER_EFFICIENCY, 2.0);
-        register("tarasque", "§dTarasque", PetRarity.RARE, PetEffectType.AUTOMINER_EFFICIENCY, 2.4);
+        register("selkie", "§dSelkie", PetRarity.RARE, PetEffectType.PROC_PICKAXE, 0.4);
+        register("tarasque", "§dTarasque", PetRarity.RARE, PetEffectType.AUTOMINER_FUEL_CONSUMPTION, 0.4);
         register("farfadet_r", "§dFarfadet", PetRarity.RARE, PetEffectType.KEYS_CHANCE, 0.8);
 
         // Épique (5)
         register("licorne", "§bLicorne", PetRarity.EPIC, PetEffectType.TOKEN, 3.0);
         register("sphinx", "§bSphinx", PetRarity.EPIC, PetEffectType.JOB_XP, 3.0);
-        register("morrigan", "§bMorrigan", PetRarity.EPIC, PetEffectType.PROC_PICKAXE, 0.6);
+        register("morrigan", "§bMorrigan", PetRarity.EPIC, PetEffectType.AUTOMINER_FUEL_CONSUMPTION, 0.6);
         register("cernunnos", "§bCernunnos", PetRarity.EPIC, PetEffectType.FORTUNE, 2.4);
         register("hippogriffe", "§bHippogriffe", PetRarity.EPIC, PetEffectType.OUTPOST, 2.2);
 
         // Mythique (3)
         register("fenrir", "§6Fenrir", PetRarity.MYTHIC, PetEffectType.SELL, 3.0);
         register("kraken", "§6Kraken", PetRarity.MYTHIC, PetEffectType.BEACONS, 1.0);
-        register("tarasque_royale", "§6Tarasque Royale", PetRarity.MYTHIC, PetEffectType.AUTOMINER_EFFICIENCY, 3.0);
+        register("tarasque_royale", "§6Tarasque Royale", PetRarity.MYTHIC, PetEffectType.PROC_PICKAXE, 0.75);
     }
 
     private static void register(String id, String name, PetRarity rarity, PetEffectType type, double basePerGrowth) {

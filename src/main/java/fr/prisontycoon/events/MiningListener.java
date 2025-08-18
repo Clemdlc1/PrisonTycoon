@@ -246,6 +246,14 @@ public class MiningListener implements Listener {
             }
         }
 
+        double wearReduction = plugin.getPetService().computeUtilityBonusPercent(player, PetEffectType.PICKAXE_WEAR);
+        if (wearReduction > 0) {
+            double probability = wearReduction / 100.0;
+            if (random.nextDouble() < probability) {
+                return; 
+            }
+        }
+
         // APPLIQUER DOMMAGE : Seulement pour les pioches légendaires
         if (tool.getItemMeta() instanceof Damageable meta) {
             short maxDurability = tool.getType().getMaxDurability();
@@ -389,20 +397,6 @@ public class MiningListener implements Listener {
         plugin.getEnchantmentManager().processBlockMined(player, location, material, mineName);
 
         plugin.getMineManager().checkAndRegenerateMineIfNeeded(mineName);
-
-        // Réduction d'usure via pet (PICKAXE_WEAR)
-        try {
-            double wearReduction = plugin.getPetService() != null ? plugin.getPetService().computeUtilityBonusPercent(player, PetEffectType.PICKAXE_WEAR) : 0.0;
-            if (wearReduction > 0) {
-                // Si réduction > 0, nous sautons la logique de dégradation sur ce tick avec une probabilité proportionnelle
-                double probability = Math.min(0.9, wearReduction / 100.0);
-                if (random.nextDouble() < probability) {
-                    return; // saute la suite (évite l'usure appliquée ailleurs dans le flux)
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-
     }
 
     /**

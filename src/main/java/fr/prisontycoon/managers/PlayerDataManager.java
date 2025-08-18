@@ -146,6 +146,7 @@ public class PlayerDataManager {
                     total_playtime BIGINT DEFAULT 0,
                     last_repair_time BIGINT DEFAULT 0,
                     printer_extra_slots INT DEFAULT 0,
+                    unlocked_pet_slots INT DEFAULT 1,
                     pets_data TEXT DEFAULT '{}'
                 );
                 """;
@@ -405,6 +406,9 @@ public class PlayerDataManager {
                 int extraSlots = rs.getInt("printer_extra_slots");
                 data.setPrinterExtraSlots(extraSlots);
 
+                // Charger les slots de pets
+                int unlockedPetSlots = rs.getInt("unlocked_pet_slots");
+                data.setUnlockedPetSlots(unlockedPetSlots);
 
                 // Daily reward
                 data.setDailyProgress(Math.max(0, Math.min(14, rs.getInt("daily_progress"))));
@@ -513,14 +517,14 @@ public class PlayerDataManager {
                         bank_total_deposits, bank_last_interest, bank_investments, statistics_total_blocks_mined, 
                         statistics_total_blocks_destroyed, statistics_total_greed_triggers, statistics_total_keys_obtained, 
                         gang_id, gang_invitation, selected_outpost_skin, unlocked_outpost_skins, collected_heads, claimed_head_rewards,
-                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change, printer_extra_slots, pets_data
+                        daily_progress, daily_last_claim, total_playtime, last_repair_time, bank_type, bank_type_last_change, printer_extra_slots, unlocked_pet_slots, pets_data
                     ) VALUES (
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     )
                     ON CONFLICT (uuid) DO UPDATE SET
                         name = EXCLUDED.name,
@@ -583,6 +587,7 @@ public class PlayerDataManager {
                         bank_type = EXCLUDED.bank_type,
                         bank_type_last_change = EXCLUDED.bank_type_last_change,
                         printer_extra_slots = EXCLUDED.printer_extra_slots,
+                        unlocked_pet_slots = EXCLUDED.unlocked_pet_slots,
                         pets_data = EXCLUDED.pets_data
                     """;
 
@@ -654,7 +659,8 @@ public class PlayerDataManager {
                     ps.setString(59, data.getBankType().name());
                     ps.setLong(60, data.getLastBankTypeChange());
                     ps.setInt(61, data.getPrinterExtraSlots());
-                    ps.setString(62, gson.toJson(data.getPets()));
+                    ps.setInt(62, data.getUnlockedPetSlots());
+                    ps.setString(63, gson.toJson(data.getPets()));
 
                     ps.executeUpdate();
                     conn.commit();
@@ -961,6 +967,7 @@ public class PlayerDataManager {
                         Set<Integer> set = gson.fromJson(json, integerSetType);
                         data.setClaimedHeadRewards(set != null ? set : new HashSet<>());
                     }
+                    case "unlocked_pet_slots" -> data.setUnlockedPetSlots(rs.getInt("col"));
                     default -> {
                         return false;
                     }
@@ -1042,10 +1049,8 @@ public class PlayerDataManager {
                 case "collected_heads" -> ps.setString(1, gson.toJson(data.getCollectedHeads()));
                 case "claimed_head_rewards" -> ps.setString(1, gson.toJson(data.getClaimedHeadRewards()));
                 case "printer_extra_slots" -> ps.setInt(1, data.getPrinterExtraSlots());
-                case "pets_data" -> {
-                    // Délégué au PetService; ici on ne gère pas
-                    ps.setString(1, null);
-                }
+                case "unlocked_pet_slots" -> ps.setInt(1, data.getUnlockedPetSlots());
+                case "pets_data" -> ps.setString(1, gson.toJson(data.getPets()));
                 default -> {
                     return false;
                 }

@@ -289,6 +289,16 @@ public class WeaponArmorEnchantmentListener implements Listener {
                 }
             }
         }
+
+        // Petit drop de nourriture de pet sur kill (toutes créatures sauf joueurs)
+        int rollFood = ThreadLocalRandom.current().nextInt(100);
+        int tier = rollFood < 3 ? 3 : (rollFood < 10 ? 2 : (rollFood < 25 ? 1 : 0));
+        if (tier > 0) {
+            ItemStack food = plugin.getPetService().createFoodItem(tier, 1);
+            if (player.getInventory().firstEmpty() != -1) player.getInventory().addItem(food);
+            else event.getEntity().getWorld().dropItemNaturally(event.getEntity().getLocation(), food);
+            player.sendMessage("§a🍖 Nourriture de pet T" + tier + " obtenue!");
+        }
     }
 
     private void dropForgeFragments(EntityDeathEvent event, Player player) {

@@ -260,7 +260,6 @@ public class BoostGUI {
                 "§e• Sell Boost §7- Meilleur prix de vente",
                 "§9• Mineral Greed §7- Plus d'effet Fortune",
                 "§d• Job XP §7- Plus d'XP métier",
-                "§c• Global §7- Bonus sur tout",
                 "",
                 "§8Utilisez /boost pour voir vos boosts"
         ));
@@ -437,6 +436,8 @@ public class BoostGUI {
             sb.append("\n§c🔥 Surcharge de Mine§7: ").append(details.getOverloadBonus() >= 0 ? "+" : "").append(String.format("%.1f", details.getOverloadBonus())).append("%");
         if (details.getBankBonus() > 0)
             sb.append("\n§d🏦 Type de Banque§7: +").append(String.format("%.1f", details.getBankBonus())).append("%");
+        if (details.getPetsBonus() > 0)
+            sb.append("\n§b🐾 Compagnons§7: +").append(String.format("%.1f", details.getPetsBonus())).append("%");
         if (!details.getDetailedSources().isEmpty()) {
             sb.append("\n\n§8Détails:");
             for (var source : details.getDetailedSources().entrySet()) {

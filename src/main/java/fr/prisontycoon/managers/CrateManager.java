@@ -406,6 +406,7 @@ public class CrateManager {
             case BOOST -> "§cBoost " + reward.getBoostType() + " x" + reward.getBoostMultiplier();
             case FORGE_BLUEPRINT -> "§7Plan de forge " + reward.getBlueprintTier();
             case PET_BOX -> "§aBoîte de pet T" + reward.getPetBoxTier();
+            case PET_FOOD -> "§6Nourriture de pet T" + reward.getPetFoodTier();
         };
     }
 

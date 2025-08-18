@@ -101,6 +101,7 @@ public class CrateGUI {
             case BOOST -> displayItem = new ItemStack(Material.POTION);
             case FORGE_BLUEPRINT -> displayItem = new ItemStack(Material.PAPER);
             case PET_BOX -> displayItem = new ItemStack(Material.PLAYER_HEAD);
+            case PET_FOOD -> displayItem = new ItemStack(Material.COOKED_BEEF);
             default -> displayItem = new ItemStack(Material.BARRIER);
         }
 
@@ -183,6 +184,11 @@ public class CrateGUI {
                 lore.add("§7Tier: §e" + reward.getPetBoxTier());
                 lore.add("§7Clic-droit pour ouvrir et obtenir un compagnon");
             }
+            case PET_FOOD -> {
+                lore.add("§7Nourriture de pet:");
+                lore.add("§7Tier: §e" + reward.getPetFoodTier());
+                lore.add("§7Glissez-la sur un pet dans le menu pour lui donner de l'XP");
+            }
         }
     }
 
@@ -254,6 +260,9 @@ public class CrateGUI {
             }
             case PET_BOX -> {
                 return "§a📦 Boîte de Pet — §lTier " + reward.getPetBoxTier();
+            }
+            case PET_FOOD -> {
+                return "§6🍖 Nourriture de Pet — §lTier " + reward.getPetFoodTier();
             }
         }
         return "§fRécompense Inconnue";

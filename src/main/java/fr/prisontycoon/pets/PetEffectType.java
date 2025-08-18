@@ -21,7 +21,7 @@ public enum PetEffectType {
 
     // Effets utilitaires internes (déjà gérés côté systèmes existants)
     PROC_PICKAXE(null),           // chance proc enchants pickaxe (hors uniques) appliquée côté EnchantmentManager
-    AUTOMINER_EFFICIENCY(null),   // réduction consommation autominer appliquée côté AutominerManager
+    AUTOMINER_FUEL_CONSUMPTION(null),   // réduction consommation autominer appliquée côté AutominerManager
     PICKAXE_WEAR(null),           // réduction d'usure appliquée côté MiningListener/PickaxeManager
     KEYS_CHANCE(null);            // chance d'obtenir des clés (déjà utilisé dans plusieurs endroits)
 

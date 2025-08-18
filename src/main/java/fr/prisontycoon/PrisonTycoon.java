@@ -401,6 +401,7 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new BankCommand(this), "bank");
         registerCommand(new TankAdminCommand(this), "tankadmin");
         registerCommand(new ShopCommand(this), "shop");
+        registerCommand(new PetsCommand(this), "pets");
 
         registerCommand(new ShopCommand(this), "shop");
 
