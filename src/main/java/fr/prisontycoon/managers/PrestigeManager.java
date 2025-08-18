@@ -4,11 +4,14 @@ import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.data.PlayerData;
 import fr.prisontycoon.data.BankType;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import fr.prisontycoon.utils.NumberFormatter;
 
 /**
@@ -85,9 +88,21 @@ public class PrestigeManager {
             return false;
         }
 
-        // TODO: Vérifier pas d'épargne active en banque
-        // TODO: Vérifier pas d'investissement actif
-        // TODO: Vérifier ne pas être en challenge
+        // Vérifier pas d'épargne active en banque
+        if (playerData.getSavingsBalance() > 0) {
+            player.sendMessage("§c❌ Vous ne pouvez pas faire de prestige avec de l'épargne active !");
+            player.sendMessage("§7Retirez d'abord votre épargne via §e/bank withdraw§7.");
+            return false;
+        }
+        
+        // Vérifier pas d'investissement actif
+        Map<Material, Long> investments = playerData.getAllInvestments();
+        if (!investments.isEmpty()) {
+            player.sendMessage("§c❌ Vous ne pouvez pas faire de prestige avec des investissements actifs !");
+            player.sendMessage("§7Vendez d'abord vos investissements via §e/bank invest§7.");
+            return false;
+        }
+        
         return true;
     }
 

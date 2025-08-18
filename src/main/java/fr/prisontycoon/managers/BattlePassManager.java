@@ -1,7 +1,4 @@
 package fr.prisontycoon.managers;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import fr.prisontycoon.PrisonTycoon;
 import fr.prisontycoon.api.PrisonTycoonAPI;
 import fr.prisontycoon.quests.QuestRewards;
@@ -9,8 +6,6 @@ import fr.prisontycoon.boosts.BoostType;
 import fr.prisontycoon.quests.QuestManager;
 import fr.prisontycoon.quests.PlayerQuestProgress;
 import org.bukkit.entity.Player;
-
-import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -29,62 +24,16 @@ public class BattlePassManager {
     public static final int SEASON_DURATION_DAYS = 30;
 
     private final PrisonTycoon plugin;
-    private final Gson gson = new Gson();
-    private final Type intSetType = new TypeToken<Set<Integer>>(){}.getType();
 
-    // Cache pour les données de temps de jeu
-    private final Map<UUID, Long> playTimeSession = new HashMap<>();
-    private final Map<UUID, Long> lastPlayTimeUpdate = new HashMap<>();
 
     public BattlePassManager(PrisonTycoon plugin) {
         this.plugin = plugin;
-        startPlayTimeTracking();
     }
 
     // ============================================================================================
     // TRACKING DU TEMPS DE JEU
     // ============================================================================================
 
-    private void startPlayTimeTracking() {
-        // Tâche périodique pour sauvegarder le temps de jeu
-        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
-            for (Player player : plugin.getServer().getOnlinePlayers()) {
-                updatePlayTime(player);
-            }
-        }, 20L * 60L, 20L * 60L); // Chaque minute
-    }
-
-    public void onPlayerJoin(Player player) {
-        UUID uuid = player.getUniqueId();
-        playTimeSession.put(uuid, System.currentTimeMillis());
-        lastPlayTimeUpdate.put(uuid, System.currentTimeMillis());
-    }
-
-    public void onPlayerQuit(Player player) {
-        updatePlayTime(player);
-        UUID uuid = player.getUniqueId();
-        playTimeSession.remove(uuid);
-        lastPlayTimeUpdate.remove(uuid);
-    }
-
-    private void updatePlayTime(Player player) {
-        UUID uuid = player.getUniqueId();
-        Long lastUpdate = lastPlayTimeUpdate.get(uuid);
-        if (lastUpdate == null) return;
-
-        long now = System.currentTimeMillis();
-        long sessionTime = now - lastUpdate;
-        lastPlayTimeUpdate.put(uuid, now);
-
-        // Convertir en minutes pour les quêtes
-        int minutesPlayed = (int) (sessionTime / (1000 * 60));
-        if (minutesPlayed > 0) {
-            // Progression des quêtes de temps de jeu
-            QuestManager questManager = plugin.getQuestManager();
-            // Simuler les types de quêtes de temps de jeu
-            // questManager.addProgress(player, QuestType.PLAYTIME_MINUTES, minutesPlayed);
-        }
-    }
 
     // ============================================================================================
     // GESTION DES SAISONS
@@ -137,38 +86,41 @@ public class BattlePassManager {
     }
 
     private PlayerPassData extractBattlePassData(PlayerQuestProgress progress, UUID playerId) {
-        // Récupérer directement depuis la base via QuestManager
-        // Cette méthode utilise la logique existante de QuestManager
-        String seasonId = getCurrentSeasonId();
+        String currentSeason = getCurrentSeasonId();
+        String storedSeason = progress.getBattlePassSeasonId();
+        int points = progress.getBattlePassPoints();
+        boolean premium = progress.isBattlePassPremium();
+        Set<Integer> claimedFree = progress.getBattlePassClaimedFree();
+        Set<Integer> claimedPremium = progress.getBattlePassClaimedPremium();
 
-        try {
-            // Les données BP sont dans player_quests, gérées par QuestManager
-            // On utilise les méthodes déjà existantes pour la cohérence
+        // Reset si la saison a changé
+        if (storedSeason == null || !storedSeason.equals(currentSeason)) {
+            points = 0;
+            premium = false; // ou conserver selon choix design
+            claimedFree = new HashSet<>();
+            claimedPremium = new HashSet<>();
 
-            // Valeurs par défaut
-            int points = 0;
-            boolean premium = false;
-            Set<Integer> claimedFree = new HashSet<>();
-            Set<Integer> claimedPremium = new HashSet<>();
-
-            // TODO: Implémenter l'extraction des données BP depuis PlayerQuestProgress
-            // Pour l'instant, on retourne des données par défaut
-            // En production, il faudrait ajouter des méthodes à PlayerQuestProgress
-            // pour récupérer bp_points, bp_premium, etc.
-
-            return new PlayerPassData(points, premium, claimedFree, claimedPremium);
-
-        } catch (Exception e) {
-            plugin.getLogger().warning("Erreur récupération données BP: " + e.getMessage());
-            return new PlayerPassData(0, false, new HashSet<>(), new HashSet<>());
+            progress.setBattlePassSeasonId(currentSeason);
+            progress.setBattlePassPoints(0);
+            progress.setBattlePassPremium(false);
+            progress.setBattlePassClaimedFree(claimedFree);
+            progress.setBattlePassClaimedPremium(claimedPremium);
+            // Sauvegarde immédiate
+            plugin.getQuestManager().saveProgress(progress);
         }
+
+        return new PlayerPassData(points, premium, claimedFree, claimedPremium);
     }
 
     private void updatePlayerData(UUID playerId, PlayerPassData data) {
-        // Mettre à jour via QuestManager pour maintenir la cohérence
-        // TODO: Ajouter des méthodes à QuestManager pour gérer les données BP
-        // Pour l'instant, on log l'action
-        plugin.getLogger().info("Mise à jour données BP pour " + playerId + ": " + data.points() + " points");
+        QuestManager questManager = plugin.getQuestManager();
+        PlayerQuestProgress progress = questManager.getProgress(playerId);
+        progress.setBattlePassSeasonId(getCurrentSeasonId());
+        progress.setBattlePassPoints(data.points());
+        progress.setBattlePassPremium(data.premium());
+        progress.setBattlePassClaimedFree(data.claimedFree());
+        progress.setBattlePassClaimedPremium(data.claimedPremium());
+        questManager.saveProgress(progress);
     }
 
     // ============================================================================================

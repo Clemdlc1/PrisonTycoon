@@ -101,7 +101,7 @@ public class CrateGUI {
             case BOOST -> displayItem = new ItemStack(Material.POTION);
             case FORGE_BLUEPRINT -> displayItem = new ItemStack(Material.PAPER);
             case PET_BOX -> displayItem = new ItemStack(Material.PLAYER_HEAD);
-            case PET_FOOD -> displayItem = new ItemStack(Material.COOKED_BEEF);
+            case PET_FOOD -> displayItem = new ItemStack(Material.GLOW_BERRIES);
             default -> displayItem = new ItemStack(Material.BARRIER);
         }
 

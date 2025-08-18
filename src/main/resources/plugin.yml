@@ -450,6 +450,8 @@ commands:
     description: "Ouvre le menu des compagnons"
     usage: /pets [help]
     permission: specialmine.basic
+    aliases: [ compagnon ]
+
 
 # Compatibilité
 depend-bootstrap: false

@@ -368,9 +368,8 @@ public class PetService {
 			int xpUnit = getFoodXp(clamped);
 			plugin.getGUIManager().applyName(meta, name);
 			plugin.getGUIManager().applyLore(meta, List.of(
-				"§7Glissez sur la tête d'un compagnon dans le menu",
-				"§7pour lui donner de l'XP (montée de croissance)",
-				"§7XP par unité: §e+" + xpUnit
+				"§7Glissez sur un compagnon",
+				"§7pour lui donner §e" + xpUnit + "§7 XP"
 			));
 			meta.getPersistentDataContainer().set(petFoodTierKey, PersistentDataType.INTEGER, clamped);
 			food.setItemMeta(meta);
@@ -528,6 +527,12 @@ public class PetService {
 		if (visualTask != null) return;
 		visualTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
 			for (Player player : Bukkit.getOnlinePlayers()) {
+				// Ne pas afficher les visuels si le joueur est dans le monde "Cave"
+				if ("Cave".equals(player.getWorld().getName())) {
+					clearVisuals(player);
+					continue;
+				}
+				
 				Map<String, PetData> pets = getPlayerPets(player.getUniqueId());
 				boolean hasAnyEquipped = pets.values().stream().anyMatch(p -> p.equipped);
 				if (hasAnyEquipped) {
@@ -544,6 +549,11 @@ public class PetService {
 		if (particleTask != null) return;
 		particleTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
 			for (Player player : Bukkit.getOnlinePlayers()) {
+				// Ne pas afficher les particules si le joueur est dans le monde "Cave"
+				if ("Cave".equals(player.getWorld().getName())) {
+					continue;
+				}
+				
 				if (hasActiveSynergy(player)) {
 					spawnSynergyParticles(player);
 				}
@@ -552,6 +562,12 @@ public class PetService {
 	}
 
 	public void refreshVisuals(Player player) {
+		// Ne pas afficher les visuels si le joueur est dans le monde "Cave"
+		if ("Cave".equals(player.getWorld().getName())) {
+			clearVisuals(player);
+			return;
+		}
+		
 		List<PetDefinition> equipped = getEquippedPetDefinitions(player);
 		if (equipped.isEmpty()) {
 			clearVisuals(player);

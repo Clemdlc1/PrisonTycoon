@@ -224,6 +224,23 @@ public class QuestManager {
                     if (claimed != null) claimed.forEach((k, v) -> {
                         if (Boolean.TRUE.equals(v)) p.setClaimed(k);
                     });
+                    // Charger les champs Battle Pass
+                    String bpSeasonId = rs.getString("bp_season_id");
+                    int bpPoints = rs.getInt("bp_points");
+                    boolean bpPremium = rs.getBoolean("bp_premium");
+                    try {
+                        java.lang.reflect.Type intSetType = new TypeToken<java.util.Set<Integer>>(){}.getType();
+                        String bpClaimedFreeJson = rs.getString("bp_claimed_free");
+                        String bpClaimedPremiumJson = rs.getString("bp_claimed_premium");
+                        java.util.Set<Integer> bpClaimedFree = gson.fromJson(bpClaimedFreeJson, intSetType);
+                        java.util.Set<Integer> bpClaimedPremium = gson.fromJson(bpClaimedPremiumJson, intSetType);
+                        p.setBattlePassSeasonId(bpSeasonId);
+                        p.setBattlePassPoints(bpPoints);
+                        p.setBattlePassPremium(bpPremium);
+                        if (bpClaimedFree != null) p.setBattlePassClaimedFree(bpClaimedFree);
+                        if (bpClaimedPremium != null) p.setBattlePassClaimedPremium(bpClaimedPremium);
+                    } catch (Exception ignored) {
+                    }
                     String daily = rs.getString("daily_date");
                     boolean needDailySelection = false;
                     if (daily != null) {
@@ -278,15 +295,21 @@ public class QuestManager {
     public void saveProgress(PlayerQuestProgress p) {
         try (Connection c = plugin.getDatabaseManager().getConnection()) {
             String sql = """
-                    INSERT INTO player_quests(uuid, progress_json, claimed_json, daily_date, daily_completed, weekly_start, weekly_completed)
-                    VALUES(?,?,?,?,?,?,?)
+                    INSERT INTO player_quests(uuid, progress_json, claimed_json, daily_date, daily_completed, weekly_start, weekly_completed,
+                                              bp_season_id, bp_points, bp_premium, bp_claimed_free, bp_claimed_premium)
+                    VALUES(?,?,?,?,?,?,?, ?,?,?,?,?)
                     ON CONFLICT (uuid) DO UPDATE SET
                         progress_json = EXCLUDED.progress_json,
                         claimed_json = EXCLUDED.claimed_json,
                         daily_date = EXCLUDED.daily_date,
                         daily_completed = EXCLUDED.daily_completed,
                         weekly_start = EXCLUDED.weekly_start,
-                        weekly_completed = EXCLUDED.weekly_completed
+                        weekly_completed = EXCLUDED.weekly_completed,
+                        bp_season_id = EXCLUDED.bp_season_id,
+                        bp_points = EXCLUDED.bp_points,
+                        bp_premium = EXCLUDED.bp_premium,
+                        bp_claimed_free = EXCLUDED.bp_claimed_free,
+                        bp_claimed_premium = EXCLUDED.bp_claimed_premium
                     """;
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 Map<String, Integer> progress = p.getAllProgress();
@@ -298,6 +321,12 @@ public class QuestManager {
                 ps.setInt(5, p.getDailyCompletedCount());
                 ps.setString(6, LocalDate.now().with(java.time.DayOfWeek.MONDAY).toString());
                 ps.setInt(7, p.getWeeklyCompletedCount());
+                // Champs BP
+                ps.setString(8, p.getBattlePassSeasonId());
+                ps.setInt(9, p.getBattlePassPoints());
+                ps.setBoolean(10, p.isBattlePassPremium());
+                ps.setString(11, gson.toJson(p.getBattlePassClaimedFree()));
+                ps.setString(12, gson.toJson(p.getBattlePassClaimedPremium()));
                 ps.executeUpdate();
             }
         } catch (SQLException e) {

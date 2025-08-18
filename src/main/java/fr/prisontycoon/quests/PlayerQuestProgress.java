@@ -2,7 +2,9 @@ package fr.prisontycoon.quests;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -18,6 +20,13 @@ public class PlayerQuestProgress {
 
     private LocalDate weeklyWeekStart; // reset hebdo
     private int weeklyCompletedCount;
+
+    // Données Battle Pass (BP)
+    private String battlePassSeasonId;
+    private int battlePassPoints;
+    private boolean battlePassPremium;
+    private final Set<Integer> battlePassClaimedFree = new HashSet<>();
+    private final Set<Integer> battlePassClaimedPremium = new HashSet<>();
 
     public PlayerQuestProgress(UUID playerId) {
         this.playerId = playerId;
@@ -116,6 +125,49 @@ public class PlayerQuestProgress {
      */
     public Map<String, Boolean> getAllClaimed() {
         return new HashMap<>(claimedByQuest);
+    }
+
+    // Accesseurs Battle Pass (BP)
+    public String getBattlePassSeasonId() {
+        return battlePassSeasonId;
+    }
+
+    public void setBattlePassSeasonId(String seasonId) {
+        this.battlePassSeasonId = seasonId;
+    }
+
+    public int getBattlePassPoints() {
+        return battlePassPoints;
+    }
+
+    public void setBattlePassPoints(int points) {
+        this.battlePassPoints = Math.max(0, points);
+    }
+
+    public boolean isBattlePassPremium() {
+        return battlePassPremium;
+    }
+
+    public void setBattlePassPremium(boolean premium) {
+        this.battlePassPremium = premium;
+    }
+
+    public Set<Integer> getBattlePassClaimedFree() {
+        return new HashSet<>(battlePassClaimedFree);
+    }
+
+    public void setBattlePassClaimedFree(Set<Integer> tiers) {
+        battlePassClaimedFree.clear();
+        if (tiers != null) battlePassClaimedFree.addAll(tiers);
+    }
+
+    public Set<Integer> getBattlePassClaimedPremium() {
+        return new HashSet<>(battlePassClaimedPremium);
+    }
+
+    public void setBattlePassClaimedPremium(Set<Integer> tiers) {
+        battlePassClaimedPremium.clear();
+        if (tiers != null) battlePassClaimedPremium.addAll(tiers);
     }
 }
 

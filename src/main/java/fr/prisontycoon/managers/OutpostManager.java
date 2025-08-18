@@ -367,8 +367,10 @@ public class OutpostManager {
         outpostData.setControllerName(player.getName());
         outpostData.setCaptureTime(System.currentTimeMillis());
 
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+
         // Changer le skin si nécessaire
-        String playerSkin = getPlayerSelectedSkin(player);
+        String playerSkin = playerData.getSelectedOutpostSkin();
         if (playerSkin != null && !playerSkin.equals(outpostData.getCurrentSkin())) {
             changeOutpostSkin(playerSkin);
         }
@@ -680,16 +682,6 @@ public class OutpostManager {
         for (Player player : caveWorld.getPlayers()) {
             player.sendMessage(message);
         }
-    }
-
-    /**
-     * Obtient le skin sélectionné par un joueur
-     */
-    private String getPlayerSelectedSkin(Player player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
-        // TODO: Ajouter le système de sélection de skin dans PlayerData
-        // Pour l'instant, retourner le skin par défaut
-        return availableSkins.keySet().stream().findFirst().orElse(null);
     }
 
     // Getters publics

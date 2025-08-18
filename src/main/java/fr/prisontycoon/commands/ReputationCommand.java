@@ -279,13 +279,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
                 }
                 adminResetReputation(player, args[1]);
                 break;
-
-            case "erosion":
-                // Force l'érosion naturelle
-                player.sendMessage("§7Force l'érosion naturelle...");
-                // TODO: Appeler la méthode d'érosion
-                break;
-
+                
             default:
                 player.sendMessage("§cCommande admin inconnue!");
                 break;
@@ -392,7 +386,7 @@ public class ReputationCommand implements CommandExecutor, TabCompleter {
                     }
                 }
             } else if (args[0].equalsIgnoreCase("admin") && sender.hasPermission("specialmine.admin")) {
-                List<String> adminCommands = Arrays.asList("set", "add", "reset", "erosion");
+                List<String> adminCommands = Arrays.asList("set", "add", "reset");
                 for (String cmd : adminCommands) {
                     if (cmd.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(cmd);

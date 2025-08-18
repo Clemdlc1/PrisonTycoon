@@ -47,10 +47,16 @@ public class TankListener implements Listener {
             if (!plugin.getTankManager().isTankBlock(loc)) return;
             var data = plugin.getTankManager().getTankAt(loc);
             if (data == null) return;
+            
+            // Vérifier si le tank est plein
+            if (data.isFull()) {
+                event.setCancelled(true);
+                return;
+            }
+            
             if (!plugin.getTankManager().isBillItem(event.getItem())) {
                 event.setCancelled(true);
             }
-
             // Laisser l'item entrer physiquement, puis vider l'inventaire du baril pour éviter les boucles
             Bukkit.getScheduler().runTask(plugin, () -> {
                 try {
