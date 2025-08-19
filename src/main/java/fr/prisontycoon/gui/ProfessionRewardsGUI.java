@@ -174,60 +174,71 @@ public class ProfessionRewardsGUI {
      * Ajoute la description de la récompense au lore
      */
     private void addRewardContentLore(List<String> lore, int level) {
-        // Cette méthode reste identique à l'originale
         switch (level) {
             case 1 -> {
                 lore.add("§e• 10 000 Coins");
                 lore.add("§b• 1 000 Tokens");
+                lore.add("§d• 1 Cristal Vierge Niveau 5");
             }
             case 2 -> {
                 lore.add("§e• 25 000 Coins");
                 lore.add("§b• 2 500 Tokens");
-                lore.add("§d• 1 Cristal Niveau 3");
+                lore.add("§d• 2 Cristaux Vierges Niveau 6");
             }
             case 3 -> {
                 lore.add("§e• 50 000 Coins");
                 lore.add("§b• 5 000 Tokens");
-                lore.add("§6• 100 Beacons");
+                lore.add("§d• 1 Cristal Vierge Niveau 8");
+                lore.add("§c• 1 Clé Commune");
             }
             case 4 -> {
                 lore.add("§e• 100 000 Coins");
                 lore.add("§b• 10 000 Tokens");
-                lore.add("§d• 1 Cristal Niveau 5");
+                lore.add("§d• 2 Cristaux Vierges Niveau 9");
+                lore.add("§c• 1 Clé Peu Commune");
             }
             case 5 -> {
                 lore.add("§e• 200 000 Coins");
                 lore.add("§b• 20 000 Tokens");
-                lore.add("§6• 250 Beacons");
+                lore.add("§d• 1 Cristal Vierge Niveau 11");
                 lore.add("§c• 1 Clé Rare");
+                lore.add("§6• 100 Beacons");
             }
             case 6 -> {
                 lore.add("§e• 400 000 Coins");
                 lore.add("§b• 40 000 Tokens");
-                lore.add("§d• 1 Cristal Niveau 7");
+                lore.add("§d• 2 Cristaux Vierges Niveau 12");
+                lore.add("§c• 1 Clé Rare");
+                lore.add("§6• 250 Beacons");
             }
             case 7 -> {
                 lore.add("§e• 800 000 Coins");
                 lore.add("§b• 80 000 Tokens");
+                lore.add("§d• 1 Cristal Vierge Niveau 14");
+                lore.add("§c• 1 Clé Légendaire");
                 lore.add("§6• 500 Beacons");
             }
             case 8 -> {
                 lore.add("§e• 1 500 000 Coins");
                 lore.add("§b• 150 000 Tokens");
-                lore.add("§d• 1 Cristal Niveau 10");
-                lore.add("§c• 1 Clé Épique");
+                lore.add("§d• 2 Cristaux Vierges Niveau 15");
+                lore.add("§c• 2 Clés Légendaires");
+                lore.add("§6• 750 Beacons");
             }
             case 9 -> {
                 lore.add("§e• 3 000 000 Coins");
                 lore.add("§b• 300 000 Tokens");
+                lore.add("§d• 1 Cristal Vierge Niveau 17");
+                lore.add("§c• 1 Clé Cristal");
                 lore.add("§6• 1 000 Beacons");
             }
             case 10 -> {
                 lore.add("§e• 5 000 000 Coins");
                 lore.add("§b• 500 000 Tokens");
-                lore.add("§d• 1 Cristal Niveau 15");
-                lore.add("§c• 1 Clé Légendaire");
+                lore.add("§d• 3 Cristaux Vierges Niveau 18");
+                lore.add("§c• 2 Clés Cristal");
                 lore.add("§6• 2 000 Beacons");
+                lore.add("§5• 1 Livre Unique Aléatoire");
             }
         }
     }
@@ -260,53 +271,91 @@ public class ProfessionRewardsGUI {
 
         playerData.claimProfessionReward(professionId, level);
 
-        // Distribution des récompenses (anciennement giveRewardItems)
-        PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
+        // Distribution des récompenses selon le niveau
         switch (level) {
             case 1 -> {
-                data.addCoins(10000);
-                data.addTokens(1000);
+                playerData.addCoins(10000);
+                playerData.addTokens(1000);
+                // Donner 1 cristal vierge niveau 5
+                giveCristalVierge(player, 5, 1);
             }
             case 2 -> {
-                data.addCoins(25000);
-                data.addTokens(2500); /* donner cristal */
+                playerData.addCoins(25000);
+                playerData.addTokens(2500);
+                // Donner 2 cristaux vierges niveau 6
+                giveCristalVierge(player, 6, 2);
             }
             case 3 -> {
-                data.addCoins(50000);
-                data.addTokens(5000);
-                data.addBeacons(100);
+                playerData.addCoins(50000);
+                playerData.addTokens(5000);
+                // Donner 1 cristal vierge niveau 8
+                giveCristalVierge(player, 8, 1);
+                // Donner 1 clé commune
+                giveKey(player, "Commune", 1);
             }
             case 4 -> {
-                data.addCoins(100000);
-                data.addTokens(10000); /* donner cristal */
+                playerData.addCoins(100000);
+                playerData.addTokens(10000);
+                // Donner 2 cristaux vierges niveau 9
+                giveCristalVierge(player, 9, 2);
+                // Donner 1 clé peu commune
+                giveKey(player, "Peu Commune", 1);
             }
             case 5 -> {
-                data.addCoins(200000);
-                data.addTokens(20000);
-                data.addBeacons(250); /* donner clé */
+                playerData.addCoins(200000);
+                playerData.addTokens(20000);
+                // Donner 1 cristal vierge niveau 11
+                giveCristalVierge(player, 11, 1);
+                // Donner 1 clé rare
+                giveKey(player, "Rare", 1);
+                playerData.addBeacons(100);
             }
             case 6 -> {
-                data.addCoins(400000);
-                data.addTokens(40000); /* donner cristal */
+                playerData.addCoins(400000);
+                playerData.addTokens(40000);
+                // Donner 2 cristaux vierges niveau 12
+                giveCristalVierge(player, 12, 2);
+                // Donner 1 clé rare
+                giveKey(player, "Rare", 1);
+                playerData.addBeacons(250);
             }
             case 7 -> {
-                data.addCoins(800000);
-                data.addTokens(80000);
-                data.addBeacons(500);
+                playerData.addCoins(800000);
+                playerData.addTokens(80000);
+                // Donner 1 cristal vierge niveau 14
+                giveCristalVierge(player, 14, 1);
+                // Donner 1 clé légendaire
+                giveKey(player, "Légendaire", 1);
+                playerData.addBeacons(500);
             }
             case 8 -> {
-                data.addCoins(1500000);
-                data.addTokens(150000); /* donner cristal, clé */
+                playerData.addCoins(1500000);
+                playerData.addTokens(150000);
+                // Donner 2 cristaux vierges niveau 15
+                giveCristalVierge(player, 15, 2);
+                // Donner 2 clés légendaires
+                giveKey(player, "Légendaire", 2);
+                playerData.addBeacons(750);
             }
             case 9 -> {
-                data.addCoins(3000000);
-                data.addTokens(300000);
-                data.addBeacons(1000);
+                playerData.addCoins(3000000);
+                playerData.addTokens(300000);
+                // Donner 1 cristal vierge niveau 17
+                giveCristalVierge(player, 17, 1);
+                // Donner 1 clé cristal
+                giveKey(player, "Cristal", 1);
+                playerData.addBeacons(1000);
             }
             case 10 -> {
-                data.addCoins(5000000);
-                data.addTokens(500000);
-                data.addBeacons(2000); /* donner cristal, clé */
+                playerData.addCoins(5000000);
+                playerData.addTokens(500000);
+                // Donner 3 cristaux vierges niveau 18
+                giveCristalVierge(player, 18, 3);
+                // Donner 2 clés cristal
+                giveKey(player, "Cristal", 2);
+                playerData.addBeacons(2000);
+                // Donner 1 livre unique aléatoire
+                giveRandomEnchantmentBook(player);
             }
         }
 
@@ -317,6 +366,70 @@ public class ProfessionRewardsGUI {
 
         // Rafraîchit le menu pour montrer que la récompense a été prise
         openRewardsMenu(player, professionId);
+    }
+
+    /**
+     * Donne des cristaux vierges au joueur
+     */
+    private void giveCristalVierge(Player player, int level, int amount) {
+        for (int i = 0; i < amount; i++) {
+            ItemStack cristal = plugin.getCristalManager().createCristalViergeApi(level);
+            if (player.getInventory().firstEmpty() != -1) {
+                player.getInventory().addItem(cristal);
+            } else {
+                player.getWorld().dropItemNaturally(player.getLocation(), cristal);
+            }
+        }
+        if (amount > 0) {
+            player.sendMessage("§d+" + amount + " Cristal(s) Vierge(s) Niveau " + level);
+        }
+    }
+
+    /**
+     * Donne des clés au joueur
+     */
+    private void giveKey(Player player, String keyType, int amount) {
+        String keyColor = switch (keyType) {
+            case "Cristal" -> "§d";
+            case "Légendaire" -> "§6";
+            case "Rare" -> "§5";
+            case "Peu Commune" -> "§9";
+            default -> "§f"; // "Commune"
+        };
+
+        ItemStack key = new ItemStack(org.bukkit.Material.TRIPWIRE_HOOK, amount);
+        var meta = key.getItemMeta();
+        meta.setDisplayName(keyColor + "Clé " + keyType);
+        meta.setLore(java.util.Arrays.asList("§7Clé de coffre " + keyColor + keyType, "§7Utilise cette clé pour ouvrir des coffres!"));
+        key.setItemMeta(meta);
+
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(key);
+        } else {
+            player.getWorld().dropItemNaturally(player.getLocation(), key);
+        }
+        
+        player.sendMessage(keyColor + "+" + amount + " Clé(s) " + keyType);
+    }
+
+    /**
+     * Donne un livre d'enchantement unique aléatoire au joueur
+     */
+    private void giveRandomEnchantmentBook(Player player) {
+        // Liste des livres disponibles
+        String[] availableBooks = {"bomber", "autosell", "beaconbreaker", "excavation", "incassable", "tonnerre"};
+        String randomBookId = availableBooks[(int) (Math.random() * availableBooks.length)];
+        
+        var book = plugin.getEnchantmentBookManager().getEnchantmentBook(randomBookId);
+        if (book != null) {
+            ItemStack bookItem = plugin.getEnchantmentBookManager().createPhysicalEnchantmentBook(book);
+            if (player.getInventory().firstEmpty() != -1) {
+                player.getInventory().addItem(bookItem);
+            } else {
+                player.getWorld().dropItemNaturally(player.getLocation(), bookItem);
+            }
+            player.sendMessage("§5+1 Livre Unique: " + book.getName());
+        }
     }
 
     /**

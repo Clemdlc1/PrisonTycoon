@@ -74,7 +74,7 @@ public enum CrateType {
     public ItemStack convertRewardToItem(CrateReward reward, PrisonTycoon plugin) {
         return switch (reward.getType()) {
             case CONTAINER -> plugin.getContainerManager().createContainer(reward.getContainerTier());
-            case KEY -> createKey(reward.getKeyType(), reward.getRandomAmount());
+            case KEY -> createKey(reward.getKeyType(), reward.getAmount());
             case CRISTAL_VIERGE -> plugin.getCristalManager().createCristalViergeApi(reward.getCristaltLevel());
             case LIVRE_UNIQUE -> {
                 EnchantmentBookManager.EnchantmentBook book = plugin.getEnchantmentBookManager().getEnchantmentBook(reward.getBookType());
@@ -86,7 +86,7 @@ public enum CrateType {
             }
             case VOUCHER -> {
                 var voucherType = VoucherType.valueOf(reward.getVoucherType().toUpperCase());
-                yield plugin.getVoucherManager().createVoucher(voucherType, reward.getRandomAmount());
+                yield plugin.getVoucherManager().createVoucher(voucherType, reward.getAmount());
             }
             case BOOST -> {
                 var boostType = BoostType.valueOf(reward.getBoostType().toUpperCase());
@@ -102,7 +102,7 @@ public enum CrateType {
             }
             case PET_FOOD -> {
                 int t = Math.max(1, Math.min(3, reward.getPetFoodTier() == null ? 1 : reward.getPetFoodTier()));
-                yield plugin.getPetService().createFoodItem(t, reward.getRandomAmount());
+                yield plugin.getPetService().createFoodItem(t, reward.getAmount());
             }
         };
     }
@@ -146,8 +146,7 @@ public enum CrateType {
 
     public static class CrateReward {
         private final RewardType type;
-        private final int minAmount;
-        private final int maxAmount;
+        private final int amount;
         private final double probability;
         private final Integer containerTier;
         private final String keyType;
@@ -164,8 +163,7 @@ public enum CrateType {
 
         private CrateReward(Builder builder) {
             this.type = builder.type;
-            this.minAmount = builder.minAmount;
-            this.maxAmount = builder.maxAmount;
+            this.amount = builder.amount;
             this.probability = builder.probability;
             this.containerTier = builder.containerTier;
             this.keyType = builder.keyType;
@@ -181,13 +179,12 @@ public enum CrateType {
             this.petFoodTier = builder.petFoodTier;
         }
 
-        public static Builder builder(RewardType type, int minAmount, int maxAmount, double probability) {
-            return new Builder(type, minAmount, maxAmount, probability);
+        public static Builder builder(RewardType type, int amount, double probability) {
+            return new Builder(type, amount, probability);
         }
 
-        public int getRandomAmount() {
-            if (minAmount >= maxAmount) return minAmount;
-            return minAmount + new Random().nextInt(maxAmount - minAmount + 1);
+        public int getAmount() {
+            return amount;
         }
 
         public RewardType getType() {
@@ -248,8 +245,7 @@ public enum CrateType {
 
         public static class Builder {
             private final RewardType type;
-            private final int minAmount;
-            private final int maxAmount;
+            private final int amount;
             private final double probability;
             private Integer containerTier;
             private String keyType;
@@ -264,10 +260,9 @@ public enum CrateType {
             private Integer petBoxTier;
             private Integer petFoodTier;
 
-            private Builder(RewardType type, int minAmount, int maxAmount, double probability) {
+            private Builder(RewardType type, int amount, double probability) {
                 this.type = type;
-                this.minAmount = minAmount;
-                this.maxAmount = maxAmount;
+                this.amount = amount;
                 this.probability = probability;
             }
 
@@ -344,92 +339,93 @@ public enum CrateType {
 
         private static List<CrateReward> getVoteRewards() {
             return List.of(
-                    CrateReward.builder(CONTAINER, 1, 1, 15.0).containerTier(1).build(),
-                    CrateReward.builder(KEY, 1, 1, 10.0).keyType("Commune").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(4).build(), // <-- CHANGEMENT ICI
-                    CrateReward.builder(PET_FOOD, 1, 2, 3.0).petFoodTier(1).build(),
-                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 4.0).blueprintTier(1).build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 3.0).voucherType("PRINTER_SLOT").build(),
-                    CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 1800).build(),
-                    CrateReward.builder(PET_BOX, 1, 1, 1.0).petBoxTier(1).build()
+                    CrateReward.builder(CONTAINER, 1, 15.0).containerTier(1).build(),
+                    CrateReward.builder(KEY, 1, 10.0).keyType("Commune").build(),
+                    CrateReward.builder(CRISTAL_VIERGE, 2, 8.0).cristalLevel(4).build(),
+                    CrateReward.builder(PET_FOOD, 2, 3.0).petFoodTier(1).build(),
+                    CrateReward.builder(FORGE_BLUEPRINT, 1, 4.0).blueprintTier(1).build(),
+                    CrateReward.builder(VOUCHER, 1, 5.0).voucherType("TOKENS").build(),
+                    CrateReward.builder(VOUCHER, 1, 3.0).voucherType("PRINTER_SLOT").build(),
+                    CrateReward.builder(BOOST, 1, 2.0).boost("TOKEN_GREED", 1, 1800).build(),
+                    CrateReward.builder(PET_BOX, 1, 1.0).petBoxTier(1).build()
             );
         }
 
         private static List<CrateReward> getCommuneRewards() {
             return List.of(
-                    CrateReward.builder(CONTAINER, 1, 1, 15.0).containerTier(1).build(),
-                    CrateReward.builder(KEY, 1, 1, 10.0).keyType("Commune").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 1, 2, 8.0).cristalLevel(5).build(), // <-- CHANGEMENT ICI
-                    CrateReward.builder(PET_FOOD, 1, 2, 4.0).petFoodTier(1).build(),
-                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 4.0).blueprintTier(2).build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("MONEY_BOOST_SMALL").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 4.0).voucherType("PRINTER_SLOT").build(),
-                    CrateReward.builder(BOOST, 1, 1, 2.0).boost("MONEY", 1, 3600).build(),
-                    CrateReward.builder(PET_BOX, 1, 1, 1.5).petBoxTier(1).build()
+                    CrateReward.builder(CONTAINER, 1, 15.0).containerTier(1).build(),
+                    CrateReward.builder(KEY, 1, 10.0).keyType("Commune").build(),
+                    CrateReward.builder(CRISTAL_VIERGE, 2, 8.0).cristalLevel(5).build(),
+                    CrateReward.builder(PET_FOOD, 2, 4.0).petFoodTier(1).build(),
+                    CrateReward.builder(FORGE_BLUEPRINT, 1, 4.0).blueprintTier(2).build(),
+                    CrateReward.builder(VOUCHER, 1, 5.0).voucherType("TOKENS").build(),
+                    CrateReward.builder(VOUCHER, 1, 4.0).voucherType("PRINTER_SLOT").build(),
+                    CrateReward.builder(BOOST, 1, 2.0).boost("MONEY_GREED", 1, 3600).build(),
+                    CrateReward.builder(PET_BOX, 1, 1.5).petBoxTier(1).build()
             );
         }
 
         private static List<CrateReward> getPeuCommuneRewards() {
             return List.of(
-                    CrateReward.builder(CONTAINER, 1, 1, 20.0).containerTier(2).build(),
-                    CrateReward.builder(KEY, 1, 2, 10.0).keyType("Commune").build(),
-                    CrateReward.builder(KEY, 1, 1, 5.0).keyType("Peu Commune").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 2, 4, 6.0).cristalLevel(9).build(), // <-- CHANGEMENT ICI
-                    CrateReward.builder(PET_FOOD, 1, 2, 5.0).petFoodTier(2).build(),
-                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 3.0).blueprintTier(3).build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 3.0).voucherType("TOKEN_BOOST_MEDIUM").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 5.0).voucherType("PRINTER_SLOT").build(),
-                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("TOKENS", 2, 7200).build(),
-                    CrateReward.builder(PET_BOX, 1, 1, 2.0).petBoxTier(2).build()
+                    CrateReward.builder(CONTAINER, 1, 20.0).containerTier(2).build(),
+                    CrateReward.builder(KEY, 2, 10.0).keyType("Commune").build(),
+                    CrateReward.builder(KEY, 1, 5.0).keyType("Peu Commune").build(),
+                    CrateReward.builder(CRISTAL_VIERGE, 4, 6.0).cristalLevel(9).build(),
+                    CrateReward.builder(PET_FOOD, 2, 5.0).petFoodTier(2).build(),
+                    CrateReward.builder(FORGE_BLUEPRINT, 1, 3.0).blueprintTier(3).build(),
+                    CrateReward.builder(VOUCHER, 1, 3.0).voucherType("EXPERIENCE").build(),
+                    CrateReward.builder(VOUCHER, 1, 5.0).voucherType("PRINTER_SLOT").build(),
+                    CrateReward.builder(BOOST, 1, 1.0).boost("TOKEN_GREED", 2, 7200).build(),
+                    CrateReward.builder(PET_BOX, 1, 2.0).petBoxTier(2).build()
             );
         }
 
         private static List<CrateReward> getRareRewards() {
             return List.of(
-                    CrateReward.builder(CONTAINER, 1, 1, 18.0).containerTier(3).build(),
-                    CrateReward.builder(KEY, 1, 2, 12.0).keyType("Peu Commune").build(),
-                    CrateReward.builder(KEY, 1, 1, 8.0).keyType("Rare").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 4, 8, 10.0).cristalLevel(13).build(), // <-- CHANGEMENT ICI
-                    CrateReward.builder(PET_FOOD, 1, 2, 6.0).petFoodTier(2).build(),
-                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 2.5).blueprintTier(4).build(),
-                    CrateReward.builder(LIVRE_UNIQUE, 1, 1, 4.0).book("greed").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 2.0).voucherType("XP_BOOST_LARGE").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 6.0).voucherType("PRINTER_SLOT").build(),
-                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("XP", 3, 10800).build(),
-                    CrateReward.builder(PET_BOX, 1, 1, 3.0).petBoxTier(2).build()
+                    CrateReward.builder(CONTAINER, 1, 18.0).containerTier(3).build(),
+                    CrateReward.builder(KEY, 2, 12.0).keyType("Peu Commune").build(),
+                    CrateReward.builder(KEY, 1, 8.0).keyType("Rare").build(),
+                    CrateReward.builder(CRISTAL_VIERGE, 8, 10.0).cristalLevel(13).build(),
+                    CrateReward.builder(PET_FOOD, 2, 6.0).petFoodTier(2).build(),
+                    CrateReward.builder(FORGE_BLUEPRINT, 1, 2.5).blueprintTier(4).build(),
+                    CrateReward.builder(LIVRE_UNIQUE, 1, 4.0).book("bomber").build(),
+                    CrateReward.builder(VOUCHER, 1, 2.0).voucherType("JOB_XP").build(),
+                    CrateReward.builder(VOUCHER, 1, 6.0).voucherType("PRINTER_SLOT").build(),
+                    CrateReward.builder(BOOST, 1, 1.0).boost("EXP_GREED", 3, 10800).build(),
+                    CrateReward.builder(PET_BOX, 1, 3.0).petBoxTier(2).build()
             );
         }
 
         private static List<CrateReward> getLegendaireRewards() {
             return List.of(
-                    CrateReward.builder(CONTAINER, 1, 2, 15.0).containerTier(4).build(),
-                    CrateReward.builder(KEY, 1, 3, 15.0).keyType("Rare").build(),
-                    CrateReward.builder(KEY, 1, 2, 10.0).keyType("Légendaire").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 8, 12, 12.0).cristalLevel(16).build(),
-                    CrateReward.builder(PET_FOOD, 1, 2, 7.0).petFoodTier(3).build(),
-                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 2.0).blueprintTier(5).build(),
-                    CrateReward.builder(LIVRE_UNIQUE, 1, 1, 6.0).book("combustion").build(),
-                    CrateReward.builder(AUTOMINER, 1, 1, 3.0).autominer("iron").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 8.0).voucherType("PRINTER_SLOT").build(),
-                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("ALL", 2, 14400).build(),
-                    CrateReward.builder(PET_BOX, 1, 1, 3.5).petBoxTier(3).build()
+                    CrateReward.builder(CONTAINER, 2, 15.0).containerTier(4).build(),
+                    CrateReward.builder(KEY, 3, 15.0).keyType("Rare").build(),
+                    CrateReward.builder(KEY, 2, 10.0).keyType("Légendaire").build(),
+                    CrateReward.builder(KEY, 1, 2.0).keyType("Cristal").build(),   
+                    CrateReward.builder(CRISTAL_VIERGE, 12, 12.0).cristalLevel(16).build(),
+                    CrateReward.builder(PET_FOOD, 8, 7.0).petFoodTier(3).build(),
+                    CrateReward.builder(FORGE_BLUEPRINT, 1, 2.0).blueprintTier(5).build(),
+                    CrateReward.builder(LIVRE_UNIQUE, 1, 6.0).book("autosell").build(),
+                    CrateReward.builder(AUTOMINER, 1, 3.0).autominer("iron").build(),
+                    CrateReward.builder(VOUCHER, 1, 8.0).voucherType("PRINTER_SLOT").build(),
+                    CrateReward.builder(BOOST, 1, 1.0).boost("GLOBAL_BOOST", 2, 14400).build(),
+                    CrateReward.builder(PET_BOX, 1, 3.5).petBoxTier(3).build()
             );
         }
 
         private static List<CrateReward> getCristalRewards() {
             return List.of(
-                    CrateReward.builder(CONTAINER, 1, 2, 12.0).containerTier(5).build(),
-                    CrateReward.builder(KEY, 2, 5, 20.0).keyType("Légendaire").build(),
-                    CrateReward.builder(KEY, 1, 3, 15.0).keyType("Cristal").build(),
-                    CrateReward.builder(CRISTAL_VIERGE, 12, 20, 15.0).cristalLevel(19).build(),
-                    CrateReward.builder(PET_FOOD, 1, 3, 9.0).petFoodTier(3).build(),
-                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1, 1.5).blueprintTier(6).build(),
-                    CrateReward.builder(LIVRE_UNIQUE, 1, 1, 5.0).book("beaconbreaker").build(),
-                    CrateReward.builder(AUTOMINER, 1, 1, 2.0).autominer("diamond").build(),
-                    CrateReward.builder(VOUCHER, 1, 1, 10.0).voucherType("PRINTER_SLOT").build(),
-                    CrateReward.builder(BOOST, 1, 1, 1.0).boost("ALL", 5, 21600).build(),
-                    CrateReward.builder(PET_BOX, 1, 1, 5.0).petBoxTier(3).build()
+                    CrateReward.builder(CONTAINER, 2, 12.0).containerTier(5).build(),
+                    CrateReward.builder(KEY, 2, 20.0).keyType("Légendaire").build(),
+                    CrateReward.builder(KEY, 2, 5.0).keyType("Cristal").build(),
+                    CrateReward.builder(CRISTAL_VIERGE, 1, 15.0).cristalLevel(19).build(),
+                    CrateReward.builder(PET_FOOD, 16, 9.0).petFoodTier(3).build(),
+                    CrateReward.builder(FORGE_BLUEPRINT, 1, 1.5).blueprintTier(6).build(),
+                    CrateReward.builder(LIVRE_UNIQUE, 1, 5.0).book("beaconbreaker").build(),
+                    CrateReward.builder(AUTOMINER, 1, 2.0).autominer("diamond").build(),
+                    CrateReward.builder(VOUCHER, 1, 10.0).voucherType("PRINTER_SLOT").build(),
+                    CrateReward.builder(BOOST, 1, 1.0).boost("SELL_BOOST", 5, 3600).build(),
+                    CrateReward.builder(PET_BOX, 1, 5.0).petBoxTier(3).build()
             );
         }
     }

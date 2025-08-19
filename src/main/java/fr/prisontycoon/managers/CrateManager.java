@@ -391,7 +391,7 @@ public class CrateManager {
         return switch (reward.getType()) {
             case CONTAINER -> "§eConteneur Tier " + reward.getContainerTier();
             case KEY -> "§bClé " + reward.getKeyType();
-            case CRISTAL_VIERGE -> "§dCristal Niveau " + reward.getRandomAmount();
+            case CRISTAL_VIERGE -> "§dCristal Niveau " + reward.getCristaltLevel();
             case LIVRE_UNIQUE -> "§5Livre " + reward.getBookType();
             case AUTOMINER -> "§7Autominer " + reward.getAutominerType();
             case VOUCHER -> {

@@ -104,7 +104,7 @@ public class CrateListener implements Listener {
 
         // Vérification de l'espace dans l'inventaire
         int emptySlots = 0;
-        for (int i = 0; i < 36; i++) { // Inventaire principal (sans armor/off-hand)
+        for (int i = 0; i < 36; i++) {
             if (player.getInventory().getItem(i) == null) {
                 emptySlots++;
             }
