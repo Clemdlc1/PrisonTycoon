@@ -59,6 +59,7 @@ public final class PrisonTycoon extends JavaPlugin {
     private TabManager tabManager;
     private ModerationManager moderationManager;
     private PermissionManager permissionManager;
+    private PrivateMessageManager privateMessageManager;
     private VipManager vipManager;
     private ProfessionManager professionManager;
     private PrestigeManager prestigeManager;
@@ -245,6 +246,7 @@ public final class PrisonTycoon extends JavaPlugin {
         moderationManager = new ModerationManager(this);
         vipManager = new VipManager(this);
         permissionManager = new PermissionManager(this);
+        privateMessageManager = new PrivateMessageManager(this);
         enchantmentBookManager = new EnchantmentBookManager(this);
         professionManager = new ProfessionManager(this);
         prestigeManager = new PrestigeManager(this);
@@ -423,6 +425,11 @@ public final class PrisonTycoon extends JavaPlugin {
         registerCommand(new BattlePassAdminCommand(this), "battlepassadmin", "bpadmin");
         registerCommand(new KeyCommand(this), "key");
 
+        registerCommand(new MessageCommand(this), "m");
+        registerCommand(new ReplyCommand(this), "r");
+        registerCommand(new BroadcastCommand(this), "broadcast");
+        registerCommand(new VanishCommand(this), "vanish");
+
         logger.info("§aCommandes enregistrées.");
     }
 
@@ -599,6 +606,10 @@ public final class PrisonTycoon extends JavaPlugin {
 
     public PermissionManager getPermissionManager() {
         return permissionManager;
+    }
+
+    public PrivateMessageManager getPrivateMessageManager() {
+        return privateMessageManager;
     }
 
     public EnchantmentBookManager getEnchantmentBookManager() {

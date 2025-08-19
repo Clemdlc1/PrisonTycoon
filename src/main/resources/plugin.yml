@@ -46,6 +46,13 @@ permissions:
     children:
       specialmine.mine.a: true
 
+  # Grade Modérateur
+  specialmine.moderator:
+    description: "Permissions de modération (vanish, outils de chat)"
+    default: false
+    children:
+      specialmine.basic: true
+
   # Permission spécifique pour /repair
   specialmine.repair:
     description: "Utiliser /repair (Guerrier niv 5+, cooldown 3h)"
@@ -302,6 +309,30 @@ commands:
     permission: specialmine.admin
     permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
     aliases: [ setvip, managevip ]
+
+  m:
+    description: "Message privé à un joueur"
+    usage: /m <joueur> <message>
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+
+  r:
+    description: "Répond au dernier message privé"
+    usage: /r <message>
+    permission: specialmine.basic
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+
+  broadcast:
+    description: "Annonce à tout le serveur (admin)"
+    usage: /broadcast <message>
+    permission: specialmine.admin
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
+
+  vanish:
+    description: "Rend le joueur invisible aux joueurs non-staff"
+    usage: /vanish
+    permission: specialmine.moderator
+    permission-message: §cVous n'avez pas la permission d'utiliser cette commande!
 
   invsee:
     description: "Voir l'inventaire d'un autre joueur"

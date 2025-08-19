@@ -148,6 +148,9 @@ public class ChatListener implements Listener {
         if (player.hasPermission("specialmine.admin")) {
             playerType = "ADMIN";
             playerTypeColor = NamedTextColor.DARK_RED;
+        } else if (player.hasPermission("specialmine.moderator")) {
+            playerType = "MOD";
+            playerTypeColor = NamedTextColor.BLUE;
         } else if (player.hasPermission("specialmine.vip")) {
             playerType = "VIP";
             playerTypeColor = NamedTextColor.YELLOW;

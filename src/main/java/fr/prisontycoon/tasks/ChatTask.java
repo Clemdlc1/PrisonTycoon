@@ -293,7 +293,7 @@ public class ChatTask extends BukkitRunnable {
 
         // Récupération des URLs depuis la config (avec valeurs par défaut)
         String storeUrl = plugin.getConfig().getString("server-links.store", "https://example.com/store");
-        String discordUrl = plugin.getConfig().getString("server-links.discord", "https://discord.gg/yourInvite");
+        String discordUrl = plugin.getConfig().getString("server-links.discord", "https://discord.gg/PWNwESB2Uq");
 
         int choice = ThreadLocalRandom.current().nextInt(3);
 

@@ -828,11 +828,20 @@ permissions:
         - "specialmine.mine.vip2"
       inherit: [ "joueur" ]
 
+    moderateur:
+      prefix: "§9[Modérateur]"
+      permissions:
+        - "specialmine.basic"
+        - "specialmine.moderator"
+        - "specialmine.chat.hand"
+        - "specialmine.chat.inv"
+      inherit: [ "vip" ]
+
     admin:
       prefix: "§c[Admin]"
       permissions:
         - "specialmine.*"
-      inherit: [ "vip" ]
+      inherit: [ "moderateur" ]
 
 # ========================================
 #          ENCHANTEMENTS

@@ -6,6 +6,7 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.Sound;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -264,8 +265,8 @@ public class MineOverloadManager {
         if (center == null) return;
         World world = center.getWorld();
         if (world == null) return;
-        world.playSound(center, org.bukkit.Sound.ENTITY_GHAST_SCREAM, 0.7f, 1.2f);
-        world.playSound(center, org.bukkit.Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.8f);
+        world.playSound(center, Sound.ENTITY_GHAST_SCREAM, 0.7f, 1.2f);
+        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.8f);
         // Particules ascendantes
         for (int i = 0; i < 8; i++) {
             world.spawnParticle(Particle.FLAME, center.clone().add(0, i * 0.35, 0), 30, 0.8, 0.2, 0.8, 0.015);
@@ -278,8 +279,8 @@ public class MineOverloadManager {
         World world = center.getWorld();
         if (world == null) return;
         float pitch = 0.9f + (tier * 0.05f);
-        world.playSound(center, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 0.7f, pitch);
-        world.playSound(center, org.bukkit.Sound.BLOCK_BEACON_POWER_SELECT, 0.7f, pitch + 0.2f);
+        world.playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 0.7f, pitch);
+        world.playSound(center, Sound.BLOCK_BEACON_POWER_SELECT, 0.7f, pitch + 0.2f);
 
         int rings = Math.min(5, Math.max(1, tier));
         for (int r = 1; r <= rings; r++) {

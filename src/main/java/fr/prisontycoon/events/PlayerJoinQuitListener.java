@@ -158,7 +158,7 @@ public class PlayerJoinQuitListener implements Listener {
      * Génère le message de connexion selon le rang du joueur
      */
     private String getJoinMessage(Player player) {
-        if (player.hasPermission("specialmine.admin")) {
+        if (player.hasPermission("specialmine.admin") || player.hasPermission("specialmine.moderator")) {
             return null;
         } else if (player.hasPermission("specialmine.vip")) {
             // VIP : [+] [VIP(jaune)] NOM
@@ -173,7 +173,7 @@ public class PlayerJoinQuitListener implements Listener {
      * Génère le message de déconnexion selon le rang du joueur
      */
     private String getQuitMessage(Player player) {
-        if (player.hasPermission("specialmine.admin")) {
+        if (player.hasPermission("specialmine.admin") || player.hasPermission("specialmine.moderator")) {
             return null;
         } else if (player.hasPermission("specialmine.vip")) {
             // VIP : [-] [VIP(jaune)] NOM
