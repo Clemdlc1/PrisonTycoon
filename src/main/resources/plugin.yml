@@ -30,6 +30,7 @@ permissions:
       specialmine.vip: true
       specialmine.mine.generate: true
       specialmine.prestige.admin: true
+      specialmine.moderator: true
 
   specialmine.vip:
     description: "Permissions VIP"

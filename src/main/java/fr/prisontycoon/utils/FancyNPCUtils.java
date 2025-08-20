@@ -57,6 +57,13 @@ public class FancyNPCUtils {
         }
 
         try {
+            // Vérifier si un NPC avec cet ID existe déjà
+            Npc existingNpc = FancyNpcsPlugin.get().getNpcManager().getNpc(npcId);
+            if (existingNpc != null) {
+                plugin.getPluginLogger().warning("§eUn NPC avec l'ID '" + npcId + "' existe déjà. Suppression de l'ancien NPC.");
+                removeNPC(existingNpc);
+            }
+
             // Créer les données du NPC
             NpcData npcData = new NpcData(npcId, UUID.randomUUID(), location);
 

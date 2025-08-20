@@ -102,7 +102,7 @@ public class PetsMenuGUI {
 
     private void createTeamSection(Inventory gui, Player player, Map<String, PetData> playerPets) {
         // Slots d'équipe
-        int[] teamSlots = {3, 5, 7};
+        int[] teamSlots = {2, 4, 6};
         List<PetData> equippedPets = playerPets.values().stream()
                 .filter(pd -> pd.equipped)
                 .collect(Collectors.toList());
@@ -407,7 +407,7 @@ public class PetsMenuGUI {
         border.setItemMeta(meta);
 
         // Bordures haut et bas
-        for (int i = 0; i < 18; i++) {
+        for (int i = 0; i < 19; i++) {
             gui.setItem(i, border); // Éviter le titre équipe
         }
         for (int i = 45; i < 54; i++) {
